@@ -12,27 +12,27 @@ def _compute_revenue(price: float, orders: int) -> float:
     return round(price * orders, 2)
 
 
-def get_all_items(db: Session, category: str | None = None) -> list[MenuItem]:
-    q = db.query(MenuItem)
+def get_all_items(db: Session, user_id: int, category: str | None = None) -> list[MenuItem]:
+    q = db.query(MenuItem).filter(MenuItem.user_id == user_id)
     if category:
         q = q.filter(MenuItem.category == category)
     return q.all()
 
 
-def get_item(db: Session, item_id: int) -> MenuItem | None:
-    return db.query(MenuItem).filter(MenuItem.id == item_id).first()
+def get_item(db: Session, user_id: int, item_id: int) -> MenuItem | None:
+    return db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.user_id == user_id).first()
 
 
-def create_item(db: Session, item: MenuItemCreate) -> MenuItem:
-    db_item = MenuItem(**item.model_dump())
+def create_item(db: Session, user_id: int, item: MenuItemCreate) -> MenuItem:
+    db_item = MenuItem(**item.model_dump(), user_id=user_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
     return db_item
 
 
-def update_item(db: Session, item_id: int, update: MenuItemUpdate) -> MenuItem | None:
-    db_item = get_item(db, item_id)
+def update_item(db: Session, user_id: int, item_id: int, update: MenuItemUpdate) -> MenuItem | None:
+    db_item = get_item(db, user_id, item_id)
     if not db_item:
         return None
     for field, value in update.model_dump(exclude_none=True).items():
@@ -42,8 +42,8 @@ def update_item(db: Session, item_id: int, update: MenuItemUpdate) -> MenuItem |
     return db_item
 
 
-def delete_item(db: Session, item_id: int) -> bool:
-    db_item = get_item(db, item_id)
+def delete_item(db: Session, user_id: int, item_id: int) -> bool:
+    db_item = get_item(db, user_id, item_id)
     if not db_item:
         return False
     db.delete(db_item)
@@ -51,8 +51,8 @@ def delete_item(db: Session, item_id: int) -> bool:
     return True
 
 
-def get_dashboard_stats(db: Session) -> DashboardStats:
-    items = get_all_items(db)
+def get_dashboard_stats(db: Session, user_id: int) -> DashboardStats:
+    items = get_all_items(db, user_id)
     if not items:
         return DashboardStats(
             total_menu_items=0,
@@ -80,11 +80,10 @@ def get_dashboard_stats(db: Session) -> DashboardStats:
     )
 
 
-def get_recommendations(db: Session) -> list[dict]:
-    items = get_all_items(db)
-    reviews = db.query(Review).all()
+def get_recommendations(db: Session, user_id: int) -> list[dict]:
+    items = get_all_items(db, user_id)
+    reviews = db.query(Review).filter(Review.user_id == user_id).all()
 
-    # Build per-item sentiment map
     item_reviews: dict[str, list] = {}
     for r in reviews:
         item_reviews.setdefault(r.menu_item, []).append(r)
@@ -103,7 +102,6 @@ def get_recommendations(db: Session) -> list[dict]:
             if ireviews else 0
         )
 
-        # Rule 1: High demand, low margin → raise price
         if margin < 30 and item.orders_last_30_days > 50:
             recommendations.append({
                 "item": item.name,
@@ -114,7 +112,6 @@ def get_recommendations(db: Session) -> list[dict]:
                 "potential_gain": round(item.price * 0.12 * item.orders_last_30_days, 2),
             })
 
-        # Rule 2: High margin, low orders → promote
         if margin > 60 and item.orders_last_30_days < 20:
             recommendations.append({
                 "item": item.name,
@@ -125,7 +122,6 @@ def get_recommendations(db: Session) -> list[dict]:
                 "potential_gain": round(item.price * 0.4 * 20, 2),
             })
 
-        # Rule 3: Low star rating → quality review
         if item.rating < 3.5:
             recommendations.append({
                 "item": item.name,
@@ -136,7 +132,6 @@ def get_recommendations(db: Session) -> list[dict]:
                 "potential_gain": 0,
             })
 
-        # Rule 4: Star performer
         if revenue > 2000 and margin > 50:
             recommendations.append({
                 "item": item.name,
@@ -147,7 +142,6 @@ def get_recommendations(db: Session) -> list[dict]:
                 "potential_gain": round(revenue * 0.1, 2),
             })
 
-        # Rule 5 (new): Negative sentiment despite OK rating
         if avg_sentiment is not None and avg_sentiment < -0.1 and item.rating >= 3.5:
             recommendations.append({
                 "item": item.name,
@@ -158,7 +152,6 @@ def get_recommendations(db: Session) -> list[dict]:
                 "potential_gain": 0,
             })
 
-        # Rule 6 (new): High negative review ratio
         if neg_ratio > 0.4 and len(ireviews) >= 3:
             recommendations.append({
                 "item": item.name,
@@ -169,7 +162,6 @@ def get_recommendations(db: Session) -> list[dict]:
                 "potential_gain": 0,
             })
 
-        # Rule 7 (new): Customers love it but it's underpriced
         if (
             avg_sentiment is not None
             and avg_sentiment > 0.5

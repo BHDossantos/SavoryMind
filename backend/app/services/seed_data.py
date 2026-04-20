@@ -43,15 +43,15 @@ REVIEWS = [
 ]
 
 
-def seed_database(db: Session) -> None:
-    if db.query(MenuItem).count() > 0:
+def seed_database(db: Session, user_id: int) -> None:
+    if db.query(MenuItem).filter(MenuItem.user_id == user_id).count() > 0:
         return
 
     for item_data in MENU_ITEMS:
-        db.add(MenuItem(**item_data))
+        db.add(MenuItem(**item_data, user_id=user_id))
     db.commit()
 
     for review_data in REVIEWS:
         score, label = analyze_sentiment(review_data["comment"])
-        db.add(Review(**review_data, sentiment_score=score, sentiment_label=label))
+        db.add(Review(**review_data, user_id=user_id, sentiment_score=score, sentiment_label=label))
     db.commit()

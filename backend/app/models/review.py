@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey
 from datetime import datetime
 from ..core.database import Base
 
@@ -7,6 +7,7 @@ class Review(Base):
     __tablename__ = "reviews"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     customer_name = Column(String, nullable=False)
     menu_item = Column(String, nullable=False)
     rating = Column(Integer, nullable=False)

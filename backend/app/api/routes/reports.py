@@ -2,8 +2,10 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ...core.database import get_db
+from ...core.security import get_current_user
 from ...models.menu import MenuItem
 from ...models.review import Review
+from ...models.user import User
 from ...schemas.reports import ReportSummary, CategoryBreakdown, SentimentTrend, TopItem
 from ...services.menu_service import _compute_margin, _compute_revenue
 
@@ -11,11 +13,10 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 
 @router.get("/summary", response_model=ReportSummary)
-def reports_summary(db: Session = Depends(get_db)):
-    items = db.query(MenuItem).all()
-    reviews = db.query(Review).order_by(Review.created_at).all()
+def reports_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    items = db.query(MenuItem).filter(MenuItem.user_id == current_user.id).all()
+    reviews = db.query(Review).filter(Review.user_id == current_user.id).order_by(Review.created_at).all()
 
-    # --- Category breakdown ---
     cat_groups: dict[str, list] = defaultdict(list)
     for item in items:
         cat_groups[item.category].append(item)
@@ -35,7 +36,6 @@ def reports_summary(db: Session = Depends(get_db)):
             avg_rating=round(sum(i.rating for i in cat_items) / len(cat_items), 2),
         ))
 
-    # --- Sentiment trend by month ---
     month_groups: dict[str, dict] = defaultdict(lambda: {"positive": 0, "neutral": 0, "negative": 0})
     for r in reviews:
         key = r.created_at.strftime("%b %Y") if r.created_at else "Unknown"
@@ -52,7 +52,6 @@ def reports_summary(db: Session = Depends(get_db)):
             total=total,
         ))
 
-    # --- Top 5 by revenue ---
     sorted_by_revenue = sorted(
         items,
         key=lambda i: _compute_revenue(i.price, i.orders_last_30_days),
@@ -63,7 +62,6 @@ def reports_summary(db: Session = Depends(get_db)):
         for i in sorted_by_revenue[:5]
     ]
 
-    # --- Bottom 5 by margin ---
     sorted_by_margin = sorted(items, key=lambda i: _compute_margin(i.price, i.cost))
     bottom_5_by_margin = [
         TopItem(name=i.name, category=i.category, value=_compute_margin(i.price, i.cost))

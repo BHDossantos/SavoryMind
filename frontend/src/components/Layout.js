@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import clsx from "clsx";
+import { useAuth } from "../context/AuthContext";
 
 const navLinks = [
-  { href: "/", label: "Dashboard", icon: "📊" },
+  { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/menu", label: "Menu Analysis", icon: "🍽️" },
   { href: "/sentiment", label: "Sentiment", icon: "💬" },
   { href: "/recommendations", label: "Recommendations", icon: "✨" },
@@ -12,6 +13,7 @@ const navLinks = [
 
 export default function Layout({ children }) {
   const router = useRouter();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen flex">
@@ -22,7 +24,12 @@ export default function Layout({ children }) {
             <span className="text-2xl">🧠</span>
             <span className="text-xl font-bold text-brand-600">SavoryMind</span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">AI Food Intelligence</p>
+          {user && (
+            <div className="mt-2">
+              <p className="text-sm font-medium text-gray-700 truncate">{user.restaurant_name}</p>
+              <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            </div>
+          )}
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navLinks.map((link) => (
@@ -42,7 +49,12 @@ export default function Layout({ children }) {
           ))}
         </nav>
         <div className="p-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400 text-center">v1.0.0</p>
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <span>🚪</span> Sign out
+          </button>
         </div>
       </aside>
 
