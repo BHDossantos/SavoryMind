@@ -1,12 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
 class ReviewBase(BaseModel):
-    customer_name: str
-    menu_item: str
-    rating: int
-    comment: str
+    customer_name: str = Field(min_length=1, max_length=100)
+    menu_item: str = Field(min_length=1, max_length=100)
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(min_length=1, max_length=2000)
 
 
 class ReviewCreate(ReviewBase):

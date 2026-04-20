@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import { api } from "../services/api";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 function SentimentBadge({ label }) {
   if (label === "positive") return <span className="badge-positive">Positive</span>;
@@ -12,7 +12,7 @@ function SentimentBadge({ label }) {
 
 function ScoreBar({ score }) {
   const pct = ((score + 1) / 2) * 100;
-  const color = score > 0.1 ? "bg-green-500" : score < -0.1 ? "bg-red-500" : "bg-gray-400";
+  const color = score > 0.05 ? "bg-green-500" : score < -0.05 ? "bg-red-500" : "bg-gray-400";
   return (
     <div className="flex items-center gap-2">
       <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -26,40 +26,71 @@ function ScoreBar({ score }) {
 export default function SentimentPage() {
   const [reviews, setReviews] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ customer_name: "", menu_item: "", rating: 5, comment: "" });
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [formError, setFormError] = useState(null);
 
   const fetchData = () =>
-    Promise.all([api.getReviews(), api.getSentimentSummary()])
-      .then(([r, s]) => { setReviews(r); setSummary(s); })
+    Promise.all([api.getMenuItems(), api.getReviews(), api.getSentimentSummary()])
+      .then(([items, r, s]) => { setMenuItems(items); setReviews(r); setSummary(s); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
 
   useEffect(() => { fetchData(); }, []);
 
-  const filtered = reviews.filter((r) => filter === "all" || r.sentiment_label === filter);
+  const filtered = reviews.filter((r) =>
+    (filter === "all" || r.sentiment_label === filter) &&
+    (search === "" ||
+      r.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+      r.menu_item.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.menu_item) { setFormError("Please select a menu item."); return; }
+    const rating = parseInt(form.rating);
+    if (rating < 1 || rating > 5) { setFormError("Rating must be between 1 and 5."); return; }
     setSaving(true);
+    setFormError(null);
     try {
-      await api.createReview({ ...form, rating: parseInt(form.rating) });
+      await api.createReview({ ...form, rating });
       setShowForm(false);
       setForm({ customer_name: "", menu_item: "", rating: 5, comment: "" });
       fetchData();
     } catch (err) {
-      alert(err.message);
+      setFormError(err.message || "Something went wrong.");
     } finally {
       setSaving(false);
     }
   };
 
+  const handleDelete = async (review) => {
+    if (!window.confirm(`Delete review by "${review.customer_name}"?`)) return;
+    setDeletingId(review.id);
+    try {
+      await api.deleteReview(review.id);
+      fetchData();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleFieldChange = (key, value) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    if (formError) setFormError(null);
+  };
+
   if (loading) return <LoadingSpinner message="Loading reviews..." />;
-  if (error) return <ErrorMessage message={error} />;
+  if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
   const barData = summary
     ? [
@@ -76,7 +107,7 @@ export default function SentimentPage() {
           <h1 className="text-2xl font-bold text-gray-900">Customer Sentiment</h1>
           <p className="text-gray-400 mt-1">Review analysis and sentiment scoring</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+        <button onClick={() => { setShowForm(!showForm); setFormError(null); }} className="btn-primary">
           {showForm ? "Cancel" : "+ Add Review"}
         </button>
       </div>
@@ -88,27 +119,38 @@ export default function SentimentPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-              <input required value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+              <input required value={form.customer_name} onChange={(e) => handleFieldChange("customer_name", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Menu Item</label>
-              <input required value={form.menu_item} onChange={(e) => setForm({ ...form, menu_item: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              <select required value={form.menu_item} onChange={(e) => handleFieldChange("menu_item", e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400">
+                <option value="">Select item...</option>
+                {menuItems.map((i) => <option key={i.id} value={i.name}>{i.name}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
-              <input type="number" min="1" max="5" required value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })}
+              <input type="number" min="1" max="5" required value={form.rating}
+                onChange={(e) => handleFieldChange("rating", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
-              <textarea required value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })}
+              <textarea required value={form.comment} onChange={(e) => handleFieldChange("comment", e.target.value)}
                 rows={2}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
+            {formError && (
+              <div className="col-span-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">
+                {formError}
+              </div>
+            )}
             <div className="col-span-2 flex justify-end">
-              <button type="submit" disabled={saving} className="btn-primary">{saving ? "Analyzing..." : "Submit Review"}</button>
+              <button type="submit" disabled={saving} className="btn-primary">
+                {saving ? "Analyzing..." : "Submit Review"}
+              </button>
             </div>
           </form>
         </div>
@@ -139,7 +181,7 @@ export default function SentimentPage() {
                 <Tooltip />
                 <Bar dataKey="count" name="Reviews" radius={[4, 4, 0, 0]}>
                   {barData.map((entry, i) => (
-                    <rect key={i} fill={entry.fill} />
+                    <Cell key={i} fill={entry.fill} />
                   ))}
                 </Bar>
               </BarChart>
@@ -148,8 +190,15 @@ export default function SentimentPage() {
         </div>
       )}
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-4">
+      {/* Filter + Search */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <input
+          type="text"
+          placeholder="Search by name or item..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 w-52"
+        />
         {["all", "positive", "neutral", "negative"].map((f) => (
           <button
             key={f}
@@ -168,7 +217,7 @@ export default function SentimentPage() {
         {filtered.map((review) => (
           <div key={review.id} className="card">
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-900">{review.customer_name}</span>
                   <span className="text-gray-300">·</span>
@@ -182,14 +231,22 @@ export default function SentimentPage() {
                   <SentimentBadge label={review.sentiment_label} />
                 </div>
               </div>
-              <span className="text-xs text-gray-400 flex-shrink-0">
-                {new Date(review.created_at).toLocaleDateString()}
-              </span>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>
+                <button
+                  onClick={() => handleDelete(review)}
+                  disabled={deletingId === review.id}
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                  title="Delete review"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="text-center text-gray-400 py-10">No reviews found.</p>
+          <p className="text-center text-gray-400 py-10">No reviews match your search.</p>
         )}
       </div>
     </div>

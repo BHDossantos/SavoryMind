@@ -7,6 +7,7 @@ const navLinks = [
   { href: "/menu", label: "Menu Analysis", icon: "🍽️" },
   { href: "/sentiment", label: "Sentiment", icon: "💬" },
   { href: "/recommendations", label: "Recommendations", icon: "✨" },
+  { href: "/reports", label: "Reports", icon: "📋" },
 ];
 
 export default function Layout({ children }) {

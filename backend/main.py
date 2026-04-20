@@ -1,13 +1,25 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
-from app.api.routes import menu, reviews
+from app.api.routes import menu, reviews, reports
 from app.services.seed_data import seed_database
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = SessionLocal()
+    try:
+        seed_database(db)
+    finally:
+        db.close()
+    yield
+
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title=settings.app_name, version="1.0.0")
+app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,15 +31,7 @@ app.add_middleware(
 
 app.include_router(menu.router, prefix="/api")
 app.include_router(reviews.router, prefix="/api")
-
-
-@app.on_event("startup")
-def startup_event():
-    db = SessionLocal()
-    try:
-        seed_database(db)
-    finally:
-        db.close()
+app.include_router(reports.router, prefix="/api")
 
 
 @app.get("/")

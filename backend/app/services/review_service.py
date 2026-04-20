@@ -1,5 +1,7 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ..models.review import Review
+from ..models.menu import MenuItem
 from ..schemas.review import ReviewCreate, SentimentSummary
 from .sentiment_service import analyze_sentiment
 
@@ -9,6 +11,12 @@ def get_all_reviews(db: Session) -> list[Review]:
 
 
 def create_review(db: Session, review: ReviewCreate) -> Review:
+    exists = db.query(MenuItem).filter(MenuItem.name == review.menu_item).first()
+    if not exists:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No menu item named '{review.menu_item}' exists.",
+        )
     score, label = analyze_sentiment(review.comment)
     db_review = Review(
         **review.model_dump(),
@@ -19,6 +27,15 @@ def create_review(db: Session, review: ReviewCreate) -> Review:
     db.commit()
     db.refresh(db_review)
     return db_review
+
+
+def delete_review(db: Session, review_id: int) -> bool:
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        return False
+    db.delete(review)
+    db.commit()
+    return True
 
 
 def get_sentiment_summary(db: Session) -> SentimentSummary:

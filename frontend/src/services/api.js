@@ -22,4 +22,6 @@ export const api = {
   getReviews: () => request("/api/reviews/"),
   getSentimentSummary: () => request("/api/reviews/summary"),
   createReview: (data) => request("/api/reviews/", { method: "POST", body: JSON.stringify(data) }),
+  deleteReview: (id) => request(`/api/reviews/${id}`, { method: "DELETE" }),
+  getReportsSummary: () => request("/api/reports/summary"),
 };
