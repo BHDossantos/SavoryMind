@@ -8,15 +8,11 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-    setError(null);
-  };
+  const handleChange = (e) => { setForm((f) => ({ ...f, [e.target.name]: e.target.value })); setError(null); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       await login(form.email, form.password);
     } catch (err) {
@@ -29,64 +25,57 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-3xl">🧠</span>
-            <span className="text-2xl font-bold text-brand-600">SavoryMind</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-brand-600 to-consumer-600 bg-clip-text text-transparent">
+              SavoryMind
+            </span>
           </Link>
-          <p className="text-gray-500 mt-2">Sign in to your restaurant</p>
+          <p className="text-gray-500 mt-2">Sign in to your account</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-xl font-bold text-gray-900 mb-6">Welcome back</h1>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
-            </div>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                placeholder="you@restaurant.com"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+                type="email" name="email" value={form.email} onChange={handleChange} required
+                placeholder="you@email.com"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
+                type="password" name="password" value={form.password} onChange={handleChange} required
                 placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-500 text-white font-semibold py-2.5 rounded-lg hover:bg-brand-600 disabled:opacity-60 transition-colors"
+              className="w-full bg-gray-900 text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 disabled:opacity-60 transition-colors"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            No account?{" "}
-            <Link href="/signup" className="text-brand-600 font-medium hover:underline">
-              Create one free
-            </Link>
-          </p>
+          <div className="mt-6 pt-5 border-t border-gray-100 text-center space-y-2">
+            <p className="text-sm text-gray-500">
+              No account?{" "}
+              <Link href="/signup?type=consumer" className="text-consumer-600 font-medium hover:underline">Food Lover signup</Link>
+              {" · "}
+              <Link href="/signup?type=restaurant" className="text-brand-600 font-medium hover:underline">Restaurant signup</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

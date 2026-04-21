@@ -1,7 +1,11 @@
+from datetime import date, timedelta
 from sqlalchemy.orm import Session
 from ..models.menu import MenuItem
 from ..models.review import Review
+from ..models.consumer import WinePairing, MusicMood, SocialConnection
+from ..models.restaurant_ext import Booking, CRMCustomer, Staff
 from .sentiment_service import analyze_sentiment
+import json
 
 MENU_ITEMS = [
     # Star items: high revenue + good margin
@@ -54,4 +58,90 @@ def seed_database(db: Session, user_id: int) -> None:
     for review_data in REVIEWS:
         score, label = analyze_sentiment(review_data["comment"])
         db.add(Review(**review_data, user_id=user_id, sentiment_score=score, sentiment_label=label))
+    db.commit()
+
+    _seed_bookings(db, user_id)
+    _seed_crm(db, user_id)
+    _seed_staff(db, user_id)
+
+
+def _seed_bookings(db: Session, user_id: int) -> None:
+    today = date.today()
+    bookings = [
+        {"customer_name": "Sophie Laurent", "customer_email": "sophie@email.com", "customer_phone": "+44 7700 900111", "date": today, "time_slot": "12:30", "party_size": 2, "table_number": 4, "status": "confirmed", "notes": "Anniversary — bring dessert card"},
+        {"customer_name": "James Thornton", "customer_email": "jt@corp.com", "customer_phone": "+44 7700 900222", "date": today, "time_slot": "13:00", "party_size": 6, "table_number": 8, "status": "confirmed", "notes": "Business lunch"},
+        {"customer_name": "Maria Santos", "customer_phone": "+44 7700 900333", "date": today, "time_slot": "19:00", "party_size": 4, "table_number": 12, "status": "confirmed", "notes": ""},
+        {"customer_name": "David Kim", "customer_email": "david@kim.com", "date": today, "time_slot": "20:00", "party_size": 2, "table_number": 3, "status": "confirmed", "notes": "Peanut allergy!"},
+        {"customer_name": "Emma Williams", "date": today + timedelta(days=1), "time_slot": "19:30", "party_size": 8, "table_number": 15, "status": "confirmed", "notes": "Birthday party"},
+        {"customer_name": "Luca Ferrari", "date": today + timedelta(days=1), "time_slot": "20:30", "party_size": 3, "table_number": 6, "status": "confirmed"},
+        {"customer_name": "Chen Wei", "date": today + timedelta(days=2), "time_slot": "12:00", "party_size": 2, "table_number": 2, "status": "confirmed"},
+        {"customer_name": "Aisha Patel", "date": today - timedelta(days=1), "time_slot": "19:00", "party_size": 4, "table_number": 10, "status": "completed"},
+        {"customer_name": "Robert Hughes", "date": today - timedelta(days=2), "time_slot": "20:00", "party_size": 2, "table_number": 5, "status": "cancelled", "notes": "No show"},
+    ]
+    for b in bookings:
+        db.add(Booking(**b, user_id=user_id))
+    db.commit()
+
+
+def _seed_crm(db: Session, user_id: int) -> None:
+    today = date.today()
+    customers = [
+        {"name": "Sophie Laurent", "email": "sophie@email.com", "phone": "+44 7700 900111", "total_visits": 18, "total_spend": 1240.50, "last_visit": today, "favorite_items": "Grilled Salmon, Tiramisu", "tags": "vip,regular", "notes": "Prefers table by window"},
+        {"name": "James Thornton", "email": "jt@corp.com", "phone": "+44 7700 900222", "total_visits": 12, "total_spend": 2890.00, "last_visit": today, "favorite_items": "Beef Burger, House Wine", "tags": "vip,corporate", "notes": "Expense account — always books for 4–8"},
+        {"name": "Maria Santos", "phone": "+44 7700 900333", "total_visits": 7, "total_spend": 420.00, "last_visit": today - timedelta(days=14), "favorite_items": "Caesar Salad, Craft Lemonade", "tags": "regular"},
+        {"name": "David Kim", "email": "david@kim.com", "total_visits": 5, "total_spend": 310.00, "last_visit": today, "favorite_items": "Margherita Pizza", "tags": "regular", "notes": "Severe peanut allergy — flag kitchen"},
+        {"name": "Emma Williams", "total_visits": 3, "total_spend": 185.00, "last_visit": today - timedelta(days=30), "tags": "birthday"},
+        {"name": "Aisha Patel", "email": "aisha@email.com", "total_visits": 9, "total_spend": 560.00, "last_visit": today - timedelta(days=1), "favorite_items": "Truffle Pasta, Lobster Bisque", "tags": "vip,foodie"},
+        {"name": "Robert Hughes", "total_visits": 1, "total_spend": 0, "last_visit": today - timedelta(days=2), "tags": "no-show", "notes": "Did not honour booking"},
+        {"name": "Luca Ferrari", "email": "luca@ferrari.it", "total_visits": 14, "total_spend": 1100.00, "last_visit": today - timedelta(days=7), "favorite_items": "Fish & Chips, House Wine", "tags": "regular"},
+    ]
+    for c in customers:
+        db.add(CRMCustomer(**c, user_id=user_id))
+    db.commit()
+
+
+def _seed_staff(db: Session, user_id: int) -> None:
+    staff = [
+        {"name": "Marco Rivera", "role": "chef", "shift": "full", "hire_date": date(2021, 3, 15), "rating": 4.8, "orders_handled": 3200, "avg_order_value": 22.50, "punctuality_score": 97.0, "notes": "Head chef, specialises in Italian"},
+        {"name": "Priya Nair", "role": "server", "shift": "evening", "hire_date": date(2022, 6, 1), "rating": 4.9, "orders_handled": 1800, "avg_order_value": 28.00, "punctuality_score": 99.0, "notes": "Top seller — always upsells wine"},
+        {"name": "Tom Bradley", "role": "bartender", "shift": "evening", "hire_date": date(2020, 9, 10), "rating": 4.5, "orders_handled": 2100, "avg_order_value": 12.00, "punctuality_score": 91.0},
+        {"name": "Sara Okonkwo", "role": "server", "shift": "afternoon", "hire_date": date(2023, 1, 20), "rating": 4.3, "orders_handled": 900, "avg_order_value": 24.00, "punctuality_score": 88.0, "notes": "Still learning wine pairing"},
+        {"name": "Li Wei", "role": "host", "shift": "full", "hire_date": date(2022, 4, 5), "rating": 4.6, "orders_handled": 0, "avg_order_value": 0, "punctuality_score": 95.0, "notes": "Manages reservations and front of house"},
+        {"name": "Carlos Mendes", "role": "chef", "shift": "morning", "hire_date": date(2023, 7, 12), "rating": 3.8, "orders_handled": 650, "avg_order_value": 18.00, "punctuality_score": 82.0, "notes": "Shows promise — needs mentoring on plating"},
+    ]
+    for s in staff:
+        db.add(Staff(**s, user_id=user_id))
+    db.commit()
+
+
+def seed_consumer_data(db: Session, user_id: int) -> None:
+    """Seed starter data for a new consumer account."""
+    from .wine_service import pair_wine
+    from .music_service import build_music_recommendation
+
+    # Seed example wine pairings
+    pairings = [
+        ("Grilled Salmon with Lemon Butter", "Atlantic salmon fillet, butter sauce, capers"),
+        ("Beef Steak", "8oz ribeye, medium-rare, with roasted garlic"),
+        ("Truffle Pasta", "Tagliatelle with black truffle shavings and parmesan"),
+    ]
+    for dish_name, desc in pairings:
+        recs = pair_wine(dish_name, desc)
+        db.add(WinePairing(user_id=user_id, dish_name=dish_name, dish_description=desc, recommendations=json.dumps(recs)))
+
+    # Seed example music moods
+    moods = [
+        ("romantic", "light", "date_night"),
+        ("celebratory", "rich", "dinner_party"),
+        ("casual", "neutral", "solo"),
+    ]
+    for mood, food_type, occasion in moods:
+        recs = build_music_recommendation(mood, food_type, occasion)
+        db.add(MusicMood(user_id=user_id, mood=mood, food_type=food_type, occasion=occasion, recommendations=json.dumps(recs)))
+
+    # Seed social connections (all disconnected)
+    platforms = ["spotify", "amazon_music", "alexa", "instagram", "tiktok"]
+    for platform in platforms:
+        db.add(SocialConnection(user_id=user_id, platform=platform, connected=False))
+
     db.commit()

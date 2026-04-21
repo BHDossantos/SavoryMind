@@ -3,21 +3,29 @@ from sqlalchemy.orm import Session
 from ..models.user import User
 from ..schemas.auth import UserRegister, UserLogin
 from ..core.security import hash_password, verify_password, create_access_token
-from .seed_data import seed_database
+from .seed_data import seed_database, seed_consumer_data
 
 
 def register(db: Session, data: UserRegister) -> tuple[str, User]:
     if db.query(User).filter(User.email == data.email.lower()).first():
         raise HTTPException(status_code=400, detail="Email already registered.")
+
     user = User(
         email=data.email.lower(),
         password_hash=hash_password(data.password),
-        restaurant_name=data.restaurant_name,
+        account_type=data.account_type,
+        display_name=data.display_name,
+        restaurant_name=data.display_name if data.account_type == "restaurant" else None,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    seed_database(db, user_id=user.id)
+
+    if data.account_type == "restaurant":
+        seed_database(db, user_id=user.id)
+    else:
+        seed_consumer_data(db, user_id=user.id)
+
     token = create_access_token(user.id, user.email)
     return token, user
 

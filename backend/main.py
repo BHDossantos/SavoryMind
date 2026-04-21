@@ -3,8 +3,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.models import User, MenuItem, Review  # noqa: F401 — registers tables with Base
-from app.api.routes import menu, reviews, reports, auth
+from app.models import User, MenuItem, Review  # noqa: F401
+from app.models.consumer import WinePairing, MusicMood, SocialConnection, BehaviorLog  # noqa: F401
+from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # noqa: F401
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext
 
 
 @asynccontextmanager
@@ -13,7 +15,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,11 +29,13 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(menu.router, prefix="/api")
 app.include_router(reviews.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
+app.include_router(consumer.router, prefix="/api")
+app.include_router(restaurant_ext.router, prefix="/api")
 
 
 @app.get("/")
 def root():
-    return {"message": "SavoryMind API", "docs": "/docs"}
+    return {"message": "SavoryMind API v2", "docs": "/docs"}
 
 
 @app.get("/health")

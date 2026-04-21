@@ -4,11 +4,15 @@ import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 
 const navLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/menu", label: "Menu Analysis", icon: "🍽️" },
-  { href: "/sentiment", label: "Sentiment", icon: "💬" },
-  { href: "/recommendations", label: "Recommendations", icon: "✨" },
-  { href: "/reports", label: "Reports", icon: "📋" },
+  { href: "/dashboard",               label: "Dashboard",       icon: "📊" },
+  { href: "/menu",                    label: "Menu Analysis",   icon: "🍽️" },
+  { href: "/sentiment",               label: "Sentiment",       icon: "💬" },
+  { href: "/recommendations",         label: "Recommendations", icon: "✨" },
+  { href: "/reports",                 label: "Reports",         icon: "📋" },
+  { href: "/restaurant/bookings",     label: "Bookings",        icon: "📅" },
+  { href: "/restaurant/crm",          label: "CRM",             icon: "👥" },
+  { href: "/restaurant/staff",        label: "Staff",           icon: "🧑‍🍳" },
+  { href: "/restaurant/predictions",  label: "AI Predictions",  icon: "🔮" },
 ];
 
 export default function Layout({ children }) {
@@ -16,22 +20,23 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
-        <div className="p-6 border-b border-gray-100">
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm">
+        <div className="p-5 border-b border-gray-100 bg-gradient-to-br from-brand-500 to-brand-700">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧠</span>
-            <span className="text-xl font-bold text-brand-600">SavoryMind</span>
+            <span className="text-xl font-bold text-white">SavoryMind</span>
           </div>
           {user && (
-            <div className="mt-2">
-              <p className="text-sm font-medium text-gray-700 truncate">{user.restaurant_name}</p>
-              <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            <div className="mt-3">
+              <p className="text-sm font-semibold text-white truncate">{user.display_name}</p>
+              <p className="text-xs text-orange-200 truncate">{user.email}</p>
             </div>
           )}
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+
+        <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -48,7 +53,12 @@ export default function Layout({ children }) {
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-gray-100">
+
+        <div className="p-4 border-t border-gray-100 space-y-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-50">
+            <span className="text-xs text-brand-700 font-medium">Restaurant Mode</span>
+            <span className="ml-auto text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full">Free</span>
+          </div>
           <button
             onClick={logout}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
