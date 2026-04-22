@@ -220,7 +220,7 @@ export default function Landing() {
             <span className="text-xl">🧠</span>
             <span className="font-bold text-gray-700">SavoryMind</span>
           </div>
-          <p className="text-xs text-gray-400">© 2026 SavoryMind — Food. Drink. Dining.</p>
+          <p className="text-xs text-gray-400">© 2024 SavoryMind — Food. Drink. Dining.</p>
         </div>
       </footer>
     </div>
