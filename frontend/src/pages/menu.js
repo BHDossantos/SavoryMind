@@ -38,6 +38,7 @@ export default function MenuPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   const fetchItems = () =>
     api.getMenuItems()
@@ -114,11 +115,12 @@ export default function MenuPage() {
   const handleDelete = async (item) => {
     if (!window.confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
     setDeletingId(item.id);
+    setDeleteError(null);
     try {
       await api.deleteMenuItem(item.id);
       fetchItems();
     } catch (err) {
-      alert(err.message);
+      setDeleteError(err.message || "Failed to delete item.");
     } finally {
       setDeletingId(null);
     }
@@ -193,6 +195,13 @@ export default function MenuPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-600 flex items-center justify-between">
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError(null)} className="ml-4 text-red-400 hover:text-red-600">✕</button>
         </div>
       )}
 
