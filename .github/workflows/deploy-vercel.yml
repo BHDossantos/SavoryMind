@@ -24,68 +24,9 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      - name: Link project and export ID
-        env:
-          VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel link --yes --token="$VERCEL_TOKEN"
-          PROJECT_ID=$(cat .vercel/project.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["projectId"])')
-          echo "VERCEL_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
-          echo "Linked project: $PROJECT_ID"
-
       - name: Deploy to Vercel
-        id: deploy
-        continue-on-error: true
         env:
           VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID }}
+          VERCEL_PROJECT_ID: prj_jXTXj84iB6pMq1VUCEvH05ur3vFP
         run: vercel --prod --yes --token="$VERCEL_TOKEN"
-
-      - name: Diagnose via Vercel API
-        if: always()
-        uses: actions/github-script@v7
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID }}
-          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
-          TEAM_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const token = process.env.VERCEL_TOKEN;
-            const projectId = process.env.VERCEL_PROJECT_ID;
-            const teamId = process.env.TEAM_ID;
-            const deployOutcome = process.env.DEPLOY_OUTCOME;
-
-            async function vercelFetch(path) {
-              const { default: fetch } = await import('node-fetch').catch(() => ({ default: globalThis.fetch }));
-              const url = `https://api.vercel.com${path}`;
-              const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-              return res.json();
-            }
-
-            // Get user info to validate token
-            const user = await vercelFetch('/v2/user');
-            console.log('Token user:', JSON.stringify(user).substring(0, 200));
-
-            // Get recent deployments
-            const deploys = await vercelFetch(
-              `/v6/deployments?projectId=${projectId}&teamId=${teamId}&limit=2`
-            );
-            console.log('Deployments:', JSON.stringify(deploys, null, 2).substring(0, 3000));
-
-            const summary = JSON.stringify({ user, deploys }, null, 2).substring(0, 5000);
-            const status = deployOutcome === 'success' ? '✅ succeeded' : '❌ failed';
-
-            await github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `**Vercel deploy ${status}**\n\`\`\`json\n${summary}\n\`\`\``
-            });
-
-      - name: Fail if deploy failed
-        if: steps.deploy.outcome == 'failure'
-        run: exit 1
