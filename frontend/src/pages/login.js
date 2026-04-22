@@ -246,11 +246,11 @@ export default function Login() {
             <p className="text-sm text-gray-500">
               No account?{" "}
               <Link href="/signup?type=consumer" className="text-consumer-600 font-medium hover:underline">
-                Food Lover
+                Culinary Enthusiast
               </Link>
               {" · "}
               <Link href="/signup?type=diner" className="text-diner-600 font-medium hover:underline">
-                Diner
+                Food Connoisseur
               </Link>
               {" · "}
               <Link href="/signup?type=restaurant" className="text-brand-600 font-medium hover:underline">

@@ -6,7 +6,7 @@ const MODES = [
   {
     type: 'consumer',
     icon: '🏠',
-    title: 'Home Cook',
+    title: 'Culinary Enthusiast',
     tagline: 'The right wine. The right song. The right recipe.',
     color: C.consumer.primary,
     light: C.consumer.light,
@@ -15,7 +15,7 @@ const MODES = [
   {
     type: 'diner',
     icon: '🍽️',
-    title: 'Diner',
+    title: 'Food Connoisseur',
     tagline: 'Remember every great meal. Book the next one.',
     color: C.diner.primary,
     light: C.diner.light,
