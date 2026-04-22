@@ -50,6 +50,7 @@ export default function SocialConnect() {
   const [editing, setEditing] = useState(null);
   const [usernameInput, setUsernameInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
     api.getConnections()
@@ -68,6 +69,7 @@ export default function SocialConnect() {
 
   const handleSave = async (platform) => {
     setSaving(true);
+    setSaveError(null);
     try {
       const updated = await api.updateConnection(platform, {
         platform,
@@ -77,7 +79,7 @@ export default function SocialConnect() {
       setConnections((prev) => ({ ...prev, [platform]: updated }));
       setEditing(null);
     } catch (err) {
-      alert(err.message);
+      setSaveError(err.message || "Failed to save connection.");
     } finally {
       setSaving(false);
     }
@@ -147,6 +149,11 @@ export default function SocialConnect() {
                       <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
                         <strong>Note:</strong> {p.connectNote}
                       </div>
+                      {saveError && editing === p.id && (
+                        <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                          {saveError}
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSave(p.id)}
@@ -156,7 +163,7 @@ export default function SocialConnect() {
                           {saving ? "Saving..." : "Mark as Connected"}
                         </button>
                         <button
-                          onClick={() => setEditing(null)}
+                          onClick={() => { setEditing(null); setSaveError(null); }}
                           className="text-xs bg-gray-100 text-gray-600 px-4 py-1.5 rounded-lg hover:bg-gray-200"
                         >
                           Cancel
