@@ -4,26 +4,26 @@ import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 
 const homeFeatures = [
-  { icon: "🍷", title: "Wine, Beer & Spirits Pairing", desc: "AI-matched beverages for any dish — from a bold Cabernet to a hoppy IPA or a smoky Mezcal." },
-  { icon: "🎵", title: "Music Mood Engine", desc: "Set your vibe and get personalised genre, artist, and playlist recommendations for your meal." },
-  { icon: "👨‍🍳", title: "Recipe Discovery", desc: "12+ curated recipes with full ingredients and step-by-step guides, matched to your mood and cuisine." },
-  { icon: "🔗", title: "Stream Anywhere", desc: "One-tap to Spotify, Amazon Music, or Alexa. Your dining soundtrack, hands-free." },
+  { icon: "🍷", title: "Wine, Beer & Spirits Pairing", desc: "From a bold Cabernet to a hoppy IPA or a smoky Mezcal — the right pour for whatever's on your plate tonight." },
+  { icon: "🎵", title: "Music Mood Engine", desc: "Tell us how you're feeling and we'll set the mood — the right sounds for your Sunday morning eggs or Friday night feast." },
+  { icon: "👨‍🍳", title: "Recipe Discovery", desc: "Not sure what to cook? Browse recipes matched to your mood, your cuisine, your craving." },
+  { icon: "🔗", title: "Stream Anywhere", desc: "Tap once and your dining soundtrack plays — Spotify, Amazon Music, or Alexa, completely hands-free." },
 ];
 
 const dinerFeatures = [
-  { icon: "📅", title: "Book a Table", desc: "Make reservations at your favourite restaurants — specify party size, time, and special requests." },
-  { icon: "📖", title: "Visit History", desc: "Log every dining experience: what you ordered, staff friendliness, food rating, and whether you'd return." },
-  { icon: "⭐", title: "Rate Everything", desc: "Track overall satisfaction, food quality, and staff friendliness separately per visit." },
-  { icon: "💎", title: "Your Dining Profile", desc: "Build a personal dining record — see your top restaurants, return rate, and average ratings over time." },
+  { icon: "📅", title: "Book a Table", desc: "Reserve your spot and show up ready to enjoy every second — specify your party, time, and any special requests." },
+  { icon: "📖", title: "Visit History", desc: "Write your own dining journal — what you loved, who served you well, whether you'd go back." },
+  { icon: "⭐", title: "Rate Everything", desc: "Your honest take on every visit — food, service, atmosphere — so you never forget what made the night." },
+  { icon: "💎", title: "Your Dining Profile", desc: "The more you dine, the better you know yourself. Your profile tells your food story." },
 ];
 
 const restaurantFeatures = [
-  { icon: "💰", title: "P&L Dashboard", desc: "Real-time revenue, margins, top sellers, and cost analysis — your finances at a glance." },
-  { icon: "🗑️", title: "Food Waste Tracker", desc: "Log every waste incident by staff member and item. Know exactly what's being wasted and why." },
-  { icon: "⏱️", title: "Kitchen Time Tracking", desc: "Measure prep and cook times per dish per chef. Identify who's slow and where training is needed." },
-  { icon: "🎓", title: "AI Staff Training", desc: "AI analyses waste, time, and rating data to generate targeted training recommendations per staff member." },
-  { icon: "👥", title: "CRM & Loyalty", desc: "Know your customers — visit history, spend, favourites, VIP flags, and personal notes." },
-  { icon: "🔮", title: "AI Sales Predictions", desc: "ML engine forecasts what will sell in the next 4 hours based on historical patterns." },
+  { icon: "💰", title: "P&L Dashboard", desc: "See your numbers clearly — what's selling, what's costing you, what's worth celebrating." },
+  { icon: "🗑️", title: "Food Waste Tracker", desc: "Know exactly what's being wasted, and stop watching money walk out the back door." },
+  { icon: "⏱️", title: "Kitchen Time Tracking", desc: "Find where your kitchen slows down — and help your team get back their rhythm." },
+  { icon: "🎓", title: "Staff Training Insights", desc: "Pinpoint exactly where each person needs support, based on real performance data — not guesswork." },
+  { icon: "👥", title: "CRM & Loyalty", desc: "Remember every regular. Know what they order, how often they come back, and what makes them feel at home." },
+  { icon: "🔮", title: "Sales Predictions", desc: "Know what's likely to sell in the next few hours, before the rush hits." },
 ];
 
 export default function Landing() {
@@ -63,17 +63,17 @@ export default function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <span>✨</span> Three powerful modes. One platform.
+          <span>✨</span> For cooks. For diners. For restaurants.
         </div>
         <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
-          The AI that transforms
+          Every meal has a story.
           <br />
           <span className="bg-gradient-to-r from-brand-500 via-diner-500 to-consumer-500 bg-clip-text text-transparent">
-            every dining experience
+            Yours starts here.
           </span>
         </h1>
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-16">
-          Whether you cook at home, dine out, or run a restaurant — SavoryMind has a dedicated AI experience built for you.
+          Whether you're in the kitchen, at the table, or behind the pass — SavoryMind is built around your relationship with food.
         </p>
 
         {/* Three mode cards */}
@@ -83,7 +83,7 @@ export default function Landing() {
             <div className="text-4xl mb-4">🏠</div>
             <h2 className="text-xl font-bold text-consumer-800 mb-2">For Home Cooks</h2>
             <p className="text-consumer-700 text-sm leading-relaxed mb-5">
-              AI wine, beer & spirits pairing for any dish. Music mood engine. Discover recipes matched to your vibe.
+              Find the perfect wine for tonight's dish. Set a playlist that matches the mood. Cook something new. Your kitchen, elevated.
             </p>
             <ul className="space-y-1.5 mb-7">
               {["Wine, beer & spirits pairing", "Music mood by food & vibe", "Recipe discovery engine", "Spotify + Amazon + Alexa"].map((f) => (
@@ -103,7 +103,7 @@ export default function Landing() {
             <div className="text-4xl mb-4">🍽️</div>
             <h2 className="text-xl font-bold text-diner-800 mb-2">For Diners</h2>
             <p className="text-diner-700 text-sm leading-relaxed mb-5">
-              Book tables, log your visits, rate staff and food, and build a personal dining history that reveals your taste.
+              Remember every great meal. Book the next one. Build a dining history as personal as your taste.
             </p>
             <ul className="space-y-1.5 mb-7">
               {["Book tables at restaurants", "Log orders & rate each visit", "Track staff friendliness", "Personal dining history"].map((f) => (
@@ -123,7 +123,7 @@ export default function Landing() {
             <div className="text-4xl mb-4">🏪</div>
             <h2 className="text-xl font-bold text-brand-800 mb-2">For Restaurant Owners</h2>
             <p className="text-brand-700 text-sm leading-relaxed mb-5">
-              Full P&L analytics, waste tracking, kitchen performance, AI staff training recommendations and CRM.
+              You built this with your hands. Now see exactly what's working — your margins, your team, your guests — all in one place.
             </p>
             <ul className="space-y-1.5 mb-7">
               {["Food waste & kitchen time tracking", "AI staff training recommendations", "CRM & customer loyalty", "AI sales predictions"].map((f) => (
@@ -145,7 +145,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏠 Home Cook Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">Your personal food, drink & music intelligence</h2>
+            <h2 className="text-3xl font-bold text-gray-900">The right wine. The right song. The right recipe.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {homeFeatures.map((f) => (
@@ -164,7 +164,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-diner-100 text-diner-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍽️ Diner Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">Own your dining story</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Every table deserves to be remembered.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {dinerFeatures.map((f) => (
@@ -183,7 +183,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏪 Restaurant Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">Every tool to run a smarter restaurant</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Built for people who pour their life into their restaurant.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {restaurantFeatures.map((f) => (
@@ -199,8 +199,8 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Which experience is yours?</h2>
-        <p className="text-gray-500 text-lg mb-10">Sign up free. Your AI activates instantly with demo data.</p>
+        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Your table is set.</h2>
+        <p className="text-gray-500 text-lg mb-10">Free to start. Pick your path and we'll do the rest.</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
           <Link href="/signup?type=consumer" className="bg-consumer-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-consumer-700 transition-colors shadow-lg shadow-consumer-100">
             🏠 I Cook at Home
@@ -220,7 +220,7 @@ export default function Landing() {
             <span className="text-xl">🧠</span>
             <span className="font-bold text-gray-700">SavoryMind</span>
           </div>
-          <p className="text-xs text-gray-400">© 2026 SavoryMind — AI Food, Drink & Dining Intelligence</p>
+          <p className="text-xs text-gray-400">© 2026 SavoryMind — Food. Drink. Dining.</p>
         </div>
       </footer>
     </div>
