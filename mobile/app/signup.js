@@ -22,8 +22,8 @@ const OTHER_PROVIDERS = [
 ];
 
 const TYPES = [
-  { value: 'consumer',   label: '🏠 Culinary Enthusiast', color: C.consumer.primary },
-  { value: 'diner',      label: '🍽️ Food Connoisseur',  color: C.diner.primary },
+  { value: 'consumer',   label: '🏠 Food Lover',           color: C.consumer.primary },
+  { value: 'diner',      label: '🍽️ Food Explorer',      color: C.diner.primary },
   { value: 'restaurant', label: '🏪 Restaurant Owner',  color: C.restaurant.primary },
 ];
 

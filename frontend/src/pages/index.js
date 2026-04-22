@@ -81,7 +81,7 @@ export default function Landing() {
           {/* Consumer */}
           <div className="bg-gradient-to-br from-consumer-50 to-consumer-100 border border-consumer-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-consumer-100 transition-all group">
             <div className="text-4xl mb-4">🏠</div>
-            <h2 className="text-xl font-bold text-consumer-800 mb-2">For Culinary Enthusiasts</h2>
+            <h2 className="text-xl font-bold text-consumer-800 mb-2">For Food Lovers</h2>
             <p className="text-consumer-700 text-sm leading-relaxed mb-5">
               Find the perfect wine for tonight's dish. Set a playlist that matches the mood. Cook something new. Your kitchen, elevated.
             </p>
@@ -94,14 +94,14 @@ export default function Landing() {
             </ul>
             <Link href="/signup?type=consumer"
               className="block text-center bg-consumer-600 text-white font-bold py-3 rounded-2xl hover:bg-consumer-700 transition-colors text-sm">
-              Join as Culinary Enthusiast →
+              Join as Food Lover →
             </Link>
           </div>
 
           {/* Diner */}
           <div className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-diner-100 transition-all group">
             <div className="text-4xl mb-4">🍽️</div>
-            <h2 className="text-xl font-bold text-diner-800 mb-2">For Food Connoisseurs</h2>
+            <h2 className="text-xl font-bold text-diner-800 mb-2">For Food Explorers</h2>
             <p className="text-diner-700 text-sm leading-relaxed mb-5">
               Remember every great meal. Book the next one. Build a dining history as personal as your taste.
             </p>
@@ -114,7 +114,7 @@ export default function Landing() {
             </ul>
             <Link href="/signup?type=diner"
               className="block text-center bg-diner-600 text-white font-bold py-3 rounded-2xl hover:bg-diner-700 transition-colors text-sm">
-              Join as Food Connoisseur →
+              Join as Food Explorer →
             </Link>
           </div>
 
@@ -144,7 +144,7 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-consumer-50 to-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏠 Culinary Enthusiast Mode</div>
+            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏠 Food Lover Mode</div>
             <h2 className="text-3xl font-bold text-gray-900">The right wine. The right song. The right recipe.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -163,7 +163,7 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-diner-50 to-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-diner-100 text-diner-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍽️ Food Connoisseur Mode</div>
+            <div className="inline-flex items-center gap-2 bg-diner-100 text-diner-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍽️ Food Explorer Mode</div>
             <h2 className="text-3xl font-bold text-gray-900">Every table deserves to be remembered.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -203,10 +203,10 @@ export default function Landing() {
         <p className="text-gray-500 text-lg mb-10">Free to start. Pick your path and we'll do the rest.</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
           <Link href="/signup?type=consumer" className="bg-consumer-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-consumer-700 transition-colors shadow-lg shadow-consumer-100">
-            🏠 Culinary Enthusiast
+            🏠 Food Lover
           </Link>
           <Link href="/signup?type=diner" className="bg-diner-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-diner-700 transition-colors shadow-lg shadow-diner-100">
-            🍽️ Food Connoisseur
+            🍽️ Food Explorer
           </Link>
           <Link href="/signup?type=restaurant" className="bg-brand-500 text-white font-bold px-7 py-4 rounded-xl hover:bg-brand-600 transition-colors shadow-lg shadow-brand-100">
             🏪 I Run a Restaurant
