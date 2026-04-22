@@ -32,15 +32,25 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set +e
-          OUTPUT=$(vercel --prod --yes --token="$VERCEL_TOKEN" 2>&1)
+          vercel --prod --yes --token="$VERCEL_TOKEN" > /tmp/vercel.log 2>&1
           EXIT_CODE=$?
-          echo "$OUTPUT"
+          cat /tmp/vercel.log
           if [ $EXIT_CODE -ne 0 ]; then
-            BODY=$(printf '{"body":"**Vercel deploy failed (exit %s)**\n```\n%s\n```"}' "$EXIT_CODE" "$OUTPUT")
-            curl -s -X POST \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$BODY" \
-              "https://api.github.com/repos/BHDossantos/SavoryMind/commits/$COMMIT_SHA/comments" > /dev/null
+            python3 - <<'PYEOF'
+import os, json
+from urllib.request import urlopen, Request
+log = open("/tmp/vercel.log").read()[:4000]
+body = json.dumps({"body": f"**Vercel deploy failed**\n```\n{log}\n```"})
+req = Request(
+    f"https://api.github.com/repos/BHDossantos/SavoryMind/commits/{os.environ['COMMIT_SHA']}/comments",
+    data=body.encode(),
+    method="POST",
+    headers={
+        "Authorization": f"token {os.environ['GITHUB_TOKEN']}",
+        "Content-Type": "application/json",
+    }
+)
+urlopen(req)
+PYEOF
           fi
           exit $EXIT_CODE
