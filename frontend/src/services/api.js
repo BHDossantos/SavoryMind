@@ -1,4 +1,6 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// All API calls go through the Next.js /backend rewrite → FastAPI server.
+// BACKEND_URL is a server-side env var in next.config.js rewrites (never exposed to browser).
+const BASE_URL = "/backend";
 
 function getToken() {
   if (typeof window === "undefined") return null;

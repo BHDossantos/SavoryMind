@@ -8,7 +8,8 @@ import DiscordProvider from "next-auth/providers/discord";
 import TwitterProvider from "next-auth/providers/twitter";
 import LinkedInProvider from "next-auth/providers/linkedin";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Server-side only — not exposed to browser
+const BASE_URL = process.env.BACKEND_URL || "http://localhost:8000";
 const SOCIAL_SECRET = process.env.SOCIAL_LOGIN_SECRET || "dev-social-secret";
 
 // Only include providers whose env vars are present

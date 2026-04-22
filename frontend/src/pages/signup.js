@@ -126,16 +126,9 @@ export default function Signup() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
-  const [availableProviders, setAvailableProviders] = useState([]);
-
   useEffect(() => {
     const t = router.query.type;
     if (["consumer", "diner", "restaurant"].includes(t)) setAccountType(t);
-
-    fetch("/api/auth/providers-list")
-      .then((r) => r.json())
-      .then(setAvailableProviders)
-      .catch(() => setAvailableProviders([]));
   }, [router.query.type]);
 
   const handleChange = (e) => {
@@ -169,7 +162,6 @@ export default function Signup() {
   };
 
   const selected = TYPES.find((t) => t.id === accountType);
-  const visibleSocial = SOCIAL.filter((p) => availableProviders.includes(p.id));
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
@@ -206,11 +198,10 @@ export default function Signup() {
           </div>
 
           {/* Social sign-up */}
-          {visibleSocial.length > 0 && (
-            <div className="mb-5">
-              <p className="text-xs text-gray-400 text-center mb-3">Sign up with</p>
-              <div className="grid grid-cols-4 gap-2">
-                {visibleSocial.map((p) => (
+          <div className="mb-5">
+            <p className="text-xs text-gray-400 text-center mb-3">Sign up with</p>
+            <div className="grid grid-cols-4 gap-2">
+              {SOCIAL.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleSocial(p.id)}
@@ -225,18 +216,17 @@ export default function Signup() {
                     )}
                   </button>
                 ))}
-              </div>
+            </div>
 
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-100" />
-                </div>
-                <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3">
-                  or with email
-                </div>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-100" />
+              </div>
+              <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3">
+                or with email
               </div>
             </div>
-          )}
+          </div>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">

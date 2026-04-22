@@ -116,15 +116,8 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
-  const [availableProviders, setAvailableProviders] = useState([]);
 
   useEffect(() => {
-    fetch("/api/auth/providers-list")
-      .then((r) => r.json())
-      .then(setAvailableProviders)
-      .catch(() => setAvailableProviders([]));
-
-    // Show error from NextAuth redirect
     const { error: qError } = router.query;
     if (qError) setError("Social login failed. Please try again or use email.");
   }, [router.query]);
@@ -158,10 +151,6 @@ export default function Login() {
     }
   };
 
-  const visibleProviders = SOCIAL_PROVIDERS.filter((p) =>
-    availableProviders.includes(p.id)
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -185,9 +174,8 @@ export default function Login() {
           )}
 
           {/* Social login buttons */}
-          {visibleProviders.length > 0 && (
-            <div className="space-y-2.5 mb-6">
-              {visibleProviders.map((p) => (
+          <div className="space-y-2.5 mb-6">
+            {SOCIAL_PROVIDERS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleSocial(p.id)}
@@ -203,16 +191,15 @@ export default function Login() {
                 </button>
               ))}
 
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-100" />
-                </div>
-                <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3">
-                  or continue with email
-                </div>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-100" />
+              </div>
+              <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3">
+                or continue with email
               </div>
             </div>
-          )}
+          </div>
 
           {/* Email login form */}
           <form onSubmit={handleSubmit} className="space-y-4">
