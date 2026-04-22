@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class UserRegister(BaseModel):
-    email: str = Field(min_length=5, max_length=150)
-    password: str = Field(min_length=6, max_length=100)
+    email:        str = Field(min_length=5, max_length=150)
+    password:     str = Field(min_length=6, max_length=100)
     account_type: str = Field(default="restaurant")
     display_name: str = Field(min_length=2, max_length=100)
 
@@ -17,24 +17,53 @@ class UserRegister(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: str
+    email:    str
     password: str
 
 
 class UserResponse(BaseModel):
-    id: int
-    email: str
+    id:           int
+    email:        str
     account_type: str
     display_name: str
-    restaurant_name: Optional[str] = None
-    plan: str
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    restaurant_name:     Optional[str]  = None
+    plan:                str            = "free"
+    bio:                 Optional[str]  = None
+    avatar_url:          Optional[str]  = None
+    first_name:          Optional[str]  = None
+    last_name:           Optional[str]  = None
+    city:                Optional[str]  = None
+    country:             Optional[str]  = None
+    latitude:            Optional[float] = None
+    longitude:           Optional[float] = None
+    music_genres:        Optional[str]  = None
+    cuisine_preferences: Optional[str]  = None
+    dietary_preferences: Optional[str]  = None
+    drinking_habits:     Optional[str]  = None
+    recipe_interests:    Optional[str]  = None
+    onboarding_completed: bool          = False
 
     model_config = {"from_attributes": True}
 
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
-    user: UserResponse
+    token_type:   str = "bearer"
+    user:         UserResponse
+
+
+class ProfileUpdate(BaseModel):
+    display_name:        Optional[str]   = None
+    bio:                 Optional[str]   = None
+    first_name:          Optional[str]   = None
+    last_name:           Optional[str]   = None
+    city:                Optional[str]   = None
+    country:             Optional[str]   = None
+    latitude:            Optional[float] = None
+    longitude:           Optional[float] = None
+    music_genres:        Optional[str]   = None
+    cuisine_preferences: Optional[str]   = None
+    dietary_preferences: Optional[str]   = None
+    drinking_habits:     Optional[str]   = None
+    recipe_interests:    Optional[str]   = None
+    onboarding_completed: Optional[bool] = None

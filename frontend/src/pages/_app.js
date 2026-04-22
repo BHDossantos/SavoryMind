@@ -7,9 +7,11 @@ import { AuthProvider, useAuth } from "../context/AuthContext";
 import "../styles/globals.css";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup"];
+const NO_LAYOUT_ROUTES = ["/onboarding"];
 
 function homePath(user) {
   if (!user) return "/login";
+  if (!user.onboarding_completed) return "/onboarding";
   if (user.account_type === "consumer") return "/consumer/dashboard";
   if (user.account_type === "diner") return "/diner/dashboard";
   return "/dashboard";
@@ -19,21 +21,30 @@ function AppContent({ Component, pageProps }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const isPublic = PUBLIC_ROUTES.includes(router.pathname);
+  const isOnboarding = router.pathname === "/onboarding";
   const isConsumerRoute = router.pathname.startsWith("/consumer");
   const isDinerRoute = router.pathname.startsWith("/diner");
-  const isRestaurantRoute = !isConsumerRoute && !isDinerRoute && !isPublic;
+  const isRestaurantRoute = !isConsumerRoute && !isDinerRoute && !isPublic && !isOnboarding;
 
   useEffect(() => {
     if (loading) return;
-    if (!user && !isPublic) {
+    if (!user && !isPublic && !isOnboarding) {
       router.replace("/login");
+      return;
+    }
+    if (user && !user.onboarding_completed && !isOnboarding && !isPublic) {
+      router.replace("/onboarding");
       return;
     }
     if (user && isPublic && router.pathname !== "/") {
       router.replace(homePath(user));
       return;
     }
-    if (user && !isPublic) {
+    if (user && user.onboarding_completed && isOnboarding) {
+      router.replace(homePath(user));
+      return;
+    }
+    if (user && !isPublic && !isOnboarding) {
       const type = user.account_type;
       if (type === "consumer" && !isConsumerRoute) {
         router.replace("/consumer/dashboard");
@@ -43,7 +54,7 @@ function AppContent({ Component, pageProps }) {
         router.replace("/dashboard");
       }
     }
-  }, [user, loading, isPublic, isConsumerRoute, isDinerRoute, router]);
+  }, [user, loading, isPublic, isOnboarding, isConsumerRoute, isDinerRoute, router]);
 
   if (loading) {
     return (
@@ -56,7 +67,7 @@ function AppContent({ Component, pageProps }) {
     );
   }
 
-  if (isPublic) {
+  if (isPublic || isOnboarding) {
     return <Component {...pageProps} />;
   }
 

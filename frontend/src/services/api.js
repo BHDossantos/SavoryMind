@@ -41,6 +41,7 @@ export const api = {
   register: (data) => request("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data) => request("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
   getMe: () => request("/api/auth/me"),
+  updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
 
   // Restaurant — Menu
   getDashboardStats: () => request("/api/menu/stats"),

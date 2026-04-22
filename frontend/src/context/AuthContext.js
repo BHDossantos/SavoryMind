@@ -4,31 +4,52 @@ import { api } from "../services/api";
 
 const AuthContext = createContext(null);
 
+function dashboardPath(user) {
+  if (!user) return "/login";
+  if (!user.onboarding_completed) return "/onboarding";
+  if (user.account_type === "consumer") return "/consumer/dashboard";
+  if (user.account_type === "diner")    return "/diner/dashboard";
+  return "/dashboard";
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser]     = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // On mount: restore cached user then verify the token is still valid on the server
   useEffect(() => {
     const token = localStorage.getItem("token");
     const saved = localStorage.getItem("user");
-    if (token && saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem("user");
-      }
+
+    if (!token) { setLoading(false); return; }
+
+    // Optimistically restore so the UI doesn't flash
+    if (saved) {
+      try { setUser(JSON.parse(saved)); } catch {}
     }
-    setLoading(false);
-  }, []);
+
+    // Verify token against backend and refresh user data
+    api.getMe()
+      .then((fresh) => {
+        setUser(fresh);
+        localStorage.setItem("user", JSON.stringify(fresh));
+      })
+      .catch(() => {
+        // Token is invalid/expired — clear everything
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = useCallback(async (email, password) => {
     const data = await api.login({ email, password });
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
-    const dest = data.user.account_type === "consumer" ? "/consumer/dashboard" : data.user.account_type === "diner" ? "/diner/dashboard" : "/dashboard";
-    router.push(dest);
+    router.push(dashboardPath(data.user));
   }, [router]);
 
   const register = useCallback(async (email, password, display_name, account_type) => {
@@ -36,8 +57,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
-    const dest = data.user.account_type === "consumer" ? "/consumer/dashboard" : data.user.account_type === "diner" ? "/diner/dashboard" : "/dashboard";
-    router.push(dest);
+    router.push("/onboarding"); // Always go through onboarding after signup
   }, [router]);
 
   const logout = useCallback(() => {
@@ -56,7 +76,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, dashboardPath }}>
       {children}
     </AuthContext.Provider>
   );

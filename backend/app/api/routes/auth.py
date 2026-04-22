@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.security import get_current_user
-from ...schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse
+from ...schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse, ProfileUpdate
 from ...services import auth_service
 from ...models.user import User
 
@@ -23,4 +23,17 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/profile", response_model=UserResponse)
+def update_profile(
+    data: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
     return current_user
