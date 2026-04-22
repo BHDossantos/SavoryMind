@@ -40,6 +40,7 @@ jobs:
             const token = process.env.VERCEL_TOKEN;
             const projectId = 'prj_jXTXj84iB6pMq1VUCEvH05ur3vFP';
             const teamId = 'team_VjQmqHvzWW8ycKrR18Sq3iRt';
+            // Register apex + www on the Vercel project
             for (const domain of ['savorymind.net', 'www.savorymind.net']) {
               const res = await fetch(
                 `https://api.vercel.com/v10/projects/${projectId}/domains?teamId=${teamId}`,
@@ -48,6 +49,20 @@ jobs:
               const data = await res.json();
               console.log(`${domain}: ${data.error ? '⚠️ ' + data.error.message : '✅ configured'}`);
             }
+
+            // Add api.savorymind.net DNS record in Vercel (points to Render)
+            // Needed because Vercel now controls nameservers for the whole domain
+            const dnsRes = await fetch(
+              `https://api.vercel.com/v2/domains/savorymind.net/records?teamId=${teamId}`,
+              {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: 'api', type: 'CNAME', value: 'savorymind-api.onrender.com', ttl: 3600 }),
+              }
+            );
+            const dnsData = await dnsRes.json();
+            console.log(`api.savorymind.net CNAME: ${dnsData.error ? '⚠️ ' + dnsData.error.message : '✅ ' + dnsData.uid}`);
+
 
   provision-backend:
     runs-on: ubuntu-latest
