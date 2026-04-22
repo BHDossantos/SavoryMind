@@ -6,6 +6,7 @@ from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
 from ...services import diner_service
+from ...ml.engine import build_diner_recommendations
 
 router = APIRouter(prefix="/diner", tags=["diner"])
 
@@ -77,3 +78,10 @@ def delete_visit(visit_id: int, db: Session = Depends(get_db), user: User = Depe
 @router.get("/summary")
 def diner_summary(db: Session = Depends(get_db), user: User = Depends(require_diner)):
     return diner_service.get_diner_summary(db, user.id)
+
+
+# ── Recommendations (ML engine) ───────────────────────────────────────────────
+
+@router.get("/recommendations")
+def diner_recommendations(db: Session = Depends(get_db), user: User = Depends(require_diner)):
+    return build_diner_recommendations(db, user)

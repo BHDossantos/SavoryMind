@@ -141,4 +141,7 @@ export const api = {
 
   // Diner — Summary
   getDinerSummary: () => request("/api/diner/summary"),
+
+  // Diner — Recommendations (ML engine)
+  getDinerRecommendations: () => request("/api/diner/recommendations"),
 };

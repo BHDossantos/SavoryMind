@@ -12,6 +12,7 @@ from ...schemas.consumer import (
     ProfileUpdate, BehaviorLogCreate,
 )
 from ...services import wine_service, music_service, beverage_service, recipe_service
+from ...ml.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
 
@@ -22,7 +23,21 @@ def _require_consumer(user: User) -> User:
     return user
 
 
-# --- Wine Pairing ---
+def _log(db: Session, user_id: int, action_type: str, meta: dict | None = None) -> None:
+    """Fire-and-forget behavior log. Silently swallows errors so it never breaks the main call."""
+    try:
+        log = BehaviorLog(
+            user_id=user_id,
+            action_type=action_type,
+            action_meta=json.dumps(meta) if meta else None,
+        )
+        db.add(log)
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
+# ── Wine Pairing ──────────────────────────────────────────────────────────────
 
 @router.post("/wine-pairing", response_model=WinePairingResponse, status_code=201)
 def create_wine_pairing(
@@ -32,6 +47,7 @@ def create_wine_pairing(
 ):
     _require_consumer(current_user)
     record = wine_service.save_pairing(db, current_user.id, body.dish_name, body.dish_description)
+    _log(db, current_user.id, "wine_pairing", {"dish": body.dish_name})
     recs = [WineRecommendation(**r) for r in json.loads(record.recommendations)]
     return WinePairingResponse(id=record.id, dish_name=record.dish_name, recommendations=recs, created_at=record.created_at)
 
@@ -47,7 +63,7 @@ def list_wine_pairings(db: Session = Depends(get_db), current_user: User = Depen
     return result
 
 
-# --- Music Mood ---
+# ── Music Mood ────────────────────────────────────────────────────────────────
 
 @router.post("/music-mood", response_model=MusicMoodResponse, status_code=201)
 def create_music_mood(
@@ -57,6 +73,7 @@ def create_music_mood(
 ):
     _require_consumer(current_user)
     record = music_service.save_music_mood(db, current_user.id, body.mood, body.food_type, body.occasion)
+    _log(db, current_user.id, "music_mood", {"mood": body.mood, "food_type": body.food_type})
     recs = MusicRecommendation(**json.loads(record.recommendations))
     return MusicMoodResponse(
         id=record.id, mood=record.mood, food_type=record.food_type,
@@ -78,7 +95,7 @@ def list_music_moods(db: Session = Depends(get_db), current_user: User = Depends
     return result
 
 
-# --- Social Connections ---
+# ── Social Connections ────────────────────────────────────────────────────────
 
 @router.get("/connections", response_model=list[SocialConnectionResponse])
 def get_connections(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -106,10 +123,11 @@ def update_connection(
     conn.profile_url = body.profile_url
     db.commit()
     db.refresh(conn)
+    _log(db, current_user.id, "social_connect", {"platform": platform, "connected": body.connected})
     return conn
 
 
-# --- Profile ---
+# ── Profile ───────────────────────────────────────────────────────────────────
 
 @router.patch("/profile")
 def update_profile(
@@ -125,7 +143,7 @@ def update_profile(
     return {"id": current_user.id, "display_name": current_user.display_name, "bio": current_user.bio}
 
 
-# --- Behavior Logging ---
+# ── Manual Behavior Logging ───────────────────────────────────────────────────
 
 @router.post("/behavior", status_code=201)
 def log_behavior(
@@ -133,83 +151,36 @@ def log_behavior(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    log = BehaviorLog(
-        user_id=current_user.id,
-        action_type=body.action_type,
-        action_meta=json.dumps(body.metadata) if body.metadata else None,
-    )
-    db.add(log)
-    db.commit()
+    _log(db, current_user.id, body.action_type, body.metadata)
     return {"status": "logged"}
 
 
-# --- AI Recommendations based on behavior ---
+# ── AI Recommendations (ML engine) ───────────────────────────────────────────
 
 @router.get("/recommendations")
 def get_recommendations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
-    pairings = wine_service.get_pairings(db, current_user.id)
-    moods = music_service.get_music_moods(db, current_user.id)
-
-    recs = []
-
-    # Recommend based on recent wine pairings
-    if pairings:
-        latest = pairings[0]
-        wines = json.loads(latest.recommendations)
-        if wines:
-            top_wine = wines[0]
-            recs.append({
-                "type": "wine",
-                "title": f"Try {top_wine['name']} with your next dish",
-                "body": f"Based on your love of {latest.dish_name}, {top_wine['name']} will elevate your next meal.",
-                "icon": "🍷",
-            })
-
-    # Recommend based on music moods
-    if moods:
-        mood_counts: dict[str, int] = {}
-        for m in moods:
-            mood_counts[m.mood] = mood_counts.get(m.mood, 0) + 1
-        fav_mood = max(mood_counts, key=mood_counts.get)
-        recs.append({
-            "type": "music",
-            "title": f"Your go-to vibe: {fav_mood.title()}",
-            "body": f"You've chosen {fav_mood} music {mood_counts[fav_mood]} times. We've curated a playlist just for you.",
-            "icon": "🎵",
-        })
-
-    # Generic onboarding tip
-    connections = db.query(SocialConnection).filter(
-        SocialConnection.user_id == current_user.id,
-        SocialConnection.connected == True,
-    ).count()
-    if connections == 0:
-        recs.append({
-            "type": "connect",
-            "title": "Connect Spotify for instant playlists",
-            "body": "Link your music accounts to get one-tap playlist generation after every mood selection.",
-            "icon": "🔗",
-        })
-
-    return recs
+    _log(db, current_user.id, "view_recommendations")
+    return build_consumer_recommendations(db, current_user)
 
 
 # ── Beverages ─────────────────────────────────────────────────────────────────
 
 @router.get("/beverages/beer")
-def beer_pairing(dish: str, current_user: User = Depends(get_current_user)):
+def beer_pairing(dish: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
     if not dish or len(dish.strip()) < 2:
         raise HTTPException(status_code=422, detail="dish query param required.")
+    _log(db, current_user.id, "beer_pairing", {"dish": dish.strip()})
     return beverage_service.get_beer_pairings(dish.strip())
 
 
 @router.get("/beverages/spirits")
-def spirits_pairing(dish: str, current_user: User = Depends(get_current_user)):
+def spirits_pairing(dish: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
     if not dish or len(dish.strip()) < 2:
         raise HTTPException(status_code=422, detail="dish query param required.")
+    _log(db, current_user.id, "spirits_pairing", {"dish": dish.strip()})
     return beverage_service.get_spirits_pairings(dish.strip())
 
 
@@ -220,16 +191,20 @@ def get_recipes(
     mood: str = "",
     cuisine: str = "",
     keywords: str = "",
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _require_consumer(current_user)
+    if cuisine:
+        _log(db, current_user.id, "recipe_view", {"cuisine": cuisine, "mood": mood})
     return recipe_service.get_recipe_recommendations(mood=mood, cuisine=cuisine, keywords=keywords)
 
 
 @router.get("/recipes/{recipe_id}")
-def get_recipe(recipe_id: int, current_user: User = Depends(get_current_user)):
+def get_recipe(recipe_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
     recipe = recipe_service.get_recipe_by_id(recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found.")
+    _log(db, current_user.id, "recipe_view", {"recipe_id": recipe_id})
     return recipe

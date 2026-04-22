@@ -10,11 +10,17 @@ export default function DinerDashboard() {
   const [summary, setSummary] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [visits, setVisits] = useState([]);
+  const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.getDinerSummary(), api.getDinerBookings(), api.getDinerVisits()])
-      .then(([s, b, v]) => { setSummary(s); setBookings(b); setVisits(v); })
+    Promise.all([
+      api.getDinerSummary(),
+      api.getDinerBookings(),
+      api.getDinerVisits(),
+      api.getDinerRecommendations().catch(() => []),
+    ])
+      .then(([s, b, v, r]) => { setSummary(s); setBookings(b); setVisits(v); setRecs(r); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -133,6 +139,22 @@ export default function DinerDashboard() {
                   <p className="text-sm font-semibold text-diner-900">{r.name}</p>
                   <p className="text-xs text-diner-600">{r.visits} visit{r.visits !== 1 ? "s" : ""}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Personalised recommendations */}
+      {recs.length > 0 && (
+        <div className="mt-6">
+          <h2 className="font-semibold text-gray-800 mb-3">✨ Just For You</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recs.map((rec, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-diner-100 shadow-sm p-5">
+                <span className="text-2xl">{rec.icon}</span>
+                <p className="font-semibold text-gray-900 mt-2 text-sm">{rec.title}</p>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{rec.body}</p>
               </div>
             ))}
           </div>
