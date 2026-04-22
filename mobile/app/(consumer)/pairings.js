@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { C } from '../../constants/colors';
 import { api } from '../../services/api';
 
 const TABS = ['Wine', 'Beer', 'Spirits'];
 
 export default function PairingsScreen() {
-  const [tab, setTab] = useState('Wine');
-  const [dish, setDish] = useState('');
-  const [result, setResult] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [tab, setTab]         = useState('Wine');
+  const [dish, setDish]       = useState('');
+  const [result, setResult]   = useState(null);
+  const [saved, setSaved]     = useState([]);
+  const [session, setSession] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
+
+  const loadSaved = async () => {
+    try { setSaved(await api.getWinePairings()); } catch {}
+  };
+  useFocusEffect(useCallback(() => { loadSaved(); }, []));
 
   const handleSearch = async () => {
     if (!dish.trim()) { setError('Enter a dish name.'); return; }
@@ -21,6 +28,7 @@ export default function PairingsScreen() {
       if (tab === 'Wine') {
         data = await api.createWinePairing({ dish: dish.trim(), mood: 'casual', occasion: 'dinner' });
         setResult({ type: 'wine', data });
+        loadSaved();
       } else if (tab === 'Beer') {
         data = await api.getBeerPairing(dish.trim());
         setResult({ type: 'beer', data });
@@ -28,10 +36,14 @@ export default function PairingsScreen() {
         data = await api.getSpiritsPairing(dish.trim());
         setResult({ type: 'spirits', data });
       }
-      setHistory((h) => [{ tab, dish: dish.trim(), result: data }, ...h.slice(0, 9)]);
+      setSession((h) => [{ tab, dish: dish.trim(), result: data }, ...h.slice(0, 9)]);
     } catch (e) { setError(e.message || 'Could not get pairing.'); }
     finally { setLoading(false); }
   };
+
+  const history = tab === 'Wine'
+    ? saved.slice(0, 8)
+    : session.filter((s) => s.tab === tab).slice(0, 8);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -40,23 +52,23 @@ export default function PairingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {/* Tab switcher */}
         <View style={styles.tabs}>
           {TABS.map((t) => (
             <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => { setTab(t); setResult(null); setError(null); }}>
-              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t === 'Wine' ? '🍷 ' : t === 'Beer' ? '🍺 ' : '🥃 '}{t}</Text>
+              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                {t === 'Wine' ? '🍷 ' : t === 'Beer' ? '🍺 ' : '🥃 '}{t}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Input */}
         <Text style={styles.label}>What's on your plate?</Text>
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
             value={dish}
             onChangeText={(v) => { setDish(v); setError(null); }}
-            placeholder={`e.g. Grilled salmon, Beef stew...`}
+            placeholder="e.g. Grilled salmon, Beef stew..."
             returnKeyType="search"
             onSubmitEditing={handleSearch}
           />
@@ -67,44 +79,57 @@ export default function PairingsScreen() {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        {/* Result */}
         {result && (
           <View style={styles.resultCard}>
-            <Text style={styles.resultTitle}>{tab} pairing for "{result.dish || dish}"</Text>
+            <Text style={styles.resultTitle}>{tab} pairing for "{dish}"</Text>
             {result.type === 'wine' && result.data && (
               <>
-                <ResultRow label="Wine" value={result.data.wine_recommendation} />
-                <ResultRow label="Why" value={result.data.pairing_reason} />
-                {result.data.serving_temp && <ResultRow label="Serve at" value={result.data.serving_temp} />}
+                <ResultRow label="Wine"        value={result.data.wine_recommendation} />
+                <ResultRow label="Why"         value={result.data.pairing_reason} />
+                {result.data.serving_temp   && <ResultRow label="Serve at"    value={result.data.serving_temp} />}
                 {result.data.alternative_wine && <ResultRow label="Alternative" value={result.data.alternative_wine} />}
               </>
             )}
             {result.type === 'beer' && result.data && (
               <>
                 <ResultRow label="Beer Style" value={result.data.beer_style} />
-                <ResultRow label="Why" value={result.data.pairing_reason} />
+                <ResultRow label="Why"        value={result.data.pairing_reason} />
                 {result.data.example_brands?.length > 0 && <ResultRow label="Try" value={result.data.example_brands.join(', ')} />}
               </>
             )}
             {result.type === 'spirits' && result.data && (
               <>
-                <ResultRow label="Spirit" value={result.data.spirit_recommendation} />
-                <ResultRow label="Serve as" value={result.data.serving_suggestion} />
-                <ResultRow label="Why" value={result.data.pairing_reason} />
+                <ResultRow label="Spirit"    value={result.data.spirit_recommendation} />
+                <ResultRow label="Serve as"  value={result.data.serving_suggestion} />
+                <ResultRow label="Why"       value={result.data.pairing_reason} />
               </>
             )}
           </View>
         )}
 
-        {/* History */}
         {history.length > 0 && !result && (
           <>
-            <Text style={styles.historyTitle}>Recent pairings</Text>
+            <Text style={styles.historyTitle}>
+              {tab === 'Wine' ? 'Saved Wine Pairings' : `Recent ${tab} Pairings`}
+            </Text>
             {history.map((h, i) => (
-              <TouchableOpacity key={i} style={styles.historyItem} onPress={() => { setDish(h.dish); setTab(h.tab); }}>
-                <Text style={styles.historyIcon}>{h.tab === 'Wine' ? '🍷' : h.tab === 'Beer' ? '🍺' : '🥃'}</Text>
-                <Text style={styles.historyDish}>{h.dish}</Text>
-                <Text style={styles.historyTab}>{h.tab}</Text>
+              <TouchableOpacity
+                key={i}
+                style={styles.historyItem}
+                onPress={() => setDish(tab === 'Wine' ? h.dish : h.dish)}
+              >
+                <Text style={styles.historyIcon}>{tab === 'Wine' ? '🍷' : tab === 'Beer' ? '🍺' : '🥃'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.historyDish}>{tab === 'Wine' ? h.dish : h.dish}</Text>
+                  <Text style={styles.historyRec} numberOfLines={1}>
+                    {tab === 'Wine'
+                      ? (h.wine_recommendation || h.result?.wine_recommendation || '')
+                      : tab === 'Beer'
+                        ? (h.result?.beer_style || '')
+                        : (h.result?.spirit_recommendation || '')}
+                  </Text>
+                </View>
+                <Text style={styles.reuseHint}>↩</Text>
               </TouchableOpacity>
             ))}
           </>
@@ -145,6 +170,7 @@ const styles = StyleSheet.create({
   historyTitle:  { fontSize: 14, fontWeight: '700', color: C.gray[700], marginBottom: 10 },
   historyItem:   { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: C.gray[100] },
   historyIcon:   { fontSize: 20 },
-  historyDish:   { flex: 1, fontSize: 13, fontWeight: '600', color: C.gray[800] },
-  historyTab:    { fontSize: 12, color: C.gray[400] },
+  historyDish:   { fontSize: 13, fontWeight: '600', color: C.gray[800] },
+  historyRec:    { fontSize: 12, color: C.gray[400], marginTop: 2 },
+  reuseHint:     { fontSize: 16, color: C.gray[300] },
 });

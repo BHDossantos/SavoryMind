@@ -5,15 +5,28 @@ import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
 import { useFocusEffect } from 'expo-router';
 
+const REC_ICON = {
+  try_new_cuisine:     '🌍',
+  revisit_favourite:   '🔁',
+  book_ahead:          '📅',
+  explore_local:       '📍',
+  default:             '💡',
+};
+
 export default function DinerProfile() {
-  const { user, logout } = useAuth();
-  const [summary, setSummary] = useState(null);
-  const [visits, setVisits] = useState([]);
+  const { user, logout }       = useAuth();
+  const [summary, setSummary]   = useState(null);
+  const [visits, setVisits]     = useState([]);
+  const [recs, setRecs]         = useState([]);
 
   const load = async () => {
     try {
-      const [s, v] = await Promise.all([api.getDinerSummary(), api.getDinerVisits()]);
-      setSummary(s); setVisits(v);
+      const [s, v, r] = await Promise.all([
+        api.getDinerSummary(),
+        api.getDinerVisits(),
+        api.getDinerRecommendations().catch(() => []),
+      ]);
+      setSummary(s); setVisits(v); setRecs(r.slice(0, 3));
     } catch {}
   };
 
@@ -51,13 +64,30 @@ export default function DinerProfile() {
           <View style={styles.statsCard}>
             <Text style={styles.sectionTitle}>Your Dining Stats</Text>
             <View style={styles.statsRow}>
-              <StatItem label="Total Visits" value={summary.total_visits ?? 0} />
-              <StatItem label="Avg Rating" value={(summary.avg_rating ?? 0).toFixed(1)} />
-              <StatItem label="Return Rate" value={`${Math.round((summary.return_rate ?? 0) * 100)}%`} />
+              <StatItem label="Total Visits"  value={summary.total_visits ?? 0} />
+              <StatItem label="Avg Rating"    value={(summary.avg_rating ?? 0).toFixed(1)} />
+              <StatItem label="Return Rate"   value={`${Math.round((summary.return_rate ?? 0) * 100)}%`} />
             </View>
             {summary.upcoming_bookings > 0 && (
-              <Text style={styles.bookingNote}>📅 {summary.upcoming_bookings} upcoming {summary.upcoming_bookings === 1 ? 'booking' : 'bookings'}</Text>
+              <Text style={styles.bookingNote}>
+                📅 {summary.upcoming_bookings} upcoming {summary.upcoming_bookings === 1 ? 'booking' : 'bookings'}
+              </Text>
             )}
+          </View>
+        )}
+
+        {recs.length > 0 && (
+          <View style={styles.recsCard}>
+            <Text style={styles.sectionTitle}>Suggestions for You</Text>
+            {recs.map((r, i) => (
+              <View key={i} style={styles.recRow}>
+                <Text style={styles.recIcon}>{REC_ICON[r.type] || REC_ICON.default}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.recTitle}>{r.title}</Text>
+                  {r.message && <Text style={styles.recMessage}>{r.message}</Text>}
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
@@ -109,6 +139,11 @@ const styles = StyleSheet.create({
   statVal:     { fontSize: 20, fontWeight: '800', color: C.diner.primary, textAlign: 'center' },
   statLab:     { fontSize: 11, color: C.gray[500], marginTop: 2, textAlign: 'center' },
   bookingNote: { fontSize: 13, color: C.diner.muted, marginTop: 12, fontWeight: '600' },
+  recsCard:    { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: C.diner.border },
+  recRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
+  recIcon:     { fontSize: 22, marginTop: 1 },
+  recTitle:    { fontSize: 14, fontWeight: '700', color: C.gray[900] },
+  recMessage:  { fontSize: 12, color: C.gray[500], marginTop: 3, lineHeight: 17 },
   topCard:     { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: C.gray[100] },
   favRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   favRank:     { width: 26, height: 26, borderRadius: 13, backgroundColor: C.diner.light, textAlign: 'center', lineHeight: 26, fontSize: 13, fontWeight: '700', color: C.diner.primary },
