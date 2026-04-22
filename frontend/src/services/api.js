@@ -1,6 +1,6 @@
-// All API calls go through the Next.js /backend rewrite → FastAPI server.
-// BACKEND_URL is a server-side env var in next.config.js rewrites (never exposed to browser).
-const BASE_URL = "/backend";
+// In production (Vercel), NEXT_PUBLIC_API_URL is set and the browser calls the API directly.
+// In local dev it falls back to the Next.js rewrite proxy → localhost:8000.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/backend";
 
 function getToken() {
   if (typeof window === "undefined") return null;
