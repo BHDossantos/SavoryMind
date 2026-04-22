@@ -30,11 +30,11 @@ async function request(path, options = {}) {
   if (!res.ok) {
     let errMsg = `Request failed: ${res.status}`;
     try {
-      const body = await res.json();
-      errMsg = body.detail || errMsg;
-    } catch {
-      errMsg = (await res.text()) || errMsg;
-    }
+      const text = await res.text();
+      if (text) {
+        try { errMsg = JSON.parse(text).detail || errMsg; } catch { errMsg = text || errMsg; }
+      }
+    } catch {}
     throw new Error(errMsg);
   }
   return res.json();
