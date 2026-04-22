@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+  .btn-primary {
+    @apply bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+  .badge-positive {
+    @apply bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+  }
+  .badge-negative {
+    @apply bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+  }
+  .badge-neutral {
+    @apply bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded-full;
+  }
+}

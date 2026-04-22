@@ -1,15 +1,26 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+.venv/
 venv/
+*.db
+*.sqlite3
 .env
 
-# Node.js
+# Node
+node_modules/
 .next/
-nodemodules/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
 
-# IDE files
-.idea/
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
 .vscode/
-
-# Build artifacts
+.idea/

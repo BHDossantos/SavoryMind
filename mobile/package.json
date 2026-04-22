@@ -1,0 +1,38 @@
+{
+  "name": "savorymind-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "build:ios": "eas build --platform ios",
+    "build:android": "eas build --platform android",
+    "build:all": "eas build --platform all"
+  },
+  "dependencies": {
+    "expo": "~54.0.0",
+    "expo-router": "~6.0.0",
+    "react": "19.0.0",
+    "react-native": "0.79.2",
+    "expo-asset": "~11.1.0",
+    "expo-secure-store": "~14.2.0",
+    "expo-auth-session": "~6.0.0",
+    "expo-web-browser": "~14.1.0",
+    "expo-crypto": "~14.0.0",
+    "expo-status-bar": "~2.2.0",
+    "expo-font": "~13.3.0",
+    "expo-splash-screen": "~0.30.0",
+    "expo-haptics": "~14.2.0",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.10.0",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-reanimated": "~3.17.0",
+    "react-native-svg": "15.11.2",
+    "@expo/vector-icons": "^14.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "babel-preset-expo": "~13.0.0"
+  }
+}

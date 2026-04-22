@@ -1,0 +1,35 @@
+name: Setup Vercel Custom Domains (run once)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-domains:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add custom domains to Vercel project
+        uses: actions/github-script@v7
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        with:
+          script: |
+            const token = process.env.VERCEL_TOKEN;
+            const projectId = 'prj_jXTXj84iB6pMq1VUCEvH05ur3vFP';
+            const teamId = 'team_VjQmqHvzWW8ycKrR18Sq3iRt';
+            const domains = ['savorymind.net', 'www.savorymind.net'];
+
+            for (const domain of domains) {
+              const res = await fetch(
+                `https://api.vercel.com/v10/projects/${projectId}/domains?teamId=${teamId}`,
+                {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ name: domain }),
+                }
+              );
+              const data = await res.json();
+              console.log(`${domain}:`, JSON.stringify(data, null, 2));
+            }
