@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, claude/app-analysis-debugging-IuRKu]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,19 +15,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      - name: Deploy to Vercel
+      - name: Link Vercel project
         env:
           VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          # Run from repo root so vercel.json (which sets rootDirectory: frontend) is found correctly.
-          # VERCEL_ORG_ID env var sets the team scope; vercel.json already sets NEXT_PUBLIC_API_URL.
-          vercel --prod \
-            --token="$VERCEL_TOKEN" \
-            --yes \
-            --debug
+        run: vercel link --yes --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Vercel (production)
+        env:
+          VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel --prod --yes --token="$VERCEL_TOKEN"
