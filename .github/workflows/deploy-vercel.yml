@@ -8,7 +8,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,20 +40,91 @@ jobs:
             const token = process.env.VERCEL_TOKEN;
             const projectId = 'prj_jXTXj84iB6pMq1VUCEvH05ur3vFP';
             const teamId = 'team_VjQmqHvzWW8ycKrR18Sq3iRt';
-
             for (const domain of ['savorymind.net', 'www.savorymind.net']) {
               const res = await fetch(
                 `https://api.vercel.com/v10/projects/${projectId}/domains?teamId=${teamId}`,
-                {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ name: domain }),
-                }
+                { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: domain }) }
               );
               const data = await res.json();
-              const status = data.error ? `⚠️  ${data.error.message}` : `✅ configured`;
-              console.log(`${domain}: ${status}`);
-              if (data.verification) {
-                console.log('DNS verification needed:', JSON.stringify(data.verification, null, 2));
+              console.log(`${domain}: ${data.error ? '⚠️ ' + data.error.message : '✅ configured'}`);
+            }
+
+  provision-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Provision Render PostgreSQL + API (idempotent)
+        uses: actions/github-script@v7
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        with:
+          script: |
+            const key = process.env.RENDER_API_KEY;
+            const h = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Accept: 'application/json' };
+
+            const rFetch = async (path, opts = {}) => {
+              const res = await fetch(`https://api.render.com/v1${path}`, { headers: h, ...opts });
+              return { status: res.status, data: await res.json().catch(() => ({})) };
+            };
+
+            // Get owner ID
+            const owners = await rFetch('/owners?limit=1');
+            const ownerId = owners.data?.[0]?.owner?.id;
+            if (!ownerId) throw new Error('Render auth failed: ' + JSON.stringify(owners.data));
+            console.log('Owner:', ownerId);
+
+            // Check for existing service
+            const services = await rFetch('/services?limit=50');
+            const existingSvc = services.data?.find?.(s => s.service?.name === 'savorymind-api');
+            if (existingSvc) {
+              console.log('✅ Service already exists:', existingSvc.service.id);
+              console.log('   URL: https://savorymind-api.onrender.com');
+              return;
+            }
+
+            // Create PostgreSQL database
+            let dbUrl = null;
+            const dbs = await rFetch('/postgres?limit=50');
+            const existingDb = dbs.data?.find?.(d => d.name === 'savorymind-db');
+            if (existingDb) {
+              console.log('✅ DB already exists:', existingDb.id);
+              dbUrl = existingDb.connectionInfo?.internalConnectionString;
+            } else {
+              const db = await rFetch('/postgres', {
+                method: 'POST',
+                body: JSON.stringify({ databaseName: 'savorymind', databaseUser: 'savorymind', enableHighAvailability: false, plan: 'free', version: '16', name: 'savorymind-db', ownerId }),
+              });
+              console.log('Create DB:', db.status, JSON.stringify(db.data).substring(0, 300));
+              if (db.status === 201) {
+                dbUrl = db.data.connectionInfo?.internalConnectionString;
               }
+            }
+
+            // Create web service
+            const envVars = [
+              { key: 'SECRET_KEY', generateValue: true },
+              { key: 'CORS_ORIGINS', value: '["https://savorymind.net","https://www.savorymind.net","https://app.savorymind.net"]' },
+              { key: 'ACCESS_TOKEN_EXPIRE_DAYS', value: '30' },
+            ];
+            if (dbUrl) envVars.push({ key: 'DATABASE_URL', value: dbUrl });
+
+            const svc = await rFetch('/services', {
+              method: 'POST',
+              body: JSON.stringify({
+                type: 'web_service',
+                name: 'savorymind-api',
+                ownerId,
+                serviceDetails: { env: 'docker', dockerfilePath: './Dockerfile', dockerContext: '.', region: 'oregon', plan: 'free', healthCheckPath: '/health' },
+                envVars,
+                autoDeploy: 'yes',
+                repo: 'https://github.com/BHDossantos/SavoryMind',
+                branch: 'main',
+                rootDir: 'backend',
+              }),
+            });
+            console.log('Create service:', svc.status, JSON.stringify(svc.data).substring(0, 400));
+            if (svc.status === 201) {
+              console.log('✅ Service created:', svc.data.service?.id);
+              console.log('   URL: https://savorymind-api.onrender.com');
+            } else {
+              core.setFailed('Failed to create Render service: ' + JSON.stringify(svc.data));
             }
