@@ -13,6 +13,8 @@ const navLinks = [
   { href: "/restaurant/crm",          label: "CRM",             icon: "👥" },
   { href: "/restaurant/staff",        label: "Staff",           icon: "🧑‍🍳" },
   { href: "/restaurant/predictions",  label: "AI Predictions",  icon: "🔮" },
+  { href: "/restaurant/trends",       label: "Trends",          icon: "🚀" },
+  { href: "/restaurant/marketing",    label: "Marketing",       icon: "💌" },
   { href: "/restaurant/waste",        label: "Food Waste",      icon: "🗑️" },
   { href: "/restaurant/kitchen",      label: "Kitchen Times",   icon: "⏱️" },
   { href: "/restaurant/training",     label: "Staff Training",  icon: "🎓" },

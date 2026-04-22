@@ -148,4 +148,17 @@ export const api = {
 
   // Diner — Recommendations (ML engine)
   getDinerRecommendations: () => request("/api/diner/recommendations"),
+
+  // Diner — Discovery
+  discoverRestaurants: (params = {}) => request(`/api/diner/discover?${new URLSearchParams(params).toString()}`),
+  getExperiencePlan: (params = {}) => request(`/api/diner/experience-plan?${new URLSearchParams(params).toString()}`),
+
+  // Consumer — Meal Planner
+  getMealPlan: (dietary = "", maxCook = 120) => request(`/api/consumer/meal-plan?dietary=${dietary}&max_cook_minutes=${maxCook}`),
+  getShoppingList: (dietary = "") => request(`/api/consumer/shopping-list?dietary=${dietary}`),
+  getDailySuggestion: (mood = "") => request(`/api/consumer/daily-suggestion?mood=${mood}`),
+
+  // Restaurant — Trends & Marketing
+  getMenuTrends: () => request("/api/restaurant/trends"),
+  getMarketingInsights: () => request("/api/restaurant/marketing"),
 };

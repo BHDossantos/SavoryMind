@@ -4,13 +4,14 @@ import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 
 const navLinks = [
-  { href: "/consumer/dashboard", label: "Home", icon: "🏠" },
-  { href: "/consumer/wine",      label: "Wine Pairing", icon: "🍷" },
-  { href: "/consumer/music",     label: "Music Mood", icon: "🎵" },
-  { href: "/consumer/beverages", label: "Beverages", icon: "🍺" },
-  { href: "/consumer/recipes",   label: "Recipes", icon: "👨‍🍳" },
-  { href: "/consumer/profile",   label: "My Profile", icon: "👤" },
-  { href: "/consumer/social",    label: "Connect", icon: "🔗" },
+  { href: "/consumer/dashboard", label: "Home",        icon: "🏠" },
+  { href: "/consumer/recipes",   label: "Recipes",     icon: "👨‍🍳" },
+  { href: "/consumer/planner",   label: "Meal Planner",icon: "📅" },
+  { href: "/consumer/wine",      label: "Wine Pairing",icon: "🍷" },
+  { href: "/consumer/music",     label: "Music Mood",  icon: "🎵" },
+  { href: "/consumer/beverages", label: "Beverages",   icon: "🍺" },
+  { href: "/consumer/profile",   label: "My Profile",  icon: "👤" },
+  { href: "/consumer/social",    label: "Connect",     icon: "🔗" },
 ];
 
 export default function ConsumerLayout({ children }) {
