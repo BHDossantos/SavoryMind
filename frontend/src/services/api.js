@@ -14,7 +14,9 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
-  if (res.status === 401 || res.status === 403) {
+  // Only treat 401 as "session expired" for protected endpoints, not auth endpoints
+  const isAuthEndpoint = path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/auth/social");
+  if ((res.status === 401 || res.status === 403) && !isAuthEndpoint) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("user");

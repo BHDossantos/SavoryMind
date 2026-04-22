@@ -116,8 +116,10 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
+  const [configuredProviders, setConfiguredProviders] = useState([]);
 
   useEffect(() => {
+    fetch("/api/auth/providers-list").then(r => r.json()).then(setConfiguredProviders).catch(() => {});
     const { error: qError } = router.query;
     if (qError) setError("Social login failed. Please try again or use email.");
   }, [router.query]);
@@ -141,6 +143,10 @@ export default function Login() {
   };
 
   const handleSocial = async (providerId) => {
+    if (!configuredProviders.includes(providerId)) {
+      setError(`${SOCIAL_PROVIDERS.find(p => p.id === providerId)?.label || "Social"} sign-in isn't connected yet — use email instead.`);
+      return;
+    }
     setSocialLoading(providerId);
     setError(null);
     try {
