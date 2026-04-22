@@ -18,14 +18,12 @@ jobs:
         run: npm install -g vercel@latest
 
       - name: Deploy to Vercel
-        working-directory: frontend
         env:
           VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          # 'vercel' (not 'vercel deploy') handles first-time project creation automatically
+          # Run from repo root so vercel.json (which sets rootDirectory: frontend) is found correctly.
+          # VERCEL_ORG_ID env var sets the team scope; vercel.json already sets NEXT_PUBLIC_API_URL.
           vercel --prod \
             --token="$VERCEL_TOKEN" \
-            --scope="team_VjQmqHvzWW8ycKrR18Sq3iRt" \
-            --yes \
-            --build-env NEXT_PUBLIC_API_URL=https://api.savorymind.net
+            --yes
