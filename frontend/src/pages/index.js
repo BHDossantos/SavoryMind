@@ -126,7 +126,7 @@ export default function Landing() {
               You built this with your hands. Now see exactly what's working — your margins, your team, your guests — all in one place.
             </p>
             <ul className="space-y-1.5 mb-7">
-              {["Food waste & kitchen time tracking", "AI staff training recommendations", "CRM & customer loyalty", "AI sales predictions"].map((f) => (
+              {["Food waste & kitchen time tracking", "Staff performance & training insights", "CRM & customer loyalty", "Sales forecasting & demand planning"].map((f) => (
                 <li key={f} className="flex items-center gap-2 text-xs text-brand-800">
                   <span className="text-brand-500 font-bold">✓</span> {f}
                 </li>
