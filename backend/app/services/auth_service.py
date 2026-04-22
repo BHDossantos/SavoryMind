@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from ..models.user import User
 from ..schemas.auth import UserRegister, UserLogin
 from ..core.security import hash_password, verify_password, create_access_token
-from .seed_data import seed_database, seed_consumer_data
+from .seed_data import seed_database, seed_consumer_data, seed_diner_data
 
 
 def register(db: Session, data: UserRegister) -> tuple[str, User]:
@@ -23,8 +23,10 @@ def register(db: Session, data: UserRegister) -> tuple[str, User]:
 
     if data.account_type == "restaurant":
         seed_database(db, user_id=user.id)
-    else:
+    elif data.account_type == "consumer":
         seed_consumer_data(db, user_id=user.id)
+    else:
+        seed_diner_data(db, user_id=user.id)
 
     token = create_access_token(user.id, user.email)
     return token, user

@@ -101,4 +101,43 @@ export const api = {
 
   // Consumer — AI recommendations
   getConsumerRecommendations: () => request("/api/consumer/recommendations"),
+
+  // Consumer — Beverages (beer & spirits)
+  getBeerPairing: (dish) => request(`/api/consumer/beverages/beer?dish=${encodeURIComponent(dish)}`),
+  getSpiritsPairing: (dish) => request(`/api/consumer/beverages/spirits?dish=${encodeURIComponent(dish)}`),
+
+  // Consumer — Recipes
+  getRecipes: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/consumer/recipes${qs ? `?${qs}` : ""}`);
+  },
+  getRecipe: (id) => request(`/api/consumer/recipes/${id}`),
+
+  // Restaurant Owner — Food Waste
+  getWasteLogs: () => request("/api/owner/waste"),
+  getWasteSummary: () => request("/api/owner/waste/summary"),
+  createWasteLog: (data) => request("/api/owner/waste", { method: "POST", body: JSON.stringify(data) }),
+  deleteWasteLog: (id) => request(`/api/owner/waste/${id}`, { method: "DELETE" }),
+
+  // Restaurant Owner — Kitchen Times
+  getDishTimes: () => request("/api/owner/kitchen"),
+  getKitchenSummary: () => request("/api/owner/kitchen/summary"),
+  createDishTime: (data) => request("/api/owner/kitchen", { method: "POST", body: JSON.stringify(data) }),
+  deleteDishTime: (id) => request(`/api/owner/kitchen/${id}`, { method: "DELETE" }),
+
+  // Restaurant Owner — Training
+  getTrainingRecommendations: () => request("/api/owner/training"),
+
+  // Diner — Bookings
+  getDinerBookings: () => request("/api/diner/bookings"),
+  createDinerBooking: (data) => request("/api/diner/bookings", { method: "POST", body: JSON.stringify(data) }),
+  cancelDinerBooking: (id) => request(`/api/diner/bookings/${id}/cancel`, { method: "PATCH" }),
+
+  // Diner — Visits
+  getDinerVisits: () => request("/api/diner/visits"),
+  createDinerVisit: (data) => request("/api/diner/visits", { method: "POST", body: JSON.stringify(data) }),
+  deleteDinerVisit: (id) => request(`/api/diner/visits/${id}`, { method: "DELETE" }),
+
+  // Diner — Summary
+  getDinerSummary: () => request("/api/diner/summary"),
 };

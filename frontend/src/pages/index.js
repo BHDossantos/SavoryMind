@@ -3,20 +3,27 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 
-const consumerFeatures = [
-  { icon: "🍷", title: "AI Wine Pairing", desc: "Enter any dish and instantly receive 3 expertly matched wines with rationale, regions, and serving guides." },
-  { icon: "🎵", title: "Music Mood Engine", desc: "Select your vibe and food type — get personalised genre, artist, and playlist recommendations." },
+const homeFeatures = [
+  { icon: "🍷", title: "Wine, Beer & Spirits Pairing", desc: "AI-matched beverages for any dish — from a bold Cabernet to a hoppy IPA or a smoky Mezcal." },
+  { icon: "🎵", title: "Music Mood Engine", desc: "Set your vibe and get personalised genre, artist, and playlist recommendations for your meal." },
+  { icon: "👨‍🍳", title: "Recipe Discovery", desc: "12+ curated recipes with full ingredients and step-by-step guides, matched to your mood and cuisine." },
   { icon: "🔗", title: "Stream Anywhere", desc: "One-tap to Spotify, Amazon Music, or Alexa. Your dining soundtrack, hands-free." },
-  { icon: "👤", title: "Your Taste Profile", desc: "The more you use it, the smarter it gets. AI learns your palate and curates recommendations just for you." },
+];
+
+const dinerFeatures = [
+  { icon: "📅", title: "Book a Table", desc: "Make reservations at your favourite restaurants — specify party size, time, and special requests." },
+  { icon: "📖", title: "Visit History", desc: "Log every dining experience: what you ordered, staff friendliness, food rating, and whether you'd return." },
+  { icon: "⭐", title: "Rate Everything", desc: "Track overall satisfaction, food quality, and staff friendliness separately per visit." },
+  { icon: "💎", title: "Your Dining Profile", desc: "Build a personal dining record — see your top restaurants, return rate, and average ratings over time." },
 ];
 
 const restaurantFeatures = [
-  { icon: "📅", title: "Smart Bookings", desc: "Manage reservations with party notes, allergy flags, table assignment, and status tracking." },
-  { icon: "👥", title: "CRM & Loyalty", desc: "Know your customers — visit history, spend totals, favourite dishes, VIP flags and notes." },
-  { icon: "🧑‍🍳", title: "Staff Performance", desc: "Track ratings, orders handled, avg order value, and punctuality per staff member." },
-  { icon: "🔮", title: "AI Sales Predictions", desc: "ML engine forecasts what will sell in the next 4 hours based on day, time, and historical patterns." },
-  { icon: "💬", title: "Sentiment Analysis", desc: "VADER AI scores every customer review — spot quality issues before they damage your reputation." },
-  { icon: "📋", title: "Full Analytics", desc: "Revenue, margin, top performers, category breakdown, and monthly sentiment trends — with CSV export." },
+  { icon: "💰", title: "P&L Dashboard", desc: "Real-time revenue, margins, top sellers, and cost analysis — your finances at a glance." },
+  { icon: "🗑️", title: "Food Waste Tracker", desc: "Log every waste incident by staff member and item. Know exactly what's being wasted and why." },
+  { icon: "⏱️", title: "Kitchen Time Tracking", desc: "Measure prep and cook times per dish per chef. Identify who's slow and where training is needed." },
+  { icon: "🎓", title: "AI Staff Training", desc: "AI analyses waste, time, and rating data to generate targeted training recommendations per staff member." },
+  { icon: "👥", title: "CRM & Loyalty", desc: "Know your customers — visit history, spend, favourites, VIP flags, and personal notes." },
+  { icon: "🔮", title: "AI Sales Predictions", desc: "ML engine forecasts what will sell in the next 4 hours based on historical patterns." },
 ];
 
 export default function Landing() {
@@ -25,7 +32,9 @@ export default function Landing() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace(user.account_type === "consumer" ? "/consumer/dashboard" : "/dashboard");
+      if (user.account_type === "consumer") router.replace("/consumer/dashboard");
+      else if (user.account_type === "diner") router.replace("/diner/dashboard");
+      else router.replace("/dashboard");
     }
   }, [user, loading, router]);
 
@@ -38,7 +47,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧠</span>
-            <span className="text-xl font-bold bg-gradient-to-r from-brand-600 to-consumer-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-gradient-to-r from-brand-600 via-diner-500 to-consumer-600 bg-clip-text text-transparent">
               SavoryMind
             </span>
           </div>
@@ -54,76 +63,112 @@ export default function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <span>✨</span> Two powerful modes. One platform.
+          <span>✨</span> Three powerful modes. One platform.
         </div>
         <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
-          The AI that knows
+          The AI that transforms
           <br />
-          <span className="bg-gradient-to-r from-brand-500 to-consumer-500 bg-clip-text text-transparent">
-            food, wine & music
+          <span className="bg-gradient-to-r from-brand-500 via-diner-500 to-consumer-500 bg-clip-text text-transparent">
+            every dining experience
           </span>
         </h1>
-        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-12">
-          Whether you're a food lover building your taste profile, or a restaurant owner optimising every shift —
-          SavoryMind has a dedicated AI experience for you.
+        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-16">
+          Whether you cook at home, dine out, or run a restaurant — SavoryMind has a dedicated AI experience built for you.
         </p>
 
-        {/* Two mode cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Three mode cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {/* Consumer */}
-          <div className="bg-gradient-to-br from-consumer-50 to-consumer-100 border border-consumer-200 rounded-3xl p-8 text-left hover:shadow-xl hover:shadow-consumer-100 transition-all group">
-            <div className="text-4xl mb-4">🍷</div>
-            <h2 className="text-2xl font-bold text-consumer-800 mb-2">For Food Lovers</h2>
-            <p className="text-consumer-700 text-sm leading-relaxed mb-6">
-              Pair your meals with the perfect wine. Set a music mood. Connect Spotify, Amazon Music, or Alexa.
-              Build your personal taste profile as the AI learns what you love.
+          <div className="bg-gradient-to-br from-consumer-50 to-consumer-100 border border-consumer-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-consumer-100 transition-all group">
+            <div className="text-4xl mb-4">🏠</div>
+            <h2 className="text-xl font-bold text-consumer-800 mb-2">For Home Cooks</h2>
+            <p className="text-consumer-700 text-sm leading-relaxed mb-5">
+              AI wine, beer & spirits pairing for any dish. Music mood engine. Discover recipes matched to your vibe.
             </p>
-            <ul className="space-y-2 mb-8">
-              {["AI wine pairing by dish", "Music mood by food & vibe", "Spotify + Amazon Music + Alexa", "Personalised recommendations"].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-consumer-800">
+            <ul className="space-y-1.5 mb-7">
+              {["Wine, beer & spirits pairing", "Music mood by food & vibe", "Recipe discovery engine", "Spotify + Amazon + Alexa"].map((f) => (
+                <li key={f} className="flex items-center gap-2 text-xs text-consumer-800">
                   <span className="text-consumer-500 font-bold">✓</span> {f}
                 </li>
               ))}
             </ul>
             <Link href="/signup?type=consumer"
-              className="block text-center bg-consumer-600 text-white font-bold py-3.5 rounded-2xl hover:bg-consumer-700 transition-colors group-hover:shadow-lg">
-              Join as Food Lover →
+              className="block text-center bg-consumer-600 text-white font-bold py-3 rounded-2xl hover:bg-consumer-700 transition-colors text-sm">
+              Join as Home Cook →
+            </Link>
+          </div>
+
+          {/* Diner */}
+          <div className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-diner-100 transition-all group">
+            <div className="text-4xl mb-4">🍽️</div>
+            <h2 className="text-xl font-bold text-diner-800 mb-2">For Diners</h2>
+            <p className="text-diner-700 text-sm leading-relaxed mb-5">
+              Book tables, log your visits, rate staff and food, and build a personal dining history that reveals your taste.
+            </p>
+            <ul className="space-y-1.5 mb-7">
+              {["Book tables at restaurants", "Log orders & rate each visit", "Track staff friendliness", "Personal dining history"].map((f) => (
+                <li key={f} className="flex items-center gap-2 text-xs text-diner-800">
+                  <span className="text-diner-500 font-bold">✓</span> {f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/signup?type=diner"
+              className="block text-center bg-diner-600 text-white font-bold py-3 rounded-2xl hover:bg-diner-700 transition-colors text-sm">
+              Join as Diner →
             </Link>
           </div>
 
           {/* Restaurant */}
-          <div className="bg-gradient-to-br from-brand-50 to-orange-100 border border-brand-200 rounded-3xl p-8 text-left hover:shadow-xl hover:shadow-brand-100 transition-all group">
-            <div className="text-4xl mb-4">🍽️</div>
-            <h2 className="text-2xl font-bold text-brand-800 mb-2">For Restaurants</h2>
-            <p className="text-brand-700 text-sm leading-relaxed mb-6">
-              Manage bookings, know your best customers, track staff performance, and predict what will sell next —
-              all powered by AI that learns your restaurant's patterns.
+          <div className="bg-gradient-to-br from-brand-50 to-orange-100 border border-brand-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-brand-100 transition-all group">
+            <div className="text-4xl mb-4">🏪</div>
+            <h2 className="text-xl font-bold text-brand-800 mb-2">For Restaurant Owners</h2>
+            <p className="text-brand-700 text-sm leading-relaxed mb-5">
+              Full P&L analytics, waste tracking, kitchen performance, AI staff training recommendations and CRM.
             </p>
-            <ul className="space-y-2 mb-8">
-              {["Booking & reservation management", "CRM & customer loyalty", "Staff performance tracking", "AI sales predictions"].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-brand-800">
+            <ul className="space-y-1.5 mb-7">
+              {["Food waste & kitchen time tracking", "AI staff training recommendations", "CRM & customer loyalty", "AI sales predictions"].map((f) => (
+                <li key={f} className="flex items-center gap-2 text-xs text-brand-800">
                   <span className="text-brand-500 font-bold">✓</span> {f}
                 </li>
               ))}
             </ul>
             <Link href="/signup?type=restaurant"
-              className="block text-center bg-brand-600 text-white font-bold py-3.5 rounded-2xl hover:bg-brand-700 transition-colors group-hover:shadow-lg">
+              className="block text-center bg-brand-600 text-white font-bold py-3 rounded-2xl hover:bg-brand-700 transition-colors text-sm">
               Join as Restaurant →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Consumer features */}
+      {/* Home Cook features */}
       <section className="bg-gradient-to-br from-consumer-50 to-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍷 Food Lover Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">Your personal food & music intelligence</h2>
+            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏠 Home Cook Mode</div>
+            <h2 className="text-3xl font-bold text-gray-900">Your personal food, drink & music intelligence</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {consumerFeatures.map((f) => (
+            {homeFeatures.map((f) => (
               <div key={f.title} className="bg-white rounded-2xl p-5 border border-consumer-100 hover:border-consumer-300 hover:shadow-md transition-all">
+                <div className="text-3xl mb-3">{f.icon}</div>
+                <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Diner features */}
+      <section className="bg-gradient-to-br from-diner-50 to-white py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-diner-100 text-diner-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍽️ Diner Mode</div>
+            <h2 className="text-3xl font-bold text-gray-900">Own your dining story</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {dinerFeatures.map((f) => (
+              <div key={f.title} className="bg-white rounded-2xl p-5 border border-diner-100 hover:border-diner-300 hover:shadow-md transition-all">
                 <div className="text-3xl mb-3">{f.icon}</div>
                 <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
@@ -137,7 +182,7 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-brand-50 to-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍽️ Restaurant Mode</div>
+            <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏪 Restaurant Mode</div>
             <h2 className="text-3xl font-bold text-gray-900">Every tool to run a smarter restaurant</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -154,14 +199,17 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Ready to start?</h2>
-        <p className="text-gray-500 text-lg mb-8">Sign up free. Your personalised AI experience activates instantly.</p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/signup?type=consumer" className="bg-consumer-600 text-white font-bold px-8 py-4 rounded-xl hover:bg-consumer-700 transition-colors text-base shadow-lg shadow-consumer-100">
-            🍷 I'm a Food Lover
+        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Which experience is yours?</h2>
+        <p className="text-gray-500 text-lg mb-10">Sign up free. Your AI activates instantly with demo data.</p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
+          <Link href="/signup?type=consumer" className="bg-consumer-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-consumer-700 transition-colors shadow-lg shadow-consumer-100">
+            🏠 I Cook at Home
           </Link>
-          <Link href="/signup?type=restaurant" className="bg-brand-500 text-white font-bold px-8 py-4 rounded-xl hover:bg-brand-600 transition-colors text-base shadow-lg shadow-brand-100">
-            🍽️ I Run a Restaurant
+          <Link href="/signup?type=diner" className="bg-diner-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-diner-700 transition-colors shadow-lg shadow-diner-100">
+            🍽️ I Dine Out
+          </Link>
+          <Link href="/signup?type=restaurant" className="bg-brand-500 text-white font-bold px-7 py-4 rounded-xl hover:bg-brand-600 transition-colors shadow-lg shadow-brand-100">
+            🏪 I Run a Restaurant
           </Link>
         </div>
       </section>
@@ -172,7 +220,7 @@ export default function Landing() {
             <span className="text-xl">🧠</span>
             <span className="font-bold text-gray-700">SavoryMind</span>
           </div>
-          <p className="text-xs text-gray-400">© 2026 SavoryMind — AI Food & Music Intelligence</p>
+          <p className="text-xs text-gray-400">© 2026 SavoryMind — AI Food, Drink & Dining Intelligence</p>
         </div>
       </footer>
     </div>

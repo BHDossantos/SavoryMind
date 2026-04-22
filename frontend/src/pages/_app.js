@@ -2,19 +2,26 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import ConsumerLayout from "../components/ConsumerLayout";
+import DinerLayout from "../components/DinerLayout";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import "../styles/globals.css";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup"];
-const CONSUMER_ROUTES = ["/consumer/dashboard", "/consumer/wine", "/consumer/music", "/consumer/profile", "/consumer/social"];
-const RESTAURANT_ROUTES = ["/dashboard", "/menu", "/sentiment", "/recommendations", "/reports", "/restaurant/bookings", "/restaurant/crm", "/restaurant/staff", "/restaurant/predictions"];
+
+function homePath(user) {
+  if (!user) return "/login";
+  if (user.account_type === "consumer") return "/consumer/dashboard";
+  if (user.account_type === "diner") return "/diner/dashboard";
+  return "/dashboard";
+}
 
 function AppContent({ Component, pageProps }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const isPublic = PUBLIC_ROUTES.includes(router.pathname);
   const isConsumerRoute = router.pathname.startsWith("/consumer");
-  const isRestaurantRoute = !isConsumerRoute;
+  const isDinerRoute = router.pathname.startsWith("/diner");
+  const isRestaurantRoute = !isConsumerRoute && !isDinerRoute && !isPublic;
 
   useEffect(() => {
     if (loading) return;
@@ -23,18 +30,20 @@ function AppContent({ Component, pageProps }) {
       return;
     }
     if (user && isPublic && router.pathname !== "/") {
-      router.replace(user.account_type === "consumer" ? "/consumer/dashboard" : "/dashboard");
+      router.replace(homePath(user));
       return;
     }
-    // Guard wrong account type accessing wrong section
     if (user && !isPublic) {
-      if (user.account_type === "consumer" && !isConsumerRoute) {
+      const type = user.account_type;
+      if (type === "consumer" && !isConsumerRoute) {
         router.replace("/consumer/dashboard");
-      } else if (user.account_type === "restaurant" && isConsumerRoute) {
+      } else if (type === "diner" && !isDinerRoute) {
+        router.replace("/diner/dashboard");
+      } else if (type === "restaurant" && (isConsumerRoute || isDinerRoute)) {
         router.replace("/dashboard");
       }
     }
-  }, [user, loading, isPublic, isConsumerRoute, router]);
+  }, [user, loading, isPublic, isConsumerRoute, isDinerRoute, router]);
 
   if (loading) {
     return (
@@ -58,6 +67,14 @@ function AppContent({ Component, pageProps }) {
       <ConsumerLayout>
         <Component {...pageProps} />
       </ConsumerLayout>
+    );
+  }
+
+  if (user.account_type === "diner") {
+    return (
+      <DinerLayout>
+        <Component {...pageProps} />
+      </DinerLayout>
     );
   }
 

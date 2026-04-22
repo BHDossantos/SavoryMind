@@ -11,7 +11,7 @@ from ...schemas.consumer import (
     SocialConnectionUpdate, SocialConnectionResponse,
     ProfileUpdate, BehaviorLogCreate,
 )
-from ...services import wine_service, music_service
+from ...services import wine_service, music_service, beverage_service, recipe_service
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
 
@@ -193,3 +193,43 @@ def get_recommendations(db: Session = Depends(get_db), current_user: User = Depe
         })
 
     return recs
+
+
+# ── Beverages ─────────────────────────────────────────────────────────────────
+
+@router.get("/beverages/beer")
+def beer_pairing(dish: str, current_user: User = Depends(get_current_user)):
+    _require_consumer(current_user)
+    if not dish or len(dish.strip()) < 2:
+        raise HTTPException(status_code=422, detail="dish query param required.")
+    return beverage_service.get_beer_pairings(dish.strip())
+
+
+@router.get("/beverages/spirits")
+def spirits_pairing(dish: str, current_user: User = Depends(get_current_user)):
+    _require_consumer(current_user)
+    if not dish or len(dish.strip()) < 2:
+        raise HTTPException(status_code=422, detail="dish query param required.")
+    return beverage_service.get_spirits_pairings(dish.strip())
+
+
+# ── Recipes ───────────────────────────────────────────────────────────────────
+
+@router.get("/recipes")
+def get_recipes(
+    mood: str = "",
+    cuisine: str = "",
+    keywords: str = "",
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    return recipe_service.get_recipe_recommendations(mood=mood, cuisine=cuisine, keywords=keywords)
+
+
+@router.get("/recipes/{recipe_id}")
+def get_recipe(recipe_id: int, current_user: User = Depends(get_current_user)):
+    _require_consumer(current_user)
+    recipe = recipe_service.get_recipe_by_id(recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found.")
+    return recipe

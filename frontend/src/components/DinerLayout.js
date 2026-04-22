@@ -4,35 +4,32 @@ import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 
 const navLinks = [
-  { href: "/consumer/dashboard", label: "Home", icon: "🏠" },
-  { href: "/consumer/wine",      label: "Wine Pairing", icon: "🍷" },
-  { href: "/consumer/music",     label: "Music Mood", icon: "🎵" },
-  { href: "/consumer/beverages", label: "Beverages", icon: "🍺" },
-  { href: "/consumer/recipes",   label: "Recipes", icon: "👨‍🍳" },
-  { href: "/consumer/profile",   label: "My Profile", icon: "👤" },
-  { href: "/consumer/social",    label: "Connect", icon: "🔗" },
+  { href: "/diner/dashboard",  label: "Home",         icon: "🏠" },
+  { href: "/diner/book",       label: "Book a Table", icon: "📅" },
+  { href: "/diner/history",    label: "My Visits",    icon: "📖" },
+  { href: "/diner/profile",    label: "Profile",      icon: "👤" },
 ];
 
-export default function ConsumerLayout({ children }) {
+export default function DinerLayout({ children }) {
   const router = useRouter();
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#faf7ff" }}>
+    <div className="min-h-screen flex" style={{ background: "#f0fdfa" }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-consumer-100 flex flex-col shadow-sm">
-        <div className="p-6 border-b border-consumer-100 bg-gradient-to-br from-consumer-600 to-consumer-800">
+      <aside className="w-64 bg-white border-r border-diner-100 flex flex-col shadow-sm">
+        <div className="p-6 border-b border-diner-100 bg-gradient-to-br from-diner-600 to-diner-800">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧠</span>
             <span className="text-xl font-bold text-white">SavoryMind</span>
           </div>
           <div className="mt-3 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-consumer-400 flex items-center justify-center text-white text-sm font-bold">
-              {user?.display_name?.[0]?.toUpperCase() || "U"}
+            <div className="w-8 h-8 rounded-full bg-diner-400 flex items-center justify-center text-white text-sm font-bold">
+              {user?.display_name?.[0]?.toUpperCase() || "D"}
             </div>
             <div>
               <p className="text-sm font-medium text-white truncate">{user?.display_name}</p>
-              <p className="text-xs text-consumer-200 truncate">{user?.email}</p>
+              <p className="text-xs text-diner-200 truncate">{user?.email}</p>
             </div>
           </div>
         </div>
@@ -45,8 +42,8 @@ export default function ConsumerLayout({ children }) {
               className={clsx(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                 router.pathname === link.href
-                  ? "bg-consumer-100 text-consumer-700 shadow-sm"
-                  : "text-gray-600 hover:bg-consumer-50 hover:text-consumer-700"
+                  ? "bg-diner-100 text-diner-700 shadow-sm"
+                  : "text-gray-600 hover:bg-diner-50 hover:text-diner-700"
               )}
             >
               <span className="text-base">{link.icon}</span>
@@ -55,10 +52,10 @@ export default function ConsumerLayout({ children }) {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-consumer-100 space-y-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-consumer-50">
-            <span className="text-xs text-consumer-600 font-medium">Food Lover Mode</span>
-            <span className="ml-auto text-xs bg-consumer-500 text-white px-2 py-0.5 rounded-full">Free</span>
+        <div className="p-4 border-t border-diner-100 space-y-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-diner-50">
+            <span className="text-xs text-diner-600 font-medium">Diner Mode</span>
+            <span className="ml-auto text-xs bg-diner-500 text-white px-2 py-0.5 rounded-full">Free</span>
           </div>
           <button
             onClick={logout}

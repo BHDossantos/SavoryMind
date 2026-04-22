@@ -11,8 +11,8 @@ class UserRegister(BaseModel):
     @field_validator("account_type")
     @classmethod
     def validate_account_type(cls, v: str) -> str:
-        if v not in ("consumer", "restaurant"):
-            raise ValueError("account_type must be 'consumer' or 'restaurant'")
+        if v not in ("consumer", "restaurant", "diner"):
+            raise ValueError("account_type must be 'consumer', 'restaurant', or 'diner'")
         return v
 
 

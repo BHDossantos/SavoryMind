@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
-    const dest = data.user.account_type === "consumer" ? "/consumer/dashboard" : "/dashboard";
+    const dest = data.user.account_type === "consumer" ? "/consumer/dashboard" : data.user.account_type === "diner" ? "/diner/dashboard" : "/dashboard";
     router.push(dest);
   }, [router]);
 
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
-    const dest = data.user.account_type === "consumer" ? "/consumer/dashboard" : "/dashboard";
+    const dest = data.user.account_type === "consumer" ? "/consumer/dashboard" : data.user.account_type === "diner" ? "/diner/dashboard" : "/dashboard";
     router.push(dest);
   }, [router]);
 

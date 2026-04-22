@@ -4,6 +4,7 @@ from ..models.menu import MenuItem
 from ..models.review import Review
 from ..models.consumer import WinePairing, MusicMood, SocialConnection
 from ..models.restaurant_ext import Booking, CRMCustomer, Staff
+from ..models.kitchen import FoodWasteLog, DishTimeLog
 from .sentiment_service import analyze_sentiment
 import json
 
@@ -63,6 +64,8 @@ def seed_database(db: Session, user_id: int) -> None:
     _seed_bookings(db, user_id)
     _seed_crm(db, user_id)
     _seed_staff(db, user_id)
+    _seed_waste(db, user_id)
+    _seed_kitchen_times(db, user_id)
 
 
 def _seed_bookings(db: Session, user_id: int) -> None:
@@ -144,4 +147,100 @@ def seed_consumer_data(db: Session, user_id: int) -> None:
     for platform in platforms:
         db.add(SocialConnection(user_id=user_id, platform=platform, connected=False))
 
+    db.commit()
+
+
+def seed_diner_data(db, user_id: int):
+    """Seed example diner data so new accounts have something to explore."""
+    import datetime
+    from ..models.diner import DinerBooking, DinerVisit
+
+    # Sample past visits
+    visits = [
+        {
+            "restaurant_name": "The Blue Plate",
+            "visit_date": str(datetime.date.today() - datetime.timedelta(days=14)),
+            "items_ordered": "Beef Tenderloin, Truffle Risotto, Crème Brûlée",
+            "overall_rating": 4.8,
+            "food_rating": 5.0,
+            "staff_rating": 4.5,
+            "would_return": True,
+            "highlights": "The truffle risotto was outstanding. Excellent wine list.",
+            "lowlights": "Slightly long wait for dessert.",
+            "notes": "Perfect anniversary dinner spot.",
+        },
+        {
+            "restaurant_name": "Sakura Garden",
+            "visit_date": str(datetime.date.today() - datetime.timedelta(days=7)),
+            "items_ordered": "Dragon Roll, Salmon Sashimi, Miso Ramen",
+            "overall_rating": 4.2,
+            "food_rating": 4.5,
+            "staff_rating": 4.0,
+            "would_return": True,
+            "highlights": "Freshest sashimi in the city.",
+            "lowlights": "Noisy on Friday nights.",
+            "notes": "Great for sushi but book ahead.",
+        },
+        {
+            "restaurant_name": "Casa Italiana",
+            "visit_date": str(datetime.date.today() - datetime.timedelta(days=3)),
+            "items_ordered": "Burrata, Lobster Linguine, Tiramisu",
+            "overall_rating": 4.6,
+            "food_rating": 4.8,
+            "staff_rating": 4.5,
+            "would_return": True,
+            "highlights": "Burrata was the best I've ever had. Staff were incredibly attentive.",
+            "lowlights": "",
+            "notes": "Would recommend for a special occasion.",
+        },
+    ]
+    for v in visits:
+        db.add(DinerVisit(user_id=user_id, **v))
+
+    # Upcoming booking
+    upcoming = str(datetime.date.today() + datetime.timedelta(days=10))
+    db.add(DinerBooking(
+        user_id=user_id,
+        restaurant_name="The Blue Plate",
+        booking_date=upcoming,
+        booking_time="19:30",
+        party_size=2,
+        special_requests="Window table if available. Celebrating a birthday.",
+        status="confirmed",
+    ))
+
+    db.commit()
+
+
+def _seed_waste(db: Session, user_id: int) -> None:
+    today = date.today()
+    entries = [
+        {"item_name": "Beef Tenderloin", "staff_name": "Carlos Mendes", "quantity_kg": 0.8, "estimated_cost": 24.00, "reason": "Over-portioned", "date": today - timedelta(days=1), "notes": ""},
+        {"item_name": "Truffle Pasta", "staff_name": "Carlos Mendes", "quantity_kg": 0.3, "estimated_cost": 8.50, "reason": "Cooking error", "date": today - timedelta(days=2), "notes": "Overcooked"},
+        {"item_name": "Grilled Salmon", "staff_name": "Marco Rivera", "quantity_kg": 0.2, "estimated_cost": 6.00, "reason": "Spoilage", "date": today - timedelta(days=3), "notes": ""},
+        {"item_name": "Cheese Board", "staff_name": "Sara Okonkwo", "quantity_kg": 0.5, "estimated_cost": 12.00, "reason": "Over-ordered", "date": today - timedelta(days=4), "notes": ""},
+        {"item_name": "Beef Tenderloin", "staff_name": "Carlos Mendes", "quantity_kg": 0.6, "estimated_cost": 18.00, "reason": "Over-portioned", "date": today - timedelta(days=5), "notes": ""},
+        {"item_name": "Lobster Bisque", "staff_name": "Marco Rivera", "quantity_kg": 0.4, "estimated_cost": 14.00, "reason": "Cooking error", "date": today - timedelta(days=6), "notes": "Too salty"},
+        {"item_name": "Crème Brûlée", "staff_name": "Sara Okonkwo", "quantity_kg": 0.2, "estimated_cost": 4.00, "reason": "Dropped", "date": today - timedelta(days=7), "notes": ""},
+    ]
+    for e in entries:
+        db.add(FoodWasteLog(user_id=user_id, **e))
+    db.commit()
+
+
+def _seed_kitchen_times(db: Session, user_id: int) -> None:
+    today = date.today()
+    entries = [
+        {"item_name": "Beef Tenderloin", "staff_name": "Marco Rivera", "prep_minutes": 8, "cook_minutes": 12, "date": today - timedelta(days=1)},
+        {"item_name": "Beef Tenderloin", "staff_name": "Carlos Mendes", "prep_minutes": 14, "cook_minutes": 18, "date": today - timedelta(days=1)},
+        {"item_name": "Truffle Pasta", "staff_name": "Marco Rivera", "prep_minutes": 5, "cook_minutes": 15, "date": today - timedelta(days=2)},
+        {"item_name": "Truffle Pasta", "staff_name": "Carlos Mendes", "prep_minutes": 8, "cook_minutes": 22, "date": today - timedelta(days=2)},
+        {"item_name": "Grilled Salmon", "staff_name": "Marco Rivera", "prep_minutes": 6, "cook_minutes": 10, "date": today - timedelta(days=3)},
+        {"item_name": "Grilled Salmon", "staff_name": "Sara Okonkwo", "prep_minutes": 7, "cook_minutes": 11, "date": today - timedelta(days=3)},
+        {"item_name": "Margherita Pizza", "staff_name": "Carlos Mendes", "prep_minutes": 10, "cook_minutes": 14, "date": today - timedelta(days=4)},
+        {"item_name": "Margherita Pizza", "staff_name": "Marco Rivera", "prep_minutes": 6, "cook_minutes": 9, "date": today - timedelta(days=4)},
+        {"item_name": "Caesar Salad", "staff_name": "Priya Nair", "prep_minutes": 4, "cook_minutes": 2, "date": today - timedelta(days=5)},
+    ]
+    for e in entries:
+        db.add(DishTimeLog(user_id=user_id, **e))
     db.commit()

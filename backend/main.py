@@ -6,7 +6,9 @@ from app.core.database import engine, Base
 from app.models import User, MenuItem, Review  # noqa: F401
 from app.models.consumer import WinePairing, MusicMood, SocialConnection, BehaviorLog  # noqa: F401
 from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # noqa: F401
-from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext
+from app.models.kitchen import FoodWasteLog, DishTimeLog  # noqa: F401
+from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner
 
 
 @asynccontextmanager
@@ -31,6 +33,8 @@ app.include_router(reviews.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(consumer.router, prefix="/api")
 app.include_router(restaurant_ext.router, prefix="/api")
+app.include_router(owner_extras.router, prefix="/api")
+app.include_router(diner.router, prefix="/api")
 
 
 @app.get("/")
