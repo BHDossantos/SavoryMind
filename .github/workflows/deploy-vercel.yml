@@ -16,6 +16,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -26,8 +32,14 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel link --yes --token="$VERCEL_TOKEN"
 
-      - name: Deploy to Vercel (production)
+      - name: Build (via Vercel CLI, locally)
         env:
           VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel --prod --yes --token="$VERCEL_TOKEN"
+        run: vercel build --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Deploy pre-built output to Vercel
+        env:
+          VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
