@@ -28,4 +28,19 @@ jobs:
         env:
           VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel --prod --yes --token="$VERCEL_TOKEN"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set +e
+          OUTPUT=$(vercel --prod --yes --token="$VERCEL_TOKEN" 2>&1)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+          if [ $EXIT_CODE -ne 0 ]; then
+            BODY=$(printf '{"body":"**Vercel deploy failed (exit %s)**\n```\n%s\n```"}' "$EXIT_CODE" "$OUTPUT")
+            curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$BODY" \
+              "https://api.github.com/repos/BHDossantos/SavoryMind/commits/$COMMIT_SHA/comments" > /dev/null
+          fi
+          exit $EXIT_CODE
