@@ -1,17 +1,38 @@
 version: "3.9"
 
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: savorymind
+      POSTGRES_USER: savorymind
+      POSTGRES_PASSWORD: savorymind_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U savorymind"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://savorymind:savorymind_local@db:5432/savorymind
+      - SECRET_KEY=local-dev-secret-not-for-production
+      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
     volumes:
       - ./backend:/app
-    environment:
-      - DATABASE_URL=sqlite:///./savorymind.db
-      - CORS_ORIGINS=["http://localhost:3000"]
 
   frontend:
     build:
@@ -23,3 +44,6 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
+
+volumes:
+  pgdata:
