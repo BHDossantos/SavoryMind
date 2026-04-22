@@ -29,11 +29,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Link, build, and deploy to Vercel
+      - name: Link Vercel project
         env:
           VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel link --yes --token="$VERCEL_TOKEN"
-          vercel build --prod --yes --token="$VERCEL_TOKEN"
-          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: vercel link --yes --token="$VERCEL_TOKEN"
+
+      - name: Build
+        env:
+          VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Deploy pre-built output
+        env:
+          VERCEL_ORG_ID: team_VjQmqHvzWW8ycKrR18Sq3iRt
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
