@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL = 'https://api.savorymind.net';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.savorymind.net';
 const TOKEN_KEY = 'sm_auth_token';
 
 export const tokenStore = {
