@@ -30,3 +30,30 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: prj_jXTXj84iB6pMq1VUCEvH05ur3vFP
         run: vercel --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Register custom domains on Vercel
+        uses: actions/github-script@v7
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        with:
+          script: |
+            const token = process.env.VERCEL_TOKEN;
+            const projectId = 'prj_jXTXj84iB6pMq1VUCEvH05ur3vFP';
+            const teamId = 'team_VjQmqHvzWW8ycKrR18Sq3iRt';
+
+            for (const domain of ['savorymind.net', 'www.savorymind.net']) {
+              const res = await fetch(
+                `https://api.vercel.com/v10/projects/${projectId}/domains?teamId=${teamId}`,
+                {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: domain }),
+                }
+              );
+              const data = await res.json();
+              const status = data.error ? `⚠️  ${data.error.message}` : `✅ configured`;
+              console.log(`${domain}: ${status}`);
+              if (data.verification) {
+                console.log('DNS verification needed:', JSON.stringify(data.verification, null, 2));
+              }
+            }
