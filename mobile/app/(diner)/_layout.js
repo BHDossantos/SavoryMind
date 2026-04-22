@@ -14,6 +14,7 @@ export default function DinerLayout() {
       }}
     >
       <Tabs.Screen name="dashboard" options={{ title: 'Home',     tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }} />
+      <Tabs.Screen name="discover"  options={{ title: 'Discover', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🔍</Text> }} />
       <Tabs.Screen name="book"      options={{ title: 'Book',     tabBarIcon: () => <Text style={{ fontSize: 20 }}>📅</Text> }} />
       <Tabs.Screen name="history"   options={{ title: 'History',  tabBarIcon: () => <Text style={{ fontSize: 20 }}>📖</Text> }} />
       <Tabs.Screen name="profile"   options={{ title: 'Profile',  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />

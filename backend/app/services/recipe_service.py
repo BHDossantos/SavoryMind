@@ -387,29 +387,62 @@ RECIPES = [
 ]
 
 
-def get_recipe_recommendations(mood: str = "", cuisine: str = "", keywords: str = "", n: int = 4) -> dict:
-    query = f"{mood} {cuisine} {keywords}".lower().strip()
-    scored = []
+def get_recipe_recommendations(
+    mood: str = "",
+    cuisine: str = "",
+    keywords: str = "",
+    ingredients: str = "",
+    max_time: int = 0,
+    difficulty: str = "",
+    n: int = 12,
+) -> dict:
+    """Return scored recipe list. ``ingredients`` is a comma-separated string of items on hand."""
+    query      = f"{mood} {cuisine} {keywords}".lower().strip()
+    ing_tokens = [t.strip().lower() for t in ingredients.split(",") if t.strip()] if ingredients else []
+    scored     = []
 
     for recipe in RECIPES:
         score = 0.0
-        if re.search(recipe["keywords"], query):
+
+        # Keyword match against recipe keyword pattern
+        if query and re.search(recipe["keywords"], query):
             score += 0.8
+
+        # Mood match
         if mood and mood.lower() in [m.lower() for m in recipe["mood"]]:
             score += 0.5
+
+        # Cuisine match
         if cuisine and cuisine.lower() in recipe["cuisine"].lower():
             score += 0.4
+
+        # Ingredients-on-hand match
+        if ing_tokens:
+            recipe_text = " ".join(recipe.get("ingredients", [])).lower()
+            matched = sum(1 for t in ing_tokens if t in recipe_text)
+            if matched > 0:
+                score += 0.6 * (matched / len(ing_tokens))
+                score += 0.3 * matched  # bonus per matched ingredient
+
+        # Time filter (hard exclude if max_time specified)
+        if max_time and recipe["time_minutes"] > max_time:
+            continue
+
+        # Difficulty filter
+        if difficulty and recipe.get("difficulty", "").lower() != difficulty.lower():
+            continue
+
         if score == 0:
-            score = 0.1  # baseline to show something
+            score = 0.1  # baseline so we always show something
         scored.append((score, recipe))
 
     scored.sort(key=lambda x: x[0], reverse=True)
     results = [r for _, r in scored[:n]]
 
     return {
-        "query": {"mood": mood, "cuisine": cuisine, "keywords": keywords},
+        "query":   {"mood": mood, "cuisine": cuisine, "keywords": keywords, "ingredients": ingredients},
         "recipes": results,
-        "total": len(RECIPES),
+        "total":   len(RECIPES),
     }
 
 

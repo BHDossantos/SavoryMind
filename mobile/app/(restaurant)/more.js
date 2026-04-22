@@ -8,6 +8,8 @@ const FEATURES = [
   { icon: '👥', title: 'CRM',            sub: 'Customer loyalty & history',   screen: '/crm' },
   { icon: '🧑‍🍳', title: 'Staff',        sub: 'Team management',             screen: '/staff' },
   { icon: '🔮', title: 'Forecast',       sub: '4-hour sales forecast',        screen: '/predictions' },
+  { icon: '🚀', title: 'Trends',         sub: 'Menu trends & rising stars',   screen: '/trends' },
+  { icon: '💌', title: 'Marketing',      sub: 'Guest acquisition & loyalty',  screen: '/marketing' },
   { icon: '🗑️', title: 'Food Waste',     sub: 'Waste log & cost tracking',   screen: '/waste' },
   { icon: '⏱️', title: 'Kitchen Times',  sub: 'Prep & cook time tracking',   screen: '/kitchen' },
   { icon: '🎓', title: 'Staff Training', sub: 'Performance-based coaching',   screen: '/training' },

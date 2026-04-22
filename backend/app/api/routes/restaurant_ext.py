@@ -11,7 +11,7 @@ from ...schemas.restaurant_ext import (
     StaffCreate, StaffUpdate, StaffResponse,
     SalesPrediction,
 )
-from ...services import booking_service, crm_service, staff_service, prediction_service
+from ...services import booking_service, crm_service, staff_service, prediction_service, trends_service
 
 router = APIRouter(prefix="/restaurant", tags=["restaurant"])
 
@@ -197,3 +197,17 @@ def delete_staff(
 def get_predictions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_restaurant(current_user)
     return prediction_service.predict_sales(db, current_user.id)
+
+
+# --- Trends & Marketing -------------------------------------------------------
+
+@router.get("/trends")
+def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _require_restaurant(current_user)
+    return trends_service.get_menu_trends(db, current_user.id)
+
+
+@router.get("/marketing")
+def get_marketing(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _require_restaurant(current_user)
+    return trends_service.get_marketing_insights(db, current_user.id)

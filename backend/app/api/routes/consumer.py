@@ -11,7 +11,7 @@ from ...schemas.consumer import (
     SocialConnectionUpdate, SocialConnectionResponse,
     ProfileUpdate, BehaviorLogCreate,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service
 from ...ml.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -191,13 +191,19 @@ def get_recipes(
     mood: str = "",
     cuisine: str = "",
     keywords: str = "",
+    ingredients: str = "",
+    max_time: int = 0,
+    difficulty: str = "",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _require_consumer(current_user)
-    if cuisine:
-        _log(db, current_user.id, "recipe_view", {"cuisine": cuisine, "mood": mood})
-    return recipe_service.get_recipe_recommendations(mood=mood, cuisine=cuisine, keywords=keywords)
+    if cuisine or ingredients:
+        _log(db, current_user.id, "recipe_view", {"cuisine": cuisine, "mood": mood, "ingredients": ingredients})
+    return recipe_service.get_recipe_recommendations(
+        mood=mood, cuisine=cuisine, keywords=keywords,
+        ingredients=ingredients, max_time=max_time, difficulty=difficulty,
+    )
 
 
 @router.get("/recipes/{recipe_id}")
@@ -208,3 +214,39 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db), current_user: User
         raise HTTPException(status_code=404, detail="Recipe not found.")
     _log(db, current_user.id, "recipe_view", {"recipe_id": recipe_id})
     return recipe
+
+
+# ── Meal Planner ──────────────────────────────────────────────────────────────
+
+@router.get("/meal-plan")
+def get_meal_plan(
+    dietary: str = "",
+    max_cook_minutes: int = 120,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    _log(db, current_user.id, "meal_plan", {"dietary": dietary})
+    return meal_plan_service.generate_meal_plan(dietary=dietary, max_cook_minutes=max_cook_minutes)
+
+
+@router.get("/shopping-list")
+def get_shopping_list(
+    dietary: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    _log(db, current_user.id, "shopping_list", {"dietary": dietary})
+    return meal_plan_service.generate_shopping_list(dietary=dietary)
+
+
+@router.get("/daily-suggestion")
+def get_daily_suggestion(
+    mood: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    _log(db, current_user.id, "daily_suggestion", {"mood": mood})
+    return meal_plan_service.get_daily_suggestion(mood=mood)

@@ -97,6 +97,11 @@ export const api = {
   updateProfile: (data) => request('/api/consumer/profile', { method: 'PATCH', body: JSON.stringify(data) }),
   getConsumerRecommendations: () => request('/api/consumer/recommendations'),
 
+  // Consumer — meal planner
+  getMealPlan: (dietary = '', maxCook = 120) => request(`/api/consumer/meal-plan?dietary=${dietary}&max_cook_minutes=${maxCook}`),
+  getShoppingList: (dietary = '') => request(`/api/consumer/shopping-list?dietary=${dietary}`),
+  getDailySuggestion: (mood = '') => request(`/api/consumer/daily-suggestion?mood=${mood}`),
+
   // Diner
   getDinerSummary: () => request('/api/diner/summary'),
   getDinerBookings: () => request('/api/diner/bookings'),
@@ -106,6 +111,14 @@ export const api = {
   createDinerVisit: (data) => request('/api/diner/visits', { method: 'POST', body: JSON.stringify(data) }),
   deleteDinerVisit: (id) => request(`/api/diner/visits/${id}`, { method: 'DELETE' }),
   getDinerRecommendations: () => request('/api/diner/recommendations'),
+
+  // Diner — discovery
+  discoverRestaurants: (params) => request(`/api/diner/discover?${new URLSearchParams(params).toString()}`),
+  getExperiencePlan: (params) => request(`/api/diner/experience-plan?${new URLSearchParams(params).toString()}`),
+
+  // Restaurant — trends & marketing
+  getMenuTrends: () => request('/api/restaurant/trends'),
+  getMarketingInsights: () => request('/api/restaurant/marketing'),
 
   // Social login — exchanges provider profile for our backend JWT
   socialLogin: async ({ provider, provider_id, email, name, avatar_url }) => {
