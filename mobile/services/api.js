@@ -105,4 +105,21 @@ export const api = {
   getDinerVisits: () => request('/api/diner/visits'),
   createDinerVisit: (data) => request('/api/diner/visits', { method: 'POST', body: JSON.stringify(data) }),
   deleteDinerVisit: (id) => request(`/api/diner/visits/${id}`, { method: 'DELETE' }),
+  getDinerRecommendations: () => request('/api/diner/recommendations'),
+
+  // Social login — exchanges provider profile for our backend JWT
+  socialLogin: async ({ provider, provider_id, email, name, avatar_url }) => {
+    const result = await fetch(`${BASE_URL}/api/auth/social`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-social-secret': process.env.EXPO_PUBLIC_SOCIAL_LOGIN_SECRET || 'dev-social-secret',
+      },
+      body: JSON.stringify({ provider, provider_id, email: email || '', name: name || '', avatar_url: avatar_url || '' }),
+    });
+    const data = await result.json();
+    if (!result.ok) throw new Error(data.detail || 'Social login failed');
+    if (data.access_token) await tokenStore.set(data.access_token);
+    return data;
+  },
 };

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     secret_key: str = "savorymind-super-secret-change-in-production-32chars"
     algorithm: str = "HS256"
     access_token_expire_days: int = 30
+    social_login_secret: str = "dev-social-secret"
 
     class Config:
         env_file = ".env"

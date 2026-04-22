@@ -6,6 +6,15 @@ from ..core.security import hash_password, verify_password, create_access_token
 from .seed_data import seed_database, seed_consumer_data, seed_diner_data
 
 
+def _seed_for_type(db: Session, user: User) -> None:
+    if user.account_type == "restaurant":
+        seed_database(db, user.id)
+    elif user.account_type == "consumer":
+        seed_consumer_data(db, user.id)
+    elif user.account_type == "diner":
+        seed_diner_data(db, user.id)
+
+
 def register(db: Session, data: UserRegister) -> tuple[str, User]:
     if db.query(User).filter(User.email == data.email.lower()).first():
         raise HTTPException(status_code=400, detail="Email already registered.")
@@ -27,6 +36,49 @@ def register(db: Session, data: UserRegister) -> tuple[str, User]:
         seed_consumer_data(db, user_id=user.id)
     else:
         seed_diner_data(db, user_id=user.id)
+
+    token = create_access_token(user.id, user.email)
+    return token, user
+
+
+def social_login(
+    db: Session,
+    provider: str,
+    provider_id: str,
+    email: str,
+    name: str,
+    avatar_url: str = "",
+) -> tuple[str, User]:
+    # 1. Exact match on social identity
+    user = db.query(User).filter(
+        User.social_provider == provider,
+        User.social_id == provider_id,
+    ).first()
+
+    if not user and email:
+        # 2. Match by email — link social account to existing user
+        user = db.query(User).filter(User.email == email.lower()).first()
+        if user:
+            user.social_provider = provider
+            user.social_id = provider_id
+            if avatar_url and not user.avatar_url:
+                user.avatar_url = avatar_url
+            db.commit()
+
+    if not user:
+        # 3. Brand-new user — account_type set during onboarding step 0
+        user = User(
+            email=email.lower() if email else f"{provider}_{provider_id}@social",
+            password_hash=None,
+            account_type=None,
+            display_name=name or email.split("@")[0] if email else provider,
+            social_provider=provider,
+            social_id=provider_id,
+            avatar_url=avatar_url or None,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     token = create_access_token(user.id, user.email)
     return token, user

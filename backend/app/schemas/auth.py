@@ -2,6 +2,14 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class SocialLoginRequest(BaseModel):
+    provider:    str = Field(min_length=1, max_length=50)
+    provider_id: str = Field(min_length=1, max_length=255)
+    email:       str = Field(default="", max_length=150)
+    name:        str = Field(default="", max_length=100)
+    avatar_url:  str = Field(default="", max_length=500)
+
+
 class UserRegister(BaseModel):
     email:        str = Field(min_length=5, max_length=150)
     password:     str = Field(min_length=6, max_length=100)
@@ -24,7 +32,7 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     id:           int
     email:        str
-    account_type: str
+    account_type: Optional[str]  # null for new social users until they pick type
     display_name: str
     restaurant_name:     Optional[str]  = None
     plan:                str            = "free"
@@ -55,6 +63,7 @@ class TokenResponse(BaseModel):
 class ProfileUpdate(BaseModel):
     display_name:        Optional[str]   = None
     bio:                 Optional[str]   = None
+    account_type:        Optional[str]   = None
     first_name:          Optional[str]   = None
     last_name:           Optional[str]   = None
     city:                Optional[str]   = None
@@ -67,3 +76,10 @@ class ProfileUpdate(BaseModel):
     drinking_habits:     Optional[str]   = None
     recipe_interests:    Optional[str]   = None
     onboarding_completed: Optional[bool] = None
+
+    @field_validator("account_type")
+    @classmethod
+    def validate_account_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ("consumer", "restaurant", "diner"):
+            raise ValueError("account_type must be consumer, restaurant, or diner")
+        return v

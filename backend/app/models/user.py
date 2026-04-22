@@ -8,7 +8,9 @@ class User(Base):
 
     id               = Column(Integer, primary_key=True, index=True)
     email            = Column(String, unique=True, nullable=False, index=True)
-    password_hash    = Column(String, nullable=False)
+    password_hash    = Column(String, nullable=True)   # null for social-only accounts
+    social_provider  = Column(String(50),  nullable=True)  # google | github | microsoft | etc.
+    social_id        = Column(String(255), nullable=True)
     account_type     = Column(String, default="restaurant")  # "consumer" | "restaurant" | "diner"
     display_name     = Column(String, nullable=False)
     restaurant_name  = Column(String, nullable=True)

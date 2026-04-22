@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { SessionProvider } from "next-auth/react";
 import Layout from "../components/Layout";
 import ConsumerLayout from "../components/ConsumerLayout";
 import DinerLayout from "../components/DinerLayout";
@@ -46,6 +47,8 @@ function AppContent({ Component, pageProps }) {
     }
     if (user && !isPublic && !isOnboarding) {
       const type = user.account_type;
+      // null account_type means new social user — onboarding will handle it
+      if (!type) return;
       if (type === "consumer" && !isConsumerRoute) {
         router.replace("/consumer/dashboard");
       } else if (type === "diner" && !isDinerRoute) {
@@ -96,10 +99,12 @@ function AppContent({ Component, pageProps }) {
   );
 }
 
-export default function App({ Component, pageProps }) {
+export default function App({ Component, pageProps: { session, ...pageProps } }) {
   return (
-    <AuthProvider>
-      <AppContent Component={Component} pageProps={pageProps} />
-    </AuthProvider>
+    <SessionProvider session={session}>
+      <AuthProvider>
+        <AppContent Component={Component} pageProps={pageProps} />
+      </AuthProvider>
+    </SessionProvider>
   );
 }

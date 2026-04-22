@@ -69,6 +69,61 @@ const COUNTRIES = [
 
 // ─── Step components ─────────────────────────────────────────────────────────
 
+const ACCOUNT_TYPES = [
+  {
+    id: "consumer",
+    icon: "🏠",
+    title: "Home Cook",
+    sub: "Wine pairings, music moods & recipe recommendations",
+    color: "border-consumer-500 bg-consumer-50",
+  },
+  {
+    id: "diner",
+    icon: "🍽️",
+    title: "Diner",
+    sub: "Restaurant bookings, visit history & dining memories",
+    color: "border-diner-500 bg-diner-50",
+  },
+  {
+    id: "restaurant",
+    icon: "🏪",
+    title: "Restaurant Owner",
+    sub: "Analytics, CRM, staff management & business insights",
+    color: "border-brand-500 bg-brand-50",
+  },
+];
+
+function StepAccountType({ data, onChange }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-500 mb-4">
+        This shapes your entire experience — pick the one that fits you best.
+      </p>
+      {ACCOUNT_TYPES.map((type) => (
+        <button
+          key={type.id}
+          type="button"
+          onClick={() => onChange("account_type", type.id)}
+          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
+            data.account_type === type.id
+              ? type.color
+              : "border-gray-200 hover:border-gray-300 bg-white"
+          }`}
+        >
+          <span className="text-3xl">{type.icon}</span>
+          <div>
+            <p className="font-bold text-gray-900">{type.title}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{type.sub}</p>
+          </div>
+          {data.account_type === type.id && (
+            <span className="ml-auto text-lg">✓</span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function StepName({ data, onChange }) {
   return (
     <div className="space-y-4">
@@ -322,25 +377,33 @@ function StepRecipes({ data, onChange }) {
 
 // ─── Main onboarding page ────────────────────────────────────────────────────
 
-const STEPS = [
-  { id: 1, title: "What's your name?",          sub: "Let's make this personal.",                     icon: "👋" },
-  { id: 2, title: "Where are you based?",        sub: "We'll find food and restaurants near you.",     icon: "📍" },
-  { id: 3, title: "What do you love to eat?",    sub: "Your palate, your rules.",                      icon: "🍽️" },
-  { id: 4, title: "What do you like to drink?",  sub: "Tell us about your drink habits.",              icon: "🍷" },
-  { id: 5, title: "What's your music taste?",    sub: "Every great meal has a soundtrack.",            icon: "🎵" },
-  { id: 6, title: "Recipe interests",            sub: "What kind of cooking gets you excited?",        icon: "👨‍🍳" },
+const BASE_STEPS = [
+  { id: "name",    title: "What's your name?",          sub: "Let's make this personal.",                     icon: "👋" },
+  { id: "loc",     title: "Where are you based?",        sub: "We'll find food and restaurants near you.",     icon: "📍" },
+  { id: "food",    title: "What do you love to eat?",    sub: "Your palate, your rules.",                      icon: "🍽️" },
+  { id: "drink",   title: "What do you like to drink?",  sub: "Tell us about your drink habits.",              icon: "🍷" },
+  { id: "music",   title: "What's your music taste?",    sub: "Every great meal has a soundtrack.",            icon: "🎵" },
+  { id: "recipes", title: "Recipe interests",            sub: "What kind of cooking gets you excited?",        icon: "👨‍🍳" },
 ];
+
+const TYPE_STEP = { id: "type", title: "Pick your path", sub: "What brings you to SavoryMind?", icon: "🧭" };
 
 export default function Onboarding() {
   const { user, updateUser } = useAuth();
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  // Social users (account_type === null) need step 0 to pick type
+  const needsTypeStep = !user?.account_type;
+  const STEPS = needsTypeStep ? [TYPE_STEP, ...BASE_STEPS] : BASE_STEPS;
+
+  const [step, setStep] = useState(0); // 0-indexed
+
   const [data, setData] = useState({
-    first_name:          "",
-    last_name:           "",
+    account_type:        user?.account_type || null,
+    first_name:          user?.first_name   || "",
+    last_name:           user?.last_name    || "",
     city:                "",
     country:             "",
     latitude:            null,
@@ -354,13 +417,30 @@ export default function Onboarding() {
 
   const onChange = (key, value) => setData((d) => ({ ...d, [key]: value }));
 
-  const isLastStep = step === STEPS.length;
-  const current = STEPS[step - 1];
-  const progress = (step / STEPS.length) * 100;
+  const isLastStep = step === STEPS.length - 1;
+  const current = STEPS[step];
+  const progress = ((step + 1) / STEPS.length) * 100;
 
   const handleNext = async () => {
+    // Step 0 for social users: save account_type immediately, then advance
+    if (current.id === "type") {
+      if (!data.account_type) { setError("Please pick your experience type."); return; }
+      setSaving(true); setError(null);
+      try {
+        const updated = await api.updateProfile({ account_type: data.account_type });
+        updateUser(updated);
+        setStep((s) => s + 1);
+      } catch (e) {
+        setError(e.message || "Something went wrong.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     if (!isLastStep) { setStep((s) => s + 1); return; }
 
+    // Final step — save all profile data
     setSaving(true); setError(null);
     try {
       const payload = {
@@ -369,8 +449,10 @@ export default function Onboarding() {
         longitude: data.longitude || undefined,
         onboarding_completed: true,
       };
-      // Strip empty strings to avoid overwriting with blanks
-      Object.keys(payload).forEach((k) => { if (payload[k] === "") delete payload[k]; });
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] === "" || payload[k] === null) delete payload[k];
+      });
+      delete payload.account_type; // already saved (or set during register)
 
       const updated = await api.updateProfile(payload);
       updateUser(updated);
@@ -389,6 +471,7 @@ export default function Onboarding() {
   };
 
   const handleSkip = () => {
+    if (current.id === "type") return; // can't skip type selection
     if (isLastStep) handleNext();
     else setStep((s) => s + 1);
   };
@@ -402,7 +485,7 @@ export default function Onboarding() {
           <span className="font-bold text-gray-900">SavoryMind</span>
         </div>
         <div className="text-sm text-gray-400">
-          {step} of {STEPS.length}
+          {step + 1} of {STEPS.length}
         </div>
       </header>
 
@@ -421,19 +504,22 @@ export default function Onboarding() {
             <div className="text-5xl mb-4">{current.icon}</div>
             <h1 className="text-2xl font-extrabold text-gray-900 mb-2">{current.title}</h1>
             <p className="text-gray-500">{current.sub}</p>
-            {user?.first_name && step > 1 && (
-              <p className="text-sm text-gray-400 mt-1">Hey {user.first_name || data.first_name} 👋</p>
+            {(user?.first_name || data.first_name) && step > (needsTypeStep ? 1 : 0) && (
+              <p className="text-sm text-gray-400 mt-1">
+                Hey {user?.first_name || data.first_name} 👋
+              </p>
             )}
           </div>
 
           {/* Step content */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-            {step === 1 && <StepName       data={data} onChange={onChange} />}
-            {step === 2 && <StepLocation   data={data} onChange={onChange} />}
-            {step === 3 && <StepFood       data={data} onChange={onChange} />}
-            {step === 4 && <StepDrinking   data={data} onChange={onChange} />}
-            {step === 5 && <StepMusic      data={data} onChange={onChange} />}
-            {step === 6 && <StepRecipes    data={data} onChange={onChange} />}
+            {current.id === "type"    && <StepAccountType data={data} onChange={onChange} />}
+            {current.id === "name"    && <StepName        data={data} onChange={onChange} />}
+            {current.id === "loc"     && <StepLocation    data={data} onChange={onChange} />}
+            {current.id === "food"    && <StepFood        data={data} onChange={onChange} />}
+            {current.id === "drink"   && <StepDrinking    data={data} onChange={onChange} />}
+            {current.id === "music"   && <StepMusic       data={data} onChange={onChange} />}
+            {current.id === "recipes" && <StepRecipes     data={data} onChange={onChange} />}
           </div>
 
           {error && (
@@ -444,7 +530,7 @@ export default function Onboarding() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            {step > 1 && (
+            {step > 0 && (
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
@@ -453,17 +539,19 @@ export default function Onboarding() {
                 ← Back
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleSkip}
-              className="px-5 py-3 rounded-xl text-sm text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Skip
-            </button>
+            {current.id !== "type" && (
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="px-5 py-3 rounded-xl text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Skip
+              </button>
+            )}
             <button
               type="button"
               onClick={handleNext}
-              disabled={saving}
+              disabled={saving || (current.id === "type" && !data.account_type)}
               className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 disabled:opacity-60 transition-colors"
             >
               {saving ? "Saving..." : isLastStep ? "Finish & Enter SavoryMind →" : "Continue →"}
@@ -472,11 +560,11 @@ export default function Onboarding() {
 
           {/* Step dots */}
           <div className="flex justify-center gap-2 mt-6">
-            {STEPS.map((s) => (
+            {STEPS.map((s, i) => (
               <div
                 key={s.id}
                 className={`h-1.5 rounded-full transition-all ${
-                  s.id === step ? "w-6 bg-gray-900" : s.id < step ? "w-3 bg-gray-400" : "w-3 bg-gray-200"
+                  i === step ? "w-6 bg-gray-900" : i < step ? "w-3 bg-gray-400" : "w-3 bg-gray-200"
                 }`}
               />
             ))}

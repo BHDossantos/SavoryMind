@@ -25,6 +25,8 @@ _USER_MIGRATIONS = [
     ("drinking_habits",      "TEXT"),
     ("recipe_interests",     "TEXT"),
     ("onboarding_completed", "BOOLEAN DEFAULT FALSE"),
+    ("social_provider",      "VARCHAR(50)"),
+    ("social_id",            "VARCHAR(255)"),
 ]
 
 
@@ -49,8 +51,8 @@ app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],       # Bearer-token auth — no cookies, so wildcard is safe
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
