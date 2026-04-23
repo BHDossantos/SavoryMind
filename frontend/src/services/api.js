@@ -150,6 +150,12 @@ export const api = {
   // Restaurant Owner — Training
   getTrainingRecommendations: () => request("/api/owner/training"),
 
+  // Restaurant Owner — Staff Time Tracking
+  getStaffTimeLogs: () => request("/api/owner/staff-time"),
+  getStaffTimeSummary: () => request("/api/owner/staff-time/summary"),
+  createStaffTimeLog: (data) => request("/api/owner/staff-time", { method: "POST", body: JSON.stringify(data) }),
+  deleteStaffTimeLog: (id) => request(`/api/owner/staff-time/${id}`, { method: "DELETE" }),
+
   // Diner — Bookings
   getDinerBookings: () => request("/api/diner/bookings"),
   createDinerBooking: (data) => request("/api/diner/bookings", { method: "POST", body: JSON.stringify(data) }),

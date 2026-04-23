@@ -17,6 +17,7 @@ const navLinks = [
   { href: "/restaurant/marketing",    label: "Marketing",       icon: "💌" },
   { href: "/restaurant/waste",        label: "Food Waste",      icon: "🗑️" },
   { href: "/restaurant/kitchen",      label: "Kitchen Times",   icon: "⏱️" },
+  { href: "/restaurant/stafftime",     label: "Staff Time",      icon: "⏱️" },
   { href: "/restaurant/training",     label: "Staff Training",  icon: "🎓" },
 ];
 

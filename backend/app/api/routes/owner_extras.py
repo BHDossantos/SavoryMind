@@ -5,7 +5,7 @@ from typing import Optional
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
-from ...services import waste_service, kitchen_service, training_service
+from ...services import waste_service, kitchen_service, training_service, staff_time_service
 
 router = APIRouter(prefix="/owner", tags=["owner-extras"])
 
@@ -84,3 +84,35 @@ def delete_dish_time(log_id: int, db: Session = Depends(get_db), user: User = De
 @router.get("/training")
 def get_training(db: Session = Depends(get_db), user: User = Depends(require_restaurant)):
     return training_service.get_training_recommendations(db, user.id)
+
+
+# ── Staff Time Tracking ────────────────────────────────────────────────────────
+
+class StaffTimeCreate(BaseModel):
+    staff_name:    str = Field(min_length=1, max_length=100)
+    date:          str = Field(min_length=1, max_length=20)
+    clock_in:      str = Field(min_length=1, max_length=10)
+    clock_out:     str = Field(min_length=1, max_length=10)
+    break_minutes: Optional[int] = Field(default=0, ge=0)
+    notes:         Optional[str] = Field(default="", max_length=500)
+
+
+@router.get("/staff-time")
+def list_staff_time(db: Session = Depends(get_db), user: User = Depends(require_restaurant)):
+    return staff_time_service.get_all_logs(db, user.id)
+
+
+@router.get("/staff-time/summary")
+def staff_time_summary(db: Session = Depends(get_db), user: User = Depends(require_restaurant)):
+    return staff_time_service.get_summary(db, user.id)
+
+
+@router.post("/staff-time", status_code=201)
+def add_staff_time(body: StaffTimeCreate, db: Session = Depends(get_db), user: User = Depends(require_restaurant)):
+    return staff_time_service.create_log(db, user.id, body.model_dump())
+
+
+@router.delete("/staff-time/{log_id}", status_code=204)
+def delete_staff_time(log_id: int, db: Session = Depends(get_db), user: User = Depends(require_restaurant)):
+    if not staff_time_service.delete_log(db, user.id, log_id):
+        raise HTTPException(status_code=404, detail="Staff time log not found.")

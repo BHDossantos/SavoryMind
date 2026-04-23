@@ -81,6 +81,11 @@ export const api = {
   createDishTime: (data) => request('/api/owner/kitchen', { method: 'POST', body: JSON.stringify(data) }),
   deleteDishTime: (id) => request(`/api/owner/kitchen/${id}`, { method: 'DELETE' }),
 
+  getStaffTimeLogs: () => request('/api/owner/staff-time'),
+  getStaffTimeSummary: () => request('/api/owner/staff-time/summary'),
+  createStaffTimeLog: (data) => request('/api/owner/staff-time', { method: 'POST', body: JSON.stringify(data) }),
+  deleteStaffTimeLog: (id) => request(`/api/owner/staff-time/${id}`, { method: 'DELETE' }),
+
   getTrainingRecommendations: () => request('/api/owner/training'),
 
   // Consumer
