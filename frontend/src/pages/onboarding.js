@@ -180,6 +180,76 @@ const DC = {
   dot:       "bg-diner-500",
 };
 
+// ─── Restaurant constants ─────────────────────────────────────────────────────
+
+const BUSINESS_TYPES = [
+  { id: "restaurant",  icon: "🍽️", label: "Restaurant" },
+  { id: "bar",         icon: "🍸", label: "Bar / Cocktail Lounge" },
+  { id: "cafe",        icon: "☕", label: "Café / Bistro" },
+  { id: "fine_dining", icon: "✨", label: "Fine Dining" },
+  { id: "fast_casual", icon: "⚡", label: "Fast Casual" },
+  { id: "food_truck",  icon: "🚚", label: "Food Truck / Pop-up" },
+  { id: "bakery",      icon: "🥐", label: "Bakery / Patisserie" },
+  { id: "wine_bar",    icon: "🍷", label: "Wine Bar / Winery" },
+];
+
+const DINING_STYLES = [
+  { id: "fine_dining",  label: "✨ Fine Dining",    sub: "White-tablecloth, tasting menus" },
+  { id: "casual",       label: "😊 Casual Dining",  sub: "Relaxed, everyday experience" },
+  { id: "fast_casual",  label: "⚡ Fast Casual",    sub: "Quick service, quality food" },
+  { id: "tasting_menu", label: "🎭 Tasting Menu",   sub: "Chef-driven multi-course journey" },
+  { id: "family_style", label: "👨‍👩‍👧 Family Style",  sub: "Shared dishes, communal eating" },
+  { id: "bar_bites",    label: "🍺 Bar & Bites",    sub: "Drinks-first with great food" },
+];
+
+const SERVICE_TYPES  = ["Dine-in","Takeout","Delivery","Catering","Private events"];
+
+const REST_AUDIENCE = [
+  { id: "couples",  label: "💑 Couples" },
+  { id: "families", label: "👨‍👩‍👧 Families" },
+  { id: "business", label: "💼 Business" },
+  { id: "tourists", label: "✈️ Tourists" },
+  { id: "foodies",  label: "🍴 Foodies" },
+  { id: "young",    label: "🎉 Young crowd" },
+  { id: "luxury",   label: "💎 Luxury seekers" },
+  { id: "locals",   label: "🏘️ Local regulars" },
+];
+
+const PEAK_HOURS = [
+  { id: "breakfast",  label: "🌅 Breakfast (7–10am)" },
+  { id: "brunch",     label: "🥐 Brunch (10am–1pm)" },
+  { id: "lunch",      label: "☀️ Lunch (12–3pm)" },
+  { id: "afternoon",  label: "🍵 Afternoon (3–6pm)" },
+  { id: "dinner",     label: "🌙 Dinner (6–10pm)" },
+  { id: "late_night", label: "🌃 Late Night (10pm+)" },
+];
+
+const REST_GOALS = [
+  { id: "reduce_waste", label: "♻️ Reduce food waste" },
+  { id: "loyalty",      label: "🔁 Build customer loyalty" },
+  { id: "upsell",       label: "📈 Increase average spend" },
+  { id: "staff",        label: "👥 Better staff management" },
+  { id: "reviews",      label: "⭐ Improve online reviews" },
+  { id: "menu_opt",     label: "🍽️ Optimise my menu" },
+  { id: "sentiment",    label: "💬 Understand customers" },
+  { id: "wine_pairing", label: "🍷 Elevate wine program" },
+];
+
+const WINE_PROGRAM_OPTS = [
+  "Red wines","White wines","Rosé","Sparkling / Champagne",
+  "Natural wines","Orange wines","Dessert wines",
+];
+
+// Restaurant colour lookup
+const RC = {
+  chip:      "bg-brand-600 text-white border-brand-600",
+  chipHover: "hover:border-brand-300",
+  ring:      "focus:ring-brand-400",
+  cardSel:   "border-brand-500 bg-brand-50",
+  progress:  "bg-brand-500",
+  dot:       "bg-brand-500",
+};
+
 const ACCOUNT_TYPES = [
   { id: "consumer",   icon: "🏠", title: "Home Cook",        sub: "Wine pairings, music moods & recipe recommendations", border: "border-consumer-500", bg: "bg-consumer-50", check: "text-consumer-600" },
   { id: "diner",      icon: "🍽️", title: "Food Explorer",    sub: "Restaurant discovery, visit history & dining memories", border: "border-diner-500",    bg: "bg-diner-50",    check: "text-diner-600" },
@@ -818,13 +888,232 @@ const DINER_STEPS = [
   { id: "d_summary",  title: "Your identity is ready!",   sub: "Here's your Food Explorer profile.",           icon: "🎉", fields: [], isSummary: true },
 ];
 
-// Restaurant uses generic steps for now
-const GENERIC_STEPS = [
-  { id: "name",    title: "What's your name?",        sub: "Let's make this personal.",        icon: "👋", fields: ["first_name","last_name"] },
-  { id: "loc",     title: "Where is your restaurant?",sub: "We'll geo-target your customers.", icon: "📍", fields: ["city","country"] },
-  { id: "food",    title: "What do you serve?",       sub: "Your menu and cuisine style.",     icon: "🍽️", fields: ["cuisine_preferences","dietary_preferences"] },
-  { id: "summary", title: "You're all set!",          sub: "Welcome to SavoryMind.",           icon: "🎉", fields: [], isSummary: true },
+const RESTAURANT_STEPS = [
+  { id: "r_name",    title: "Tell us about yourself",      sub: "The owner behind the restaurant.",          icon: "👋", fields: ["first_name","last_name"] },
+  { id: "r_rest",    title: "Your restaurant",             sub: "Name and type of venue.",                   icon: "🏪", fields: ["restaurant_name","business_type"] },
+  { id: "r_style",   title: "Dining style & service",      sub: "How guests experience your venue.",         icon: "🍽️", fields: ["dining_style","service_type"] },
+  { id: "loc",       title: "Where are you located?",      sub: "City and country.",                         icon: "📍", fields: ["city","country"] },
+  { id: "r_cuisine", title: "Cuisine & audience",          sub: "What you serve and who you serve it to.",   icon: "🌍", fields: ["restaurant_cuisine","target_audience","seating_capacity"] },
+  { id: "r_bev",     title: "Beverage program",            sub: "Drinks you offer your guests.",             icon: "🍷", fields: ["serves_wine","serves_cocktails","serves_beer","wine_program"] },
+  { id: "r_goals",   title: "Your goals with SavoryMind",  sub: "What do you want to achieve?",             icon: "🎯", fields: ["restaurant_goals","peak_hours"] },
+  { id: "r_summary", title: "Your restaurant is ready!",   sub: "Here's your SavoryMind profile.",          icon: "🎉", fields: [], isSummary: true },
 ];
+
+// ─── Restaurant step components ───────────────────────────────────────────────
+
+function StepRestName({ data, onChange }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your First Name</label>
+        <input value={data.first_name} onChange={(e) => onChange("first_name", e.target.value)}
+          placeholder="First name" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Last Name</label>
+        <input value={data.last_name} onChange={(e) => onChange("last_name", e.target.value)}
+          placeholder="Last name" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+      </div>
+    </div>
+  );
+}
+
+function StepRestDetails({ data, onChange }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Restaurant Name</label>
+        <input value={data.restaurant_name} onChange={(e) => onChange("restaurant_name", e.target.value)}
+          placeholder="e.g. La Bella Cucina" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Type of venue</p>
+        <div className="grid grid-cols-2 gap-2">
+          {BUSINESS_TYPES.map((b) => (
+            <button key={b.id} type="button" onClick={() => onChange("business_type", b.id)}
+              className={`flex items-center gap-2 p-3 rounded-xl border-2 text-left transition-all text-sm ${data.business_type === b.id ? RC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
+              <span className="text-lg">{b.icon}</span>
+              <span className="font-medium text-gray-800">{b.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepRestStyle({ data, onChange }) {
+  const services = pj(data.service_type, []);
+  const toggle   = (v) => onChange("service_type", JSON.stringify(services.includes(v) ? services.filter((x) => x !== v) : [...services, v]));
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">Dining style</p>
+        <div className="grid grid-cols-1 gap-2">
+          {DINING_STYLES.map((s) => (
+            <button key={s.id} type="button" onClick={() => onChange("dining_style", s.id)}
+              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${data.dining_style === s.id ? RC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">{s.label}</p>
+                <p className="text-xs text-gray-400">{s.sub}</p>
+              </div>
+              {data.dining_style === s.id && <span className="text-brand-600 font-bold">✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Services offered <span className="font-normal text-gray-400">(pick all)</span></p>
+        <ChipSelect items={SERVICE_TYPES} selected={services} onToggle={toggle} activeClass={RC.chip} hoverClass={RC.chipHover} />
+      </div>
+    </div>
+  );
+}
+
+function StepRestCuisine({ data, onChange }) {
+  const cuisines  = pj(data.restaurant_cuisine, []);
+  const audience  = pj(data.target_audience, []);
+  const toggleC   = (v) => onChange("restaurant_cuisine", JSON.stringify(cuisines.includes(v) ? cuisines.filter((x) => x !== v) : [...cuisines, v]));
+  const toggleA   = (v) => onChange("target_audience",    JSON.stringify(audience.includes(v)  ? audience.filter((x) => x !== v)  : [...audience, v]));
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">Cuisines you serve</p>
+        <ChipSelect items={CUISINES} selected={cuisines} onToggle={toggleC} activeClass={RC.chip} hoverClass={RC.chipHover} />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">Target audience <span className="font-normal text-gray-400">(pick all)</span></p>
+        <div className="grid grid-cols-2 gap-2">
+          {REST_AUDIENCE.map((a) => (
+            <button key={a.id} type="button" onClick={() => toggleA(a.id)}
+              className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${audience.includes(a.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Seating capacity <span className="font-normal text-gray-400">(optional)</span></label>
+        <input type="number" min="1" value={data.seating_capacity || ""}
+          onChange={(e) => onChange("seating_capacity", e.target.value ? parseInt(e.target.value) : "")}
+          placeholder="e.g. 80" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+      </div>
+    </div>
+  );
+}
+
+function StepRestBeverage({ data, onChange }) {
+  const wineList = pj(data.wine_program, []);
+  const toggleW  = (v) => onChange("wine_program", JSON.stringify(wineList.includes(v) ? wineList.filter((x) => x !== v) : [...wineList, v]));
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-gray-500">Tell us what you pour — we'll match guests to your bar.</p>
+      <div className="space-y-3">
+        {[
+          { key: "serves_wine",      icon: "🍷", label: "Wine" },
+          { key: "serves_cocktails", icon: "🍸", label: "Cocktails" },
+          { key: "serves_beer",      icon: "🍺", label: "Beer" },
+        ].map(({ key, icon, label }) => (
+          <label key={key} className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 hover:bg-gray-50">
+            <input type="checkbox" checked={!!data[key]} onChange={(e) => onChange(key, e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300" />
+            <span className="text-lg">{icon}</span>
+            <span className="text-sm font-medium text-gray-800">{label}</span>
+          </label>
+        ))}
+      </div>
+      {data.serves_wine && (
+        <div>
+          <p className="text-sm font-semibold text-gray-700 mb-2">Wine list highlights</p>
+          <ChipSelect items={WINE_PROGRAM_OPTS} selected={wineList} onToggle={toggleW} activeClass={RC.chip} hoverClass={RC.chipHover} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StepRestGoals({ data, onChange }) {
+  const goals = pj(data.restaurant_goals, []);
+  const hours = pj(data.peak_hours, []);
+  const toggleG = (v) => onChange("restaurant_goals", JSON.stringify(goals.includes(v) ? goals.filter((x) => x !== v) : [...goals, v]));
+  const toggleH = (v) => onChange("peak_hours",       JSON.stringify(hours.includes(v) ? hours.filter((x) => x !== v) : [...hours, v]));
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">What do you want from SavoryMind? <span className="font-normal text-gray-400">(pick all)</span></p>
+        <div className="grid grid-cols-2 gap-2">
+          {REST_GOALS.map((g) => (
+            <button key={g.id} type="button" onClick={() => toggleG(g.id)}
+              className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${goals.includes(g.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">Peak service hours <span className="font-normal text-gray-400">(pick all)</span></p>
+        <div className="grid grid-cols-2 gap-2">
+          {PEAK_HOURS.map((h) => (
+            <button key={h.id} type="button" onClick={() => toggleH(h.id)}
+              className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${hours.includes(h.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
+              {h.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepRestSummary({ data }) {
+  const btype    = BUSINESS_TYPES.find((b) => b.id === data.business_type);
+  const cuisines = pj(data.restaurant_cuisine, []).slice(0, 4);
+  const goals    = pj(data.restaurant_goals, []).slice(0, 3);
+  return (
+    <div className="text-center space-y-6">
+      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-brand-100 text-4xl mx-auto">
+        {btype?.icon || "🏪"}
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-500 mb-1">Your Restaurant Profile</p>
+        <h2 className="text-2xl font-extrabold text-gray-900">{data.restaurant_name || "Your Restaurant"}</h2>
+        <p className="text-gray-500 text-sm mt-1">{btype?.label || "Restaurant"}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-left">
+        {data.city && (
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-3">
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">Location</p>
+            <p className="font-bold text-gray-800 mt-0.5">{data.city}{data.country ? `, ${data.country}` : ""}</p>
+          </div>
+        )}
+        {data.seating_capacity && (
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-3">
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">Capacity</p>
+            <p className="font-bold text-gray-800 mt-0.5">{data.seating_capacity} seats</p>
+          </div>
+        )}
+        {cuisines.length > 0 && (
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 col-span-2">
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide mb-1">Cuisines</p>
+            <p className="text-sm text-gray-700">{cuisines.join(" · ")}</p>
+          </div>
+        )}
+        {goals.length > 0 && (
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 col-span-2">
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide mb-1">Goals</p>
+            <div className="flex flex-wrap gap-1">
+              {goals.map((g) => {
+                const found = REST_GOALS.find((x) => x.id === g);
+                return <span key={g} className="text-xs bg-white border border-brand-200 text-brand-700 px-2 py-0.5 rounded-full">{found?.label || g}</span>;
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="text-sm text-gray-400">SavoryMind will now power your restaurant intelligence 🎉</p>
+    </div>
+  );
+}
 
 // ─── Main Onboarding component ────────────────────────────────────────────────
 
@@ -856,14 +1145,15 @@ export default function Onboarding() {
   const onChange = (key, val) => setData((d) => ({ ...d, [key]: val }));
 
   const acType = data.account_type;
-  const steps  = acType === "consumer" ? CONSUMER_STEPS
-               : acType === "diner"    ? DINER_STEPS
-               : GENERIC_STEPS;
+  const steps  = acType === "consumer"   ? CONSUMER_STEPS
+               : acType === "diner"      ? DINER_STEPS
+               : acType === "restaurant" ? RESTAURANT_STEPS
+               : RESTAURANT_STEPS;
   const current   = steps[step];
   const isLast    = step === steps.length - 1;
   const progress  = ((step + 1) / steps.length) * 100;
   const firstName = data.first_name || user?.first_name || "";
-  const colours   = acType === "diner" ? DC : CC;
+  const colours   = acType === "diner" ? DC : acType === "restaurant" ? RC : CC;
 
   // Save current step's fields then advance
   const handleNext = async () => {
@@ -984,8 +1274,14 @@ export default function Onboarding() {
             {current.id === "d_music"       && <StepDinerMusic      data={data} onChange={onChange} />}
             {current.id === "habits"        && <StepDiningHabits    data={data} onChange={onChange} />}
             {current.id === "d_summary"     && <StepDinerSummary    data={data} />}
-            {/* restaurant generic */}
-            {current.id === "food"          && <StepDietGoals       data={data} onChange={onChange} />}
+            {/* restaurant */}
+            {current.id === "r_name"        && <StepRestName        data={data} onChange={onChange} />}
+            {current.id === "r_rest"        && <StepRestDetails     data={data} onChange={onChange} />}
+            {current.id === "r_style"       && <StepRestStyle       data={data} onChange={onChange} />}
+            {current.id === "r_cuisine"     && <StepRestCuisine     data={data} onChange={onChange} />}
+            {current.id === "r_bev"         && <StepRestBeverage    data={data} onChange={onChange} />}
+            {current.id === "r_goals"       && <StepRestGoals       data={data} onChange={onChange} />}
+            {current.id === "r_summary"     && <StepRestSummary     data={data} />}
           </div>
 
           {error && <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>}
