@@ -1,10 +1,21 @@
 steps:
+  # Create the GCS bucket for the database if it doesn't already exist
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gsutil mb -p $PROJECT_ID -l us-central1 gs://$PROJECT_ID-savorymind-db || true
+
+  # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/savorymind-api', './backend']
 
+  # Push to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/savorymind-api']
 
+  # Deploy to Cloud Run with the GCS bucket mounted at /data
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -28,6 +39,9 @@ steps:
       - '1'
       - --port
       - '8080'
+      - --add-volume=name=db,type=cloud-storage,bucket=$PROJECT_ID-savorymind-db
+      - --add-volume-mount=volume=db,mount-path=/data
+      - --set-env-vars=DATABASE_URL=sqlite:////data/savorymind.db
 
 images:
   - gcr.io/$PROJECT_ID/savorymind-api
