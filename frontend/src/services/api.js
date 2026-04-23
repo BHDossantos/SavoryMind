@@ -1,18 +1,35 @@
-// In production (Vercel), NEXT_PUBLIC_API_URL is set and the browser calls the API directly.
-// In local dev it falls back to the Next.js rewrite proxy → localhost:8000.
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/backend";
+// In production (any non-localhost host) call the Render backend directly from the browser —
+// no Next.js proxy needed and no env var dependency.
+// In local dev the proxy rewrite forwards /backend/* → localhost:8000.
+const PROD_API = "https://savorymind-api.onrender.com";
+function getBaseUrl() {
+  if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
+  const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  return isLocal ? "/backend" : PROD_API;
+}
 
 function getToken() {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("token");
 }
 
-async function request(path, options = {}) {
+async function request(path, options = {}, _attempt = 0) {
+  const BASE_URL = getBaseUrl();
   const token = getToken();
   const headers = { "Content-Type": "application/json", ...options.headers };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  } catch (networkErr) {
+    // Auto-retry on network failure (Render cold-start wake-up), up to 3 times
+    if (_attempt < 3) {
+      await new Promise((r) => setTimeout(r, ((_attempt + 1) * 8000)));
+      return request(path, options, _attempt + 1);
+    }
+    throw new Error("Cannot reach the server. It may be starting up — please try again in a moment.");
+  }
 
   // Only treat 401 as "session expired" for protected endpoints, not auth endpoints
   const isAuthEndpoint = path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/auth/social");
