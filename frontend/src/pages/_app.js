@@ -41,7 +41,12 @@ function AppContent({ Component, pageProps }) {
       }
       return;
     }
-    if (user && !user.onboarding_completed && !isOnboarding && !isPublic) {
+    // Also check localStorage to avoid race condition when onboarding just completed
+    // (React state update is async, but localStorage is set synchronously by updateUser)
+    const onboardingDone = user?.onboarding_completed || (() => {
+      try { return JSON.parse(localStorage.getItem("user") || "{}").onboarding_completed; } catch { return false; }
+    })();
+    if (user && !onboardingDone && !isOnboarding && !isPublic) {
       router.replace("/onboarding");
       return;
     }
