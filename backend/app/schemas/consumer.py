@@ -83,3 +83,19 @@ class ProfileUpdate(BaseModel):
 class BehaviorLogCreate(BaseModel):
     action_type: str
     metadata: Optional[dict] = None
+
+
+class PantryItemCreate(BaseModel):
+    ingredient: str
+    quantity: Optional[str] = None
+    category: Optional[str] = "Other"
+
+
+class PantryItemResponse(BaseModel):
+    id: int
+    ingredient: str
+    quantity: Optional[str]
+    category: Optional[str]
+    added_at: datetime
+
+    model_config = {"from_attributes": True}

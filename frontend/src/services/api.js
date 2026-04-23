@@ -135,6 +135,13 @@ export const api = {
   },
   getRecipe: (id) => request(`/api/consumer/recipes/${id}`),
 
+  // Consumer — Pantry
+  getPantry: () => request("/api/consumer/pantry"),
+  addPantryItem: (data) => request("/api/consumer/pantry", { method: "POST", body: JSON.stringify(data) }),
+  deletePantryItem: (id) => request(`/api/consumer/pantry/${id}`, { method: "DELETE" }),
+  clearPantry: () => request("/api/consumer/pantry", { method: "DELETE" }),
+  getPantryRecipes: () => request("/api/consumer/pantry/recipes"),
+
   // Restaurant Owner — Food Waste
   getWasteLogs: () => request("/api/owner/waste"),
   getWasteSummary: () => request("/api/owner/waste/summary"),

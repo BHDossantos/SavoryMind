@@ -18,6 +18,15 @@ function pj(val, fallback) {
   try { return JSON.parse(val); } catch { return fallback; }
 }
 
+const MOOD_CHIPS = [
+  { id: "cozy",        emoji: "🍲", label: "Cozy"        },
+  { id: "healthy",     emoji: "🥗", label: "Healthy"     },
+  { id: "adventurous", emoji: "🌶️", label: "Adventurous" },
+  { id: "indulgent",   emoji: "🍝", label: "Indulgent"   },
+  { id: "quick",       emoji: "⚡", label: "Quick"       },
+  { id: "brunch",      emoji: "🥞", label: "Brunch"      },
+];
+
 export default function ConsumerDashboard() {
   const { user } = useAuth();
   const [pairings,     setPairings]     = useState([]);
@@ -25,6 +34,9 @@ export default function ConsumerDashboard() {
   const [recs,         setRecs]         = useState([]);
   const [connections,  setConnections]  = useState([]);
   const [loading,      setLoading]      = useState(true);
+  const [activeMood,   setActiveMood]   = useState("");
+  const [suggestion,   setSuggestion]   = useState(null);
+  const [suggLoading,  setSuggLoading]  = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -37,6 +49,16 @@ export default function ConsumerDashboard() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const pickMood = async (mood) => {
+    const next = activeMood === mood ? "" : mood;
+    setActiveMood(next);
+    if (!next) { setSuggestion(null); return; }
+    setSuggLoading(true);
+    try { setSuggestion(await api.getDailySuggestion(next)); }
+    catch {}
+    finally { setSuggLoading(false); }
+  };
 
   if (loading) return <LoadingSpinner message="Loading your dashboard..." />;
 
@@ -74,6 +96,50 @@ export default function ConsumerDashboard() {
           )}
         </div>
         <div className="absolute right-6 top-6 text-6xl opacity-20">{persona?.icon || "🍽️"}</div>
+      </div>
+
+      {/* ── Mood entry widget ── */}
+      <div className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-5">
+        <p className="text-sm font-bold text-gray-900 mb-1">What are you feeling tonight?</p>
+        <p className="text-xs text-gray-400 mb-4">Pick a mood and we'll find the perfect dish for you.</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {MOOD_CHIPS.map((m) => (
+            <button key={m.id} onClick={() => pickMood(m.id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold border transition-all ${
+                activeMood === m.id
+                  ? "bg-consumer-600 text-white border-consumer-600 shadow-md"
+                  : "bg-consumer-50 text-gray-700 border-consumer-200 hover:border-consumer-500 hover:text-consumer-700"
+              }`}>
+              <span>{m.emoji}</span> {m.label}
+            </button>
+          ))}
+        </div>
+
+        {suggLoading && (
+          <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+            <span className="animate-spin">🍽️</span> Finding a dish for you…
+          </div>
+        )}
+
+        {!suggLoading && suggestion && activeMood && (
+          <div className="bg-consumer-50 border border-consumer-200 rounded-2xl p-4 flex items-center gap-4">
+            <span className="text-4xl flex-shrink-0">{suggestion.suggestion?.image_emoji || "🍽️"}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900">{suggestion.suggestion?.title}</p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{suggestion.reason}</p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className="text-xs bg-consumer-200 text-consumer-800 px-2 py-0.5 rounded-full">
+                  {suggestion.suggestion?.cuisine}
+                </span>
+                <span className="text-xs text-gray-400">⏱️ {suggestion.suggestion?.time_minutes} min</span>
+              </div>
+            </div>
+            <Link href={`/consumer/explore`}
+              className="flex-shrink-0 bg-consumer-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-consumer-700 transition-colors">
+              Cook this →
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* ── Stats ── */}

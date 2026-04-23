@@ -20,6 +20,7 @@ const MOODS = [
 ];
 
 const QUICK_LINKS = [
+  { href: "/consumer/pantry",  emoji: "🧺", label: "My Pantry",     sub: "Cook from what you already have" },
   { href: "/consumer/recipes", emoji: "📖", label: "Recipe Library", sub: "Browse all recipes by cuisine & mood" },
   { href: "/consumer/planner", emoji: "📅", label: "Meal Planner",   sub: "Your 7-day personalised plan" },
   { href: "/consumer/wine",    emoji: "🍷", label: "Wine Pairing",   sub: "Find the perfect bottle for tonight" },
@@ -146,7 +147,7 @@ export default function CookPage() {
       {/* Quick links */}
       <div>
         <h2 className="text-base font-bold text-gray-900 mb-4">More cooking tools</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {QUICK_LINKS.map((l) => (
             <Link key={l.href} href={l.href}
               className="bg-white border border-consumer-100 rounded-2xl p-4 hover:border-consumer-400 hover:shadow-sm transition-all group">

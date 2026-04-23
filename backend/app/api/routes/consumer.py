@@ -10,8 +10,9 @@ from ...schemas.consumer import (
     MusicMoodRequest, MusicMoodResponse, MusicRecommendation,
     SocialConnectionUpdate, SocialConnectionResponse,
     ProfileUpdate, BehaviorLogCreate,
+    PantryItemCreate, PantryItemResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service
 from ...ml.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -250,3 +251,61 @@ def get_daily_suggestion(
     _require_consumer(current_user)
     _log(db, current_user.id, "daily_suggestion", {"mood": mood})
     return meal_plan_service.get_daily_suggestion(mood=mood)
+
+
+# ── Pantry ────────────────────────────────────────────────────────────────────
+
+@router.get("/pantry", response_model=list[PantryItemResponse])
+def get_pantry(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    return pantry_service.get_pantry(db, current_user.id)
+
+
+@router.post("/pantry", response_model=PantryItemResponse, status_code=201)
+def add_pantry_item(
+    body: PantryItemCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    return pantry_service.add_item(db, current_user.id, body.ingredient, body.quantity, body.category)
+
+
+@router.delete("/pantry/{item_id}", status_code=204)
+def delete_pantry_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    if not pantry_service.delete_item(db, current_user.id, item_id):
+        raise HTTPException(status_code=404, detail="Pantry item not found.")
+
+
+@router.delete("/pantry", status_code=204)
+def clear_pantry(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    pantry_service.clear_pantry(db, current_user.id)
+
+
+@router.get("/pantry/recipes")
+def recipes_from_pantry(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    items = pantry_service.get_pantry(db, current_user.id)
+    if not items:
+        return {"recipes": [], "matched_ingredients": []}
+    keywords = ", ".join(i.ingredient for i in items[:10])
+    _log(db, current_user.id, "pantry_recipes", {"ingredients": keywords})
+    result = recipe_service.get_recipe_recommendations(
+        cuisine="", mood="", keywords=keywords, ingredients=keywords, max_time=0, difficulty=""
+    )
+    return {"recipes": result.get("recipes", []), "matched_ingredients": [i.ingredient for i in items]}

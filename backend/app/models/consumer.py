@@ -45,3 +45,14 @@ class BehaviorLog(Base):
     action_type = Column(String, nullable=False)   # wine_pairing | music_mood | view_recommendation | etc.
     action_meta = Column(Text, nullable=True)       # JSON
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PantryItem(Base):
+    __tablename__ = "pantry_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    ingredient = Column(String(100), nullable=False)
+    quantity = Column(String(50), nullable=True)    # "2 cups", "1 lb", "a handful", etc.
+    category = Column(String(50), nullable=True)    # Proteins | Vegetables | Dairy | Grains | Spices | Other
+    added_at = Column(DateTime, default=datetime.utcnow)
