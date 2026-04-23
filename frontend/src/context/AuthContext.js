@@ -7,6 +7,7 @@ const AuthContext = createContext(null);
 
 function dashboardPath(user) {
   if (!user) return "/login";
+  if (user.account_type === "staff") return "/staff-portal";
   if (!user.onboarding_completed) return "/onboarding";
   if (user.account_type === "consumer") return "/consumer/dashboard";
   if (user.account_type === "diner")    return "/diner/dashboard";

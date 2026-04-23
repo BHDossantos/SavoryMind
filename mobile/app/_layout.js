@@ -12,12 +12,13 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (loading) return;
-    const inApp = ['(restaurant)', '(consumer)', '(diner)'].includes(segments[0]);
+    const inApp = ['(restaurant)', '(consumer)', '(diner)', '(staff)'].includes(segments[0]);
 
     if (!user && inApp) {
       router.replace('/login');
     } else if (user && !inApp && segments[0] !== 'login' && segments[0] !== 'signup') {
-      if (user.account_type === 'consumer') router.replace('/(consumer)/dashboard');
+      if (user.account_type === 'staff') router.replace('/(staff)/portal');
+      else if (user.account_type === 'consumer') router.replace('/(consumer)/dashboard');
       else if (user.account_type === 'diner') router.replace('/(diner)/dashboard');
       else router.replace('/(restaurant)/dashboard');
     }
@@ -39,6 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(restaurant)" />
       <Stack.Screen name="(consumer)" />
       <Stack.Screen name="(diner)" />
+      <Stack.Screen name="(staff)" />
     </Stack>
   );
 }

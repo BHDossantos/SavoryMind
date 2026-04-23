@@ -38,3 +38,6 @@ class User(Base):
 
     # Onboarding gate
     onboarding_completed = Column(Boolean, default=False)
+
+    # Staff account linkage — only set when account_type == "staff"
+    employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)

@@ -9,7 +9,7 @@ from app.models.consumer import WinePairing, MusicMood, SocialConnection, Behavi
 from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # noqa: F401
 from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
-from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal
 
 # Columns to add to existing `users` table on older deployments
 _USER_MIGRATIONS = [
@@ -27,6 +27,12 @@ _USER_MIGRATIONS = [
     ("onboarding_completed", "BOOLEAN DEFAULT FALSE"),
     ("social_provider",      "VARCHAR(50)"),
     ("social_id",            "VARCHAR(255)"),
+    ("employer_id",          "INTEGER"),
+]
+
+_STAFF_TIME_MIGRATIONS = [
+    ("staff_user_id", "INTEGER"),
+    ("is_open",       "BOOLEAN DEFAULT FALSE"),
 ]
 
 
@@ -37,7 +43,13 @@ def _run_migrations():
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_type}"))
                 conn.commit()
             except Exception:
-                pass  # column already exists — safe to skip
+                pass
+        for col, col_type in _STAFF_TIME_MIGRATIONS:
+            try:
+                conn.execute(text(f"ALTER TABLE staff_time_logs ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
 
 
 @asynccontextmanager
@@ -65,6 +77,7 @@ app.include_router(consumer.router, prefix="/api")
 app.include_router(restaurant_ext.router, prefix="/api")
 app.include_router(owner_extras.router, prefix="/api")
 app.include_router(diner.router, prefix="/api")
+app.include_router(staff_portal.router, prefix="/api")
 
 
 @app.get("/")

@@ -184,4 +184,15 @@ export const api = {
   // Restaurant — Trends & Marketing
   getMenuTrends: () => request("/api/restaurant/trends"),
   getMarketingInsights: () => request("/api/restaurant/marketing"),
+
+  // Restaurant — Employee account management
+  getEmployees: () => request("/api/staff/employees"),
+  createEmployee: (data) => request("/api/staff/employees", { method: "POST", body: JSON.stringify(data) }),
+  deleteEmployee: (id) => request(`/api/staff/employees/${id}`, { method: "DELETE" }),
+
+  // Staff portal — self-service clock in/out
+  getClockStatus: () => request("/api/staff/status"),
+  clockIn: (data) => request("/api/staff/clock-in", { method: "POST", body: JSON.stringify(data) }),
+  clockOut: (data) => request("/api/staff/clock-out", { method: "POST", body: JSON.stringify(data) }),
+  getMyLogs: () => request("/api/staff/my-logs"),
 };

@@ -30,13 +30,15 @@ class DishTimeLog(Base):
 
 class StaffTimeLog(Base):
     __tablename__ = "staff_time_logs"
-    id            = Column(Integer, primary_key=True, index=True)
-    user_id       = Column(Integer, nullable=False, index=True)
-    staff_name    = Column(String(100), nullable=False)
-    date          = Column(String(20), nullable=False)   # YYYY-MM-DD
-    clock_in      = Column(String(10), nullable=False)   # HH:MM
-    clock_out     = Column(String(10), nullable=False)   # HH:MM
-    break_minutes = Column(Integer, default=0)
-    total_hours   = Column(Float, nullable=False)        # computed on save
-    notes         = Column(Text, nullable=True)
-    created_at    = Column(DateTime, default=datetime.datetime.utcnow)
+    id             = Column(Integer, primary_key=True, index=True)
+    user_id        = Column(Integer, nullable=False, index=True)   # restaurant owner's user_id
+    staff_user_id  = Column(Integer, nullable=True)                # employee's user_id (if self-service)
+    staff_name     = Column(String(100), nullable=False)
+    date           = Column(String(20), nullable=False)            # YYYY-MM-DD
+    clock_in       = Column(String(10), nullable=False)            # HH:MM
+    clock_out      = Column(String(10), nullable=True)             # HH:MM — NULL when still clocked in
+    break_minutes  = Column(Integer, default=0)
+    total_hours    = Column(Float, nullable=True)                  # NULL until clocked out
+    is_open        = Column(Boolean, default=False)                # True = currently clocked in
+    notes          = Column(Text, nullable=True)
+    created_at     = Column(DateTime, default=datetime.datetime.utcnow)

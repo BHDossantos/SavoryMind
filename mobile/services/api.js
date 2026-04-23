@@ -88,6 +88,17 @@ export const api = {
 
   getTrainingRecommendations: () => request('/api/owner/training'),
 
+  // Staff portal — employee self-service
+  getClockStatus: () => request('/api/staff/status'),
+  clockIn: (data) => request('/api/staff/clock-in', { method: 'POST', body: JSON.stringify(data) }),
+  clockOut: (data) => request('/api/staff/clock-out', { method: 'POST', body: JSON.stringify(data) }),
+  getMyLogs: () => request('/api/staff/my-logs'),
+
+  // Restaurant — employee management
+  getEmployees: () => request('/api/staff/employees'),
+  createEmployee: (data) => request('/api/staff/employees', { method: 'POST', body: JSON.stringify(data) }),
+  deleteEmployee: (id) => request(`/api/staff/employees/${id}`, { method: 'DELETE' }),
+
   // Consumer
   getWinePairings: () => request('/api/consumer/wine-pairing'),
   createWinePairing: (data) => request('/api/consumer/wine-pairing', { method: 'POST', body: JSON.stringify(data) }),

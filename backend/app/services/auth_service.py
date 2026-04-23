@@ -15,7 +15,7 @@ def _seed_for_type(db: Session, user: User) -> None:
         seed_diner_data(db, user.id)
 
 
-def register(db: Session, data: UserRegister) -> tuple[str, User]:
+def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[str, User]:
     if db.query(User).filter(User.email == data.email.lower()).first():
         raise HTTPException(status_code=400, detail="Email already registered.")
 
@@ -25,17 +25,20 @@ def register(db: Session, data: UserRegister) -> tuple[str, User]:
         account_type=data.account_type,
         display_name=data.display_name,
         restaurant_name=data.display_name if data.account_type == "restaurant" else None,
+        employer_id=employer_id,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
+    # Staff accounts don't get demo data seeded
     if data.account_type == "restaurant":
         seed_database(db, user_id=user.id)
     elif data.account_type == "consumer":
         seed_consumer_data(db, user_id=user.id)
-    else:
+    elif data.account_type == "diner":
         seed_diner_data(db, user_id=user.id)
+    # staff: no seeding
 
     token = create_access_token(user.id, user.email)
     return token, user
