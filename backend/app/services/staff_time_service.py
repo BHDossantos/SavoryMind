@@ -29,9 +29,9 @@ def clock_in(db: Session, employer_id: int, staff_user_id: int, staff_name: str,
         staff_name=staff_name,
         date=now.strftime("%Y-%m-%d"),
         clock_in=now.strftime("%H:%M"),
-        clock_out=None,
+        clock_out="",   # empty string = still clocked in (avoids NOT NULL constraint on old DBs)
         break_minutes=0,
-        total_hours=None,
+        total_hours=0.0,
         is_open=True,
         notes=notes,
     )
@@ -130,10 +130,10 @@ def get_summary(db: Session, user_id: int) -> dict:
             "overtime_shifts": 0,
         }
 
-    closed = [l for l in logs if l.total_hours is not None]
+    closed = [l for l in logs if not getattr(l, 'is_open', False)]
     total_logs = len(logs)
     avg_hours_per_shift = round(sum(l.total_hours for l in closed) / len(closed), 1) if closed else 0.0
-    overtime_shifts = sum(1 for l in closed if l.total_hours > 8)
+    overtime_shifts = sum(1 for l in closed if (l.total_hours or 0) > 8)
 
     by_staff: dict[str, dict] = {}
     for l in logs:

@@ -12,6 +12,7 @@ const NO_LAYOUT_ROUTES = ["/onboarding"];
 
 function homePath(user) {
   if (!user) return "/login";
+  if (user.account_type === "staff") return "/staff-portal";
   if (!user.onboarding_completed) return "/onboarding";
   if (user.account_type === "consumer") return "/consumer/dashboard";
   if (user.account_type === "diner") return "/diner/dashboard";
@@ -75,6 +76,10 @@ function AppContent({ Component, pageProps }) {
   }
 
   if (!user) return null;
+
+  if (user.account_type === "staff") {
+    return <Component {...pageProps} />;
+  }
 
   if (user.account_type === "consumer") {
     return (
