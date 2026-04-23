@@ -1,7 +1,7 @@
-// In production (any non-localhost host) call the Render backend directly from the browser —
-// no Next.js proxy needed and no env var dependency.
+// In production call the backend directly from the browser (no Next.js proxy needed).
+// NEXT_PUBLIC_API_URL must be set in Vercel dashboard → savorymind-api.onrender.com URL.
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
-const PROD_API = "https://savorymind-api.onrender.com";
+const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://savorymind-api.onrender.com";
 function getBaseUrl() {
   if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
   const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -118,8 +118,8 @@ export const api = {
   getConnections: () => request("/api/consumer/connections"),
   updateConnection: (platform, data) => request(`/api/consumer/connections/${platform}`, { method: "PATCH", body: JSON.stringify(data) }),
 
-  // Consumer — Profile
-  updateProfile: (data) => request("/api/consumer/profile", { method: "PATCH", body: JSON.stringify(data) }),
+  // Consumer — Profile (use updateAuthProfile for onboarding completion)
+  updateConsumerProfile: (data) => request("/api/consumer/profile", { method: "PATCH", body: JSON.stringify(data) }),
 
   // Consumer — AI recommendations
   getConsumerRecommendations: () => request("/api/consumer/recommendations"),

@@ -26,6 +26,8 @@ def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[
         display_name=data.display_name,
         restaurant_name=data.display_name if data.account_type == "restaurant" else None,
         employer_id=employer_id,
+        # Staff accounts skip onboarding — they're created by the employer
+        onboarding_completed=data.account_type == "staff",
     )
     db.add(user)
     db.commit()

@@ -17,7 +17,7 @@ export default function ConsumerProfile() {
     e.preventDefault();
     setSaving(true); setError(null); setSaved(false);
     try {
-      await api.updateProfile(form);
+      await api.updateConsumerProfile(form);
       updateUser(form);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);

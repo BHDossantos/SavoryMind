@@ -34,6 +34,13 @@ function AppContent({ Component, pageProps }) {
       router.replace("/login");
       return;
     }
+    // Staff accounts skip onboarding — always go to staff portal
+    if (user && user.account_type === "staff") {
+      if (!isPublic && router.pathname !== "/staff-portal") {
+        router.replace("/staff-portal");
+      }
+      return;
+    }
     if (user && !user.onboarding_completed && !isOnboarding && !isPublic) {
       router.replace("/onboarding");
       return;
