@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
-import DinerLayout from "../../components/DinerLayout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ErrorMessage from "../../components/ErrorMessage";
 
@@ -54,7 +53,7 @@ export default function DiscoverPage() {
   useEffect(() => { search(); }, []);
 
   return (
-    <DinerLayout>
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">🔍 Discover Restaurants</h1>
         <p className="text-gray-400 mt-1">Find your perfect place to eat tonight</p>
@@ -171,6 +170,6 @@ export default function DiscoverPage() {
           </div>
         </div>
       )}
-    </DinerLayout>
+    </div>
   );
 }

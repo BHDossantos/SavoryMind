@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
-import ConsumerLayout from "../../components/ConsumerLayout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ErrorMessage from "../../components/ErrorMessage";
 
@@ -39,11 +38,11 @@ export default function PlannerPage() {
 
   const handleDietary = (d) => { setDietary(d); load(d); };
 
-  if (loading) return <ConsumerLayout><LoadingSpinner /></ConsumerLayout>;
-  if (error)   return <ConsumerLayout><ErrorMessage message={error} onRetry={() => load()} /></ConsumerLayout>;
+  if (loading) return <div><LoadingSpinner /></div>;
+  if (error)   return <div><ErrorMessage message={error} onRetry={() => load()} /></div>;
 
   return (
-    <ConsumerLayout>
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">📅 Meal Planner</h1>
         <p className="text-gray-400 mt-1">Your personalised 7-day plan with shopping list</p>
@@ -133,7 +132,7 @@ export default function PlannerPage() {
           </div>
         </div>
       )}
-    </ConsumerLayout>
+    </div>
   );
 }
 
