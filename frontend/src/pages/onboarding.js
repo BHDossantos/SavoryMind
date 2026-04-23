@@ -122,6 +122,64 @@ const DRINK_TYPES = [
 ];
 const DRINK_FREQS = ["Never","Occasionally","Regularly","Often"];
 
+// ─── Diner constants ──────────────────────────────────────────────────────────
+
+const DINING_OCCASIONS = [
+  { id: "romantic",    label: "💑 Romantic dinners" },
+  { id: "business",    label: "💼 Business lunches" },
+  { id: "friends",     label: "👯 Nights out with friends" },
+  { id: "family",      label: "👨‍👩‍👧 Family gatherings" },
+  { id: "solo",        label: "🧘 Solo dining" },
+  { id: "wine_dining", label: "🍷 Wine & fine dining" },
+  { id: "brunch",      label: "🥐 Brunch dates" },
+  { id: "celebration", label: "🎉 Special celebrations" },
+];
+
+const ATMOSPHERE_PREFS = [
+  { id: "romantic",   label: "💑 Romantic" },
+  { id: "elegant",    label: "✨ Elegant" },
+  { id: "cozy",       label: "🕯️ Cozy & intimate" },
+  { id: "lively",     label: "🎉 Lively & social" },
+  { id: "outdoor",    label: "🌿 Outdoor terrace" },
+  { id: "rooftop",    label: "🏙️ Rooftop views" },
+  { id: "casual",     label: "👕 Casual & relaxed" },
+  { id: "hidden_gem", label: "🚪 Hidden gems" },
+];
+
+const DINING_BUDGETS = [
+  { id: "budget",   label: "💰 Budget",   sub: "Under €30 per person" },
+  { id: "moderate", label: "🍽️ Moderate", sub: "€30–60 per person" },
+  { id: "premium",  label: "⭐ Premium",  sub: "€60–120 per person" },
+  { id: "luxury",   label: "💎 Luxury",   sub: "€120+ per person" },
+];
+
+const DINING_GROUPS = [
+  { id: "solo",     label: "🧘 Solo" },
+  { id: "couple",   label: "💑 As a couple" },
+  { id: "friends",  label: "👯 With friends" },
+  { id: "family",   label: "👨‍👩‍👧 With family" },
+  { id: "business", label: "💼 For business" },
+  { id: "large",    label: "🎉 Large groups" },
+];
+
+const DINING_FREQS = [
+  { id: "daily",        label: "Every day" },
+  { id: "weekly",       label: "A few times a week" },
+  { id: "biweekly",     label: "Once or twice a week" },
+  { id: "occasionally", label: "A few times a month" },
+  { id: "rarely",       label: "Rarely" },
+];
+
+// Diner colour lookup
+const DC = {
+  chip:      "bg-diner-600 text-white border-diner-600",
+  chipHover: "hover:border-diner-300",
+  ring:      "focus:ring-diner-400",
+  cardSel:   "border-diner-500 bg-diner-50",
+  progress:  "bg-diner-500",
+  dot:       "bg-diner-500",
+};
+
 const ACCOUNT_TYPES = [
   { id: "consumer",   icon: "🏠", title: "Home Cook",        sub: "Wine pairings, music moods & recipe recommendations", border: "border-consumer-500", bg: "bg-consumer-50", check: "text-consumer-600" },
   { id: "diner",      icon: "🍽️", title: "Food Explorer",    sub: "Restaurant discovery, visit history & dining memories", border: "border-diner-500",    bg: "bg-diner-50",    check: "text-diner-600" },
@@ -536,6 +594,197 @@ function StepConsumerSummary({ data }) {
   );
 }
 
+// ─── Diner step components ────────────────────────────────────────────────────
+
+function StepDiningOccasions({ data, onChange }) {
+  const selected = pj(data.dining_occasions, []);
+  const toggle   = (v) => onChange("dining_occasions", JSON.stringify(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]));
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">When do you typically go out to eat?</p>
+      <div className="grid grid-cols-2 gap-2">
+        {DINING_OCCASIONS.map((o) => (
+          <button key={o.id} type="button" onClick={() => toggle(o.id)}
+            className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${selected.includes(o.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepDinerCuisines({ data, onChange }) {
+  const loved    = pj(data.cuisine_preferences, []);
+  const toggle   = (c) => onChange("cuisine_preferences", JSON.stringify(loved.includes(c) ? loved.filter((x) => x !== c) : [...loved, c]));
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">Which cuisines do you love eating out for?</p>
+      <ChipSelect items={CUISINES} selected={loved} onToggle={toggle}
+        activeClass={DC.chip} hoverClass={DC.chipHover} />
+    </div>
+  );
+}
+
+function StepTastePrefs({ data, onChange }) {
+  const diet   = pj(data.dietary_preferences, []);
+  const toggle = (v) => onChange("dietary_preferences", JSON.stringify(diet.includes(v) ? diet.filter((x) => x !== v) : [...diet, v]));
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">Any dietary preferences or restrictions?</p>
+      <div className="grid grid-cols-2 gap-2">
+        {DIETARY.map((d) => (
+          <button key={d.id} type="button" onClick={() => toggle(d.id)}
+            className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${diet.includes(d.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
+            {d.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepAtmosphere({ data, onChange }) {
+  const selected = pj(data.atmosphere_prefs, []);
+  const toggle   = (v) => onChange("atmosphere_prefs", JSON.stringify(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]));
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">What kind of atmosphere do you prefer?</p>
+      <div className="grid grid-cols-2 gap-2">
+        {ATMOSPHERE_PREFS.map((a) => (
+          <button key={a.id} type="button" onClick={() => toggle(a.id)}
+            className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${selected.includes(a.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
+            {a.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepDiningBudget({ data, onChange }) {
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">What's your typical dining budget per person?</p>
+      <div className="grid grid-cols-1 gap-3">
+        {DINING_BUDGETS.map((b) => (
+          <button key={b.id} type="button" onClick={() => onChange("dining_budget", b.id)}
+            className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${data.dining_budget === b.id ? DC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900 text-sm">{b.label}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{b.sub}</p>
+            </div>
+            {data.dining_budget === b.id && <span className="text-diner-600 font-bold">✓</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepDinerMusic({ data, onChange }) {
+  const genres = pj(data.music_genres, []);
+  const toggle = (g) => onChange("music_genres", JSON.stringify(genres.includes(g) ? genres.filter((x) => x !== g) : [...genres, g]));
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">What music sets the mood for you when dining out?</p>
+      <ChipSelect items={MUSIC_GENRES} selected={genres} onToggle={toggle}
+        activeClass={DC.chip} hoverClass={DC.chipHover} />
+    </div>
+  );
+}
+
+function StepDiningHabits({ data, onChange }) {
+  const group  = pj(data.dining_group, []);
+  const toggleGroup = (v) => onChange("dining_group", JSON.stringify(group.includes(v) ? group.filter((x) => x !== v) : [...group, v]));
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">How often do you dine out?</p>
+        <div className="flex flex-wrap gap-2">
+          {DINING_FREQS.map((f) => (
+            <button key={f.id} type="button" onClick={() => onChange("dining_frequency", f.id)}
+              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${data.dining_frequency === f.id ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">Who do you usually dine with? <span className="font-normal text-gray-400">(pick all)</span></p>
+        <div className="grid grid-cols-2 gap-2">
+          {DINING_GROUPS.map((g) => (
+            <button key={g.id} type="button" onClick={() => toggleGroup(g.id)}
+              className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${group.includes(g.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepDinerSummary({ data }) {
+  const occasions  = pj(data.dining_occasions, []).slice(0, 3);
+  const atmosphere = pj(data.atmosphere_prefs, []).slice(0, 3);
+  const cuisines   = pj(data.cuisine_preferences, []).slice(0, 4);
+  const budget     = DINING_BUDGETS.find((b) => b.id === data.dining_budget);
+  return (
+    <div className="text-center space-y-6">
+      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-diner-100 text-4xl mx-auto">🍽️</div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-diner-500 mb-1">Your Dining Identity</p>
+        <h2 className="text-2xl font-extrabold text-gray-900">Food Explorer</h2>
+        <p className="text-gray-500 text-sm mt-1">Curious, discerning, always searching for the perfect table.</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-left">
+        {budget && (
+          <div className="bg-diner-50 border border-diner-100 rounded-xl p-3">
+            <p className="text-xs text-diner-500 font-semibold uppercase tracking-wide">Budget</p>
+            <p className="font-bold text-gray-800 mt-0.5">{budget.label}</p>
+          </div>
+        )}
+        {data.dining_frequency && (
+          <div className="bg-diner-50 border border-diner-100 rounded-xl p-3">
+            <p className="text-xs text-diner-500 font-semibold uppercase tracking-wide">Frequency</p>
+            <p className="font-bold text-gray-800 mt-0.5 capitalize">{DINING_FREQS.find((f) => f.id === data.dining_frequency)?.label || data.dining_frequency}</p>
+          </div>
+        )}
+        {cuisines.length > 0 && (
+          <div className="bg-diner-50 border border-diner-100 rounded-xl p-3 col-span-2">
+            <p className="text-xs text-diner-500 font-semibold uppercase tracking-wide mb-1">Favourite Cuisines</p>
+            <p className="text-sm text-gray-700">{cuisines.join(" · ")}</p>
+          </div>
+        )}
+        {occasions.length > 0 && (
+          <div className="bg-diner-50 border border-diner-100 rounded-xl p-3 col-span-2">
+            <p className="text-xs text-diner-500 font-semibold uppercase tracking-wide mb-1">Dining For</p>
+            <div className="flex flex-wrap gap-1">
+              {occasions.map((o) => {
+                const found = DINING_OCCASIONS.find((x) => x.id === o);
+                return <span key={o} className="text-xs bg-white border border-diner-200 text-diner-700 px-2 py-0.5 rounded-full">{found?.label || o}</span>;
+              })}
+            </div>
+          </div>
+        )}
+        {atmosphere.length > 0 && (
+          <div className="bg-diner-50 border border-diner-100 rounded-xl p-3 col-span-2">
+            <p className="text-xs text-diner-500 font-semibold uppercase tracking-wide mb-1">Atmosphere</p>
+            <div className="flex flex-wrap gap-1">
+              {atmosphere.map((a) => {
+                const found = ATMOSPHERE_PREFS.find((x) => x.id === a);
+                return <span key={a} className="text-xs bg-white border border-diner-200 text-diner-700 px-2 py-0.5 rounded-full">{found?.label || a}</span>;
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="text-sm text-gray-400">SavoryMind will now personalise your dining experience 🎉</p>
+    </div>
+  );
+}
+
 // ─── Flow configs ─────────────────────────────────────────────────────────────
 
 const TYPE_STEP = { id: "type", title: "Pick your path", sub: "What brings you to SavoryMind?", icon: "🧭", fields: [] };
@@ -555,14 +804,26 @@ const CONSUMER_STEPS = [
   { id: "summary",       title: "Your identity is ready!",     sub: "Here's your culinary persona.",              icon: "🎉", fields: [], isSummary: true },
 ];
 
-// Diner + Restaurant use simplified generic steps for now (full flows added next)
+const DINER_STEPS = [
+  { id: "name",       title: "What's your name?",          sub: "Let's make this personal.",                    icon: "👋", fields: ["first_name","last_name"] },
+  { id: "loc",        title: "Where are you based?",       sub: "We'll find the best restaurants near you.",    icon: "📍", fields: ["city","country","latitude","longitude"] },
+  { id: "occasions",  title: "When do you dine out?",      sub: "Your dining occasions shape your experience.", icon: "🗓️", fields: ["dining_occasions"] },
+  { id: "d_cuisines", title: "Cuisines you love",          sub: "What do you most love to eat out?",            icon: "🌍", fields: ["cuisine_preferences"] },
+  { id: "taste_prefs",title: "Dietary preferences",        sub: "Any restrictions we should know about?",       icon: "🥗", fields: ["dietary_preferences"] },
+  { id: "d_drinks",   title: "What do you drink?",         sub: "Helps us recommend the right spots.",          icon: "🍷", fields: ["drinking_habits"] },
+  { id: "atmosphere", title: "Favourite atmosphere",       sub: "What kind of vibe do you look for?",           icon: "✨", fields: ["atmosphere_prefs"] },
+  { id: "d_budget",   title: "Dining budget",              sub: "What's your typical spend per person?",        icon: "💰", fields: ["dining_budget"] },
+  { id: "d_music",    title: "Dining soundtrack",          sub: "Music that sets the mood for you.",            icon: "🎵", fields: ["music_genres"] },
+  { id: "habits",     title: "Your dining habits",         sub: "How often and who with?",                     icon: "🔁", fields: ["dining_frequency","dining_group"] },
+  { id: "d_summary",  title: "Your identity is ready!",   sub: "Here's your Food Explorer profile.",           icon: "🎉", fields: [], isSummary: true },
+];
+
+// Restaurant uses generic steps for now
 const GENERIC_STEPS = [
-  { id: "name",    title: "What's your name?",        sub: "Let's make this personal.",           icon: "👋", fields: ["first_name","last_name"] },
-  { id: "loc",     title: "Where are you based?",     sub: "We'll find food near you.",           icon: "📍", fields: ["city","country","latitude","longitude"] },
-  { id: "food",    title: "What do you love to eat?", sub: "Your palate, your rules.",            icon: "🍽️", fields: ["cuisine_preferences","dietary_preferences"] },
-  { id: "drinks",  title: "What do you drink?",       sub: "Helps us pair the perfect glass.",    icon: "🍷", fields: ["drinking_habits"] },
-  { id: "music",   title: "Your soundtrack",          sub: "Every great meal needs music.",       icon: "🎵", fields: ["music_genres"] },
-  { id: "summary", title: "You're all set!",          sub: "Welcome to SavoryMind.",              icon: "🎉", fields: [], isSummary: true },
+  { id: "name",    title: "What's your name?",        sub: "Let's make this personal.",        icon: "👋", fields: ["first_name","last_name"] },
+  { id: "loc",     title: "Where is your restaurant?",sub: "We'll geo-target your customers.", icon: "📍", fields: ["city","country"] },
+  { id: "food",    title: "What do you serve?",       sub: "Your menu and cuisine style.",     icon: "🍽️", fields: ["cuisine_preferences","dietary_preferences"] },
+  { id: "summary", title: "You're all set!",          sub: "Welcome to SavoryMind.",           icon: "🎉", fields: [], isSummary: true },
 ];
 
 // ─── Main Onboarding component ────────────────────────────────────────────────
@@ -595,11 +856,14 @@ export default function Onboarding() {
   const onChange = (key, val) => setData((d) => ({ ...d, [key]: val }));
 
   const acType = data.account_type;
-  const steps  = acType === "consumer" ? CONSUMER_STEPS : GENERIC_STEPS;
+  const steps  = acType === "consumer" ? CONSUMER_STEPS
+               : acType === "diner"    ? DINER_STEPS
+               : GENERIC_STEPS;
   const current   = steps[step];
   const isLast    = step === steps.length - 1;
   const progress  = ((step + 1) / steps.length) * 100;
   const firstName = data.first_name || user?.first_name || "";
+  const colours   = acType === "diner" ? DC : CC;
 
   // Save current step's fields then advance
   const handleNext = async () => {
@@ -683,7 +947,7 @@ export default function Onboarding() {
         <div className="text-sm text-gray-400">{step + 1} of {steps.length}</div>
       </header>
       <div className="h-1 bg-gray-100 sticky top-[65px] z-10">
-        <div className={`h-full ${CC.progress} transition-all duration-500`} style={{ width: `${progress}%` }} />
+        <div className={`h-full ${colours.progress} transition-all duration-500`} style={{ width: `${progress}%` }} />
       </div>
 
       <div className="flex-1 flex flex-col items-center px-4 py-12">
@@ -696,19 +960,32 @@ export default function Onboarding() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-            {current.id === "name"          && <StepName          data={data} onChange={onChange} />}
-            {current.id === "loc"           && <StepLocation       data={data} onChange={onChange} />}
-            {current.id === "kitchen_style" && <StepKitchenStyle   data={data} onChange={onChange} />}
-            {current.id === "cooking_habits"&& <StepCookingHabits  data={data} onChange={onChange} />}
-            {current.id === "cuisines"      && <StepCuisines       data={data} onChange={onChange} />}
-            {current.id === "flavor"        && <StepFlavor         data={data} onChange={onChange} />}
-            {current.id === "diet_goals"    && <StepDietGoals      data={data} onChange={onChange} />}
-            {current.id === "drinks"        && <StepDrinks         data={data} onChange={onChange} />}
-            {current.id === "music"         && <StepMusic          data={data} onChange={onChange} />}
-            {current.id === "meal_types"    && <StepMealTypes      data={data} onChange={onChange} />}
-            {current.id === "kitchen_tools" && <StepKitchenTools   data={data} onChange={onChange} />}
+            {/* shared */}
+            {current.id === "name"          && <StepName           data={data} onChange={onChange} />}
+            {current.id === "loc"           && <StepLocation        data={data} onChange={onChange} />}
+            {/* consumer */}
+            {current.id === "kitchen_style" && <StepKitchenStyle    data={data} onChange={onChange} />}
+            {current.id === "cooking_habits"&& <StepCookingHabits   data={data} onChange={onChange} />}
+            {current.id === "cuisines"      && <StepCuisines        data={data} onChange={onChange} />}
+            {current.id === "flavor"        && <StepFlavor          data={data} onChange={onChange} />}
+            {current.id === "diet_goals"    && <StepDietGoals       data={data} onChange={onChange} />}
+            {current.id === "drinks"        && <StepDrinks          data={data} onChange={onChange} />}
+            {current.id === "music"         && <StepMusic           data={data} onChange={onChange} />}
+            {current.id === "meal_types"    && <StepMealTypes       data={data} onChange={onChange} />}
+            {current.id === "kitchen_tools" && <StepKitchenTools    data={data} onChange={onChange} />}
             {current.id === "summary"       && <StepConsumerSummary data={data} />}
-            {current.id === "food"          && <StepDietGoals      data={data} onChange={onChange} />}
+            {/* diner */}
+            {current.id === "occasions"     && <StepDiningOccasions data={data} onChange={onChange} />}
+            {current.id === "d_cuisines"    && <StepDinerCuisines   data={data} onChange={onChange} />}
+            {current.id === "taste_prefs"   && <StepTastePrefs      data={data} onChange={onChange} />}
+            {current.id === "d_drinks"      && <StepDrinks          data={data} onChange={onChange} />}
+            {current.id === "atmosphere"    && <StepAtmosphere      data={data} onChange={onChange} />}
+            {current.id === "d_budget"      && <StepDiningBudget    data={data} onChange={onChange} />}
+            {current.id === "d_music"       && <StepDinerMusic      data={data} onChange={onChange} />}
+            {current.id === "habits"        && <StepDiningHabits    data={data} onChange={onChange} />}
+            {current.id === "d_summary"     && <StepDinerSummary    data={data} />}
+            {/* restaurant generic */}
+            {current.id === "food"          && <StepDietGoals       data={data} onChange={onChange} />}
           </div>
 
           {error && <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>}
@@ -734,7 +1011,7 @@ export default function Onboarding() {
 
           <div className="flex justify-center gap-2 mt-6">
             {steps.map((s, i) => (
-              <div key={s.id} className={`h-1.5 rounded-full transition-all ${i === step ? `w-6 ${CC.dot}` : i < step ? "w-3 bg-gray-400" : "w-3 bg-gray-200"}`} />
+              <div key={s.id} className={`h-1.5 rounded-full transition-all ${i === step ? `w-6 ${colours.dot}` : i < step ? "w-3 bg-gray-400" : "w-3 bg-gray-200"}`} />
             ))}
           </div>
         </div>
