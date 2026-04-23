@@ -1,258 +1,374 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
-const DINING_PERSONAS = {
-  adventurous: { icon: "🌍", label: "The Explorer",      color: "from-emerald-400 to-teal-600" },
-  romantic:    { icon: "🕯️",  label: "Romance Seeker",   color: "from-rose-400 to-pink-600" },
-  foodie:      { icon: "🍜",  label: "Foodie at Heart",  color: "from-orange-400 to-amber-600" },
-  social:      { icon: "🥂",  label: "Social Butterfly", color: "from-purple-400 to-violet-600" },
-  healthy:     { icon: "🥗",  label: "Wellness Diner",   color: "from-green-400 to-emerald-600" },
-  comfort:     { icon: "🍲",  label: "Comfort Seeker",   color: "from-amber-400 to-orange-600" },
-  business:    { icon: "💼",  label: "Business Diner",   color: "from-slate-400 to-gray-600" },
-  family:      { icon: "👨‍👩‍👧", label: "Family First",    color: "from-blue-400 to-cyan-600" },
-};
+const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+
+const MOODS = [
+  { value: "romantic",    label: "💑 Romantic" },
+  { value: "adventurous", label: "🌍 Adventurous" },
+  { value: "relaxed",     label: "😌 Relaxed" },
+  { value: "celebratory", label: "🎉 Celebrate" },
+  { value: "group",       label: "👥 Group" },
+  { value: "healthy",     label: "🥗 Healthy" },
+  { value: "cozy",        label: "🕯️ Cozy" },
+];
+
+const TIMES = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:00","19:30","20:00","20:30","21:00"];
+const BUDGETS = [
+  { value: "budget", label: "$ Budget",  max: 2 },
+  { value: "mid",    label: "$$ Mid",    max: 3 },
+  { value: "luxury", label: "$$$ Luxury",max: 4 },
+];
 
 function pj(val, fallback) {
   if (!val) return fallback;
   try { return JSON.parse(val); } catch { return fallback; }
 }
 
+function RestaurantCard({ r, onReserve }) {
+  return (
+    <div className="bg-white rounded-2xl border border-diner-100 shadow-sm hover:shadow-md hover:border-diner-300 transition-all overflow-hidden group">
+      {/* Emoji hero */}
+      <div className="h-28 bg-gradient-to-br from-diner-100 to-diner-200 flex items-center justify-center text-5xl group-hover:scale-105 transition-transform">
+        {r.emoji}
+      </div>
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-bold text-gray-900 text-sm leading-tight">{r.name}</h3>
+          <span className="text-xs bg-yellow-50 text-yellow-700 font-bold px-2 py-0.5 rounded-full flex-shrink-0">⭐ {r.rating}</span>
+        </div>
+        <p className="text-xs text-gray-500 mb-1">{r.cuisine} · {PRICE_LABELS[r.price_level]} · {r.distance_km}km</p>
+        <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{r.description}</p>
+        <p className="text-xs text-diner-600 italic mb-3">✨ {r.standout_dish}</p>
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-semibold ${r.open_now ? "text-green-600" : "text-red-500"}`}>
+            {r.open_now ? "🟢 Open" : "🔴 Closed"}
+            {r.wait_minutes > 0 && r.open_now && ` · ${r.wait_minutes}min`}
+          </span>
+          <button onClick={() => onReserve(r)}
+            className="text-xs bg-diner-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-diner-700 transition-colors">
+            Reserve
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingModal({ restaurant, onClose, onBooked }) {
+  const today = new Date().toISOString().split("T")[0];
+  const [form, setForm] = useState({
+    restaurant_name: restaurant?.name || "",
+    booking_date: today,
+    booking_time: "19:00",
+    party_size: 2,
+    special_requests: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.booking_date) { setError("Please pick a date."); return; }
+    setLoading(true); setError(null);
+    try {
+      await api.createDinerBooking(form);
+      onBooked(form.restaurant_name);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="font-bold text-gray-900">Reserve a Table</h2>
+            <p className="text-sm text-diner-600">{restaurant?.name}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Date</label>
+              <input type="date" value={form.booking_date} min={today}
+                onChange={(e) => setForm((f) => ({ ...f, booking_date: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Time</label>
+              <select value={form.booking_time} onChange={(e) => setForm((f) => ({ ...f, booking_time: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400">
+                {TIMES.map((t) => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Party Size</label>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setForm((f) => ({ ...f, party_size: Math.max(1, f.party_size - 1) }))}
+                className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold">−</button>
+              <span className="text-lg font-bold text-gray-900 w-6 text-center">{form.party_size}</span>
+              <button type="button" onClick={() => setForm((f) => ({ ...f, party_size: Math.min(20, f.party_size + 1) }))}
+                className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold">+</button>
+              <span className="text-sm text-gray-500">guests</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Special Requests</label>
+            <textarea value={form.special_requests}
+              onChange={(e) => setForm((f) => ({ ...f, special_requests: e.target.value }))}
+              rows={2} placeholder="Allergies, occasion, seating preference…"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400 resize-none" />
+          </div>
+          <button type="submit" disabled={loading}
+            className="w-full bg-diner-600 text-white font-bold py-3 rounded-xl hover:bg-diner-700 disabled:opacity-60 transition-colors">
+            {loading ? "Booking…" : "Confirm Reservation"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function DinerDashboard() {
   const { user } = useAuth();
-  const [summary,   setSummary]   = useState(null);
-  const [bookings,  setBookings]  = useState([]);
-  const [visits,    setVisits]    = useState([]);
-  const [recs,      setRecs]      = useState([]);
-  const [loading,   setLoading]   = useState(true);
+
+  // Search state
+  const [mood,     setMood]     = useState("");
+  const [budget,   setBudget]   = useState("mid");
+  const [cuisine,  setCuisine]  = useState("");
+
+  // Data
+  const [allRests,    setAllRests]    = useState([]);
+  const [forYou,      setForYou]      = useState([]);
+  const [plan,        setPlan]        = useState(null);
+  const [bookings,    setBookings]    = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [searching,   setSearching]   = useState(false);
+
+  // Booking modal
+  const [reserving,  setReserving]  = useState(null);
+  const [bookedMsg,  setBookedMsg]  = useState(null);
+
+  const userCuisines = pj(user?.cuisine_preferences, []);
+  const userOccasions = pj(user?.dining_occasions, []);
+  const firstName = user?.first_name || user?.display_name?.split(" ")[0] || "Explorer";
+
+  // Load personalised "For You" based on user's cuisine preferences
+  const loadForYou = useCallback(async () => {
+    try {
+      const budgetMax = BUDGETS.find((b) => b.value === (user?.dining_budget || "mid"))?.max || 3;
+      // Try to match user's first preferred cuisine; fall back to all
+      const prefCuisine = userCuisines[0] || "";
+      const results = await api.discoverRestaurants({ max_price_level: budgetMax, cuisine: prefCuisine });
+      setForYou(results.length ? results : await api.discoverRestaurants({ max_price_level: budgetMax }));
+    } catch {}
+  }, [user]);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const r = await api.discoverRestaurants({ max_price_level: 4 });
+      setAllRests(r);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     Promise.all([
-      api.getDinerSummary().catch(() => null),
+      loadForYou(),
+      loadAll(),
       api.getDinerBookings().catch(() => []),
-      api.getDinerVisits().catch(() => []),
-      api.getDinerRecommendations().catch(() => []),
-    ])
-      .then(([s, b, v, r]) => { setSummary(s); setBookings(b); setVisits(v); setRecs(r); })
-      .finally(() => setLoading(false));
-  }, []);
+    ]).then(([, , b]) => setBookings(b)).finally(() => setLoading(false));
+  }, [loadForYou, loadAll]);
 
-  if (loading) return <LoadingSpinner message="Loading your dashboard..." />;
+  const handleSearch = async () => {
+    setSearching(true); setPlan(null);
+    try {
+      const maxPrice = BUDGETS.find((b) => b.value === budget)?.max || 3;
+      const params = { max_price_level: maxPrice };
+      if (mood) params.mood = mood;
+      if (cuisine.trim()) params.cuisine = cuisine.trim();
+      const r = await api.discoverRestaurants(params);
+      setAllRests(r);
+    } catch {}
+    finally { setSearching(false); }
+  };
 
-  const hour      = new Date().getHours();
-  const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const firstName = user?.first_name || user?.display_name?.split(" ")[0] || "Foodie";
+  const handlePlanNight = async () => {
+    setPlanLoading(true); setPlan(null);
+    try {
+      const p = await api.getExperiencePlan({ mood: mood || "relaxed", budget, cuisine: cuisine || userCuisines[0] || "" });
+      setPlan(p);
+    } catch {}
+    finally { setPlanLoading(false); }
+  };
 
-  // derive persona from onboarding answers
-  const occasions  = pj(user?.dining_occasions, []);
-  const rawPersona = occasions.includes("romantic") ? "romantic"
-                   : occasions.includes("business") ? "business"
-                   : occasions.includes("family")   ? "family"
-                   : occasions.includes("social")   ? "social"
-                   : pj(user?.cuisine_preferences, []).length > 4 ? "adventurous"
-                   : pj(user?.dietary_preferences, []).includes("vegetarian") || pj(user?.dietary_preferences, []).includes("vegan") ? "healthy"
-                   : "foodie";
-  const persona    = DINING_PERSONAS[rawPersona] || DINING_PERSONAS.foodie;
-  const cuisines   = pj(user?.cuisine_preferences, []).slice(0, 5);
-  const budget     = user?.dining_budget;
+  const handleReserve = (restaurant) => { setReserving(restaurant); setBookedMsg(null); };
+  const handleBooked = (name) => {
+    setReserving(null);
+    setBookedMsg(`✓ Booking confirmed at ${name}!`);
+    api.getDinerBookings().then(setBookings).catch(() => {});
+    setTimeout(() => setBookedMsg(null), 5000);
+  };
 
-  const upcoming  = bookings.filter((b) => b.status === "confirmed").slice(0, 3);
-  const recent    = visits.slice(0, 4);
+  const upcoming = bookings.filter((b) => b.status === "confirmed").slice(0, 2);
 
-  const QUICK_ACTIONS = [
-    { href: "/diner/book",     icon: "📅", label: "Book a Table",   sub: "Reserve your next meal" },
-    { href: "/diner/discover", icon: "🔍", label: "Discover",       sub: "Find new restaurants" },
-    { href: "/diner/history",  icon: "📖", label: "Visit History",  sub: "Review past experiences" },
-    { href: "/diner/profile",  icon: "⚙️", label: "Preferences",   sub: "Update your taste profile" },
-  ];
-
-  const isNewUser = !summary || (summary.total_visits === 0 && summary.total_bookings === 0);
+  if (loading) return <LoadingSpinner message="Finding great places for you…" />;
 
   return (
     <div className="space-y-6">
 
-      {/* ── Hero ── */}
-      <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${persona.color} p-6 text-white`}>
+      {/* Booking modal */}
+      {reserving && <BookingModal restaurant={reserving} onClose={() => setReserving(null)} onBooked={handleBooked} />}
+
+      {/* Booked success banner */}
+      {bookedMsg && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-3 text-sm text-green-700 font-medium">
+          {bookedMsg}
+        </div>
+      )}
+
+      {/* ── Hero search (OpenTable/TheFork style) ── */}
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-diner-600 to-teal-700 p-6 text-white">
         <div className="relative z-10">
-          <p className="text-white/70 text-sm font-medium mb-1">{greeting} 👋</p>
-          <h1 className="text-2xl font-extrabold">{firstName}</h1>
-          <div className="mt-3 inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-4 py-1.5">
-            <span className="text-lg">{persona.icon}</span>
-            <span className="text-sm font-semibold">{persona.label}</span>
+          <p className="text-white/70 text-sm font-medium mb-1">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, {firstName} 👋</p>
+          <h1 className="text-2xl font-extrabold mb-4">Find your next great meal</h1>
+
+          {/* Search controls */}
+          <div className="bg-white/10 backdrop-blur rounded-2xl p-4 space-y-3">
+            {/* Mood chips */}
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map((m) => (
+                <button key={m.value} onClick={() => setMood(mood === m.value ? "" : m.value)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${mood === m.value ? "bg-white text-diner-700" : "bg-white/20 text-white hover:bg-white/30"}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Budget + cuisine + search */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex gap-1 bg-white/10 rounded-xl p-1">
+                {BUDGETS.map((b) => (
+                  <button key={b.value} onClick={() => setBudget(b.value)}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${budget === b.value ? "bg-white text-diner-700" : "text-white/80 hover:bg-white/20"}`}>
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+              <input value={cuisine} onChange={(e) => setCuisine(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="Cuisine e.g. Italian…"
+                className="flex-1 bg-white/20 placeholder-white/60 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:bg-white/30 min-w-32" />
+              <button onClick={handleSearch} disabled={searching}
+                className="bg-white text-diner-700 font-bold text-sm px-5 py-2 rounded-xl hover:bg-diner-50 disabled:opacity-70 transition-colors">
+                {searching ? "Searching…" : "Find a Table"}
+              </button>
+              <button onClick={handlePlanNight} disabled={planLoading}
+                className="bg-diner-800/50 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-diner-800/70 disabled:opacity-70 transition-colors border border-white/20">
+                {planLoading ? "Planning…" : "✨ Plan My Night"}
+              </button>
+            </div>
           </div>
-          {cuisines.length > 0 && (
-            <p className="mt-3 text-white/70 text-xs">Loves: {cuisines.join(" · ")}</p>
-          )}
-          {budget && (
-            <p className="mt-1 text-white/60 text-xs capitalize">Budget: {budget.replace(/_/g, " ")}</p>
-          )}
         </div>
-        <div className="absolute right-6 top-6 text-6xl opacity-20">{persona.icon}</div>
+        <div className="absolute right-8 top-8 text-7xl opacity-10">🍽️</div>
       </div>
 
-      {/* ── Stats ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Visits",    value: summary?.total_visits   ?? 0, icon: "🍽️" },
-          { label: "Avg Rating",      value: summary?.avg_overall    ? Number(summary.avg_overall).toFixed(1) : "—", icon: "⭐" },
-          { label: "Return Rate",     value: summary?.return_rate    != null ? `${summary.return_rate}%` : "—", icon: "🔁" },
-          { label: "Bookings Made",   value: summary?.total_bookings ?? 0, icon: "📅" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-diner-100">
-            <div className="text-2xl mb-2">{s.icon}</div>
-            <p className="text-2xl font-bold text-diner-700">{s.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+      {/* ── Upcoming booking strip ── */}
+      {upcoming.length > 0 && (
+        <div className="bg-diner-50 border border-diner-200 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📅</span>
+            <div>
+              <p className="font-semibold text-diner-900 text-sm">Next: {upcoming[0].restaurant_name}</p>
+              <p className="text-xs text-diner-600">{upcoming[0].booking_date} at {upcoming[0].booking_time} · {upcoming[0].party_size} guests</p>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* ── Quick actions ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {QUICK_ACTIONS.map((a) => (
-          <Link key={a.href} href={a.href}
-            className="bg-white rounded-2xl p-4 border border-diner-100 shadow-sm hover:border-diner-300 hover:shadow-md transition-all group">
-            <span className="text-2xl">{a.icon}</span>
-            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">{a.label}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{a.sub}</p>
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Welcome card for new users ── */}
-      {isNewUser && (
-        <div className="bg-gradient-to-br from-diner-50 to-teal-50 rounded-2xl border border-diner-100 p-6">
-          <h2 className="font-bold text-diner-800 text-lg mb-1">Welcome to SavoryMind! 🎉</h2>
-          <p className="text-diner-600 text-sm mb-4">
-            Your personalised dining companion is ready. Start by booking a table or logging a past visit to unlock tailored recommendations.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/diner/book"
-              className="inline-flex items-center gap-2 bg-diner-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-diner-700 transition-colors">
-              📅 Book a table
-            </Link>
-            <Link href="/diner/discover"
-              className="inline-flex items-center gap-2 bg-white text-diner-700 text-sm font-semibold px-5 py-2.5 rounded-xl border border-diner-200 hover:bg-diner-50 transition-colors">
-              🔍 Explore restaurants
-            </Link>
-          </div>
+          <Link href="/diner/book" className="text-xs text-diner-600 font-semibold hover:underline whitespace-nowrap">All bookings →</Link>
         </div>
       )}
 
-      {/* ── Main grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Upcoming bookings */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-diner-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">📅 Upcoming Bookings</h2>
-            <Link href="/diner/book" className="text-xs text-diner-600 font-medium hover:underline">+ Book a table</Link>
+      {/* ── AI Experience Plan ── */}
+      {plan && (
+        <div className="bg-gradient-to-br from-diner-50 to-teal-50 border border-diner-200 rounded-2xl p-6">
+          <p className="text-lg font-extrabold text-gray-900 mb-4">{plan.experience_title}</p>
+          <div className="flex items-start gap-4 mb-4">
+            <span className="text-5xl">{plan.restaurant.emoji}</span>
+            <div className="flex-1">
+              <p className="font-bold text-gray-900">{plan.restaurant.name}</p>
+              <p className="text-sm text-gray-500">{plan.restaurant.cuisine} · {PRICE_LABELS[plan.restaurant.price_level]} · {plan.restaurant.distance_km}km</p>
+              <p className="text-sm text-diner-700 italic mt-1">✨ {plan.restaurant.standout_dish}</p>
+            </div>
+            <button onClick={() => handleReserve(plan.restaurant)}
+              className="bg-diner-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-diner-700 transition-colors flex-shrink-0">
+              Reserve
+            </button>
           </div>
-          {upcoming.length === 0 ? (
-            <div className="text-center py-10 px-6">
-              <div className="text-4xl mb-3">📅</div>
-              <p className="text-gray-500 text-sm mb-4">No upcoming bookings — reserve your next great meal.</p>
-              <Link href="/diner/book"
-                className="inline-flex bg-diner-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-diner-700 transition-colors">
-                Book a table
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {upcoming.map((b) => (
-                <div key={b.id} className="flex items-center gap-4 px-6 py-4 hover:bg-diner-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-diner-100 flex items-center justify-center text-xl flex-shrink-0">🍽️</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm truncate">{b.restaurant_name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{b.booking_date} at {b.booking_time} · {b.party_size} guest{b.party_size !== 1 ? "s" : ""}</p>
-                    {b.special_requests && <p className="text-xs text-gray-400 mt-0.5 italic truncate">{b.special_requests}</p>}
-                  </div>
-                  <span className="text-xs font-bold text-diner-700 bg-diner-100 px-2.5 py-1 rounded-full flex-shrink-0 capitalize">{b.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            <span className="bg-white border border-diner-200 rounded-full px-4 py-1.5 text-sm text-gray-700">🎵 {plan.music.genre}</span>
+            <span className="bg-white border border-diner-200 rounded-full px-4 py-1.5 text-sm text-gray-700">{plan.drink}</span>
+            <span className="bg-white border border-diner-200/60 rounded-full px-4 py-1.5 text-sm text-gray-400 italic">{plan.music.vibe}</span>
+          </div>
+          <button onClick={() => setPlan(null)} className="mt-3 text-xs text-gray-400 hover:text-gray-500">✕ Dismiss</button>
         </div>
+      )}
 
-        {/* AI Recommendations / Top Spots */}
-        <div className="bg-white rounded-2xl shadow-sm border border-diner-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-800">✨ Just For You</h2>
+      {/* ── For You (cuisine-matched to profile) ── */}
+      {forYou.length > 0 && userCuisines.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-gray-900">
+              ✨ Matched to Your Taste
+              <span className="text-xs font-normal text-diner-600 ml-2">({userCuisines.slice(0, 2).join(" · ")})</span>
+            </h2>
+            <Link href="/diner/discover" className="text-xs text-diner-600 font-medium hover:underline">See all →</Link>
           </div>
-          {recs.length === 0 ? (
-            <div className="p-6">
-              {occasions.length > 0 ? (
-                <div className="space-y-3">
-                  {occasions.slice(0, 3).map((o) => (
-                    <div key={o} className="p-3 rounded-xl bg-diner-50 border border-diner-100">
-                      <p className="text-xs font-semibold text-diner-600 capitalize">{o.replace(/_/g, " ")}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">We'll find spots perfect for this occasion.</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-sm">Log a few visits and we'll personalise your feed.</p>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {recs.slice(0, 4).map((r, i) => (
-                <div key={i} className="flex items-start gap-3 px-6 py-4 hover:bg-diner-50 transition-colors">
-                  <span className="text-xl flex-shrink-0">{r.icon}</span>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{r.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{r.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Recent visits ── */}
-      {recent.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-diner-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">📖 Recent Visits</h2>
-            <Link href="/diner/history" className="text-xs text-diner-600 font-medium hover:underline">All visits →</Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-50">
-            {recent.map((v) => (
-              <div key={v.id} className="flex items-start gap-4 px-6 py-4 hover:bg-diner-50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-diner-100 flex items-center justify-center text-xl flex-shrink-0">🍽️</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm truncate">{v.restaurant_name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{v.visit_date}</p>
-                  {v.overall_rating && (
-                    <p className="text-amber-500 text-xs mt-1">
-                      {"★".repeat(Math.round(v.overall_rating))}{"☆".repeat(5 - Math.round(v.overall_rating))}
-                    </p>
-                  )}
-                  {v.highlights && <p className="text-xs text-diner-600 mt-1 truncate">❤️ {v.highlights}</p>}
-                </div>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {forYou.slice(0, 4).map((r) => (
+              <RestaurantCard key={r.id} r={r} onReserve={handleReserve} />
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Top spots ── */}
-      {summary?.top_restaurants?.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-diner-100 p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">🏆 Your Top Spots</h2>
-          <div className="flex flex-wrap gap-3">
-            {summary.top_restaurants.map((r) => (
-              <div key={r.name} className="flex items-center gap-2 bg-diner-50 border border-diner-100 rounded-xl px-4 py-2.5">
-                <span className="text-lg">🍽️</span>
-                <div>
-                  <p className="text-sm font-semibold text-diner-900">{r.name}</p>
-                  <p className="text-xs text-diner-600">{r.visits} visit{r.visits !== 1 ? "s" : ""}</p>
-                </div>
-              </div>
+      {/* ── All restaurants / search results ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-gray-900">
+            {mood || cuisine ? "Search Results" : "🔥 Top Restaurants"}
+          </h2>
+          <span className="text-xs text-gray-400">{allRests.length} places</span>
+        </div>
+        {allRests.length === 0 ? (
+          <div className="text-center py-14 bg-white rounded-2xl border border-diner-100">
+            <p className="text-4xl mb-3">🍽️</p>
+            <p className="text-gray-500 font-medium">No restaurants match your filters</p>
+            <p className="text-sm text-gray-400 mt-1">Try a different mood or budget</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {allRests.map((r) => (
+              <RestaurantCard key={r.id} r={r} onReserve={handleReserve} />
             ))}
           </div>
+        )}
+      </div>
+
+      {/* ── New user CTA ── */}
+      {bookings.length === 0 && (
+        <div className="bg-gradient-to-r from-diner-50 to-teal-50 border border-diner-100 rounded-2xl p-5 flex items-center gap-4">
+          <span className="text-3xl">🎉</span>
+          <div className="flex-1">
+            <p className="font-semibold text-diner-900 text-sm">Your dining journey starts here</p>
+            <p className="text-xs text-diner-600 mt-0.5">Click Reserve on any restaurant above to make your first booking</p>
+          </div>
+          <Link href="/diner/history" className="text-xs text-diner-600 font-semibold hover:underline whitespace-nowrap">Log a past visit →</Link>
         </div>
       )}
 
