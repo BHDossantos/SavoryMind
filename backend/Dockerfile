@@ -7,5 +7,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Railway injects $PORT; fall back to 8000 for local Docker
+# Cloud Run injects PORT=8080; fall back to 8000 for local Docker
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
