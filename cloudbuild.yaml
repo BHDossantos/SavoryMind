@@ -5,7 +5,7 @@ steps:
     args:
       - -c
       - |
-        gsutil mb -p $PROJECT_ID -l us-central1 gs://$PROJECT_ID-savorymind-db || true
+        gsutil mb -p $PROJECT_ID -l us-south1 gs://$PROJECT_ID-savorymind-db || true
 
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -25,7 +25,7 @@ steps:
       - --image
       - gcr.io/$PROJECT_ID/savorymind-api
       - --region
-      - us-central1
+      - us-south1
       - --platform
       - managed
       - --allow-unauthenticated
