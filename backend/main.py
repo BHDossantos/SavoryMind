@@ -7,7 +7,7 @@ from app.core.database import engine, Base
 from app.models import User, MenuItem, Review  # noqa: F401
 from app.models.consumer import WinePairing, MusicMood, SocialConnection, BehaviorLog  # noqa: F401
 from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # noqa: F401
-from app.models.kitchen import FoodWasteLog, DishTimeLog  # noqa: F401
+from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
 from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner
 
