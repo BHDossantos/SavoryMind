@@ -1,0 +1,327 @@
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { api } from "../../services/api";
+import LoadingSpinner from "../../components/LoadingSpinner";
+
+const STEP_EMOJIS = ["🔪", "🔥", "🥣", "🫕", "⏱️", "🧂", "🍽️", "✨"];
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function StepTimer() {
+  const [duration, setDuration] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [remaining, setRemaining] = useState(0);
+  const intervalRef = useRef(null);
+
+  const start = (secs) => {
+    setRemaining(secs);
+    setRunning(true);
+  };
+
+  const stop = () => {
+    setRunning(false);
+    clearInterval(intervalRef.current);
+  };
+
+  const reset = () => { stop(); setRemaining(0); setDuration(0); };
+
+  useEffect(() => {
+    if (running && remaining > 0) {
+      intervalRef.current = setInterval(() => {
+        setRemaining((r) => {
+          if (r <= 1) { clearInterval(intervalRef.current); setRunning(false); return 0; }
+          return r - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [running]);
+
+  const done = remaining === 0 && !running && duration > 0;
+
+  return (
+    <div className="bg-consumer-50 border border-consumer-200 rounded-2xl p-4 mt-4">
+      <p className="text-xs font-bold text-consumer-700 mb-3">⏱️ Step Timer</p>
+      {running || done ? (
+        <div className="flex items-center gap-4">
+          <p className={`text-3xl font-mono font-bold ${done ? "text-green-600" : remaining <= 10 ? "text-red-500" : "text-consumer-700"}`}>
+            {done ? "Done! ✓" : formatTime(remaining)}
+          </p>
+          <div className="flex gap-2">
+            {running && (
+              <button onClick={stop}
+                className="text-xs px-3 py-1.5 bg-white border border-consumer-300 text-consumer-700 rounded-lg font-semibold hover:bg-consumer-100">
+                Pause
+              </button>
+            )}
+            {!running && remaining > 0 && (
+              <button onClick={() => setRunning(true)}
+                className="text-xs px-3 py-1.5 bg-consumer-600 text-white rounded-lg font-semibold hover:bg-consumer-700">
+                Resume
+              </button>
+            )}
+            <button onClick={reset}
+              className="text-xs px-3 py-1.5 bg-white border border-gray-200 text-gray-500 rounded-lg font-semibold hover:bg-gray-50">
+              Reset
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
+          {[1, 2, 3, 5, 10, 15].map((m) => (
+            <button key={m} onClick={() => { const s = m * 60; setDuration(s); start(s); }}
+              className="text-xs px-3 py-1.5 bg-white border border-consumer-200 text-consumer-700 rounded-lg font-semibold hover:bg-consumer-50 hover:border-consumer-400">
+              {m} min
+            </button>
+          ))}
+          <div className="flex items-center gap-1">
+            <input type="number" min="1" max="120" placeholder="min"
+              value={duration ? Math.floor(duration / 60) : ""}
+              onChange={(e) => setDuration(Number(e.target.value) * 60)}
+              className="w-16 text-xs border border-consumer-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-consumer-400"
+            />
+            <button onClick={() => duration > 0 && start(duration)}
+              className="text-xs px-3 py-1.5 bg-consumer-600 text-white rounded-lg font-semibold hover:bg-consumer-700 disabled:opacity-50"
+              disabled={!duration}>
+              Start
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Post-cook memory modal
+function MemoryModal({ recipe, onSave, onSkip }) {
+  const [rating, setRating] = useState(5);
+  const [notes, setNotes] = useState("");
+  const [change, setChange] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.createMemory({
+        dish_name: recipe.title,
+        emoji: recipe.image_emoji || "🍽️",
+        rating,
+        notes: notes || null,
+        what_id_change: change || null,
+        cuisine: recipe.cuisine || null,
+        recipe_id: recipe.id || null,
+      });
+      onSave();
+    } catch { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+        <div className="text-center mb-5">
+          <p className="text-4xl mb-2">{recipe.image_emoji || "🍽️"}</p>
+          <h2 className="text-xl font-bold text-gray-900">How was it?</h2>
+          <p className="text-sm text-gray-400 mt-1">Save this to your food journal</p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Star rating */}
+          <div>
+            <p className="text-xs font-bold text-gray-700 mb-2">Your rating</p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button key={s} onClick={() => setRating(s)}
+                  className={`text-2xl transition-transform hover:scale-110 ${s <= rating ? "opacity-100" : "opacity-30"}`}>
+                  ⭐
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              How did it go? <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="It was delicious! The sauce came together perfectly…"
+              rows={2}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              What would you change next time? <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea value={change} onChange={(e) => setChange(e.target.value)}
+              placeholder="Less salt, more garlic…"
+              rows={2}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400 resize-none"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onSkip}
+            className="flex-1 border border-gray-200 text-gray-500 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+            Skip
+          </button>
+          <button onClick={save} disabled={saving}
+            className="flex-1 bg-consumer-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-consumer-700 disabled:opacity-60 transition-colors">
+            {saving ? "Saving…" : "Save Memory"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function GuidedCookingPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const [recipe, setRecipe] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [showMemory, setShowMemory] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try { setRecipe(await api.getRecipe(Number(id))); }
+      catch {}
+      finally { setLoading(false); }
+    })();
+  }, [id]);
+
+  if (loading || !id) return <LoadingSpinner />;
+
+  if (!recipe) return (
+    <div className="text-center py-20">
+      <p className="text-4xl mb-3">😕</p>
+      <p className="text-gray-500 mb-4">Recipe not found.</p>
+      <Link href="/consumer/cook" className="text-consumer-600 font-semibold hover:underline">← Back to Cook</Link>
+    </div>
+  );
+
+  const steps = Array.isArray(recipe.steps) ? recipe.steps : [];
+  const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+  const totalSteps = steps.length;
+  const progress = totalSteps > 0 ? ((currentStep + 1) / totalSteps) * 100 : 100;
+  const isLast = currentStep === totalSteps - 1;
+
+  if (done) {
+    return (
+      <div className="max-w-md mx-auto mt-16 text-center">
+        <div className="text-6xl mb-4">🎉</div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">You did it!</h2>
+        <p className="text-gray-500 mb-6">{recipe.title} is ready. Enjoy your meal!</p>
+        <div className="flex flex-col gap-3">
+          <button onClick={() => setShowMemory(true)}
+            className="bg-consumer-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-consumer-700 transition-colors">
+            📝 Save to my journal
+          </button>
+          <Link href="/consumer/cook"
+            className="border border-consumer-200 text-consumer-700 font-semibold px-6 py-3 rounded-xl hover:bg-consumer-50 transition-colors">
+            Back to Cook
+          </Link>
+        </div>
+        {showMemory && (
+          <MemoryModal
+            recipe={recipe}
+            onSave={() => { setShowMemory(false); router.push("/consumer/journal"); }}
+            onSkip={() => { setShowMemory(false); router.push("/consumer/cook"); }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/consumer/cook"
+          className="text-sm text-consumer-600 font-semibold hover:text-consumer-800">
+          ← Stop cooking
+        </Link>
+        <div className="flex-1 h-2 bg-consumer-100 rounded-full overflow-hidden">
+          <div className="h-full bg-consumer-600 rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }} />
+        </div>
+        <span className="text-xs font-bold text-consumer-600 flex-shrink-0">
+          {currentStep + 1} / {totalSteps || 1}
+        </span>
+      </div>
+
+      {/* Recipe title */}
+      <div className="flex items-center gap-3 mb-8">
+        <span className="text-3xl">{recipe.image_emoji}</span>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">{recipe.title}</h1>
+          <p className="text-xs text-gray-400">{recipe.cuisine} · {recipe.time_minutes} min · {recipe.difficulty}</p>
+        </div>
+      </div>
+
+      {/* Ingredients sidebar (collapsible on step 0) */}
+      {currentStep === 0 && ingredients.length > 0 && (
+        <div className="bg-consumer-50 border border-consumer-200 rounded-2xl p-5 mb-6">
+          <p className="text-sm font-bold text-gray-900 mb-3">Before you start — what you'll need:</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {ingredients.map((ing, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-consumer-400 flex-shrink-0" />
+                {ing}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Current step */}
+      {steps.length > 0 ? (
+        <div className="bg-white rounded-3xl border border-consumer-200 shadow-sm p-8 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-consumer-600 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">
+              {currentStep + 1}
+            </div>
+            <span className="text-2xl">{STEP_EMOJIS[currentStep % STEP_EMOJIS.length]}</span>
+          </div>
+          <p className="text-lg leading-relaxed text-gray-800 font-medium">
+            {steps[currentStep]}
+          </p>
+          <StepTimer key={currentStep} />
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl border border-consumer-200 p-8 mb-6 text-center">
+          <p className="text-gray-400">No steps available for this recipe.</p>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="flex gap-3">
+        <button onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+          disabled={currentStep === 0}
+          className="flex-1 border border-consumer-200 text-consumer-700 font-bold py-3.5 rounded-xl hover:bg-consumer-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          ← Previous
+        </button>
+        {isLast ? (
+          <button onClick={() => setDone(true)}
+            className="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition-colors">
+            🎉 I'm done!
+          </button>
+        ) : (
+          <button onClick={() => setCurrentStep((s) => Math.min(totalSteps - 1, s + 1))}
+            className="flex-1 bg-consumer-600 text-white font-bold py-3.5 rounded-xl hover:bg-consumer-700 transition-colors">
+            Next step →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

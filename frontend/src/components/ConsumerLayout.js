@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 const NAV = [
   { href: "/consumer/dashboard", label: "Home",    icon: "🏠", match: ["/consumer/dashboard"] },
   { href: "/consumer/explore",   label: "Explore", icon: "✨", match: ["/consumer/explore"] },
-  { href: "/consumer/cook",      label: "Cook",    icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry"] },
+  { href: "/consumer/cook",      label: "Cook",    icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry", "/consumer/guided-cooking"] },
   { href: "/consumer/order",     label: "Order",   icon: "🛵", match: ["/consumer/order"] },
   { href: "/consumer/profile",   label: "Profile", icon: "👤", match: ["/consumer/profile", "/consumer/social"] },
 ];
@@ -61,6 +61,7 @@ export default function ConsumerLayout({ children }) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-3 mb-1">More</p>
           {[
             { href: "/consumer/pantry",    label: "My Pantry",     icon: "🧺" },
+            { href: "/consumer/journal",   label: "Food Journal",  icon: "📔" },
             { href: "/consumer/wine",      label: "Wine Pairing",  icon: "🍷" },
             { href: "/consumer/music",     label: "Music Mood",    icon: "🎵" },
             { href: "/consumer/beverages", label: "Beverages",     icon: "🥂" },

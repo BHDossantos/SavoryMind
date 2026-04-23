@@ -226,8 +226,14 @@ function RecipeDetail({ recipe: r, onBack }) {
       </div>
 
       <div className="mt-6 pt-5 border-t border-consumer-100 flex items-center gap-3 flex-wrap">
+        {r.id && (
+          <Link href={`/consumer/guided-cooking?id=${r.id}`}
+            className="bg-consumer-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
+            👨‍🍳 Start cooking
+          </Link>
+        )}
         <Link href="/consumer/explore"
-          className="bg-consumer-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
+          className="border border-consumer-200 text-consumer-700 text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-50 transition-colors">
           Explore more like this
         </Link>
         <Link href="/consumer/wine"

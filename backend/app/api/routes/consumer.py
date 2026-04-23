@@ -11,8 +11,9 @@ from ...schemas.consumer import (
     SocialConnectionUpdate, SocialConnectionResponse,
     ProfileUpdate, BehaviorLogCreate,
     PantryItemCreate, PantryItemResponse,
+    MealMemoryCreate, MealMemoryResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service
 from ...ml.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -309,3 +310,41 @@ def recipes_from_pantry(
         cuisine="", mood="", keywords=keywords, ingredients=keywords, max_time=0, difficulty=""
     )
     return {"recipes": result.get("recipes", []), "matched_ingredients": [i.ingredient for i in items]}
+
+
+# ── Meal Memories (journal) ───────────────────────────────────────────────────
+
+@router.get("/memories", response_model=list[MealMemoryResponse])
+def get_memories(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    return memory_service.get_memories(db, current_user.id)
+
+
+@router.post("/memories", response_model=MealMemoryResponse, status_code=201)
+def create_memory(
+    body: MealMemoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    mem = memory_service.create_memory(
+        db, current_user.id,
+        body.dish_name, body.emoji, body.rating,
+        body.notes, body.what_id_change, body.cuisine, body.recipe_id,
+    )
+    _log(db, current_user.id, "meal_memory", {"dish": body.dish_name, "rating": body.rating})
+    return mem
+
+
+@router.delete("/memories/{memory_id}", status_code=204)
+def delete_memory(
+    memory_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    if not memory_service.delete_memory(db, current_user.id, memory_id):
+        raise HTTPException(status_code=404, detail="Memory not found.")

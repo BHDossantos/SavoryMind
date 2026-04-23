@@ -53,6 +53,21 @@ class PantryItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     ingredient = Column(String(100), nullable=False)
-    quantity = Column(String(50), nullable=True)    # "2 cups", "1 lb", "a handful", etc.
-    category = Column(String(50), nullable=True)    # Proteins | Vegetables | Dairy | Grains | Spices | Other
+    quantity = Column(String(50), nullable=True)
+    category = Column(String(50), nullable=True)
     added_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MealMemory(Base):
+    __tablename__ = "meal_memories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    dish_name = Column(String(150), nullable=False)
+    emoji = Column(String(10), nullable=True, default="🍽️")
+    rating = Column(Integer, nullable=False, default=5)        # 1-5
+    notes = Column(Text, nullable=True)
+    what_id_change = Column(Text, nullable=True)
+    cuisine = Column(String(100), nullable=True)
+    cooked_at = Column(DateTime, default=datetime.utcnow)
+    recipe_id = Column(Integer, nullable=True)                 # optional link back to recipe

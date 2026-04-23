@@ -142,6 +142,11 @@ export const api = {
   clearPantry: () => request("/api/consumer/pantry", { method: "DELETE" }),
   getPantryRecipes: () => request("/api/consumer/pantry/recipes"),
 
+  // Consumer — Meal Memories (journal)
+  getMemories: () => request("/api/consumer/memories"),
+  createMemory: (data) => request("/api/consumer/memories", { method: "POST", body: JSON.stringify(data) }),
+  deleteMemory: (id) => request(`/api/consumer/memories/${id}`, { method: "DELETE" }),
+
   // Restaurant Owner — Food Waste
   getWasteLogs: () => request("/api/owner/waste"),
   getWasteSummary: () => request("/api/owner/waste/summary"),

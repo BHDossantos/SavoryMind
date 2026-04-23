@@ -99,3 +99,27 @@ class PantryItemResponse(BaseModel):
     added_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MealMemoryCreate(BaseModel):
+    dish_name: str
+    emoji: Optional[str] = "🍽️"
+    rating: int = 5
+    notes: Optional[str] = None
+    what_id_change: Optional[str] = None
+    cuisine: Optional[str] = None
+    recipe_id: Optional[int] = None
+
+
+class MealMemoryResponse(BaseModel):
+    id: int
+    dish_name: str
+    emoji: Optional[str]
+    rating: int
+    notes: Optional[str]
+    what_id_change: Optional[str]
+    cuisine: Optional[str]
+    cooked_at: datetime
+    recipe_id: Optional[int]
+
+    model_config = {"from_attributes": True}
