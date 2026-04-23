@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
-import Layout from "../../components/Layout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ErrorMessage from "../../components/ErrorMessage";
 
@@ -24,13 +23,13 @@ export default function MarketingPage() {
 
   useEffect(() => { load(); }, []);
 
-  if (loading) return <Layout><LoadingSpinner /></Layout>;
-  if (error)   return <Layout><ErrorMessage message={error} onRetry={load} /></Layout>;
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <ErrorMessage message={error} onRetry={load} />;
 
   const ov = data.overview;
 
   return (
-    <Layout>
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">💌 Marketing & Guests</h1>
         <p className="text-gray-400 mt-1">Guest acquisition, retention, and loyalty insights</p>
@@ -84,7 +83,7 @@ export default function MarketingPage() {
           </div>
         </div>
       )}
-    </Layout>
+    </div>
   );
 }
 
