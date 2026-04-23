@@ -63,7 +63,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <span>✨</span> For cooks. For diners. For restaurants.
+          <span>✨</span> For Food Lovers. For Food Explorers. For Restaurant Owners.
         </div>
         <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
           Every meal has a story.
