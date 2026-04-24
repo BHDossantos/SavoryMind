@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function KitchenTimes() {
   const [logs, setLogs] = useState([]);
@@ -9,6 +10,7 @@ export default function KitchenTimes() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [form, setForm] = useState({ item_name: "", staff_name: "", prep_minutes: "", cook_minutes: "", notes: "" });
 
   const load = () => {
@@ -36,10 +38,15 @@ export default function KitchenTimes() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this entry?")) return;
-    await api.deleteDishTime(id);
-    load();
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      message: "Delete this kitchen time entry? This cannot be undone.",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await api.deleteDishTime(id);
+        load();
+      },
+    });
   };
 
   const staffColors = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#fff7ed"];
@@ -175,6 +182,14 @@ export default function KitchenTimes() {
           </table>
         )}
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
 
       {/* Form modal */}
       {showForm && (

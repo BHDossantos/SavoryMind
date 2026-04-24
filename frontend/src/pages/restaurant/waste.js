@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const REASONS = ["Over-portioned", "Cooking error", "Spoilage", "Over-ordered", "Dropped", "Expired", "Customer return", "Other"];
 
@@ -11,6 +12,7 @@ export default function FoodWaste() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [form, setForm] = useState({ item_name: "", staff_name: "", quantity_kg: "", estimated_cost: "", reason: "Over-portioned", notes: "" });
 
   const load = () => {
@@ -38,10 +40,15 @@ export default function FoodWaste() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this waste log?")) return;
-    await api.deleteWasteLog(id);
-    load();
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      message: "Delete this waste log? This cannot be undone.",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await api.deleteWasteLog(id);
+        load();
+      },
+    });
   };
 
   const staffChartData = summary?.by_staff?.slice(0, 8).map((s) => ({ name: s.name.split(" ")[0], cost: s.total_cost })) || [];
@@ -153,6 +160,14 @@ export default function FoodWaste() {
           </table>
         )}
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
 
       {/* Form modal */}
       {showForm && (

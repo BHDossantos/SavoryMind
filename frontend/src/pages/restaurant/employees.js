@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
@@ -9,6 +10,7 @@ export default function Employees() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -42,14 +44,20 @@ export default function Employees() {
     }
   };
 
-  const handleDelete = async (emp) => {
-    if (!window.confirm(`Remove employee account for ${emp.display_name}? This cannot be undone.`)) return;
-    try {
-      await api.deleteEmployee(emp.id);
-      load();
-    } catch (e) {
-      setError(e.message);
-    }
+  const handleDelete = (emp) => {
+    setConfirmDialog({
+      message: `Remove account for ${emp.display_name}? They will lose access immediately.`,
+      confirmLabel: "Remove",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.deleteEmployee(emp.id);
+          load();
+        } catch (e) {
+          setError(e.message);
+        }
+      },
+    });
   };
 
   return (
@@ -115,6 +123,15 @@ export default function Employees() {
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
 
       {/* Form modal */}

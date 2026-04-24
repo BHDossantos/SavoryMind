@@ -54,6 +54,15 @@ export default function DinerLayout({ children }) {
         </nav>
 
         <div className="p-4 border-t border-diner-100 space-y-2">
+          <Link href="/diner/welcome"
+            className={clsx(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+              router.pathname === "/diner/welcome"
+                ? "bg-diner-100 text-diner-700"
+                : "text-diner-500 hover:bg-diner-50 hover:text-diner-700"
+            )}>
+            <span>🎯</span> Getting Started
+          </Link>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-diner-50">
             <span className="text-xs text-diner-600 font-medium">Diner Mode</span>
             <span className="ml-auto text-xs bg-diner-500 text-white px-2 py-0.5 rounded-full">Free</span>

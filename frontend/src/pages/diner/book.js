@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const TIMES = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:00","19:30","20:00","20:30","21:00"];
 
@@ -12,6 +13,7 @@ export default function BookTable() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const loadBookings = () => {
     api.getDinerBookings().then(setBookings).finally(() => setFetching(false));
@@ -50,10 +52,16 @@ export default function BookTable() {
     }
   };
 
-  const handleCancel = async (id) => {
-    if (!window.confirm("Cancel this booking?")) return;
-    await api.cancelDinerBooking(id);
-    loadBookings();
+  const handleCancel = (id) => {
+    setConfirmDialog({
+      message: "Cancel this booking? This cannot be undone.",
+      confirmLabel: "Cancel Booking",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await api.cancelDinerBooking(id);
+        loadBookings();
+      },
+    });
   };
 
   const upcoming = bookings.filter((b) => b.status === "confirmed");
@@ -172,6 +180,15 @@ export default function BookTable() {
           )}
         </div>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { api } from "../services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
@@ -37,6 +38,7 @@ export default function SentimentPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [formError, setFormError] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const fetchData = () =>
     Promise.all([api.getMenuItems(), api.getReviews(), api.getSentimentSummary()])
@@ -72,18 +74,23 @@ export default function SentimentPage() {
     }
   };
 
-  const handleDelete = async (review) => {
-    if (!window.confirm(`Delete review by "${review.customer_name}"?`)) return;
-    setDeletingId(review.id);
-    setDeleteError(null);
-    try {
-      await api.deleteReview(review.id);
-      fetchData();
-    } catch (err) {
-      setDeleteError(err.message || "Failed to delete review.");
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (review) => {
+    setConfirmDialog({
+      message: `Delete review by "${review.customer_name}"?`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setDeletingId(review.id);
+        setDeleteError(null);
+        try {
+          await api.deleteReview(review.id);
+          fetchData();
+        } catch (err) {
+          setDeleteError(err.message || "Failed to delete review.");
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   const handleFieldChange = (key, value) => {
@@ -258,6 +265,14 @@ export default function SentimentPage() {
           <p className="text-center text-gray-400 py-10">No reviews match your search.</p>
         )}
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

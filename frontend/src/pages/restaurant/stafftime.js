@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function StaffTime() {
   const [logs, setLogs] = useState([]);
@@ -8,6 +9,7 @@ export default function StaffTime() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [form, setForm] = useState({ staff_name: "", date: "", clock_in: "", clock_out: "", break_minutes: "0", notes: "" });
 
   const load = () => {
@@ -42,10 +44,15 @@ export default function StaffTime() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this entry?")) return;
-    await api.deleteStaffTimeLog(id);
-    load();
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      message: "Delete this shift log? This cannot be undone.",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await api.deleteStaffTimeLog(id);
+        load();
+      },
+    });
   };
 
   const staffCount = summary?.by_staff?.length || 0;
@@ -158,6 +165,14 @@ export default function StaffTime() {
           </table>
         )}
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
 
       {/* Form modal */}
       {showForm && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { api } from "../services/api";
 import clsx from "clsx";
 
@@ -39,6 +40,7 @@ export default function MenuPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [formError, setFormError] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const fetchItems = () =>
     api.getMenuItems()
@@ -112,18 +114,23 @@ export default function MenuPage() {
     }
   };
 
-  const handleDelete = async (item) => {
-    if (!window.confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
-    setDeletingId(item.id);
-    setDeleteError(null);
-    try {
-      await api.deleteMenuItem(item.id);
-      fetchItems();
-    } catch (err) {
-      setDeleteError(err.message || "Failed to delete item.");
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (item) => {
+    setConfirmDialog({
+      message: `Delete "${item.name}"? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setDeletingId(item.id);
+        setDeleteError(null);
+        try {
+          await api.deleteMenuItem(item.id);
+          fetchItems();
+        } catch (err) {
+          setDeleteError(err.message || "Failed to delete item.");
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   const handleFieldChange = (key, value) => {
@@ -311,6 +318,14 @@ export default function MenuPage() {
         </div>
       </div>
       <p className="text-xs text-gray-400 mt-2">{filtered.length} of {items.length} items shown</p>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

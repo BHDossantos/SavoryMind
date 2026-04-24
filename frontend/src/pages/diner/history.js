@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import SkeletonLoader from "../../components/SkeletonLoader";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const stars = (n) => "★".repeat(Math.round(n)) + "☆".repeat(5 - Math.round(n));
 
@@ -10,6 +11,7 @@ export default function DinerHistory() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [form, setForm] = useState({
     restaurant_name: "", visit_date: new Date().toISOString().split("T")[0],
     items_ordered: "", overall_rating: 5, food_rating: 5, staff_rating: 5,
@@ -44,10 +46,15 @@ export default function DinerHistory() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this visit?")) return;
-    await api.deleteDinerVisit(id);
-    load();
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      message: "Delete this visit log? This cannot be undone.",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await api.deleteDinerVisit(id);
+        load();
+      },
+    });
   };
 
   return (
@@ -113,6 +120,14 @@ export default function DinerHistory() {
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
 
       {/* Log visit modal */}
