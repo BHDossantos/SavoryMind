@@ -30,10 +30,15 @@ function AppContent({ Component, pageProps }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user && !isPublic && !isOnboarding) {
+    // Guard: treat a fresh localStorage token as "authenticated" even if React
+    // state hasn't propagated yet (router.push completes before setUser renders).
+    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
+    if (!user && !hasToken && !isPublic && !isOnboarding) {
       router.replace("/login");
       return;
     }
+    // Wait for React state to catch up when token exists but user not yet set
+    if (!user && hasToken) return;
     // Staff accounts skip onboarding — always go to staff portal
     if (user && user.account_type === "staff") {
       if (!isPublic && router.pathname !== "/staff-portal") {

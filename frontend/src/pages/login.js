@@ -115,6 +115,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [warmingUp, setWarmingUp] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
   const [configuredProviders, setConfiguredProviders] = useState([]);
 
@@ -132,13 +133,17 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setWarmingUp(false);
     setError(null);
+    const warmTimer = setTimeout(() => setWarmingUp(true), 4000);
     try {
       await login(form.email, form.password);
     } catch (err) {
       setError(err.message);
     } finally {
+      clearTimeout(warmTimer);
       setLoading(false);
+      setWarmingUp(false);
     }
   };
 
@@ -238,8 +243,14 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-gray-900 text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 disabled:opacity-60 transition-colors"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
+
+            {warmingUp && (
+              <p className="text-xs text-center text-amber-600 mt-2 animate-pulse">
+                ⏳ Server is waking up — almost there…
+              </p>
+            )}
           </form>
 
           <div className="mt-6 pt-5 border-t border-gray-100 text-center space-y-2">
