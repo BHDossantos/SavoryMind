@@ -142,6 +142,10 @@ export const api = {
   clearPantry: () => request("/api/consumer/pantry", { method: "DELETE" }),
   getPantryRecipes: () => request("/api/consumer/pantry/recipes"),
 
+  // Consumer — Delivery
+  getDeliveryDishes: (craving, budget = "") => request(`/api/consumer/delivery/dishes?craving=${craving}&budget=${budget}`),
+  getDeliveryRestaurants: (cuisine) => request(`/api/consumer/delivery/restaurants?cuisine=${encodeURIComponent(cuisine)}`),
+
   // Consumer — Meal Memories (journal)
   getMemories: () => request("/api/consumer/memories"),
   createMemory: (data) => request("/api/consumer/memories", { method: "POST", body: JSON.stringify(data) }),

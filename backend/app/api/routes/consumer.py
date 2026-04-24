@@ -13,7 +13,7 @@ from ...schemas.consumer import (
     PantryItemCreate, PantryItemResponse,
     MealMemoryCreate, MealMemoryResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service
 from ...ml.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -348,3 +348,28 @@ def delete_memory(
     _require_consumer(current_user)
     if not memory_service.delete_memory(db, current_user.id, memory_id):
         raise HTTPException(status_code=404, detail="Memory not found.")
+
+
+# ── Delivery ──────────────────────────────────────────────────────────────────
+
+@router.get("/delivery/dishes")
+def get_delivery_dishes(
+    craving: str = "",
+    budget: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    dishes = delivery_service.get_dishes_for_craving(craving, budget)
+    _log(db, current_user.id, "delivery_dishes", {"craving": craving, "budget": budget})
+    return {"dishes": dishes}
+
+
+@router.get("/delivery/restaurants")
+def get_delivery_restaurants(
+    cuisine: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    return {"restaurants": delivery_service.get_restaurants_for_cuisine(cuisine)}
