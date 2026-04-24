@@ -33,6 +33,8 @@ export default function ConsumerDashboard() {
   const [moods,        setMoods]        = useState([]);
   const [recs,         setRecs]         = useState([]);
   const [connections,  setConnections]  = useState([]);
+  const [pantry,       setPantry]       = useState([]);
+  const [memories,     setMemories]     = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [activeMood,   setActiveMood]   = useState("");
   const [suggestion,   setSuggestion]   = useState(null);
@@ -44,8 +46,13 @@ export default function ConsumerDashboard() {
       api.getMusicMoods(),
       api.getConsumerRecommendations(),
       api.getConnections(),
+      api.getPantry(),
+      api.getMemories(),
     ])
-      .then(([p, m, r, c]) => { setPairings(p); setMoods(m); setRecs(r); setConnections(c); })
+      .then(([p, m, r, c, pt, mem]) => {
+        setPairings(p); setMoods(m); setRecs(r); setConnections(c);
+        setPantry(pt); setMemories(mem);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -71,10 +78,10 @@ export default function ConsumerDashboard() {
   const goals        = pj(user?.cooking_goals, []);
 
   const QUICK_ACTIONS = [
-    { href: "/consumer/wine",   icon: "🍷", label: "Pair a Wine",     sub: "Match wine to your next dish" },
-    { href: "/consumer/music",  icon: "🎵", label: "Set a Mood",      sub: "Pick a cooking soundtrack" },
-    { href: "/consumer/recipe", icon: "👨‍🍳", label: "Get a Recipe",    sub: "AI-matched to your style" },
-    { href: "/consumer/social", icon: "🔗", label: "Connect Apps",    sub: "Spotify, Vivino & more" },
+    { href: "/consumer/pantry",  icon: "🧺", label: "My Pantry",      sub: "Cook from what you have" },
+    { href: "/consumer/explore", icon: "✨", label: "Explore",         sub: "Find tonight's recipe" },
+    { href: "/consumer/journal", icon: "📔", label: "Food Journal",   sub: "Your cooking memories" },
+    { href: "/consumer/wine",    icon: "🍷", label: "Pair a Wine",    sub: "Match wine to your dish" },
   ];
 
   return (
@@ -145,16 +152,17 @@ export default function ConsumerDashboard() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Wine Pairings",      value: pairings.length,  icon: "🍷" },
-          { label: "Music Moods",        value: moods.length,     icon: "🎵" },
-          { label: "Apps Connected",     value: connectedCnt,     icon: "🔗" },
-          { label: "AI Recommendations", value: recs.length,      icon: "✨" },
+          { label: "Meals Logged",    value: memories.length,  icon: "📔", href: "/consumer/journal" },
+          { label: "Pantry Items",    value: pantry.length,    icon: "🧺", href: "/consumer/pantry"  },
+          { label: "Wine Pairings",   value: pairings.length,  icon: "🍷", href: "/consumer/wine"    },
+          { label: "Apps Connected",  value: connectedCnt,     icon: "🔗", href: "/consumer/social"  },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-consumer-100">
+          <Link key={s.label} href={s.href}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-consumer-100 hover:border-consumer-300 hover:shadow-md transition-all group">
             <div className="text-2xl mb-2">{s.icon}</div>
-            <p className="text-2xl font-bold text-consumer-700">{s.value}</p>
+            <p className="text-2xl font-bold text-consumer-700 group-hover:text-consumer-800">{s.value}</p>
             <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -211,35 +219,35 @@ export default function ConsumerDashboard() {
           )}
         </div>
 
-        {/* AI Recommendations */}
+        {/* Recent journal entries */}
         <div className="bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-800">✨ Just For You</h2>
+          <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-800">📔 Food Journal</h2>
+            <Link href="/consumer/journal" className="text-xs text-consumer-600 font-medium hover:underline">View all →</Link>
           </div>
-          {recs.length === 0 ? (
-            <div className="p-6">
-              {goals.length > 0 ? (
-                <div className="space-y-3">
-                  {goals.slice(0, 3).map((g) => (
-                    <div key={g} className="p-3 rounded-xl bg-consumer-50 border border-consumer-100">
-                      <p className="text-xs font-semibold text-consumer-600 capitalize">{g.replace(/_/g, " ")}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Goal in progress — keep cooking!</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-sm">Make a few pairings and we'll personalise your feed.</p>
-              )}
+          {memories.length === 0 ? (
+            <div className="text-center py-10 px-6">
+              <div className="text-4xl mb-3">📔</div>
+              <p className="text-gray-500 text-sm mb-4">No memories yet — cook something and log how it went.</p>
+              <Link href="/consumer/cook"
+                className="inline-flex bg-consumer-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
+                Start cooking
+              </Link>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {recs.slice(0, 4).map((r, i) => (
-                <div key={i} className="flex items-start gap-3 px-6 py-4 hover:bg-consumer-50 transition-colors">
-                  <span className="text-xl flex-shrink-0">{r.icon}</span>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{r.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{r.body}</p>
+              {memories.slice(0, 4).map((m) => (
+                <div key={m.id} className="flex items-center gap-3 px-6 py-3.5 hover:bg-consumer-50 transition-colors">
+                  <span className="text-2xl flex-shrink-0">{m.emoji || "🍽️"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm truncate">{m.dish_name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{"⭐".repeat(m.rating)}</p>
                   </div>
+                  {m.cuisine && (
+                    <span className="text-xs text-consumer-600 bg-consumer-50 px-2 py-0.5 rounded-full flex-shrink-0">
+                      {m.cuisine}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -247,8 +255,20 @@ export default function ConsumerDashboard() {
         </div>
       </div>
 
-      {/* ── Music moods ── */}
-      {moods.length > 0 && (
+      {/* ── Pantry nudge or Music moods ── */}
+      {pantry.length === 0 ? (
+        <div className="bg-gradient-to-r from-consumer-50 to-consumer-100 border border-consumer-200 rounded-2xl p-5 flex items-center gap-5">
+          <span className="text-4xl flex-shrink-0">🧺</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900">What's in your kitchen right now?</p>
+            <p className="text-sm text-gray-500 mt-0.5">Add your ingredients and we'll find recipes you can make tonight.</p>
+          </div>
+          <Link href="/consumer/pantry"
+            className="flex-shrink-0 bg-consumer-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
+            Add ingredients
+          </Link>
+        </div>
+      ) : moods.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
             <h2 className="font-semibold text-gray-800">🎵 Recent Music Moods</h2>
