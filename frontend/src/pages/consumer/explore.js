@@ -148,10 +148,17 @@ function RecipeDetail({ r, onBack }) {
           </div>
         </div>
         <div className="mt-6 flex gap-3">
-          <Link href="/consumer/cook"
-            className="inline-flex items-center gap-2 bg-consumer-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-            👨‍🍳 Cook This Tonight
-          </Link>
+          {r.id ? (
+            <Link href={`/consumer/guided-cooking?id=${r.id}`}
+              className="inline-flex items-center gap-2 bg-consumer-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
+              👨‍🍳 Start Cooking
+            </Link>
+          ) : (
+            <Link href="/consumer/cook"
+              className="inline-flex items-center gap-2 bg-consumer-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
+              👨‍🍳 Cook This Tonight
+            </Link>
+          )}
           <Link href="/consumer/wine"
             className="inline-flex items-center gap-2 bg-white border border-consumer-200 text-consumer-700 text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-50 transition-colors">
             🍷 Pair a Wine
