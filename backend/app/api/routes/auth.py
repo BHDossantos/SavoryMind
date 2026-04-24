@@ -34,8 +34,11 @@ def social_login(
     db: Session = Depends(get_db),
     x_social_secret: Optional[str] = Header(default=None),
 ):
-    expected = getattr(settings, "social_login_secret", "dev-social-secret")
-    if expected != "dev-social-secret" and x_social_secret != expected:
+    expected = settings.social_login_secret
+    # In production (non-SQLite DB) the secret must always be provided and correct.
+    # In local dev (SQLite) with the default secret the check is skipped for convenience.
+    is_dev = "sqlite" in settings.database_url
+    if not is_dev and x_social_secret != expected:
         raise HTTPException(status_code=403, detail="Invalid social login secret.")
     token, user = auth_service.social_login(
         db, data.provider, data.provider_id, data.email, data.name, data.avatar_url

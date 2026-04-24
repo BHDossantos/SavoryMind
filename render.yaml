@@ -17,6 +17,8 @@ services:
         value: '["https://savorymind.net","https://www.savorymind.net","https://app.savorymind.net"]'
       - key: ACCESS_TOKEN_EXPIRE_DAYS
         value: "30"
+      - key: SOCIAL_LOGIN_SECRET
+        generateValue: true
 
 databases:
   - name: savorymind-db
