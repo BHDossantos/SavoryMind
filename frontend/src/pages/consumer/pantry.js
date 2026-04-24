@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Link from "next/link";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const CATEGORIES = ["Proteins", "Vegetables", "Dairy", "Grains", "Spices", "Fruits", "Condiments", "Other"];
 
@@ -27,6 +28,7 @@ export default function PantryPage() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -36,7 +38,7 @@ export default function PantryPage() {
       const data = await api.getPantry();
       setItems(data);
       if (data.length > 0) loadRecipes();
-    } catch {}
+    } catch (e) { setError(e.message || "Failed to load pantry."); }
     finally { setLoading(false); }
   };
 
@@ -46,7 +48,7 @@ export default function PantryPage() {
       const data = await api.getPantryRecipes();
       setRecipes(data.recipes || []);
       setMatchedIngredients(data.matched_ingredients || []);
-    } catch {}
+    } catch (e) { setError(e.message || "Failed to load recipe matches."); }
     finally { setRecipeLoading(false); }
   };
 
@@ -68,15 +70,21 @@ export default function PantryPage() {
       await api.deletePantryItem(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
       loadRecipes();
-    } catch {}
+    } catch (e) { setError(e.message || "Failed to remove item."); }
   };
 
-  const clearAll = async () => {
-    if (!confirm("Clear your entire pantry?")) return;
-    try {
-      await api.clearPantry();
-      setItems([]); setRecipes([]); setMatchedIngredients([]);
-    } catch {}
+  const clearAll = () => {
+    setConfirmDialog({
+      message: "Clear your entire pantry? All ingredients will be removed.",
+      confirmLabel: "Clear Pantry",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.clearPantry();
+          setItems([]); setRecipes([]); setMatchedIngredients([]);
+        } catch (e) { setError(e.message || "Failed to clear pantry."); }
+      },
+    });
   };
 
   // Group items by category
@@ -243,6 +251,15 @@ export default function PantryPage() {
           )}
         </div>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

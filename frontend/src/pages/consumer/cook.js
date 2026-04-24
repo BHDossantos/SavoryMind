@@ -36,6 +36,7 @@ export default function CookPage() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recipeLoading, setRecipeLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const dietaryPrefs = pj(user?.dietary_preferences, []);
   const cuisinePrefs = pj(user?.cuisine_preferences, []);
@@ -49,17 +50,17 @@ export default function CookPage() {
         ]);
         setSuggestion(sug);
         setRecipes(recs.recipes || []);
-      } catch {}
+      } catch (e) { setFetchError(e.message || "Failed to load recipes."); }
       finally { setLoading(false); }
     })();
   }, []);
 
   const loadMood = async (m) => {
-    setMood(m); setSelected(null); setRecipeLoading(true);
+    setMood(m); setSelected(null); setRecipeLoading(true); setFetchError(null);
     try {
       const data = await api.getRecipes({ mood: m });
       setRecipes(data.recipes || []);
-    } catch {}
+    } catch (e) { setFetchError(e.message || "Failed to load recipes."); }
     finally { setRecipeLoading(false); }
   };
 
@@ -67,6 +68,9 @@ export default function CookPage() {
 
   return (
     <div>
+      {fetchError && (
+        <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{fetchError}</div>
+      )}
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">👨‍🍳 Cook</h1>

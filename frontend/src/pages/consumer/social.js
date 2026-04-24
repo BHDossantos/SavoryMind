@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const PLATFORMS = [
   {
@@ -51,6 +52,7 @@ export default function SocialConnect() {
   const [usernameInput, setUsernameInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => {
     api.getConnections()
@@ -85,12 +87,21 @@ export default function SocialConnect() {
     }
   };
 
-  const handleDisconnect = async (platform) => {
-    if (!confirm(`Disconnect ${platform}?`)) return;
-    try {
-      const updated = await api.updateConnection(platform, { platform, connected: false, username: null });
-      setConnections((prev) => ({ ...prev, [platform]: updated }));
-    } catch {}
+  const handleDisconnect = (platform) => {
+    setConfirmDialog({
+      message: `Disconnect ${platform}?`,
+      confirmLabel: "Disconnect",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          const updated = await api.updateConnection(platform, { platform, connected: false, username: null });
+          setConnections((prev) => ({ ...prev, [platform]: updated }));
+        } catch (err) {
+          setSaveError(err.message || "Failed to disconnect.");
+          setEditing(platform);
+        }
+      },
+    });
   };
 
   if (loading) return <div className="text-gray-400 text-sm p-8">Loading connections...</div>;
@@ -211,6 +222,15 @@ export default function SocialConnect() {
           actual OAuth tokens are encrypted and never shared. Music playback links open in the respective apps.
         </p>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

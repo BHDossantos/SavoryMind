@@ -57,6 +57,7 @@ export default function OrderPage() {
   const [dish, setDish]             = useState(null);
   const [restaurants, setRestaurants] = useState([]);
   const [restLoading, setRestLoading] = useState(false);
+  const [restError, setRestError] = useState("");
   const [restaurant, setRestaurant] = useState(null);
   const [address, setAddress]       = useState("");
   const [note, setNote]             = useState("");
@@ -79,11 +80,11 @@ export default function OrderPage() {
 
   const selectDish = async (d) => {
     setDish(d); setRestaurant(null); setRestaurants([]);
-    setStep(2); setRestLoading(true);
+    setStep(2); setRestLoading(true); setRestError("");
     try {
       const data = await api.getDeliveryRestaurants(d.cuisine);
       setRestaurants(data.restaurants || []);
-    } catch {}
+    } catch (e) { setRestError(e.message || "Failed to load restaurants."); }
     finally { setRestLoading(false); }
   };
 
@@ -229,6 +230,11 @@ export default function OrderPage() {
 
           {restLoading ? (
             <div className="flex justify-center py-16"><LoadingSpinner /></div>
+          ) : restError ? (
+            <div className="text-center py-12">
+              <p className="text-sm text-gray-500 mb-4">{restError}</p>
+              <button onClick={() => setStep(1)} className="text-consumer-600 font-semibold text-sm hover:underline">← Try another dish</button>
+            </div>
           ) : (
             <div className="space-y-3">
               {restaurants.map((r, i) => (

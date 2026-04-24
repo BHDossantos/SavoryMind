@@ -176,15 +176,16 @@ export default function ExplorePage() {
   const [recipes,   setRecipes]   = useState([]);
   const [detail,    setDetail]    = useState(null);
   const [loading,   setLoading]   = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const userCuisines = pj(user?.cuisine_preferences, []);
 
   const search = useCallback(async (keyword = "", cuisine = "", mood = "") => {
-    setLoading(true); setDetail(null);
+    setLoading(true); setDetail(null); setFetchError(null);
     try {
       const data = await api.getRecipes({ keywords: keyword, cuisine, mood });
       setRecipes(data.recipes || []);
-    } catch { setRecipes([]); }
+    } catch (e) { setRecipes([]); setFetchError(e.message || "Failed to load recipes."); }
     finally { setLoading(false); }
   }, []);
 
@@ -296,6 +297,9 @@ export default function ExplorePage() {
       )}
 
       {/* Results */}
+      {fetchError && !loading && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{fetchError}</div>
+      )}
       {loading && <LoadingSpinner message="Finding the perfect matches…" />}
 
       {!loading && recipes.length > 0 && (

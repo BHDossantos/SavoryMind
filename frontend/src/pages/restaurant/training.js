@@ -18,11 +18,13 @@ const TYPE_ICONS = {
 export default function StaffTraining() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [checked, setChecked] = useState({});
 
   useEffect(() => {
     api.getTrainingRecommendations()
       .then(setData)
+      .catch((err) => setError(err.message || "Failed to load training data."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -31,6 +33,7 @@ export default function StaffTraining() {
   };
 
   if (loading) return <div className="text-gray-400 text-sm p-8">Analysing staff data...</div>;
+  if (error) return <div className="text-red-500 text-sm p-8">{error}</div>;
   if (!data) return null;
 
   const recs = data.recommendations;
