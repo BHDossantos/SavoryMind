@@ -6,7 +6,8 @@
   "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://savorymind-api.onrender.com",
-    "BACKEND_URL": "https://savorymind-api.onrender.com"
+    "BACKEND_URL": "https://savorymind-api.onrender.com",
+    "NEXTAUTH_URL": "https://savorymind.vercel.app"
   },
   "headers": [
     {

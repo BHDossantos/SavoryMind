@@ -41,6 +41,16 @@ export function AuthProvider({ children }) {
 
     api.getMe()
       .then((fresh) => {
+        // Never downgrade onboarding_completed from true → false.
+        // Race condition: handleNext sets localStorage to true, then window.location.assign
+        // fires, but this stale getMe() callback can resolve after and overwrite with false.
+        const storedRaw = localStorage.getItem("user");
+        const storedOnboarding = (() => {
+          try { return JSON.parse(storedRaw || "{}").onboarding_completed; } catch { return false; }
+        })();
+        if (storedOnboarding && !fresh.onboarding_completed) {
+          fresh = { ...fresh, onboarding_completed: true };
+        }
         setUser(fresh);
         localStorage.setItem("user", JSON.stringify(fresh));
       })
