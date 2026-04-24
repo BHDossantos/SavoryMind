@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
@@ -1123,6 +1123,21 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState(null);
   const [step,   setStep]   = useState(0);
+
+  // Safety net: if user already completed onboarding (e.g. stale redirect),
+  // send them straight to their dashboard instead of showing step 0 again.
+  useEffect(() => {
+    if (!user) return;
+    const done = user.onboarding_completed || (() => {
+      try { return JSON.parse(localStorage.getItem("user") || "{}").onboarding_completed; } catch { return false; }
+    })();
+    if (done) {
+      const dest = user.account_type === "consumer" ? "/consumer/dashboard"
+                 : user.account_type === "diner"    ? "/diner/dashboard"
+                 : "/dashboard";
+      router.replace(dest);
+    }
+  }, [user, router]);
 
   const needsTypeStep = !user?.account_type;
   const [showType, setShowType] = useState(needsTypeStep);
