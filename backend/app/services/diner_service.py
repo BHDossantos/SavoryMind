@@ -44,7 +44,7 @@ def create_visit(db: Session, user_id: int, data: dict) -> DinerVisit:
     visit = DinerVisit(
         user_id=user_id,
         restaurant_name=data["restaurant_name"],
-        visit_date=data.get("visit_date", str(datetime.date.today())),
+        visit_date=data.get("visit_date") or str(datetime.date.today()),
         items_ordered=data.get("items_ordered", ""),
         overall_rating=data.get("overall_rating", 5.0),
         food_rating=data.get("food_rating", 5.0),
