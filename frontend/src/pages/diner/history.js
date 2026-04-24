@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import SkeletonLoader from "../../components/SkeletonLoader";
 
 const stars = (n) => "★".repeat(Math.round(n)) + "☆".repeat(5 - Math.round(n));
 
@@ -60,7 +61,7 @@ export default function DinerHistory() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
+        <SkeletonLoader type="cards" count={3} />
       ) : visits.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-5xl mb-4">🍽️</p>

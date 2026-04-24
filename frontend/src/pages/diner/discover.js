@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/router";
 import { api } from "../../services/api";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import SkeletonLoader from "../../components/SkeletonLoader";
 import ErrorMessage from "../../components/ErrorMessage";
 
 const MOODS = ["", "romantic", "adventurous", "relaxed", "celebratory", "group", "healthy", "cozy"];
@@ -29,6 +30,7 @@ const MIN_RATINGS = [
 ];
 
 export default function DiscoverPage() {
+  const router = useRouter();
   const [mood, setMood]         = useState("");
   const [cuisine, setCuisine]   = useState("");
   const [budget, setBudget]     = useState("mid");
@@ -224,7 +226,7 @@ export default function DiscoverPage() {
 
       {/* Results */}
       {loading ? (
-        <LoadingSpinner />
+        <SkeletonLoader type="cards" count={6} />
       ) : results.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-4xl mb-3">🍽️</p>
@@ -261,7 +263,7 @@ export default function DiscoverPage() {
                 </div>
                 <p className="text-sm text-gray-600 mb-3 leading-relaxed">{r.description}</p>
                 <p className="text-xs text-diner-700 italic mb-3">⭐ {r.standout_dish}</p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex flex-wrap gap-1.5">
                     {(r.tags || []).slice(0, 3).map((tag) => (
                       <button key={tag} onClick={() => setQuery(tag)}
@@ -277,6 +279,11 @@ export default function DiscoverPage() {
                     </span>
                   </div>
                 </div>
+                <button
+                  onClick={() => router.push(`/diner/book?restaurant=${encodeURIComponent(r.name)}`)}
+                  className="w-full text-xs font-semibold bg-diner-600 text-white py-2 rounded-xl hover:bg-diner-700 transition-colors">
+                  📅 Book a Table
+                </button>
               </div>
             ))}
           </div>

@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import Layout from "../components/Layout";
 import ConsumerLayout from "../components/ConsumerLayout";
 import DinerLayout from "../components/DinerLayout";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import "../styles/globals.css";
 
@@ -123,10 +124,12 @@ function AppContent({ Component, pageProps }) {
 
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   return (
-    <SessionProvider session={session}>
-      <AuthProvider>
-        <AppContent Component={Component} pageProps={pageProps} />
-      </AuthProvider>
-    </SessionProvider>
+    <ErrorBoundary>
+      <SessionProvider session={session}>
+        <AuthProvider>
+          <AppContent Component={Component} pageProps={pageProps} />
+        </AuthProvider>
+      </SessionProvider>
+    </ErrorBoundary>
   );
 }

@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { api } from "../../services/api";
 
 const TIMES = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:00","19:30","20:00","20:30","21:00"];
 
 export default function BookTable() {
+  const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [form, setForm] = useState({ restaurant_name: "", booking_date: "", booking_time: "19:00", party_size: 2, special_requests: "" });
   const [loading, setLoading] = useState(false);
@@ -16,6 +18,13 @@ export default function BookTable() {
   };
 
   useEffect(() => { loadBookings(); }, []);
+
+  // Pre-fill restaurant name when navigated from discover page
+  useEffect(() => {
+    if (router.isReady && router.query.restaurant) {
+      setForm((f) => ({ ...f, restaurant_name: decodeURIComponent(router.query.restaurant) }));
+    }
+  }, [router.isReady, router.query.restaurant]);
 
   const handleChange = (e) => {
     const val = e.target.type === "number" ? Number(e.target.value) : e.target.value;
