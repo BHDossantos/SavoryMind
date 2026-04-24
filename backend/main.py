@@ -81,8 +81,16 @@ def _run_migrations():
                 pass
 
 
+_DEFAULT_SECRET = "savorymind-super-secret-change-in-production-32chars"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.secret_key == _DEFAULT_SECRET and "sqlite" not in settings.database_url:
+        raise RuntimeError(
+            "SECRET_KEY is the insecure default value. "
+            "Set the SECRET_KEY environment variable before deploying to production."
+        )
     Base.metadata.create_all(bind=engine)
     _run_migrations()
     yield
