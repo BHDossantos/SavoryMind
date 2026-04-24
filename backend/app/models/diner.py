@@ -12,8 +12,11 @@ class DinerBooking(Base):
     booking_time = Column(String(10), nullable=False, default="19:00")
     party_size = Column(Integer, nullable=False, default=2)
     special_requests = Column(Text)
-    status = Column(String(20), default="confirmed")  # confirmed | pending | cancelled
+    status = Column(String(20), default="confirmed")  # confirmed | pending | cancelled | declined
     created_at = Column(Date, default=datetime.date.today)
+    # Set when booking is linked to a registered restaurant on the platform
+    restaurant_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    restaurant_booking_id = Column(Integer, nullable=True)  # mirrors Booking.id
 
 
 class DinerVisit(Base):

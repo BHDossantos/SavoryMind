@@ -35,6 +35,8 @@ class BookingResponse(BaseModel):
     status: str
     notes: Optional[str]
     created_at: datetime
+    diner_user_id: Optional[int] = None
+    source: Optional[str] = "manual"
 
     model_config = {"from_attributes": True}
 

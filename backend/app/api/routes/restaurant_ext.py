@@ -75,6 +75,32 @@ def delete_booking(
         raise HTTPException(status_code=404, detail="Booking not found")
 
 
+@router.patch("/bookings/{booking_id}/confirm", response_model=BookingResponse)
+def confirm_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    b = booking_service.confirm_booking(db, current_user.id, booking_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="Online booking not found.")
+    return b
+
+
+@router.patch("/bookings/{booking_id}/decline", response_model=BookingResponse)
+def decline_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    b = booking_service.decline_booking(db, current_user.id, booking_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="Online booking not found.")
+    return b
+
+
 # --- CRM ---
 
 @router.get("/crm/summary")

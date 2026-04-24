@@ -9,7 +9,7 @@ from app.models.consumer import WinePairing, MusicMood, SocialConnection, Behavi
 from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # noqa: F401
 from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
-from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover
 
 # Columns to add to existing `users` table on older deployments
 _USER_MIGRATIONS = [
@@ -64,6 +64,21 @@ _STAFF_TIME_MIGRATIONS = [
     ("is_open",       "BOOLEAN DEFAULT FALSE"),
 ]
 
+_BOOKING_MIGRATIONS = [
+    ("diner_user_id", "INTEGER"),
+    ("source",        "VARCHAR DEFAULT 'manual'"),
+]
+
+_DINER_BOOKING_MIGRATIONS = [
+    ("restaurant_user_id",    "INTEGER"),
+    ("restaurant_booking_id", "INTEGER"),
+]
+
+_USER_AVAILABILITY_MIGRATIONS = [
+    ("available_time_slots", "TEXT"),       # comma-sep e.g. "12:00,13:00,19:00,20:00"
+    ("booking_window_days",  "INTEGER DEFAULT 60"),
+]
+
 
 def _run_migrations():
     with engine.connect() as conn:
@@ -76,6 +91,24 @@ def _run_migrations():
         for col, col_type in _STAFF_TIME_MIGRATIONS:
             try:
                 conn.execute(text(f"ALTER TABLE staff_time_logs ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
+        for col, col_type in _BOOKING_MIGRATIONS:
+            try:
+                conn.execute(text(f"ALTER TABLE bookings ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
+        for col, col_type in _DINER_BOOKING_MIGRATIONS:
+            try:
+                conn.execute(text(f"ALTER TABLE diner_bookings ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
+        for col, col_type in _USER_AVAILABILITY_MIGRATIONS:
+            try:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_type}"))
                 conn.commit()
             except Exception:
                 pass
@@ -115,6 +148,7 @@ app.include_router(restaurant_ext.router, prefix="/api")
 app.include_router(owner_extras.router, prefix="/api")
 app.include_router(diner.router, prefix="/api")
 app.include_router(staff_portal.router, prefix="/api")
+app.include_router(discover.router, prefix="/api")
 
 
 @app.get("/")

@@ -71,6 +71,10 @@ class User(Base):
     serves_cocktails    = Column(Boolean, nullable=True)
     serves_beer         = Column(Boolean, nullable=True)
 
+    # Online booking availability
+    available_time_slots = Column(Text, nullable=True)    # comma-sep "12:00,19:00,20:00"
+    booking_window_days  = Column(Integer, default=60)
+
     # Onboarding gate
     onboarding_completed = Column(Boolean, default=False)
 
