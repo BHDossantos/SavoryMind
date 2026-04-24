@@ -1165,7 +1165,7 @@ export default function Onboarding() {
         // Sync localStorage before navigation so _app.js route guard sees onboarding_completed immediately
         try { localStorage.setItem("user", JSON.stringify(updated)); } catch {}
         const dest = updated.account_type === "consumer" ? "/consumer/dashboard"
-                   : updated.account_type === "diner"    ? "/diner/dashboard"
+                   : updated.account_type === "diner"    ? "/diner/welcome"
                    : "/dashboard";
         router.push(dest);
       } catch (e) { setError(e.message || "Something went wrong."); }
