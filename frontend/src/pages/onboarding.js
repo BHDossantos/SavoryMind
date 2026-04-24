@@ -1162,12 +1162,13 @@ export default function Onboarding() {
       try {
         const updated = await api.updateProfile({ onboarding_completed: true });
         updateUser(updated);
-        // Sync localStorage before navigation so _app.js route guard sees onboarding_completed immediately
         try { localStorage.setItem("user", JSON.stringify(updated)); } catch {}
         const dest = updated.account_type === "consumer" ? "/consumer/dashboard"
                    : updated.account_type === "diner"    ? "/diner/welcome"
                    : "/dashboard";
-        router.push(dest);
+        // Full-page navigation so AuthProvider mounts fresh from localStorage,
+        // avoiding any React-state vs route-change race in _app.js guards.
+        window.location.assign(dest);
       } catch (e) { setError(e.message || "Something went wrong."); }
       finally { setSaving(false); }
       return;

@@ -30,9 +30,13 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Optimistically restore
+    // Optimistically restore — show the app immediately if we have cached data.
+    // getMe() validates the token and refreshes the profile in the background.
     if (saved) {
-      try { setUser(JSON.parse(saved)); } catch {}
+      try {
+        setUser(JSON.parse(saved));
+        setLoading(false); // instant — guard will re-check when getMe() updates state
+      } catch {}
     }
 
     api.getMe()
