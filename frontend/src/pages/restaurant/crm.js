@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function CRM() {
   const [customers, setCustomers] = useState([]);
@@ -11,6 +12,7 @@ export default function CRM() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const fetch = () => {
     setLoading(true);
@@ -37,10 +39,20 @@ export default function CRM() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Remove this customer?")) return;
-    await api.deleteCustomer(id);
-    fetch();
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      message: "Remove this customer? Their visit history will be lost.",
+      confirmLabel: "Remove",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.deleteCustomer(id);
+          fetch();
+        } catch (err) {
+          setError(err.message);
+        }
+      },
+    });
   };
 
   const tagColor = (tag) => {
@@ -171,6 +183,15 @@ export default function CRM() {
             </form>
           </div>
         </div>
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
     </div>
   );

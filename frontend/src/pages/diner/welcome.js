@@ -201,7 +201,7 @@ export default function DinerWelcomePage() {
 
       {/* ── Go to dashboard ── */}
       <div className="flex items-center justify-between pt-4 border-t border-diner-100">
-        <p className="text-sm text-gray-400">You can always revisit this from your profile.</p>
+        <p className="text-sm text-gray-400">You can revisit this anytime from the sidebar.</p>
         <button onClick={() => router.push("/diner/dashboard")}
           className="bg-diner-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-diner-700 transition-colors flex items-center gap-2">
           Let's go 🍽️
