@@ -16,7 +16,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true); setError(null);
     Promise.all([api.getDashboardStats(), api.getMenuItems(), api.getSentimentSummary()])
       .then(([s, items, sent]) => {
         setStats(s);
@@ -25,10 +26,12 @@ export default function Dashboard() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   if (loading) return <LoadingSpinner message="Loading dashboard..." />;
-  if (error) return <ErrorMessage message={error} />;
+  if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
   const topItems = [...menuItems]
     .sort((a, b) => b.orders_last_30_days - a.orders_last_30_days)

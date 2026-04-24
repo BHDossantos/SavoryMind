@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUS_STYLES = {
   confirmed: "bg-blue-100 text-blue-700",
@@ -19,6 +20,7 @@ export default function Bookings() {
   const [form, setForm] = useState({ customer_name: "", customer_email: "", customer_phone: "", date: today(), time_slot: "19:00", party_size: 2, table_number: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const fetchAll = () => {
     setLoading(true);
@@ -47,10 +49,18 @@ export default function Bookings() {
     fetchAll();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this booking?")) return;
-    await api.deleteBooking(id);
-    fetchAll();
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      message: "Delete this booking? This cannot be undone.",
+      confirmLabel: "Delete",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.deleteBooking(id);
+          fetchAll();
+        } catch (err) { setError(err.message); }
+      },
+    });
   };
 
   return (
@@ -146,6 +156,15 @@ export default function Bookings() {
           </tbody>
         </table>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
 
       {/* New booking modal */}
       {showForm && (

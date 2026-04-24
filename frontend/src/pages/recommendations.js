@@ -23,15 +23,18 @@ export default function RecommendationsPage() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true); setError(null);
     api.getRecommendations()
       .then(setRecs)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   if (loading) return <LoadingSpinner message="Generating recommendations..." />;
-  if (error) return <ErrorMessage message={error} />;
+  if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
   const filtered = filter === "all" ? recs : recs.filter((r) => r.priority === filter);
 
