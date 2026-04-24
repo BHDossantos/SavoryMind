@@ -197,6 +197,9 @@ export const api = {
   getShoppingList: (dietary = "") => request(`/api/consumer/shopping-list?dietary=${dietary}`),
   getDailySuggestion: (mood = "") => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
+  // Consumer — Culinary Assistant
+  askAssistant: (question) => request("/api/consumer/assistant", { method: "POST", body: JSON.stringify({ question }) }),
+
   // Restaurant — Trends & Marketing
   getMenuTrends: () => request("/api/restaurant/trends"),
   getMarketingInsights: () => request("/api/restaurant/marketing"),

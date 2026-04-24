@@ -60,12 +60,13 @@ export default function ConsumerLayout({ children }) {
         <div className="px-4 pb-2">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-3 mb-1">More</p>
           {[
-            { href: "/consumer/pantry",    label: "My Pantry",     icon: "🧺" },
-            { href: "/consumer/journal",   label: "Food Journal",  icon: "📔" },
-            { href: "/consumer/wine",      label: "Wine Pairing",  icon: "🍷" },
-            { href: "/consumer/music",     label: "Music Mood",    icon: "🎵" },
-            { href: "/consumer/beverages", label: "Beverages",     icon: "🥂" },
-            { href: "/consumer/social",    label: "Connect Apps",  icon: "🔗" },
+            { href: "/consumer/pantry",    label: "My Pantry",       icon: "🧺" },
+            { href: "/consumer/journal",   label: "Food Journal",    icon: "📔" },
+            { href: "/consumer/assistant", label: "Culinary Help",   icon: "👨‍🍳" },
+            { href: "/consumer/wine",      label: "Wine Pairing",    icon: "🍷" },
+            { href: "/consumer/music",     label: "Music Mood",      icon: "🎵" },
+            { href: "/consumer/beverages", label: "Beverages",       icon: "🥂" },
+            { href: "/consumer/social",    label: "Connect Apps",    icon: "🔗" },
           ].map((link) => (
             <Link key={link.href} href={link.href}
               className={clsx(

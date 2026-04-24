@@ -1,5 +1,6 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel as pydantic_BaseModel
 from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.security import get_current_user
@@ -13,7 +14,7 @@ from ...schemas.consumer import (
     PantryItemCreate, PantryItemResponse,
     MealMemoryCreate, MealMemoryResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service
 from ...ml.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -373,3 +374,22 @@ def get_delivery_restaurants(
 ):
     _require_consumer(current_user)
     return {"restaurants": delivery_service.get_restaurants_for_cuisine(cuisine)}
+
+
+# ── Culinary Assistant ────────────────────────────────────────────────────────
+
+class _AssistantRequest(pydantic_BaseModel):
+    question: str
+
+
+@router.post("/assistant")
+def ask_assistant(
+    body: _AssistantRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_consumer(current_user)
+    if not body.question or not body.question.strip():
+        raise HTTPException(status_code=422, detail="question is required.")
+    _log(db, current_user.id, "assistant_query", {"question": body.question[:120]})
+    return assistant_service.answer(body.question.strip())

@@ -181,6 +181,62 @@ function MemoryModal({ recipe, onSave, onSkip }) {
   );
 }
 
+function InlineHelp() {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [result, setResult] = useState(null);
+  const [asking, setAsking] = useState(false);
+
+  const ask = async () => {
+    if (!query.trim() || asking) return;
+    setAsking(true); setResult(null);
+    try {
+      const data = await api.askAssistant(query.trim());
+      setResult(data);
+    } catch { setResult({ title: "Error", answer: "Couldn't reach the assistant — try again." }); }
+    finally { setAsking(false); }
+  };
+
+  if (!open) return (
+    <button onClick={() => setOpen(true)}
+      className="w-full border border-dashed border-consumer-300 text-consumer-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-consumer-50 transition-colors mt-2">
+      🆘 Something went wrong? Ask for help
+    </button>
+  );
+
+  return (
+    <div className="mt-2 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-bold text-amber-900">👨‍🍳 Culinary Assistant</p>
+        <button onClick={() => { setOpen(false); setQuery(""); setResult(null); }}
+          className="text-amber-500 hover:text-amber-700 text-lg">✕</button>
+      </div>
+      {result ? (
+        <div className="mb-3">
+          <p className="text-xs font-bold text-amber-800 mb-1">{result.title}</p>
+          <p className="text-sm text-amber-900 leading-relaxed">{result.answer}</p>
+          <button onClick={() => { setQuery(""); setResult(null); }}
+            className="mt-2 text-xs text-amber-700 font-semibold hover:underline">Ask another →</button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && ask()}
+            placeholder="e.g. sauce is breaking, meat is tough…"
+            className="flex-1 border border-amber-300 bg-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
+          <button onClick={ask} disabled={!query.trim() || asking}
+            className="bg-amber-600 text-white font-bold px-4 rounded-xl text-sm hover:bg-amber-700 disabled:opacity-50 transition-colors">
+            {asking ? "…" : "Ask"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GuidedCookingPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -303,8 +359,10 @@ export default function GuidedCookingPage() {
         </div>
       )}
 
+      <InlineHelp key={currentStep} />
+
       {/* Navigation */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 mt-4">
         <button onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
           disabled={currentStep === 0}
           className="flex-1 border border-consumer-200 text-consumer-700 font-bold py-3.5 rounded-xl hover:bg-consumer-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
