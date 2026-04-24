@@ -1,143 +1,160 @@
 # SavoryMind — Production Deployment
 
-Stack: **FastAPI + PostgreSQL on Render** · **Next.js on Vercel**
+Stack: **FastAPI on Google Cloud Run** · **Next.js on Google Cloud Run**
+
+Both services are deployed via a single `cloudbuild.yaml` Cloud Build pipeline.
 
 ---
 
 ## Prerequisites
 
-- GitHub repo pushed (already done)
-- [Render account](https://render.com) (free tier is fine)
-- [Vercel account](https://vercel.com) (free tier is fine)
+- Google Cloud project with billing enabled
+- `gcloud` CLI installed and authenticated (`gcloud auth login`)
+- Enable required APIs:
+  ```bash
+  gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
+    containerregistry.googleapis.com storage.googleapis.com
+  ```
+- Cloud Build service account needs **Cloud Run Admin** and **Storage Admin** roles
 
 ---
 
-## Step 1 — Deploy the Backend (Render)
+## Step 1 — Generate secrets
 
-The `render.yaml` at the root of the repo configures everything automatically.
+```bash
+# Backend JWT secret
+openssl rand -hex 32
 
-1. Log in to [render.com](https://render.com)
-2. Click **New → Blueprint**
-3. Connect your GitHub account and select the `BHDossantos/SavoryMind` repo
-4. Render reads `render.yaml` and shows two resources:
-   - `savorymind-db` — PostgreSQL free tier
-   - `savorymind-api` — Docker web service
-5. Click **Apply** — Render creates both and sets `DATABASE_URL` automatically
-6. The first deploy takes ~3 minutes while Docker builds
-7. Once live, visit `https://savorymind-api.onrender.com/health` — you should see `{"status":"ok"}`
+# Shared social-login secret (must match on both services)
+openssl rand -hex 32
 
-### Grab the generated secrets
+# NextAuth secret (frontend only)
+openssl rand -base64 32
+```
 
-After the backend deploys:
-
-1. In Render dashboard → **savorymind-api** → **Environment**
-2. Note down the values for:
-   - `SECRET_KEY` (auto-generated)
-   - `SOCIAL_LOGIN_SECRET` (auto-generated)
-
-You'll need `SOCIAL_LOGIN_SECRET` in Step 2.
+Save all three — you'll pass them as Cloud Build substitution variables.
 
 ---
 
-## Step 2 — Deploy the Frontend (Vercel)
+## Step 2 — First deploy (backend URL not yet known)
 
-The `vercel.json` at the root of the repo configures the build.
+Run the build with a placeholder frontend URL. Cloud Build will:
+1. Create a GCS bucket for the SQLite database
+2. Build and deploy the **backend** to Cloud Run
+3. Capture the backend URL automatically
+4. Build and deploy the **frontend** using that URL
 
-1. Log in to [vercel.com](https://vercel.com)
-2. Click **Add New → Project**
-3. Import `BHDossantos/SavoryMind` from GitHub
-4. Vercel detects `vercel.json` → sets `rootDirectory: frontend` automatically
-5. Before clicking **Deploy**, add these **Environment Variables** in the Vercel UI:
+```bash
+gcloud builds submit \
+  --config cloudbuild.yaml \
+  --substitutions \
+    _REGION=europe-west1,\
+    _SECRET_KEY=<your-secret-key>,\
+    _SOCIAL_LOGIN_SECRET=<your-social-secret>,\
+    _NEXTAUTH_SECRET=<your-nextauth-secret>,\
+    _NEXTAUTH_URL=https://placeholder.example
+```
 
-| Variable | Value |
-|---|---|
-| `NEXTAUTH_SECRET` | Generate: `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | Your Vercel URL, e.g. `https://savorymind.vercel.app` |
-| `SOCIAL_LOGIN_SECRET` | Copy from Render dashboard (Step 1) |
-| `NEXT_PUBLIC_API_URL` | `https://savorymind-api.onrender.com` |
-| `BACKEND_URL` | `https://savorymind-api.onrender.com` |
+Build takes ~5–8 minutes. When done, get the live URLs:
 
-6. Click **Deploy** — build takes ~2 minutes
+```bash
+gcloud run services describe savorymind-api --region europe-west1 --format "value(status.url)"
+gcloud run services describe savorymind-web  --region europe-west1 --format "value(status.url)"
+```
 
-### Update CORS on the backend
-
-Once Vercel gives you the final URL (e.g. `https://savorymind-abc123.vercel.app`):
-
-1. In Render dashboard → **savorymind-api** → **Environment**
-2. Update `CORS_ORIGINS` to include your Vercel URL:
-   ```
-   ["https://savorymind-abc123.vercel.app","https://savorymind.net"]
-   ```
-3. Render auto-redeploys
+Note the **frontend URL** — looks like `https://savorymind-web-abc123-ew.a.run.app`.
 
 ---
 
-## Step 3 — Verify
+## Step 3 — Second deploy (set real frontend URL)
+
+Re-run with the actual frontend URL so NextAuth and CORS work correctly:
+
+```bash
+gcloud builds submit \
+  --config cloudbuild.yaml \
+  --substitutions \
+    _REGION=europe-west1,\
+    _SECRET_KEY=<same-secret-key>,\
+    _SOCIAL_LOGIN_SECRET=<same-social-secret>,\
+    _NEXTAUTH_SECRET=<same-nextauth-secret>,\
+    _NEXTAUTH_URL=https://savorymind-web-abc123-ew.a.run.app
+```
+
+---
+
+## Step 4 — Verify
 
 | Check | URL |
 |---|---|
-| Backend health | `https://savorymind-api.onrender.com/health` |
-| API docs | `https://savorymind-api.onrender.com/docs` |
-| Frontend | `https://your-app.vercel.app` |
-| Keep-alive cron | `https://your-app.vercel.app/api/ping` |
+| Backend health | `https://savorymind-api-xxx.a.run.app/health` |
+| API docs | `https://savorymind-api-xxx.a.run.app/docs` |
+| Frontend | `https://savorymind-web-xxx.a.run.app` |
 
-1. Open the frontend URL, register a new account
-2. Complete onboarding — you should land on your dashboard (no loop)
-3. Log out and log in again — you should go straight to the dashboard
+1. Open the frontend URL and register a new account
+2. Complete onboarding — you should land on your dashboard
+3. Log out and log back in — should go straight to the dashboard
+
+---
+
+## Step 5 — CI/CD trigger (optional)
+
+1. Cloud Build → **Triggers → Create trigger**
+2. Connect `BHDossantos/SavoryMind` from GitHub
+3. Config file: `cloudbuild.yaml`
+4. Add all substitution variables (`_SECRET_KEY`, `_SOCIAL_LOGIN_SECRET`, etc.)
+5. Trigger on pushes to `main`
 
 ---
 
 ## Custom Domain (optional)
 
-**Vercel:**
-1. Vercel dashboard → Project → **Domains** → Add `savorymind.net`
-2. Add the CNAME record Vercel shows to your DNS provider
-
-**After adding domain:**
-- Update `NEXTAUTH_URL` in Vercel env vars to `https://savorymind.net`
-- Update `CORS_ORIGINS` in Render to include `https://savorymind.net`
-- Trigger a redeploy on both platforms
+1. Cloud Run console → **savorymind-web** → **Custom domains** → Map `savorymind.net`
+2. Add the DNS records to your provider
+3. Re-run build with `_NEXTAUTH_URL=https://savorymind.net` and `_CORS_EXTRA=https://savorymind.net`
 
 ---
 
 ## Social Login Providers (optional)
 
-Add any of these in Vercel env vars — providers whose keys are absent are hidden from the login page automatically:
+Add these to the **savorymind-web** Cloud Run service after deployment
+(console → service → **Edit & deploy new revision** → **Variables & secrets**):
 
 | Provider | Keys needed |
 |---|---|
 | Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
 | GitHub | `GITHUB_ID`, `GITHUB_SECRET` |
 | Facebook | `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` |
-| Apple | `APPLE_ID`, `APPLE_SECRET` |
-| Azure AD | `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID` |
 | Discord | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` |
 | Twitter/X | `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET` |
 | LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` |
 
+Providers whose vars are absent are hidden from the login page automatically.
+
 ---
 
-## Render Free Tier Notes
+## Cloud Run Notes
 
-- The free PostgreSQL DB is deleted after **90 days** — upgrade to paid before then or export your data
-- The free web service **sleeps after 15 min of inactivity** — the Vercel cron (`/api/ping` every 10 min) keeps it warm during business hours
-- Cold starts take ~30 seconds if the service has been idle — first login after a long gap will be slow
+- **Cold starts**: services scale to zero when idle; first request after inactivity takes ~3–5 s
+- **Database**: SQLite on a GCS-mounted volume — persists across restarts, no separate DB needed
+- **Logs**: Cloud Run console → **Logs** tab, or `gcloud run logs read --service savorymind-api`
+- **Scaling**: `--min-instances 0 --max-instances 2` keeps costs near zero at low traffic
 
 ---
 
 ## Troubleshooting
 
-**`CORS` errors in the browser console**
-→ Add your Vercel URL to `CORS_ORIGINS` in Render and redeploy
+**CORS errors in browser**
+→ Re-run build with correct `_NEXTAUTH_URL` and optionally `_CORS_EXTRA`
 
-**`NEXTAUTH_SECRET` error on login page**
-→ Set `NEXTAUTH_SECRET` in Vercel env vars and redeploy
+**`NEXTAUTH_SECRET` error on login**
+→ Confirm `_NEXTAUTH_SECRET` substitution is set
 
-**`onboarding_completed` looping**
-→ Ensure you're on the latest commit — this was fixed in `2a89a91`
+**Onboarding loop after login**
+→ Ensure you're on latest commit — fixed in `b8ed21a`
 
 **Backend 500 on first request**
-→ Check Render logs; likely a missing env var or DB connection issue
+→ Check Cloud Run logs; likely a missing env var (`SECRET_KEY`, `SOCIAL_LOGIN_SECRET`)
 
 **`RuntimeError: SECRET_KEY is the insecure default`**
-→ Render should auto-generate it; check that `generateValue: true` is set in `render.yaml`
+→ Pass `_SECRET_KEY` in the build substitutions — do not leave the placeholder value
