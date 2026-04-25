@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUS_STYLES = {
   confirmed: "bg-blue-100 text-blue-700",
@@ -34,6 +35,8 @@ export default function Bookings() {
   const [availLoading, setAvailLoading]       = useState(false);
   const [availSaving, setAvailSaving]         = useState(false);
   const [availSuccess, setAvailSuccess]       = useState(false);
+  const [availError, setAvailError]           = useState(null);
+  const [confirmDlg, setConfirmDlg]           = useState(null);
 
   const fetchAll = () => {
     setLoading(true);
@@ -74,20 +77,25 @@ export default function Bookings() {
     fetchAll();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this booking?")) return;
-    await api.deleteBooking(id);
-    fetchAll();
+  const handleDelete = (id) => {
+    setConfirmDlg({
+      message: "Delete this booking?",
+      onConfirm: async () => {
+        setConfirmDlg(null);
+        try { await api.deleteBooking(id); fetchAll(); }
+        catch (err) { setError(err.message || "Failed to delete booking."); }
+      },
+    });
   };
 
   const handleConfirm = async (id) => {
-    await api.confirmBooking(id);
-    fetchAll();
+    try { await api.confirmBooking(id); fetchAll(); }
+    catch (err) { setError(err.message || "Failed to confirm booking."); }
   };
 
   const handleDecline = async (id) => {
-    await api.declineBooking(id);
-    fetchAll();
+    try { await api.declineBooking(id); fetchAll(); }
+    catch (err) { setError(err.message || "Failed to decline booking."); }
   };
 
   const toggleSlot = (slot) => {
@@ -97,12 +105,12 @@ export default function Bookings() {
   };
 
   const saveAvailability = async () => {
-    setAvailSaving(true);
+    setAvailSaving(true); setAvailError(null);
     try {
       await api.updateMyAvailability({ time_slots: availSlots, booking_window_days: Number(bookingWindow) });
       setAvailSuccess(true);
       setTimeout(() => setAvailSuccess(false), 3000);
-    } catch {}
+    } catch (err) { setAvailError(err.message || "Failed to save availability."); }
     finally { setAvailSaving(false); }
   };
 
@@ -111,6 +119,13 @@ export default function Bookings() {
 
   return (
     <div>
+      {confirmDlg && <ConfirmDialog message={confirmDlg.message} onConfirm={confirmDlg.onConfirm} onCancel={() => setConfirmDlg(null)} />}
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-3">✕</button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">📅 Bookings</h1>
@@ -352,6 +367,9 @@ export default function Bookings() {
                   <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
                     ✓ Availability settings saved
                   </div>
+                )}
+                {availError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{availError}</div>
                 )}
 
                 <div className="flex gap-3">

@@ -6,7 +6,7 @@ from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
 from ...models.diner import DinerReview
-from ...services import diner_service, discovery_service
+from ...services import diner_service, discovery_service, discover_service
 from ...ml.engine import build_diner_recommendations
 
 router = APIRouter(prefix="/diner", tags=["diner"])
@@ -108,14 +108,45 @@ def discover(
     )
 
 
+_MUSIC_MAP = {
+    "romantic":    {"genre": "Jazz / Bossa Nova",     "vibe": "Soft, intimate, slow"},
+    "adventurous": {"genre": "World Music / Afrobeat", "vibe": "Energetic, exploratory"},
+    "relaxed":     {"genre": "Acoustic / Lo-fi",       "vibe": "Calm, unhurried"},
+    "celebratory": {"genre": "Lounge / Deep House",    "vibe": "Upbeat, celebratory"},
+    "group":       {"genre": "Pop / Hip-Hop",          "vibe": "Fun, social, singalong"},
+    "cozy":        {"genre": "Jazz / Indie Folk",      "vibe": "Warm, comforting"},
+    "healthy":     {"genre": "Acoustic / Ambient",     "vibe": "Fresh, mindful"},
+}
+
+_TITLES = {
+    "romantic": "A night to remember 🥂", "adventurous": "Your next great food story 🌍",
+    "celebratory": "Celebrate every bite 🎉", "relaxed": "No rush. Just good food. ✨",
+    "group": "The whole crew. One perfect table. 👥", "cozy": "Pull up a chair. Stay a while. 🕯️",
+    "healthy": "Feel good from the first bite 🌿",
+}
+
+
 @router.get("/experience-plan")
 def experience_plan(
     mood: str = "",
     cuisine: str = "",
     budget: str = "mid",
+    db: Session = Depends(get_db),
     user: User = Depends(require_diner),
 ):
-    return discovery_service.get_experience_plan(mood=mood, cuisine=cuisine, budget=budget)
+    price_map = {"budget": 2, "mid": 3, "luxury": 4}
+    max_price = price_map.get(budget, 3)
+    restaurants = discover_service.get_restaurants(db, cuisine=cuisine, mood=mood, max_price_level=max_price)
+    restaurant = restaurants[0] if restaurants else None
+    music = _MUSIC_MAP.get(mood.lower(), {"genre": "Curated Mix", "vibe": "Perfect for your evening"})
+    drink_map = {4: "🍷 Fine wine selection", 3: "🍷 House wine", 2: "🍺 Craft beer or house wine", 1: "🧃 Soft drink"}
+    return {
+        "restaurant": restaurant,
+        "music": music,
+        "drink": drink_map.get(min(max_price, 4), "🍷 House wine"),
+        "mood": mood,
+        "experience_title": _TITLES.get(mood.lower(), "Your perfect dining experience 🍽️"),
+    }
 
 
 # ── Reviews ───────────────────────────────────────────────────────────────────

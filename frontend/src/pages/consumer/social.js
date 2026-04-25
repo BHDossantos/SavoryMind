@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const PLATFORMS = [
   {
@@ -51,6 +52,7 @@ export default function SocialConnect() {
   const [usernameInput, setUsernameInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [confirmDlg, setConfirmDlg] = useState(null);
 
   useEffect(() => {
     api.getConnections()
@@ -85,12 +87,17 @@ export default function SocialConnect() {
     }
   };
 
-  const handleDisconnect = async (platform) => {
-    if (!confirm(`Disconnect ${platform}?`)) return;
-    try {
-      const updated = await api.updateConnection(platform, { platform, connected: false, username: null });
-      setConnections((prev) => ({ ...prev, [platform]: updated }));
-    } catch {}
+  const handleDisconnect = (platform) => {
+    setConfirmDlg({
+      message: `Disconnect ${platform}?`,
+      onConfirm: async () => {
+        setConfirmDlg(null);
+        try {
+          const updated = await api.updateConnection(platform, { platform, connected: false, username: null });
+          setConnections((prev) => ({ ...prev, [platform]: updated }));
+        } catch (err) { setSaveError(err.message || "Failed to disconnect."); }
+      },
+    });
   };
 
   if (loading) return <div className="text-gray-400 text-sm p-8">Loading connections...</div>;
@@ -99,6 +106,7 @@ export default function SocialConnect() {
 
   return (
     <div>
+      {confirmDlg && <ConfirmDialog message={confirmDlg.message} onConfirm={confirmDlg.onConfirm} onCancel={() => setConfirmDlg(null)} />}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">🔗 Connect Your Services</h1>
         <p className="text-gray-400 mt-1">Link music and social platforms for the full SavoryMind experience</p>

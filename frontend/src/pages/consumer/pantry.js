@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import Link from "next/link";
 
 const CATEGORIES = ["Proteins", "Vegetables", "Dairy", "Grains", "Spices", "Fruits", "Condiments", "Other"];
@@ -27,6 +28,7 @@ export default function PantryPage() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [confirmDlg, setConfirmDlg] = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -68,15 +70,17 @@ export default function PantryPage() {
       await api.deletePantryItem(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
       loadRecipes();
-    } catch {}
+    } catch (e) { setError(e.message); }
   };
 
   const clearAll = async () => {
-    if (!confirm("Clear your entire pantry?")) return;
-    try {
-      await api.clearPantry();
-      setItems([]); setRecipes([]); setMatchedIngredients([]);
-    } catch {}
+    setConfirmDlg({ message: "Clear your entire pantry?", onConfirm: async () => {
+      setConfirmDlg(null);
+      try {
+        await api.clearPantry();
+        setItems([]); setRecipes([]); setMatchedIngredients([]);
+      } catch (e) { setError(e.message); }
+    }});
   };
 
   // Group items by category
@@ -91,6 +95,7 @@ export default function PantryPage() {
 
   return (
     <div>
+      {confirmDlg && <ConfirmDialog message={confirmDlg.message} onConfirm={confirmDlg.onConfirm} onCancel={() => setConfirmDlg(null)} />}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">🧺 My Pantry</h1>
