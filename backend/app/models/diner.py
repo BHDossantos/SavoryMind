@@ -19,6 +19,17 @@ class DinerBooking(Base):
     restaurant_booking_id = Column(Integer, nullable=True)  # mirrors Booking.id
 
 
+class DinerReview(Base):
+    __tablename__ = "diner_reviews"
+    id                 = Column(Integer, primary_key=True, index=True)
+    diner_user_id      = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    restaurant_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    booking_id         = Column(Integer, nullable=True)   # which booking prompted the review
+    rating             = Column(Float, nullable=False)    # 1–5
+    comment            = Column(Text, nullable=True)
+    created_at         = Column(Date, default=datetime.date.today)
+
+
 class DinerVisit(Base):
     __tablename__ = "diner_visits"
     id = Column(Integer, primary_key=True, index=True)

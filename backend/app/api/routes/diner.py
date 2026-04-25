@@ -5,6 +5,7 @@ from typing import Optional
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
+from ...models.diner import DinerReview
 from ...services import diner_service, discovery_service
 from ...ml.engine import build_diner_recommendations
 
@@ -115,3 +116,41 @@ def experience_plan(
     user: User = Depends(require_diner),
 ):
     return discovery_service.get_experience_plan(mood=mood, cuisine=cuisine, budget=budget)
+
+
+# ── Reviews ───────────────────────────────────────────────────────────────────
+
+class ReviewCreate(BaseModel):
+    restaurant_user_id: int
+    booking_id: Optional[int] = None
+    rating: float = Field(ge=1, le=5)
+    comment: Optional[str] = Field(default=None, max_length=1000)
+
+
+@router.post("/reviews", status_code=201)
+def create_review(body: ReviewCreate, db: Session = Depends(get_db), user: User = Depends(require_diner)):
+    existing = db.query(DinerReview).filter(
+        DinerReview.diner_user_id == user.id,
+        DinerReview.restaurant_user_id == body.restaurant_user_id,
+        DinerReview.booking_id == body.booking_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Review already submitted for this booking.")
+    review = DinerReview(
+        diner_user_id=user.id,
+        restaurant_user_id=body.restaurant_user_id,
+        booking_id=body.booking_id,
+        rating=body.rating,
+        comment=body.comment,
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+    return {"id": review.id, "rating": review.rating, "comment": review.comment, "created_at": str(review.created_at)}
+
+
+@router.get("/reviews")
+def list_my_reviews(db: Session = Depends(get_db), user: User = Depends(require_diner)):
+    reviews = db.query(DinerReview).filter(DinerReview.diner_user_id == user.id).all()
+    return [{"id": r.id, "restaurant_user_id": r.restaurant_user_id, "booking_id": r.booking_id,
+             "rating": r.rating, "comment": r.comment, "created_at": str(r.created_at)} for r in reviews]

@@ -32,6 +32,17 @@ export default function BookTable() {
   const [success, setSuccess]     = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
+  // Review state
+  const [reviewTarget, setReviewTarget] = useState(null); // {booking_id, restaurant_user_id, restaurant_name}
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSaving, setReviewSaving] = useState(false);
+  const [reviewedIds, setReviewedIds] = useState(new Set());
+
+  useEffect(() => {
+    api.getMyDinerReviews().then((rs) => setReviewedIds(new Set(rs.map((r) => r.booking_id)))).catch(() => {});
+  }, []);
+
   // Form state
   const [restaurantId, setRestaurantId]     = useState("");
   const [restaurantName, setRestaurantName] = useState("");
@@ -113,6 +124,24 @@ export default function BookTable() {
         loadBookings();
       },
     });
+  };
+
+  const submitReview = async () => {
+    if (!reviewTarget) return;
+    setReviewSaving(true);
+    try {
+      await api.createDinerReview({
+        restaurant_user_id: reviewTarget.restaurant_user_id,
+        booking_id: reviewTarget.booking_id,
+        rating: reviewRating,
+        comment: reviewComment || null,
+      });
+      setReviewedIds((prev) => new Set([...prev, reviewTarget.booking_id]));
+      setReviewTarget(null);
+      setReviewComment("");
+      setReviewRating(5);
+    } catch {}
+    finally { setReviewSaving(false); }
   };
 
   const upcoming = bookings.filter((b) => b.status === "confirmed" || b.status === "pending");
@@ -271,9 +300,21 @@ export default function BookTable() {
               </div>
               <div className="divide-y divide-gray-50">
                 {past.map((b) => (
-                  <div key={b.id} className="px-5 py-3">
-                    <p className="font-medium text-gray-700 text-sm">{b.restaurant_name}</p>
-                    <p className="text-xs text-gray-400">{b.booking_date} · <span className="capitalize">{b.status}</span></p>
+                  <div key={b.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-gray-700 text-sm">{b.restaurant_name}</p>
+                      <p className="text-xs text-gray-400">{b.booking_date} · <span className="capitalize">{b.status}</span></p>
+                    </div>
+                    {b.status === "confirmed" && b.restaurant_user_id && !reviewedIds.has(b.id) && (
+                      <button
+                        onClick={() => setReviewTarget({ booking_id: b.id, restaurant_user_id: b.restaurant_user_id, restaurant_name: b.restaurant_name })}
+                        className="text-xs font-medium text-diner-600 hover:text-diner-800 flex-shrink-0 border border-diner-200 px-2.5 py-1 rounded-lg hover:bg-diner-50 transition-colors">
+                        ⭐ Review
+                      </button>
+                    )}
+                    {b.status === "confirmed" && b.restaurant_user_id && reviewedIds.has(b.id) && (
+                      <span className="text-xs text-gray-400 flex-shrink-0">✓ Reviewed</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -289,6 +330,43 @@ export default function BookTable() {
           )}
         </div>
       </div>
+
+      {reviewTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 className="font-bold text-gray-900 text-lg mb-1">Leave a Review</h2>
+            <p className="text-sm text-gray-500 mb-5">{reviewTarget.restaurant_name}</p>
+            <div className="mb-4">
+              <label className="text-xs font-medium text-gray-700 mb-2 block">Rating</label>
+              <div className="flex gap-2">
+                {[1,2,3,4,5].map((star) => (
+                  <button key={star} type="button" onClick={() => setReviewRating(star)}
+                    className={`text-2xl transition-transform hover:scale-110 ${star <= reviewRating ? "opacity-100" : "opacity-30"}`}>
+                    ⭐
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mb-5">
+              <label className="text-xs font-medium text-gray-700 mb-1 block">Comment (optional)</label>
+              <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)}
+                rows={3} placeholder="What did you think?"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400 resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={submitReview} disabled={reviewSaving}
+                className="flex-1 bg-diner-600 text-white font-semibold py-2.5 rounded-xl hover:bg-diner-700 disabled:opacity-60 transition-colors">
+                {reviewSaving ? "Submitting…" : "Submit Review"}
+              </button>
+              <button onClick={() => setReviewTarget(null)}
+                className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmDialog && (
         <ConfirmDialog

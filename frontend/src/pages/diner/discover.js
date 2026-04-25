@@ -170,10 +170,16 @@ export default function DiscoverPage() {
                   </div>
                 )}
 
-                <button onClick={() => bookRestaurant(r)}
-                  className="mt-auto w-full text-sm font-semibold bg-diner-600 text-white py-2.5 rounded-xl hover:bg-diner-700 transition-colors">
-                  📅 Book a Table
-                </button>
+                <div className="mt-auto flex gap-2">
+                  <button onClick={() => router.push(`/diner/restaurant/${r.id}`)}
+                    className="flex-1 text-sm font-semibold border border-diner-300 text-diner-700 py-2.5 rounded-xl hover:bg-diner-50 transition-colors">
+                    View Profile
+                  </button>
+                  <button onClick={() => bookRestaurant(r)}
+                    className="flex-1 text-sm font-semibold bg-diner-600 text-white py-2.5 rounded-xl hover:bg-diner-700 transition-colors">
+                    📅 Book
+                  </button>
+                </div>
               </div>
             ))}
           </div>

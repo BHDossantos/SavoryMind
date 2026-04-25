@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
+from ...models.diner import DinerReview
 from ...schemas.restaurant_ext import (
     BookingCreate, BookingUpdate, BookingResponse,
     CRMCustomerCreate, CRMCustomerUpdate, CRMCustomerResponse,
@@ -237,3 +238,25 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
 def get_marketing(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_restaurant(current_user)
     return trends_service.get_marketing_insights(db, current_user.id)
+
+
+# --- Diner Reviews (submitted by diners about this restaurant) ----------------
+
+@router.get("/diner-reviews")
+def get_diner_reviews(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _require_restaurant(current_user)
+    reviews = (
+        db.query(DinerReview)
+        .filter(DinerReview.restaurant_user_id == current_user.id)
+        .order_by(DinerReview.created_at.desc())
+        .all()
+    )
+    avg = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else None
+    return {
+        "avg_rating": avg,
+        "total": len(reviews),
+        "reviews": [
+            {"id": r.id, "rating": r.rating, "comment": r.comment, "created_at": str(r.created_at)}
+            for r in reviews
+        ],
+    }

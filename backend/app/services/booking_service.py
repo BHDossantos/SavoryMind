@@ -4,6 +4,7 @@ from ..models.restaurant_ext import Booking
 from ..models.diner import DinerBooking
 from ..models.user import User
 from ..schemas.restaurant_ext import BookingCreate, BookingUpdate
+from . import notification_service
 
 
 def get_bookings(db: Session, user_id: int, filter_date: date | None = None) -> list[Booking]:
@@ -105,12 +106,18 @@ def confirm_booking(db: Session, restaurant_user_id: int, booking_id: int) -> Bo
     if not b:
         return None
     b.status = "confirmed"
-    # Mirror to diner side
+    restaurant = db.query(User).filter(User.id == restaurant_user_id).first()
+    rest_name = restaurant.display_name if restaurant else "the restaurant"
     if b.diner_user_id:
         db.query(DinerBooking).filter(
             DinerBooking.restaurant_booking_id == booking_id,
             DinerBooking.user_id == b.diner_user_id,
         ).update({"status": "confirmed"})
+        notification_service.create(
+            db, b.diner_user_id,
+            f"✅ Your booking at {rest_name} on {b.date} at {b.time_slot} is confirmed!",
+            link="/diner/book",
+        )
     db.commit()
     db.refresh(b)
     return b
@@ -126,11 +133,18 @@ def decline_booking(db: Session, restaurant_user_id: int, booking_id: int) -> Bo
     if not b:
         return None
     b.status = "declined"
+    restaurant = db.query(User).filter(User.id == restaurant_user_id).first()
+    rest_name = restaurant.display_name if restaurant else "the restaurant"
     if b.diner_user_id:
         db.query(DinerBooking).filter(
             DinerBooking.restaurant_booking_id == booking_id,
             DinerBooking.user_id == b.diner_user_id,
         ).update({"status": "declined"})
+        notification_service.create(
+            db, b.diner_user_id,
+            f"❌ Your booking request at {rest_name} on {b.date} was not available. Try another date!",
+            link="/diner/discover",
+        )
     db.commit()
     db.refresh(b)
     return b

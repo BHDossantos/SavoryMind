@@ -223,4 +223,15 @@ export const api = {
   clockIn: (data) => request("/api/staff/clock-in", { method: "POST", body: JSON.stringify(data) }),
   clockOut: (data) => request("/api/staff/clock-out", { method: "POST", body: JSON.stringify(data) }),
   getMyLogs: () => request("/api/staff/my-logs"),
+
+  // Notifications
+  getNotifications: () => request("/api/notifications"),
+  markNotificationsRead: () => request("/api/notifications/read", { method: "PATCH" }),
+
+  // Diner — Reviews
+  createDinerReview: (data) => request("/api/diner/reviews", { method: "POST", body: JSON.stringify(data) }),
+  getMyDinerReviews: () => request("/api/diner/reviews"),
+
+  // Restaurant — Diner reviews from customers
+  getDinerReviews: () => request("/api/restaurant/diner-reviews"),
 };
