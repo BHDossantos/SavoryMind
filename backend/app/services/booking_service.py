@@ -1,7 +1,10 @@
 from datetime import date
 from sqlalchemy.orm import Session
 from ..models.restaurant_ext import Booking
+from ..models.diner import DinerBooking
+from ..models.user import User
 from ..schemas.restaurant_ext import BookingCreate, BookingUpdate
+from . import notification_service
 
 
 def get_bookings(db: Session, user_id: int, filter_date: date | None = None) -> list[Booking]:
@@ -41,6 +44,110 @@ def delete_booking(db: Session, user_id: int, booking_id: int) -> bool:
     db.delete(booking)
     db.commit()
     return True
+
+
+def request_booking(
+    db: Session,
+    diner_user_id: int,
+    restaurant_user_id: int,
+    booking_date: str,
+    booking_time: str,
+    party_size: int,
+    special_requests: str = "",
+) -> DinerBooking:
+    """
+    Diner requests a booking at a registered restaurant.
+    Creates a DinerBooking (pending) + mirrors it into the restaurant's Booking queue.
+    """
+    restaurant = db.query(User).filter(User.id == restaurant_user_id).first()
+    diner = db.query(User).filter(User.id == diner_user_id).first()
+
+    # Create the restaurant-side booking (pending, source=online)
+    rest_booking = Booking(
+        user_id=restaurant_user_id,
+        customer_name=diner.display_name if diner else "Online Guest",
+        customer_email=diner.email if diner else None,
+        date=booking_date,
+        time_slot=booking_time,
+        party_size=party_size,
+        notes=special_requests or None,
+        status="pending",
+        diner_user_id=diner_user_id,
+        source="online",
+    )
+    db.add(rest_booking)
+    db.flush()  # get rest_booking.id before committing
+
+    # Create the diner-side booking (pending, linked to restaurant)
+    diner_booking = DinerBooking(
+        user_id=diner_user_id,
+        restaurant_name=restaurant.display_name if restaurant else "Restaurant",
+        booking_date=str(booking_date),
+        booking_time=booking_time,
+        party_size=party_size,
+        special_requests=special_requests or "",
+        status="pending",
+        restaurant_user_id=restaurant_user_id,
+        restaurant_booking_id=rest_booking.id,
+    )
+    db.add(diner_booking)
+    db.commit()
+    db.refresh(diner_booking)
+    return diner_booking
+
+
+def confirm_booking(db: Session, restaurant_user_id: int, booking_id: int) -> Booking | None:
+    """Restaurant confirms an online booking — updates both sides."""
+    b = db.query(Booking).filter(
+        Booking.id == booking_id,
+        Booking.user_id == restaurant_user_id,
+        Booking.source == "online",
+    ).first()
+    if not b:
+        return None
+    b.status = "confirmed"
+    restaurant = db.query(User).filter(User.id == restaurant_user_id).first()
+    rest_name = restaurant.display_name if restaurant else "the restaurant"
+    if b.diner_user_id:
+        db.query(DinerBooking).filter(
+            DinerBooking.restaurant_booking_id == booking_id,
+            DinerBooking.user_id == b.diner_user_id,
+        ).update({"status": "confirmed"})
+        notification_service.create(
+            db, b.diner_user_id,
+            f"✅ Your booking at {rest_name} on {b.date} at {b.time_slot} is confirmed!",
+            link="/diner/book",
+        )
+    db.commit()
+    db.refresh(b)
+    return b
+
+
+def decline_booking(db: Session, restaurant_user_id: int, booking_id: int) -> Booking | None:
+    """Restaurant declines an online booking — updates both sides."""
+    b = db.query(Booking).filter(
+        Booking.id == booking_id,
+        Booking.user_id == restaurant_user_id,
+        Booking.source == "online",
+    ).first()
+    if not b:
+        return None
+    b.status = "declined"
+    restaurant = db.query(User).filter(User.id == restaurant_user_id).first()
+    rest_name = restaurant.display_name if restaurant else "the restaurant"
+    if b.diner_user_id:
+        db.query(DinerBooking).filter(
+            DinerBooking.restaurant_booking_id == booking_id,
+            DinerBooking.user_id == b.diner_user_id,
+        ).update({"status": "declined"})
+        notification_service.create(
+            db, b.diner_user_id,
+            f"❌ Your booking request at {rest_name} on {b.date} was not available. Try another date!",
+            link="/diner/discover",
+        )
+    db.commit()
+    db.refresh(b)
+    return b
 
 
 def get_today_summary(db: Session, user_id: int) -> dict:

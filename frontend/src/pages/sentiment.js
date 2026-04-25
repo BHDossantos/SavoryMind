@@ -39,6 +39,9 @@ export default function SentimentPage() {
   const [formError, setFormError] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [activeTab, setActiveTab] = useState("internal");
+  const [dinerReviews, setDinerReviews] = useState([]);
+  const [dinerReviewsLoading, setDinerReviewsLoading] = useState(false);
 
   const fetchData = () =>
     Promise.all([api.getMenuItems(), api.getReviews(), api.getSentimentSummary()])
@@ -46,7 +49,15 @@ export default function SentimentPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchDinerReviews = () => {
+    setDinerReviewsLoading(true);
+    api.getDinerReviews()
+      .then((data) => setDinerReviews(data.reviews || []))
+      .catch(() => {})
+      .finally(() => setDinerReviewsLoading(false));
+  };
+
+  useEffect(() => { fetchData(); fetchDinerReviews(); }, []);
 
   const filtered = reviews.filter((r) =>
     (filter === "all" || r.sentiment_label === filter) &&
@@ -111,15 +122,67 @@ export default function SentimentPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customer Sentiment</h1>
           <p className="text-gray-400 mt-1">Review analysis and sentiment scoring</p>
         </div>
-        <button onClick={() => { setShowForm(!showForm); setFormError(null); }} className="btn-primary">
-          {showForm ? "Cancel" : "+ Add Review"}
+        {activeTab === "internal" && (
+          <button onClick={() => { setShowForm(!showForm); setFormError(null); }} className="btn-primary">
+            {showForm ? "Cancel" : "+ Add Review"}
+          </button>
+        )}
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+        <button onClick={() => setActiveTab("internal")}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === "internal" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+          Internal Reviews {reviews.length > 0 && <span className="ml-1 text-xs text-gray-400">({reviews.length})</span>}
+        </button>
+        <button onClick={() => setActiveTab("platform")}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === "platform" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+          Platform Reviews {dinerReviews.length > 0 && <span className="ml-1 text-xs text-gray-400">({dinerReviews.length})</span>}
         </button>
       </div>
+
+      {/* Platform reviews panel */}
+      {activeTab === "platform" && (
+        <div>
+          {dinerReviewsLoading ? (
+            <LoadingSpinner message="Loading platform reviews..." />
+          ) : dinerReviews.length === 0 ? (
+            <div className="text-center py-16 bg-gray-50 rounded-2xl">
+              <p className="text-3xl mb-3">⭐</p>
+              <p className="text-gray-600 font-semibold">No platform reviews yet</p>
+              <p className="text-sm text-gray-400 mt-1">When diners book and rate your restaurant via SavoryMind, reviews appear here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {dinerReviews.map((r, i) => (
+                <div key={i} className="card">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">{r.diner_name || "Anonymous Diner"}</span>
+                        <span className="text-gray-300">·</span>
+                        <span className="text-sm">{"⭐".repeat(Math.round(r.rating || 0))}</span>
+                        <span className="text-xs text-gray-500">{r.rating?.toFixed(1)}</span>
+                      </div>
+                      {r.comment && <p className="text-gray-700 mt-2 text-sm">{r.comment}</p>}
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0 ml-4">
+                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "internal" && <div>
 
       {/* Add Review Form */}
       {showForm && (
@@ -265,6 +328,8 @@ export default function SentimentPage() {
           <p className="text-center text-gray-400 py-10">No reviews match your search.</p>
         )}
       </div>
+
+      </div>}
 
       {confirmDialog && (
         <ConfirmDialog

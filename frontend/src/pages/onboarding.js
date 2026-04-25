@@ -296,7 +296,7 @@ function ChipSelect({ items, selected, onToggle, activeClass = CC.chip, hoverCla
 
 function RadioCards({ items, selected, onSelect, cols = 1 }) {
   return (
-    <div className={cols === 2 ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
+    <div className={cols === 2 ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
       {items.map((item) => (
         <button key={item.id} type="button" onClick={() => onSelect(item.id)}
           className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${selected === item.id ? CC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
@@ -590,7 +590,7 @@ function StepMealTypes({ data, onChange }) {
   return (
     <div>
       <p className="text-sm text-gray-500 mb-4">Pick everything that sounds like you.</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {MEAL_TYPES.map((m) => (
           <button key={m.id} type="button" onClick={() => toggle(m.id)}
             className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${selected.includes(m.id) ? CC.chip : `bg-white text-gray-600 border-gray-200 ${CC.chipHover}`}`}>
@@ -628,7 +628,7 @@ function StepConsumerSummary({ data }) {
         <h2 className="text-2xl font-extrabold text-gray-900">{style?.title || "Home Cook"}</h2>
         <p className="text-gray-500 text-sm mt-1">{style?.sub}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
         {skill && (
           <div className="bg-consumer-50 border border-consumer-100 rounded-xl p-3">
             <p className="text-xs text-consumer-500 font-semibold uppercase tracking-wide">Skill</p>
@@ -672,7 +672,7 @@ function StepDiningOccasions({ data, onChange }) {
   return (
     <div>
       <p className="text-sm text-gray-500 mb-4">When do you typically go out to eat?</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {DINING_OCCASIONS.map((o) => (
           <button key={o.id} type="button" onClick={() => toggle(o.id)}
             className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${selected.includes(o.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
@@ -702,7 +702,7 @@ function StepTastePrefs({ data, onChange }) {
   return (
     <div>
       <p className="text-sm text-gray-500 mb-4">Any dietary preferences or restrictions?</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {DIETARY.map((d) => (
           <button key={d.id} type="button" onClick={() => toggle(d.id)}
             className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${diet.includes(d.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
@@ -720,7 +720,7 @@ function StepAtmosphere({ data, onChange }) {
   return (
     <div>
       <p className="text-sm text-gray-500 mb-4">What kind of atmosphere do you prefer?</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {ATMOSPHERE_PREFS.map((a) => (
           <button key={a.id} type="button" onClick={() => toggle(a.id)}
             className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${selected.includes(a.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
@@ -782,7 +782,7 @@ function StepDiningHabits({ data, onChange }) {
       </div>
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-3">Who do you usually dine with? <span className="font-normal text-gray-400">(pick all)</span></p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {DINING_GROUPS.map((g) => (
             <button key={g.id} type="button" onClick={() => toggleGroup(g.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${group.includes(g.id) ? DC.chip : `bg-white text-gray-600 border-gray-200 ${DC.chipHover}`}`}>
@@ -808,7 +808,7 @@ function StepDinerSummary({ data }) {
         <h2 className="text-2xl font-extrabold text-gray-900">Food Explorer</h2>
         <p className="text-gray-500 text-sm mt-1">Curious, discerning, always searching for the perfect table.</p>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
         {budget && (
           <div className="bg-diner-50 border border-diner-100 rounded-xl p-3">
             <p className="text-xs text-diner-500 font-semibold uppercase tracking-wide">Budget</p>
@@ -928,7 +928,7 @@ function StepRestDetails({ data, onChange }) {
       </div>
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-2">Type of venue</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {BUSINESS_TYPES.map((b) => (
             <button key={b.id} type="button" onClick={() => onChange("business_type", b.id)}
               className={`flex items-center gap-2 p-3 rounded-xl border-2 text-left transition-all text-sm ${data.business_type === b.id ? RC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
@@ -983,7 +983,7 @@ function StepRestCuisine({ data, onChange }) {
       </div>
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-3">Target audience <span className="font-normal text-gray-400">(pick all)</span></p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {REST_AUDIENCE.map((a) => (
             <button key={a.id} type="button" onClick={() => toggleA(a.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${audience.includes(a.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
@@ -1041,7 +1041,7 @@ function StepRestGoals({ data, onChange }) {
     <div className="space-y-6">
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-3">What do you want from SavoryMind? <span className="font-normal text-gray-400">(pick all)</span></p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {REST_GOALS.map((g) => (
             <button key={g.id} type="button" onClick={() => toggleG(g.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${goals.includes(g.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
@@ -1052,7 +1052,7 @@ function StepRestGoals({ data, onChange }) {
       </div>
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-3">Peak service hours <span className="font-normal text-gray-400">(pick all)</span></p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PEAK_HOURS.map((h) => (
             <button key={h.id} type="button" onClick={() => toggleH(h.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${hours.includes(h.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
@@ -1079,7 +1079,7 @@ function StepRestSummary({ data }) {
         <h2 className="text-2xl font-extrabold text-gray-900">{data.restaurant_name || "Your Restaurant"}</h2>
         <p className="text-gray-500 text-sm mt-1">{btype?.label || "Restaurant"}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
         {data.city && (
           <div className="bg-brand-50 border border-brand-100 rounded-xl p-3">
             <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">Location</p>

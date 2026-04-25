@@ -87,6 +87,12 @@ export const api = {
   createBooking: (data) => request("/api/restaurant/bookings", { method: "POST", body: JSON.stringify(data) }),
   updateBooking: (id, data) => request(`/api/restaurant/bookings/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteBooking: (id) => request(`/api/restaurant/bookings/${id}`, { method: "DELETE" }),
+  confirmBooking: (id) => request(`/api/restaurant/bookings/${id}/confirm`, { method: "PATCH" }),
+  declineBooking: (id) => request(`/api/restaurant/bookings/${id}/decline`, { method: "PATCH" }),
+
+  // Restaurant — Availability (for online bookings)
+  getMyAvailability: () => request("/api/discover/my-availability"),
+  updateMyAvailability: (data) => request("/api/discover/my-availability", { method: "PATCH", body: JSON.stringify(data) }),
 
   // Restaurant — CRM
   getCRMSummary: () => request("/api/restaurant/crm/summary"),
@@ -188,8 +194,11 @@ export const api = {
   // Diner — Recommendations (ML engine)
   getDinerRecommendations: () => request("/api/diner/recommendations"),
 
-  // Diner — Discovery
-  discoverRestaurants: (params = {}) => request(`/api/diner/discover?${new URLSearchParams(params).toString()}`),
+  // Diner — Discovery (real registered restaurants)
+  discoverRestaurants: (params = {}) => request(`/api/discover/restaurants?${new URLSearchParams(params).toString()}`),
+  getRestaurant: (id) => request(`/api/discover/restaurants/${id}`),
+  getAvailability: (id, date) => request(`/api/discover/availability/${id}?check_date=${date}`),
+  requestBooking: (data) => request("/api/discover/book", { method: "POST", body: JSON.stringify(data) }),
   getExperiencePlan: (params = {}) => request(`/api/diner/experience-plan?${new URLSearchParams(params).toString()}`),
 
   // Consumer — Meal Planner
@@ -214,4 +223,15 @@ export const api = {
   clockIn: (data) => request("/api/staff/clock-in", { method: "POST", body: JSON.stringify(data) }),
   clockOut: (data) => request("/api/staff/clock-out", { method: "POST", body: JSON.stringify(data) }),
   getMyLogs: () => request("/api/staff/my-logs"),
+
+  // Notifications
+  getNotifications: () => request("/api/notifications"),
+  markNotificationsRead: () => request("/api/notifications/read", { method: "PATCH" }),
+
+  // Diner — Reviews
+  createDinerReview: (data) => request("/api/diner/reviews", { method: "POST", body: JSON.stringify(data) }),
+  getMyDinerReviews: () => request("/api/diner/reviews"),
+
+  // Restaurant — Diner reviews from customers
+  getDinerReviews: () => request("/api/restaurant/diner-reviews"),
 };

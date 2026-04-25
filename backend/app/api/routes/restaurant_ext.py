@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
+from ...models.diner import DinerReview
 from ...schemas.restaurant_ext import (
     BookingCreate, BookingUpdate, BookingResponse,
     CRMCustomerCreate, CRMCustomerUpdate, CRMCustomerResponse,
@@ -73,6 +74,32 @@ def delete_booking(
     _require_restaurant(current_user)
     if not booking_service.delete_booking(db, current_user.id, booking_id):
         raise HTTPException(status_code=404, detail="Booking not found")
+
+
+@router.patch("/bookings/{booking_id}/confirm", response_model=BookingResponse)
+def confirm_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    b = booking_service.confirm_booking(db, current_user.id, booking_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="Online booking not found.")
+    return b
+
+
+@router.patch("/bookings/{booking_id}/decline", response_model=BookingResponse)
+def decline_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    b = booking_service.decline_booking(db, current_user.id, booking_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="Online booking not found.")
+    return b
 
 
 # --- CRM ---
@@ -211,3 +238,32 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
 def get_marketing(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_restaurant(current_user)
     return trends_service.get_marketing_insights(db, current_user.id)
+
+
+# --- Diner Reviews (submitted by diners about this restaurant) ----------------
+
+@router.get("/diner-reviews")
+def get_diner_reviews(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _require_restaurant(current_user)
+    rows = (
+        db.query(DinerReview, User)
+        .join(User, User.id == DinerReview.diner_user_id)
+        .filter(DinerReview.restaurant_user_id == current_user.id)
+        .order_by(DinerReview.created_at.desc())
+        .all()
+    )
+    avg = round(sum(r.rating for r, _ in rows) / len(rows), 1) if rows else None
+    return {
+        "avg_rating": avg,
+        "total": len(rows),
+        "reviews": [
+            {
+                "id": r.id,
+                "rating": r.rating,
+                "comment": r.comment,
+                "created_at": str(r.created_at),
+                "diner_name": u.display_name or u.email,
+            }
+            for r, u in rows
+        ],
+    }

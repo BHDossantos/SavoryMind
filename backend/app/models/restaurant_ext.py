@@ -15,9 +15,12 @@ class Booking(Base):
     time_slot = Column(String, nullable=False)   # "19:00"
     party_size = Column(Integer, nullable=False)
     table_number = Column(Integer, nullable=True)
-    status = Column(String, default="confirmed")  # confirmed | seated | completed | cancelled
+    status = Column(String, default="confirmed")  # confirmed | pending | seated | completed | cancelled | declined
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Online booking fields — set when a diner books through the platform
+    diner_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    source = Column(String, default="manual")  # manual | online
 
 
 class CRMCustomer(Base):

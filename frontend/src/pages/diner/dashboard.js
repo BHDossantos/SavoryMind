@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
 const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const STYLE_ICONS = {
+  fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
+  pub: "🍺", cafe: "☕", fast_casual: "🌯",
+};
 
 const MOODS = [
   { value: "romantic",    label: "💑 Romantic" },
@@ -29,28 +34,35 @@ function pj(val, fallback) {
 }
 
 function RestaurantCard({ r, onReserve }) {
+  const router = useRouter();
   return (
-    <div className="bg-white rounded-2xl border border-diner-100 shadow-sm hover:shadow-md hover:border-diner-300 transition-all overflow-hidden group">
-      {/* Emoji hero */}
-      <div className="h-28 bg-gradient-to-br from-diner-100 to-diner-200 flex items-center justify-center text-5xl group-hover:scale-105 transition-transform">
-        {r.emoji}
+    <div className="bg-white rounded-2xl border border-diner-100 shadow-sm hover:shadow-md hover:border-diner-300 transition-all overflow-hidden group flex flex-col">
+      <div className="h-24 bg-gradient-to-br from-diner-100 to-diner-200 flex items-center justify-center text-4xl group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
+        {r.avatar_url
+          ? <img src={r.avatar_url} alt={r.name} className="w-full h-full object-cover" />
+          : (STYLE_ICONS[r.dining_style] || "🍽️")}
       </div>
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-bold text-gray-900 text-sm leading-tight">{r.name}</h3>
-          <span className="text-xs bg-yellow-50 text-yellow-700 font-bold px-2 py-0.5 rounded-full flex-shrink-0">⭐ {r.rating}</span>
+      <div className="p-3 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-1 mb-0.5">
+          <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">{r.name}</h3>
+          <span className="text-xs text-gray-400 flex-shrink-0">{PRICE_LABELS[r.price_level] || "$$"}</span>
         </div>
-        <p className="text-xs text-gray-500 mb-1">{r.cuisine} · {PRICE_LABELS[r.price_level]} · {r.distance_km}km</p>
-        <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{r.description}</p>
-        <p className="text-xs text-diner-600 italic mb-3">✨ {r.standout_dish}</p>
-        <div className="flex items-center justify-between">
-          <span className={`text-xs font-semibold ${r.open_now ? "text-green-600" : "text-red-500"}`}>
-            {r.open_now ? "🟢 Open" : "🔴 Closed"}
-            {r.wait_minutes > 0 && r.open_now && ` · ${r.wait_minutes}min`}
-          </span>
+        <p className="text-xs text-gray-500 mb-1 truncate">
+          {(r.cuisine || []).slice(0, 2).join(" · ")}
+          {r.city && <span className="text-gray-400"> · 📍{r.city}</span>}
+        </p>
+        {r.bio && <p className="text-xs text-gray-600 leading-relaxed mb-1.5 line-clamp-2">{r.bio}</p>}
+        {r.available_slots?.length > 0 && (
+          <p className="text-xs text-green-600 mb-2">🕐 {r.available_slots.length} slots available</p>
+        )}
+        <div className="mt-auto flex gap-1.5 pt-1">
+          <button onClick={() => router.push(`/diner/restaurant/${r.id}`)}
+            className="flex-1 text-xs font-semibold border border-diner-300 text-diner-700 py-1.5 rounded-lg hover:bg-diner-50 transition-colors">
+            View
+          </button>
           <button onClick={() => onReserve(r)}
-            className="text-xs bg-diner-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-diner-700 transition-colors">
-            Reserve
+            className="flex-1 text-xs font-semibold bg-diner-600 text-white py-1.5 rounded-lg hover:bg-diner-700 transition-colors">
+            📅 Book
           </button>
         </div>
       </div>
@@ -149,9 +161,11 @@ export default function DinerDashboard() {
   const [forYou,      setForYou]      = useState([]);
   const [plan,        setPlan]        = useState(null);
   const [bookings,    setBookings]    = useState([]);
+  const [recs,        setRecs]        = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [planLoading, setPlanLoading] = useState(false);
   const [searching,   setSearching]   = useState(false);
+  const [searchError, setSearchError] = useState(null);
 
   // Booking modal
   const [reserving,  setReserving]  = useState(null);
@@ -184,19 +198,19 @@ export default function DinerDashboard() {
       loadForYou(),
       loadAll(),
       api.getDinerBookings().catch(() => []),
-    ]).then(([, , b]) => setBookings(b)).finally(() => setLoading(false));
+      api.getDinerRecommendations().catch(() => []),
+    ]).then(([, , b, r]) => { setBookings(b); setRecs(r); }).finally(() => setLoading(false));
   }, [loadForYou, loadAll]);
 
   const handleSearch = async () => {
-    setSearching(true); setPlan(null);
+    setSearching(true); setPlan(null); setSearchError(null);
     try {
       const maxPrice = BUDGETS.find((b) => b.value === budget)?.max || 3;
       const params = { max_price_level: maxPrice };
       if (mood) params.mood = mood;
       if (cuisine.trim()) params.cuisine = cuisine.trim();
-      const r = await api.discoverRestaurants(params);
-      setAllRests(r);
-    } catch {}
+      setAllRests(await api.discoverRestaurants(params));
+    } catch (e) { setSearchError(e.message); }
     finally { setSearching(false); }
   };
 
@@ -294,28 +308,65 @@ export default function DinerDashboard() {
         </div>
       )}
 
+      {searchError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+          <span>{searchError}</span>
+          <button onClick={() => setSearchError(null)} className="text-red-400 hover:text-red-600 ml-3">✕</button>
+        </div>
+      )}
+
       {/* ── AI Experience Plan ── */}
       {plan && (
         <div className="bg-gradient-to-br from-diner-50 to-teal-50 border border-diner-200 rounded-2xl p-6">
           <p className="text-lg font-extrabold text-gray-900 mb-4">{plan.experience_title}</p>
-          <div className="flex items-start gap-4 mb-4">
-            <span className="text-5xl">{plan.restaurant.emoji}</span>
-            <div className="flex-1">
-              <p className="font-bold text-gray-900">{plan.restaurant.name}</p>
-              <p className="text-sm text-gray-500">{plan.restaurant.cuisine} · {PRICE_LABELS[plan.restaurant.price_level]} · {plan.restaurant.distance_km}km</p>
-              <p className="text-sm text-diner-700 italic mt-1">✨ {plan.restaurant.standout_dish}</p>
+          {plan.restaurant ? (
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-diner-100 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+                {plan.restaurant.avatar_url
+                  ? <img src={plan.restaurant.avatar_url} alt="" className="w-full h-full object-cover rounded-2xl" />
+                  : (STYLE_ICONS[plan.restaurant.dining_style] || "🍽️")}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-gray-900">{plan.restaurant.name}</p>
+                <p className="text-sm text-gray-500">
+                  {(plan.restaurant.cuisine || []).slice(0, 2).join(" · ")}
+                  {" · "}{PRICE_LABELS[plan.restaurant.price_level] || "$$"}
+                  {plan.restaurant.city && ` · 📍 ${plan.restaurant.city}`}
+                </p>
+              </div>
+              <button onClick={() => handleReserve(plan.restaurant)}
+                className="bg-diner-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-diner-700 transition-colors flex-shrink-0">
+                Reserve
+              </button>
             </div>
-            <button onClick={() => handleReserve(plan.restaurant)}
-              className="bg-diner-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-diner-700 transition-colors flex-shrink-0">
-              Reserve
-            </button>
-          </div>
+          ) : (
+            <p className="text-sm text-gray-500 italic mb-4">No registered restaurants match yet — check back soon!</p>
+          )}
           <div className="flex flex-wrap gap-2">
             <span className="bg-white border border-diner-200 rounded-full px-4 py-1.5 text-sm text-gray-700">🎵 {plan.music.genre}</span>
             <span className="bg-white border border-diner-200 rounded-full px-4 py-1.5 text-sm text-gray-700">{plan.drink}</span>
             <span className="bg-white border border-diner-200/60 rounded-full px-4 py-1.5 text-sm text-gray-400 italic">{plan.music.vibe}</span>
           </div>
           <button onClick={() => setPlan(null)} className="mt-3 text-xs text-gray-400 hover:text-gray-500">✕ Dismiss</button>
+        </div>
+      )}
+
+      {/* ── AI Recommendations ── */}
+      {recs.length > 0 && (
+        <div>
+          <h2 className="font-bold text-gray-900 mb-3">💡 Recommended for You</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recs.map((rec, i) => (
+              <Link key={i} href={`/diner/${rec.action}`}
+                className="bg-white border border-diner-100 rounded-2xl p-4 hover:border-diner-300 hover:shadow-sm transition-all flex items-start gap-3">
+                <span className="text-2xl flex-shrink-0">{rec.icon}</span>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">{rec.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{rec.body}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

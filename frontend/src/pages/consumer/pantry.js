@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import Link from "next/link";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import Link from "next/link";
 
 const CATEGORIES = ["Proteins", "Vegetables", "Dairy", "Grains", "Spices", "Fruits", "Condiments", "Other"];
 
@@ -76,7 +76,6 @@ export default function PantryPage() {
   const clearAll = () => {
     setConfirmDialog({
       message: "Clear your entire pantry? All ingredients will be removed.",
-      confirmLabel: "Clear Pantry",
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
@@ -99,6 +98,7 @@ export default function PantryPage() {
 
   return (
     <div>
+      {confirmDialog && <ConfirmDialog message={confirmDialog.message} onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog(null)} />}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">🧺 My Pantry</h1>
