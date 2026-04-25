@@ -29,10 +29,12 @@ def get_restaurants(
         User.account_type == "restaurant",
         User.onboarding_completed == True,  # noqa: E712
     )
+    def _esc(s: str) -> str:
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     if cuisine:
-        q = q.filter(User.restaurant_cuisine.ilike(f"%{cuisine}%"))
+        q = q.filter(User.restaurant_cuisine.ilike(f"%{_esc(cuisine)}%"))
     if city:
-        q = q.filter(User.city.ilike(f"%{city}%"))
+        q = q.filter(User.city.ilike(f"%{_esc(city)}%"))
 
     restaurants = q.all()
 

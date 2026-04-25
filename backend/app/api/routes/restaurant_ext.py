@@ -245,18 +245,25 @@ def get_marketing(db: Session = Depends(get_db), current_user: User = Depends(ge
 @router.get("/diner-reviews")
 def get_diner_reviews(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_restaurant(current_user)
-    reviews = (
-        db.query(DinerReview)
+    rows = (
+        db.query(DinerReview, User)
+        .join(User, User.id == DinerReview.diner_user_id)
         .filter(DinerReview.restaurant_user_id == current_user.id)
         .order_by(DinerReview.created_at.desc())
         .all()
     )
-    avg = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else None
+    avg = round(sum(r.rating for r, _ in rows) / len(rows), 1) if rows else None
     return {
         "avg_rating": avg,
-        "total": len(reviews),
+        "total": len(rows),
         "reviews": [
-            {"id": r.id, "rating": r.rating, "comment": r.comment, "created_at": str(r.created_at)}
-            for r in reviews
+            {
+                "id": r.id,
+                "rating": r.rating,
+                "comment": r.comment,
+                "created_at": str(r.created_at),
+                "diner_name": u.display_name or u.email,
+            }
+            for r, u in rows
         ],
     }

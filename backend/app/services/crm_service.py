@@ -7,7 +7,8 @@ from ..schemas.restaurant_ext import CRMCustomerCreate, CRMCustomerUpdate
 def get_customers(db: Session, user_id: int, search: str | None = None) -> list[CRMCustomer]:
     q = db.query(CRMCustomer).filter(CRMCustomer.user_id == user_id)
     if search:
-        q = q.filter(CRMCustomer.name.ilike(f"%{search}%"))
+        safe = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        q = q.filter(CRMCustomer.name.ilike(f"%{safe}%"))
     return q.order_by(CRMCustomer.total_visits.desc()).all()
 
 
