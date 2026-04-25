@@ -119,14 +119,21 @@ def _run_migrations():
 
 
 _DEFAULT_SECRET = "savorymind-super-secret-change-in-production-32chars"
+_DEFAULT_SOCIAL_SECRET = "dev-social-secret"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.secret_key == _DEFAULT_SECRET and "sqlite" not in settings.database_url:
+    is_prod = "sqlite" not in settings.database_url
+    if settings.secret_key == _DEFAULT_SECRET and is_prod:
         raise RuntimeError(
             "SECRET_KEY is the insecure default value. "
             "Set the SECRET_KEY environment variable before deploying to production."
+        )
+    if settings.social_login_secret == _DEFAULT_SOCIAL_SECRET and is_prod:
+        raise RuntimeError(
+            "SOCIAL_LOGIN_SECRET is the insecure default value. "
+            "Set the SOCIAL_LOGIN_SECRET environment variable before deploying to production."
         )
     Base.metadata.create_all(bind=engine)
     _run_migrations()
@@ -137,7 +144,7 @@ app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # Bearer-token auth — no cookies, so wildcard is safe
+    allow_origins=settings.cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

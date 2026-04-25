@@ -30,13 +30,27 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Optimistically restore
+    // Optimistically restore — show the app immediately if we have cached data.
+    // getMe() validates the token and refreshes the profile in the background.
     if (saved) {
-      try { setUser(JSON.parse(saved)); } catch {}
+      try {
+        setUser(JSON.parse(saved));
+        setLoading(false); // instant — guard will re-check when getMe() updates state
+      } catch {}
     }
 
     api.getMe()
       .then((fresh) => {
+        // Never downgrade onboarding_completed from true → false.
+        // Race condition: handleNext sets localStorage to true, then window.location.assign
+        // fires, but this stale getMe() callback can resolve after and overwrite with false.
+        const storedRaw = localStorage.getItem("user");
+        const storedOnboarding = (() => {
+          try { return JSON.parse(storedRaw || "{}").onboarding_completed; } catch { return false; }
+        })();
+        if (storedOnboarding && !fresh.onboarding_completed) {
+          fresh = { ...fresh, onboarding_completed: true };
+        }
         setUser(fresh);
         localStorage.setItem("user", JSON.stringify(fresh));
       })

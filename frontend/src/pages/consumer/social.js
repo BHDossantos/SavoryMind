@@ -52,7 +52,7 @@ export default function SocialConnect() {
   const [usernameInput, setUsernameInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [confirmDlg, setConfirmDlg] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => {
     api.getConnections()
@@ -88,14 +88,18 @@ export default function SocialConnect() {
   };
 
   const handleDisconnect = (platform) => {
-    setConfirmDlg({
+    setConfirmDialog({
       message: `Disconnect ${platform}?`,
+      confirmLabel: "Disconnect",
       onConfirm: async () => {
-        setConfirmDlg(null);
+        setConfirmDialog(null);
         try {
           const updated = await api.updateConnection(platform, { platform, connected: false, username: null });
           setConnections((prev) => ({ ...prev, [platform]: updated }));
-        } catch (err) { setSaveError(err.message || "Failed to disconnect."); }
+        } catch (err) {
+          setSaveError(err.message || "Failed to disconnect.");
+          setEditing(platform);
+        }
       },
     });
   };
@@ -106,7 +110,6 @@ export default function SocialConnect() {
 
   return (
     <div>
-      {confirmDlg && <ConfirmDialog message={confirmDlg.message} onConfirm={confirmDlg.onConfirm} onCancel={() => setConfirmDlg(null)} />}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">🔗 Connect Your Services</h1>
         <p className="text-gray-400 mt-1">Link music and social platforms for the full SavoryMind experience</p>
@@ -219,6 +222,15 @@ export default function SocialConnect() {
           actual OAuth tokens are encrypted and never shared. Music playback links open in the respective apps.
         </p>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

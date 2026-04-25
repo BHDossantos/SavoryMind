@@ -36,7 +36,7 @@ export default function Bookings() {
   const [availSaving, setAvailSaving]         = useState(false);
   const [availSuccess, setAvailSuccess]       = useState(false);
   const [availError, setAvailError]           = useState(null);
-  const [confirmDlg, setConfirmDlg]           = useState(null);
+  const [confirmDialog, setConfirmDialog]     = useState(null);
 
   const fetchAll = () => {
     setLoading(true);
@@ -78,10 +78,11 @@ export default function Bookings() {
   };
 
   const handleDelete = (id) => {
-    setConfirmDlg({
-      message: "Delete this booking?",
+    setConfirmDialog({
+      message: "Delete this booking? This cannot be undone.",
+      confirmLabel: "Delete",
       onConfirm: async () => {
-        setConfirmDlg(null);
+        setConfirmDialog(null);
         try { await api.deleteBooking(id); fetchAll(); }
         catch (err) { setError(err.message || "Failed to delete booking."); }
       },
@@ -119,7 +120,6 @@ export default function Bookings() {
 
   return (
     <div>
-      {confirmDlg && <ConfirmDialog message={confirmDlg.message} onConfirm={confirmDlg.onConfirm} onCancel={() => setConfirmDlg(null)} />}
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
           <span>{error}</span>
@@ -266,6 +266,15 @@ export default function Bookings() {
           </tbody>
         </table>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
 
       {/* New booking modal */}
       {showForm && (

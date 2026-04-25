@@ -53,7 +53,7 @@ export default function JournalPage() {
   const load = async () => {
     setLoading(true);
     try { setMemories(await api.getMemories()); }
-    catch {}
+    catch (e) { setError(e.message || "Failed to load journal."); }
     finally { setLoading(false); }
   };
 
@@ -80,7 +80,7 @@ export default function JournalPage() {
     try {
       await api.deleteMemory(id);
       setMemories((prev) => prev.filter((m) => m.id !== id));
-    } catch {}
+    } catch (e) { setError(e.message || "Failed to delete memory."); }
   };
 
   const formatDate = (iso) => {

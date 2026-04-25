@@ -28,7 +28,7 @@ export default function PantryPage() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [confirmDlg, setConfirmDlg] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -38,7 +38,7 @@ export default function PantryPage() {
       const data = await api.getPantry();
       setItems(data);
       if (data.length > 0) loadRecipes();
-    } catch {}
+    } catch (e) { setError(e.message || "Failed to load pantry."); }
     finally { setLoading(false); }
   };
 
@@ -48,7 +48,7 @@ export default function PantryPage() {
       const data = await api.getPantryRecipes();
       setRecipes(data.recipes || []);
       setMatchedIngredients(data.matched_ingredients || []);
-    } catch {}
+    } catch (e) { setError(e.message || "Failed to load recipe matches."); }
     finally { setRecipeLoading(false); }
   };
 
@@ -70,17 +70,20 @@ export default function PantryPage() {
       await api.deletePantryItem(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
       loadRecipes();
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e.message || "Failed to remove item."); }
   };
 
-  const clearAll = async () => {
-    setConfirmDlg({ message: "Clear your entire pantry?", onConfirm: async () => {
-      setConfirmDlg(null);
-      try {
-        await api.clearPantry();
-        setItems([]); setRecipes([]); setMatchedIngredients([]);
-      } catch (e) { setError(e.message); }
-    }});
+  const clearAll = () => {
+    setConfirmDialog({
+      message: "Clear your entire pantry? All ingredients will be removed.",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.clearPantry();
+          setItems([]); setRecipes([]); setMatchedIngredients([]);
+        } catch (e) { setError(e.message || "Failed to clear pantry."); }
+      },
+    });
   };
 
   // Group items by category
@@ -95,7 +98,7 @@ export default function PantryPage() {
 
   return (
     <div>
-      {confirmDlg && <ConfirmDialog message={confirmDlg.message} onConfirm={confirmDlg.onConfirm} onCancel={() => setConfirmDlg(null)} />}
+      {confirmDialog && <ConfirmDialog message={confirmDialog.message} onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog(null)} />}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">🧺 My Pantry</h1>
@@ -248,6 +251,15 @@ export default function PantryPage() {
           )}
         </div>
       </div>
+
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

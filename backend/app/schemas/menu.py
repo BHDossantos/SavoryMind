@@ -47,6 +47,12 @@ class MenuItemUpdate(BaseModel):
             raise ValueError(f"category must be one of {sorted(VALID_CATEGORIES)}")
         return v
 
+    @model_validator(mode="after")
+    def cost_less_than_price(self) -> "MenuItemUpdate":
+        if self.cost is not None and self.price is not None and self.cost >= self.price:
+            raise ValueError("cost must be less than price")
+        return self
+
 
 class MenuItemResponse(MenuItemBase):
     id: int

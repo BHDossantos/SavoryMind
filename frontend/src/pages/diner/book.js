@@ -56,7 +56,10 @@ export default function BookTable() {
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   const loadBookings = () => {
-    api.getDinerBookings().then(setBookings).finally(() => setFetching(false));
+    api.getDinerBookings()
+      .then(setBookings)
+      .catch((err) => setError(err.message))
+      .finally(() => setFetching(false));
   };
 
   useEffect(() => { loadBookings(); }, []);
@@ -120,8 +123,12 @@ export default function BookTable() {
       confirmLabel: "Cancel Booking",
       onConfirm: async () => {
         setConfirmDialog(null);
-        await api.cancelDinerBooking(id);
-        loadBookings();
+        try {
+          await api.cancelDinerBooking(id);
+          loadBookings();
+        } catch (err) {
+          setError(err.message);
+        }
       },
     });
   };
