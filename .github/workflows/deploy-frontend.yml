@@ -30,5 +30,6 @@ jobs:
             --region europe-west1 \
             --platform managed \
             --allow-unauthenticated \
+            --port 3000 \
             --project savorymind \
             --set-env-vars "NEXT_PUBLIC_API_URL=https://savorymind-api.onrender.com,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}"
