@@ -22,6 +22,12 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Enable required GCP APIs
+        run: |
+          gcloud services enable sqladmin.googleapis.com \
+            cloudresourcemanager.googleapis.com \
+            --project=savorymind --quiet || true
+
       - name: Create Cloud SQL instance (skips if already exists)
         run: |
           if ! gcloud sql instances describe savorymind-db --project=savorymind --quiet 2>/dev/null; then
