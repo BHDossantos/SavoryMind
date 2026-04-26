@@ -1,8 +1,7 @@
 name: Deploy Frontend to Vercel
 
 on:
-  push:
-    branches: [main, claude/app-analysis-debugging-IuRKu]
+  workflow_dispatch:  # disabled — frontend is now served from Cloud Run only
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

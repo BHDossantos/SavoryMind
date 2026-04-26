@@ -32,4 +32,17 @@ jobs:
             --allow-unauthenticated \
             --port 3000 \
             --project savorymind \
-            --set-env-vars "NEXT_PUBLIC_API_URL=https://savorymind-api.onrender.com,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}"
+            --set-env-vars "NEXT_PUBLIC_API_URL=https://api.savorymind.net,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }}"
+
+      - name: Map savorymind.net to Cloud Run
+        run: |
+          gcloud run domain-mappings create \
+            --service savorymind-frontend \
+            --domain savorymind.net \
+            --region europe-west1 \
+            --project savorymind 2>/dev/null || echo "Domain mapping already exists or domain not yet verified — verify at https://console.cloud.google.com/run/domains?project=savorymind"
+          gcloud run domain-mappings create \
+            --service savorymind-frontend \
+            --domain www.savorymind.net \
+            --region europe-west1 \
+            --project savorymind 2>/dev/null || echo "www mapping already exists or domain not yet verified"

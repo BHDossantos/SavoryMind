@@ -1,0 +1,77 @@
+name: Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Create Cloud SQL instance (skips if already exists)
+        run: |
+          if ! gcloud sql instances describe savorymind-db --project=savorymind --quiet 2>/dev/null; then
+            echo "Creating Cloud SQL PostgreSQL instance..."
+            gcloud sql instances create savorymind-db \
+              --database-version=POSTGRES_15 \
+              --tier=db-f1-micro \
+              --region=europe-west1 \
+              --project=savorymind \
+              --storage-size=10GB \
+              --storage-type=SSD \
+              --quiet
+          else
+            echo "Cloud SQL instance already exists, skipping."
+          fi
+
+      - name: Create database and user (idempotent)
+        run: |
+          gcloud sql databases create savorymind \
+            --instance=savorymind-db --project=savorymind 2>/dev/null || true
+          gcloud sql users create savorymind \
+            --instance=savorymind-db \
+            --password="${{ secrets.DB_PASSWORD }}" \
+            --project=savorymind 2>/dev/null || true
+
+      - name: Grant Cloud SQL access to default compute service account
+        run: |
+          gcloud projects add-iam-policy-binding savorymind \
+            --member="serviceAccount:818187433672-compute@developer.gserviceaccount.com" \
+            --role="roles/cloudsql.client" --quiet || true
+
+      - name: Deploy backend to Cloud Run
+        working-directory: backend
+        run: |
+          DB_URL="postgresql+psycopg2://savorymind:${{ secrets.DB_PASSWORD }}@/savorymind?host=/cloudsql/savorymind:europe-west1:savorymind-db"
+          CORS='["https://savorymind.net","https://www.savorymind.net"]'
+          gcloud run deploy savorymind-api \
+            --source . \
+            --region europe-west1 \
+            --platform managed \
+            --allow-unauthenticated \
+            --project savorymind \
+            --add-cloudsql-instances savorymind:europe-west1:savorymind-db \
+            --set-env-vars "DATABASE_URL=${DB_URL},SECRET_KEY=${{ secrets.SECRET_KEY }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }},ACCESS_TOKEN_EXPIRE_DAYS=30" \
+            --set-env-vars "CORS_ORIGINS=${CORS}"
+
+      - name: Map api.savorymind.net to backend
+        run: |
+          gcloud run domain-mappings create \
+            --service savorymind-api \
+            --domain api.savorymind.net \
+            --region europe-west1 \
+            --project savorymind 2>/dev/null || echo "api domain mapping already exists or domain not yet verified"
