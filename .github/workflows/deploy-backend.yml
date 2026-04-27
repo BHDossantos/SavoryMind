@@ -24,15 +24,17 @@ jobs:
 
       - name: Deploy backend to Cloud Run
         working-directory: backend
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          SOCIAL_LOGIN_SECRET: ${{ secrets.SOCIAL_LOGIN_SECRET }}
         run: |
-          CORS='["https://savorymind.net","https://www.savorymind.net"]'
           gcloud run deploy savorymind-api \
             --source . \
             --region europe-west1 \
             --platform managed \
             --allow-unauthenticated \
             --project savorymind \
-            --set-env-vars "SECRET_KEY=${{ secrets.SECRET_KEY }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }},ACCESS_TOKEN_EXPIRE_DAYS=30,CORS_ORIGINS=${CORS}"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ACCESS_TOKEN_EXPIRE_DAYS=30"
 
       - name: Map api.savorymind.net to backend
         run: |
