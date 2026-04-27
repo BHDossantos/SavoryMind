@@ -1,0 +1,32 @@
+name: DNS Setup (one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add Google verification TXT record
+        uses: actions/github-script@v7
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        with:
+          script: |
+            const token = process.env.VERCEL_TOKEN;
+            const teamId = 'team_VjQmqHvzWW8ycKrR18Sq3iRt';
+            const domain = 'savorymind.net';
+
+            const records = [
+              // Google domain verification
+              { name: '', type: 'TXT', value: 'google-site-verification=UqMDQFY2nudhLYERFV186zhBenlDXjXAVHa8q154Cj0', ttl: 3600 },
+            ];
+
+            for (const record of records) {
+              const res = await fetch(
+                `https://api.vercel.com/v2/domains/${domain}/records?teamId=${teamId}`,
+                { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(record) }
+              );
+              const data = await res.json();
+              console.log(`${record.type} ${record.name || '@'}: ${data.error ? '⚠️ ' + data.error.message : '✅ added'}`);
+            }
