@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Nocturna",
+    "slug": "nocturna",
+    "version": "0.1.0",
+    "scheme": "nocturna",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "app.nocturna.mobile" },
+    "android": { "package": "app.nocturna.mobile" },
+    "web": { "bundler": "metro" },
+    "plugins": [
+      "expo-router",
+      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "Find venues near you" }],
+      "expo-notifications"
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:8001"
+    }
+  }
+}

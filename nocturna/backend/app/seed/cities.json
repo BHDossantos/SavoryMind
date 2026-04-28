@@ -1,0 +1,29 @@
+[
+  {
+    "slug": "rome",
+    "name": "Rome",
+    "country": "IT",
+    "timezone": "Europe/Rome",
+    "currency": "EUR",
+    "center_lat": 41.9028,
+    "center_lng": 12.4964,
+    "neighborhoods": ["Centro", "Trastevere", "Prati", "Testaccio", "Monti", "Ostiense", "Pigneto", "EUR", "San Lorenzo", "Aventino"],
+    "nightlife_window": {
+      "dinner": ["19:30", "22:30"],
+      "aperitivo": ["18:30", "20:30"],
+      "bar": ["22:00", "01:30"],
+      "club": ["23:30", "04:30"],
+      "late_food": ["02:00", "05:00"]
+    },
+    "active": true
+  },
+  {"slug":"milan","name":"Milan","country":"IT","timezone":"Europe/Rome","currency":"EUR","center_lat":45.4642,"center_lng":9.19,"neighborhoods":["Brera","Navigli","Porta Nuova","Isola","Garibaldi","Tortona"],"nightlife_window":{"dinner":["20:00","22:30"],"aperitivo":["18:00","20:30"],"bar":["22:00","02:00"],"club":["23:30","04:30"],"late_food":["02:00","05:00"]},"active":true},
+  {"slug":"barcelona","name":"Barcelona","country":"ES","timezone":"Europe/Madrid","currency":"EUR","center_lat":41.3851,"center_lng":2.1734,"neighborhoods":["El Born","Gothic","Eixample","Gracia","Barceloneta","Poble Sec"],"nightlife_window":{"dinner":["21:00","23:30"],"aperitivo":["19:00","21:00"],"bar":["23:00","02:30"],"club":["01:00","06:00"],"late_food":["03:00","06:00"]},"active":true},
+  {"slug":"paris","name":"Paris","country":"FR","timezone":"Europe/Paris","currency":"EUR","center_lat":48.8566,"center_lng":2.3522,"neighborhoods":["Le Marais","Pigalle","Saint-Germain","Bastille","Champs-Élysées","Canal Saint-Martin"],"nightlife_window":{"dinner":["20:00","22:30"],"aperitivo":["18:30","20:30"],"bar":["22:00","02:00"],"club":["00:00","06:00"],"late_food":["02:00","05:00"]},"active":true},
+  {"slug":"lisbon","name":"Lisbon","country":"PT","timezone":"Europe/Lisbon","currency":"EUR","center_lat":38.7223,"center_lng":-9.1393,"neighborhoods":["Bairro Alto","Chiado","Príncipe Real","Cais do Sodré","Alfama"],"nightlife_window":{"dinner":["20:30","23:00"],"aperitivo":["18:30","20:30"],"bar":["22:30","03:00"],"club":["00:30","06:00"],"late_food":["02:30","05:30"]},"active":true},
+  {"slug":"miami","name":"Miami","country":"US","timezone":"America/New_York","currency":"USD","center_lat":25.7617,"center_lng":-80.1918,"neighborhoods":["South Beach","Wynwood","Brickell","Design District","Coconut Grove"],"nightlife_window":{"dinner":["19:30","22:00"],"aperitivo":["17:00","20:00"],"bar":["21:30","02:00"],"club":["23:00","05:00"],"late_food":["02:00","05:00"]},"active":true},
+  {"slug":"new_york","name":"New York","country":"US","timezone":"America/New_York","currency":"USD","center_lat":40.7128,"center_lng":-74.006,"neighborhoods":["Manhattan","Brooklyn","Lower East Side","West Village","Meatpacking","Williamsburg"],"nightlife_window":{"dinner":["19:00","22:30"],"aperitivo":["17:00","20:00"],"bar":["21:00","02:00"],"club":["23:00","04:00"],"late_food":["02:00","05:00"]},"active":true},
+  {"slug":"dubai","name":"Dubai","country":"AE","timezone":"Asia/Dubai","currency":"AED","center_lat":25.2048,"center_lng":55.2708,"neighborhoods":["Downtown","Marina","JBR","Palm Jumeirah","Business Bay","DIFC"],"nightlife_window":{"dinner":["20:30","23:00"],"aperitivo":["18:00","20:30"],"bar":["22:00","02:30"],"club":["23:30","03:30"],"late_food":["02:00","05:00"]},"active":true},
+  {"slug":"mykonos","name":"Mykonos","country":"GR","timezone":"Europe/Athens","currency":"EUR","center_lat":37.4467,"center_lng":25.3289,"neighborhoods":["Chora","Paradise Beach","Super Paradise","Ornos","Psarou"],"nightlife_window":{"dinner":["21:00","23:30"],"aperitivo":["18:00","20:30"],"bar":["22:30","03:00"],"club":["01:00","07:00"],"late_food":["03:00","06:00"]},"active":true},
+  {"slug":"ibiza","name":"Ibiza","country":"ES","timezone":"Europe/Madrid","currency":"EUR","center_lat":38.9067,"center_lng":1.4206,"neighborhoods":["Ibiza Town","Playa d'en Bossa","San Antonio","Santa Eulalia","Las Salinas"],"nightlife_window":{"dinner":["21:00","23:30"],"aperitivo":["18:00","21:00"],"bar":["22:30","02:30"],"club":["00:00","07:00"],"late_food":["03:00","07:00"]},"active":true}
+]

@@ -1,0 +1,53 @@
+services:
+  nocturna-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nocturna
+      POSTGRES_PASSWORD: nocturna
+      POSTGRES_DB: nocturna
+    ports:
+      - "5433:5432"
+    volumes:
+      - nocturna-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nocturna"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nocturna-backend:
+    build: ./backend
+    depends_on:
+      nocturna-db:
+        condition: service_healthy
+    environment:
+      NOCTURNA_DATABASE_URL: postgresql://nocturna:nocturna@nocturna-db:5432/nocturna
+      NOCTURNA_CORS_ORIGINS: '["http://localhost:3001","http://localhost:19006","exp://127.0.0.1:19000"]'
+      NOCTURNA_SEED_ON_STARTUP: "true"
+      NOCTURNA_ADMIN_BOOTSTRAP_EMAIL: admin@nocturna.app
+      NOCTURNA_ADMIN_BOOTSTRAP_PASSWORD: ChangeMe123!
+      NOCTURNA_APP_BASE_URL: http://localhost:3001
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      NOCTURNA_STRIPE_SECRET_KEY: ${NOCTURNA_STRIPE_SECRET_KEY:-}
+      NOCTURNA_TWILIO_SID: ${NOCTURNA_TWILIO_SID:-}
+      NOCTURNA_TWILIO_TOKEN: ${NOCTURNA_TWILIO_TOKEN:-}
+      NOCTURNA_SENDGRID_KEY: ${NOCTURNA_SENDGRID_KEY:-}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend/app:/app/app
+
+  nocturna-frontend:
+    build: ./frontend
+    depends_on:
+      - nocturna-backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8001
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  nocturna-pg:
