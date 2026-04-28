@@ -27,6 +27,7 @@ jobs:
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           SOCIAL_LOGIN_SECRET: ${{ secrets.SOCIAL_LOGIN_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           gcloud run deploy savorymind-api \
             --source . \
@@ -34,7 +35,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ACCESS_TOKEN_EXPIRE_DAYS=30"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30"
 
       - name: Map api.savorymind.net to backend
         run: |

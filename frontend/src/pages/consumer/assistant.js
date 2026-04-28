@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../../services/api";
 
 const SUGGESTIONS = [
-  "My sauce is breaking apart",
-  "The meat is too tough",
-  "Dish is too salty",
-  "Eggs are rubbery",
-  "My bread isn't rising",
-  "Pasta is too sticky",
-  "Vegetables went mushy",
-  "How to substitute butter",
+  "I'm in the mood for steak — what do you recommend?",
+  "Quick weeknight dinner with chicken thighs",
+  "My sauce is breaking — how do I save it?",
+  "What wine goes with mushroom risotto?",
+  "Substitute for buttermilk?",
+  "How long to rest a ribeye?",
+  "Easy dessert using only pantry staples",
+  "Vegan swap for parmesan",
 ];
 
 export default function AssistantPage() {
@@ -17,7 +17,7 @@ export default function AssistantPage() {
     {
       role: "assistant",
       title: "Hi, I'm your culinary assistant!",
-      text: "Ask me anything that goes wrong while you're cooking — sauces, seasoning, timing, substitutions, you name it.",
+      text: "Ask me anything cooking-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -119,7 +119,7 @@ export default function AssistantPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="What's going wrong? (e.g. 'my sauce is too salty')"
+            placeholder="Ask anything — recipes, techniques, pairings, fixes..."
             rows={2}
             className="flex-1 border border-consumer-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400 resize-none"
           />
