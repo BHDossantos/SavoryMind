@@ -11,6 +11,7 @@ import { eur, pct, years } from "@/lib/format";
 import ScoreBadge from "@/components/ScoreBadge";
 import RiskFlags from "@/components/RiskFlags";
 import Stat from "@/components/Stat";
+import ScenarioSimulator from "@/components/ScenarioSimulator";
 
 const STATUSES: PipelineStatus[] = [
   "lead",
@@ -63,6 +64,9 @@ export default function DealDetailPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <ScoreBadge score={score.total} size="lg" />
+          <Link href={`/deals/${deal.id}/edit`} className="btn-ghost">
+            Edit
+          </Link>
           <Link href={`/loi/${deal.id}`} className="btn-primary">
             Generate LOI
           </Link>
@@ -136,6 +140,8 @@ export default function DealDetailPage() {
           </p>
         </div>
       </section>
+
+      <ScenarioSimulator deal={deal} />
 
       <section className="card p-5">
         <h2 className="font-semibold">Plain-English insights</h2>
