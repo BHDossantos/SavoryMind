@@ -41,7 +41,8 @@ jobs:
             echo "Creating Cloud SQL instance '$INSTANCE' (first-time setup, ~5-10 minutes)..."
             gcloud sql instances create "$INSTANCE" \
               --database-version=POSTGRES_16 \
-              --tier=db-f1-micro \
+              --edition=ENTERPRISE \
+              --tier=db-g1-small \
               --region="$REGION" \
               --root-password="$DB_PASSWORD" \
               --storage-size=10GB \
