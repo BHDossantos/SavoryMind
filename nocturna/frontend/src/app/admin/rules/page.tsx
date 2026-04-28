@@ -37,7 +37,7 @@ export default function Rules() {
           <li>Clubs only after {rules.club_hour_minimum}.</li>
           <li>Max travel between stops: {rules.max_total_travel_min_default} min.</li>
           <li>Promoted venues capped at {rules.promoted_per_plan_cap} per plan.</li>
-          <li>Dress mismatches > 1 level blocked.</li>
+          <li>Dress mismatches more than 1 level blocked.</li>
         </ul>
       </div>
     </div>

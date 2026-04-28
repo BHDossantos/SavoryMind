@@ -102,28 +102,30 @@ def location_match(
 def is_open_at(opening_hours: dict, when: datetime) -> bool:
     if not opening_hours:
         return True
-    weekday = WEEKDAY_KEYS[when.weekday()]
-    slots = opening_hours.get(weekday) or []
-    if not slots:
-        return False
+    today_idx = when.weekday()
     minutes = when.hour * 60 + when.minute
-    for slot in slots:
+
+    today_slots = opening_hours.get(WEEKDAY_KEYS[today_idx]) or []
+    for slot in today_slots:
         try:
-            o_h, o_m = [int(x) for x in slot["open"].split(":")]
-            c_h, c_m = [int(x) for x in slot["close"].split(":")]
-        except (KeyError, ValueError):
+            o = int(slot["open"][:2]) * 60 + int(slot["open"][3:5])
+            c = int(slot["close"][:2]) * 60 + int(slot["close"][3:5])
+        except (KeyError, ValueError, IndexError):
             continue
-        open_mins = o_h * 60 + o_m
-        close_mins = c_h * 60 + c_m
-        if close_mins <= open_mins:
-            close_mins += 24 * 60
-            if minutes < open_mins:
-                minutes_check = minutes + 24 * 60
-            else:
-                minutes_check = minutes
-        else:
-            minutes_check = minutes
-        if open_mins <= minutes_check <= close_mins:
+        if c > o and o <= minutes <= c:
+            return True
+        if c <= o and minutes >= o:  # opens today, wraps past midnight
+            return True
+
+    # late-night slot that opened yesterday and wraps into today (e.g. club Sat 23:30 → Sun 06:00)
+    yesterday_slots = opening_hours.get(WEEKDAY_KEYS[(today_idx - 1) % 7]) or []
+    for slot in yesterday_slots:
+        try:
+            o = int(slot["open"][:2]) * 60 + int(slot["open"][3:5])
+            c = int(slot["close"][:2]) * 60 + int(slot["close"][3:5])
+        except (KeyError, ValueError, IndexError):
+            continue
+        if c <= o and minutes <= c:
             return True
     return False
 

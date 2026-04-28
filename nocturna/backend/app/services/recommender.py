@@ -93,10 +93,12 @@ def _hard_filter(venue: Venue, when: datetime, inp: PlannerInput, slot_role: str
     if venue.type not in types:
         return False
 
-    # Club hour rule
+    # Club hour rule: reject only when the request falls in daytime / late afternoon
+    # AND the venue itself is not actually open. Beach clubs (Mykonos, Ibiza) legitimately
+    # open earlier; we trust their declared opening_hours via is_open_at.
     if slot_role == "club" or venue.type == "club":
         local_minutes = when.hour * 60 + when.minute
-        if local_minutes < CLUB_HOURS_MIN:
+        if 6 * 60 <= local_minutes < 17 * 60:
             return False
 
     if not scoring.is_open_at(venue.opening_hours or {}, when):
@@ -152,26 +154,41 @@ def generate_plans(db: Session, inp: PlannerInput) -> List[dict]:
     base_query = db.query(Venue).filter(Venue.city == inp.city, Venue.active == True)  # noqa: E712
     candidates = base_query.all()
 
+    # Broader fallback type sets used when the strict template returns nothing.
+    slot_fallbacks = {
+        "dinner": ["restaurant", "rooftop", "lounge"],
+        "bar": ["bar", "lounge", "speakeasy", "rooftop", "live_music"],
+        "club": ["club"],
+        "live": ["live_music", "lounge", "bar"],
+        "aperitivo": ["bar", "lounge", "rooftop", "restaurant"],
+    }
+
     slot_pools: List[List[dict]] = []
     for slot_role, types, offset_min, duration_min in template:
         when = _slot_when(inp.requested_for, offset_min)
-        scored = []
-        for v in candidates:
-            if not _hard_filter(v, when, inp, slot_role, types):
-                continue
-            parts = _score_venue(v, when, inp)
-            score = scoring.composite_score(parts)
-            scored.append({
-                "venue": v,
-                "slot_role": slot_role,
-                "slot_start": when,
-                "slot_end": when + timedelta(minutes=duration_min),
-                "score": score,
-                "score_parts": parts,
-                "duration_min": duration_min,
-            })
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        slot_pools.append(scored[:8])
+
+        def _build(allowed_types):
+            out = []
+            for v in candidates:
+                if not _hard_filter(v, when, inp, slot_role, allowed_types):
+                    continue
+                parts = _score_venue(v, when, inp)
+                out.append({
+                    "venue": v,
+                    "slot_role": slot_role,
+                    "slot_start": when,
+                    "slot_end": when + timedelta(minutes=duration_min),
+                    "score": scoring.composite_score(parts),
+                    "score_parts": parts,
+                    "duration_min": duration_min,
+                })
+            out.sort(key=lambda x: x["score"], reverse=True)
+            return out[:8]
+
+        scored = _build(types)
+        if not scored:
+            scored = _build(slot_fallbacks.get(slot_role, types))
+        slot_pools.append(scored)
 
     if any(not p for p in slot_pools):
         return []
@@ -179,6 +196,7 @@ def generate_plans(db: Session, inp: PlannerInput) -> List[dict]:
     # Build up to N plans by combining top picks across slots, ensuring travel constraints + variety.
     plans: List[dict] = []
     used_venue_ids: set[int] = set()
+    emitted_combos: set[tuple] = set()
     promoted_count_per_plan_cap = 1
 
     for plan_idx in range(inp.plan_count):
@@ -192,8 +210,8 @@ def generate_plans(db: Session, inp: PlannerInput) -> List[dict]:
                 v = cand["venue"]
                 if v.id in plan_venue_ids:
                     continue
-                # Variety across plans
-                if v.id in used_venue_ids and plan_idx < len(slot_pools):
+                # Variety across plans (relax only on the very last plan)
+                if v.id in used_venue_ids and plan_idx < inp.plan_count - 1:
                     continue
                 # Promoted cap per plan
                 if v.promoted and promoted_used >= promoted_count_per_plan_cap:
@@ -209,7 +227,8 @@ def generate_plans(db: Session, inp: PlannerInput) -> List[dict]:
                 pick = cand
                 break
             if not pick:
-                # Allow venue reuse across plans if pool exhausted
+                # Allow venue reuse across plans if pool exhausted, but still avoid an
+                # exact duplicate of an already-emitted plan.
                 for cand in pool:
                     v = cand["venue"]
                     if v.id in plan_venue_ids:
@@ -250,6 +269,10 @@ def generate_plans(db: Session, inp: PlannerInput) -> List[dict]:
             prev = pick
         if len(chosen) < len(template):
             continue
+        combo = tuple(s["venue_id"] for s in chosen)
+        if combo in emitted_combos:
+            continue
+        emitted_combos.add(combo)
         total_travel = sum(s.get("travel_to_next_min", 0) for s in chosen)
         if total_travel > 30 and not inp.accept_long_route:
             continue
