@@ -11,3 +11,5 @@ python-multipart==0.0.9
 aiosqlite==0.20.0
 greenlet==3.0.3
 anthropic>=0.40.0
+slowapi==0.1.9
+sentry-sdk[fastapi]==2.18.0
