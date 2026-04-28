@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
   try {
-    const response = await fetch('https://savorymind-api.onrender.com/health', {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.savorymind.net';
+    const response = await fetch(`${backendUrl}/health`, {
       signal: AbortSignal.timeout(10000),
     });
     const data = await response.json();

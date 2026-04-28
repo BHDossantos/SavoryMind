@@ -32,6 +32,7 @@ export default function Dashboard() {
 
   if (loading) return <LoadingSpinner message="Loading dashboard..." />;
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
+  if (!stats) return <ErrorMessage message="Dashboard data unavailable." onRetry={fetchData} />;
 
   const topItems = [...menuItems]
     .sort((a, b) => b.orders_last_30_days - a.orders_last_30_days)
