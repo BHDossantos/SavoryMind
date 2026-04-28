@@ -44,10 +44,11 @@
 
 name: 'Terraform'
 
+# Disabled — this is the GitHub default Terraform template stub. There is no
+# main.tf in the repo, so every run failed `terraform init`. Re-enable by
+# moving the triggers back under `on:` once a real Terraform config exists.
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
