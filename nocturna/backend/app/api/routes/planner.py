@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.security import get_current_user_optional
 from app.models import Plan, User, Venue
-from app.services import recommender
+from app.services import analytics, recommender
 from app.services.recommender import PlannerInput
 
 router = APIRouter(prefix="/api", tags=["planner"])
@@ -61,7 +61,15 @@ def generate(
     )
     plans = recommender.generate_plans(db, inp)
     if not plans:
+        analytics.capture("plan_generation_failed", distinct_id=str(user.id) if user else None,
+                          properties={"city": req.city, "intent": req.intent, "budget_band": req.budget_band})
         raise HTTPException(404, "No plans match those constraints. Try widening budget or accepting longer routes.")
+    analytics.capture(
+        "plan_generated", distinct_id=str(user.id) if user else None,
+        properties={"city": req.city, "intent": req.intent, "plans_count": len(plans),
+                    "budget_band": req.budget_band, "vibe_tags": req.vibe_tags,
+                    "group_type": req.group_type, "group_size": req.group_size},
+    )
 
     # Persist each plan
     saved: List[dict] = []

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.security import get_current_user_optional
 from app.models import Booking, PartnerProfile, Plan, User, Venue
-from app.services import notifications
+from app.services import analytics, notifications
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
@@ -75,6 +75,13 @@ def create_booking(
         user_phone=payload.contact_phone,
         whatsapp=venue_whatsapp,
         expo_token=push_token,
+    )
+    analytics.capture(
+        "booking_received", distinct_id=str(user.id) if user else booking.contact_email,
+        properties={"venue_id": venue.id, "venue_name": venue.name,
+                    "request_type": booking.request_type, "vip": booking.vip_interest == "yes",
+                    "group_size": booking.group_size, "city": venue.city,
+                    "plan_id": booking.plan_id},
     )
     return _booking_dict(booking, venue)
 
@@ -226,6 +233,12 @@ def book_plan(
 
     plan.status = "booked"
     db.commit()
+    analytics.capture(
+        "plan_booked", distinct_id=str(user.id) if user else payload.contact_email,
+        properties={"plan_id": plan.id, "stops_booked": len(created),
+                    "city": plan.city, "intent": plan.intent,
+                    "any_vip": any((o.vip_interest == "yes") for o in payload.overrides)},
+    )
     return {"plan_id": plan.id, "bookings": created}
 
 

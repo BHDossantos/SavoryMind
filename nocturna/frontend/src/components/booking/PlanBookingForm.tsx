@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { capture } from '@/lib/analytics';
 import type { Plan } from '../../../../shared/types';
 
 const REQUEST_TYPES = [
@@ -79,6 +80,12 @@ export default function PlanBookingForm() {
         `/api/bookings/plan/${planId}`,
         { ...shared, overrides },
       );
+      capture('plan_booked', {
+        plan_id: r.plan_id,
+        stops_booked: r.bookings.length,
+        stops_total: stops.length,
+        any_vip: stops.some(s => s.vip_interest === 'yes'),
+      });
       router.push(`/plan/${r.plan_id}/bookings`);
     } catch (e: any) {
       setErr(e?.message || 'Could not submit');

@@ -1,6 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { api, setToken } from './api';
+import { capture, identify, reset } from './analytics';
 import type { UserProfile } from '../../../shared/types';
 
 interface AuthState {
@@ -30,6 +31,8 @@ export const useAuth = create<AuthState>((set) => ({
     );
     setToken(r.access_token);
     const u = await api.get<UserProfile>('/api/auth/me');
+    identify(u.id, { email: u.email, role: u.role, home_city: u.home_city });
+    capture('user_logged_in', { role: u.role });
     set({ user: u });
     return u;
   },
@@ -37,8 +40,10 @@ export const useAuth = create<AuthState>((set) => ({
     const r = await api.post<{ access_token: string }>('/api/auth/register', { email, password, name, phone });
     setToken(r.access_token);
     const u = await api.get<UserProfile>('/api/auth/me');
+    identify(u.id, { email: u.email, role: u.role });
+    capture('user_signed_up');
     set({ user: u });
     return u;
   },
-  logout: () => { setToken(null); set({ user: null }); },
+  logout: () => { setToken(null); reset(); set({ user: null }); },
 }));

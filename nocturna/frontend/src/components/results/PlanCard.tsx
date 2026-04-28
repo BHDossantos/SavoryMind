@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { capture } from '@/lib/analytics';
 import { RouteMap } from '@/components/map/RouteMap';
 import type { Plan } from '../../../../shared/types';
 
@@ -12,7 +13,8 @@ export default function PlanCard({ plan }: { plan: Plan }) {
     const r = await api.post<{ share_url: string; share_token: string }>(`/api/plans/${plan.id}/share`);
     const url = `${window.location.origin}/plan/share/${r.share_token}`;
     setShareUrl(url);
-    if (navigator.share) navigator.share({ title: plan.label, url }).catch(() => {});
+    capture('plan_shared', { plan_id: plan.id, channel: typeof navigator.share === 'function' ? 'system' : 'clipboard' });
+    if (typeof navigator.share === 'function') navigator.share({ title: plan.label, url }).catch(() => {});
     else navigator.clipboard.writeText(url);
   }
 

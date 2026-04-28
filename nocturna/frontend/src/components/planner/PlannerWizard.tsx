@@ -2,6 +2,8 @@
 import { useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { capture } from '@/lib/analytics';
+import { useT } from '@/lib/i18n';
 import {
   BUDGET_BANDS, CITIES, GROUP_TYPES, INTENTS, MUSIC, STYLES, TIME_OPTIONS, VIBES,
 } from '../../../../shared/constants/options';
@@ -28,6 +30,7 @@ interface FormState {
 export default function PlannerWizard() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useT();
   const [step, setStep] = useState<Step>('city');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,22 +58,27 @@ export default function PlannerWizard() {
     const now = new Date();
     if (form.when === 'now') return now.toISOString();
     if (form.when === 'tonight') {
-      const t = new Date(); t.setHours(21, 0, 0, 0);
-      if (t < now) t.setDate(t.getDate() + 1);
-      return t.toISOString();
+      const d = new Date(); d.setHours(21, 0, 0, 0);
+      if (d < now) d.setDate(d.getDate() + 1);
+      return d.toISOString();
     }
     if (form.when === 'tomorrow') {
-      const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(21, 0, 0, 0); return t.toISOString();
+      const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(21, 0, 0, 0); return d.toISOString();
     }
     if (form.when === 'weekend') {
-      const t = new Date(); const dow = t.getDay(); const add = (5 - dow + 7) % 7 || 1;
-      t.setDate(t.getDate() + add); t.setHours(21, 0, 0, 0); return t.toISOString();
+      const d = new Date(); const dow = d.getDay(); const add = (5 - dow + 7) % 7 || 1;
+      d.setDate(d.getDate() + add); d.setHours(21, 0, 0, 0); return d.toISOString();
     }
     return form.whenDate ? new Date(form.whenDate).toISOString() : now.toISOString();
   }, [form.when, form.whenDate]);
 
   async function submit() {
     setSubmitting(true); setError(null);
+    capture('planner_submitted', {
+      city: form.city, intent: form.intent, vibe_tags: form.vibe_tags,
+      group_type: form.group_type, group_size: form.group_size,
+      budget_band: form.budget_band, style: form.style,
+    });
     try {
       const r = await api.post<{ plans: { id: number }[] }>('/api/planner/generate', {
         city: form.city,
@@ -87,9 +95,13 @@ export default function PlannerWizard() {
         accept_long_route: form.accept_long_route,
         plan_count: 3,
       });
+      capture('plan_generated', {
+        plans_count: r.plans.length, city: form.city, intent: form.intent,
+      });
       const ids = r.plans.map((p) => p.id).join(',');
       router.push(`/plan/results?ids=${ids}`);
     } catch (e: any) {
+      capture('planner_failed', { error: e?.message, city: form.city, intent: form.intent });
       setError(e?.message || 'Could not generate a plan.');
     } finally {
       setSubmitting(false);
@@ -124,7 +136,7 @@ export default function PlannerWizard() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="text-xs text-gold-400/60 mb-2">Step {stepIdx + 1} of {STEPS.length}</div>
+      <div className="text-xs text-gold-400/60 mb-2">{t('planner.step', { n: stepIdx + 1, total: STEPS.length })}</div>
       <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-8">
         <div className="h-full bg-gold-500" style={{ width: `${((stepIdx + 1) / STEPS.length) * 100}%` }} />
       </div>
@@ -132,20 +144,20 @@ export default function PlannerWizard() {
       <div className="card space-y-6">
         {step === 'city' && (
           <>
-            <h2 className="font-display text-3xl">Where are you tonight?</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.city')}</h2>
             <Toggle value={form.city} options={CITIES.map(c => ({ value: c.slug, label: c.label }))}
               onChange={(v) => set({ city: v })} />
           </>
         )}
         {step === 'intent' && (
           <>
-            <h2 className="font-display text-3xl">What kind of night do you want?</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.intent')}</h2>
             <Toggle value={form.intent} options={INTENTS} onChange={(v) => set({ intent: v })} />
           </>
         )}
         {step === 'when' && (
           <>
-            <h2 className="font-display text-3xl">When?</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.when')}</h2>
             <Toggle value={form.when} options={TIME_OPTIONS} onChange={(v) => set({ when: v })} />
             {form.when === 'specific' && (
               <input type="datetime-local" className="bg-night-900 border border-white/10 rounded-lg px-3 py-2"
@@ -155,20 +167,20 @@ export default function PlannerWizard() {
         )}
         {step === 'vibe' && (
           <>
-            <h2 className="font-display text-3xl">Pick your vibes</h2>
-            <p className="text-gold-400/60 text-sm">Choose 1–4. We'll match venues by tag.</p>
+            <h2 className="font-display text-3xl">{t('planner.q.vibe')}</h2>
+            <p className="text-gold-400/60 text-sm">{t('planner.q.vibe_sub')}</p>
             <Toggle multi value={form.vibe_tags} options={VIBES as any} onChange={(v) => set({ vibe_tags: v })} />
           </>
         )}
         {step === 'music' && (
           <>
-            <h2 className="font-display text-3xl">Music preferences</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.music')}</h2>
             <Toggle multi value={form.music_pref} options={MUSIC as any} onChange={(v) => set({ music_pref: v })} />
           </>
         )}
         {step === 'budget' && (
           <>
-            <h2 className="font-display text-3xl">Budget per person</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.budget')}</h2>
             <Toggle value={form.budget_band} options={BUDGET_BANDS.map(b => ({ value: b.value, label: b.label }))}
               onChange={(v) => {
                 const b = BUDGET_BANDS.find(x => x.value === v);
@@ -178,9 +190,9 @@ export default function PlannerWizard() {
         )}
         {step === 'group' && (
           <>
-            <h2 className="font-display text-3xl">Who's coming?</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.group')}</h2>
             <Toggle value={form.group_type} options={GROUP_TYPES as any} onChange={(v) => set({ group_type: v })} />
-            <label className="block mt-2 text-sm">Group size
+            <label className="block mt-2 text-sm">{t('planner.q.group_size')}
               <input type="number" min={1} max={50} value={form.group_size}
                 onChange={(e) => set({ group_size: Number(e.target.value) })}
                 className="ml-3 bg-night-900 border border-white/10 rounded-lg px-3 py-1 w-20" />
@@ -189,18 +201,18 @@ export default function PlannerWizard() {
         )}
         {step === 'style' && (
           <>
-            <h2 className="font-display text-3xl">Tonight's style</h2>
+            <h2 className="font-display text-3xl">{t('planner.q.style')}</h2>
             <Toggle value={form.style} options={STYLES as any} onChange={(v) => set({ style: v })} />
             <label className="flex items-center gap-2 mt-4 text-sm">
               <input type="checkbox" checked={form.accept_long_route}
                 onChange={(e) => set({ accept_long_route: e.target.checked })} />
-              I'm OK with longer travel between venues.
+              {t('planner.long_route')}
             </label>
           </>
         )}
         {step === 'review' && (
           <>
-            <h2 className="font-display text-3xl">Ready to plan</h2>
+            <h2 className="font-display text-3xl">{t('planner.review_h')}</h2>
             <ul className="text-sm text-gold-400/80 space-y-1">
               <li>City: <strong>{form.city}</strong></li>
               <li>Intent: <strong>{form.intent}</strong></li>
@@ -214,12 +226,12 @@ export default function PlannerWizard() {
         )}
 
         <div className="flex justify-between pt-4">
-          <button onClick={prev} disabled={stepIdx === 0} className="btn btn-ghost disabled:opacity-30">Back</button>
+          <button onClick={prev} disabled={stepIdx === 0} className="btn btn-ghost disabled:opacity-30">{t('planner.back')}</button>
           {step !== 'review' ? (
-            <button onClick={next} className="btn btn-primary">Next</button>
+            <button onClick={next} className="btn btn-primary">{t('planner.next')}</button>
           ) : (
             <button onClick={submit} disabled={submitting} className="btn btn-primary">
-              {submitting ? 'Curating…' : 'Curate my night'}
+              {submitting ? t('planner.submitting') : t('planner.submit')}
             </button>
           )}
         </div>
