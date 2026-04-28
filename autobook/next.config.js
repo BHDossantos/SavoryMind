@@ -1,8 +1,11 @@
+const path = require("node:path");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3"],
+  serverExternalPackages: ["better-sqlite3"],
+  turbopack: {
+    root: path.join(__dirname),
   },
 };
 

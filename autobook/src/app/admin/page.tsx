@@ -7,15 +7,16 @@ import { StatusBadge } from "@/components/StatusBadge";
 export default async function AdminQueuePage({
   searchParams,
 }: {
-  searchParams: { status?: string; category?: string };
+  searchParams: Promise<{ status?: string; category?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "admin") redirect("/dashboard");
 
+  const sp = await searchParams;
   const queue = adminListQueue({
-    status: searchParams.status,
-    category: searchParams.category,
+    status: sp.status,
+    category: sp.category,
   });
 
   const counts = countsByStatus(queue);
@@ -38,7 +39,7 @@ export default async function AdminQueuePage({
         <Stat label="Cancelled" value={counts.cancelled} />
       </div>
 
-      <FilterBar current={searchParams} />
+      <FilterBar current={sp} />
 
       <div className="space-y-2">
         {queue.length === 0 && <p className="text-ink/60">Queue empty.</p>}

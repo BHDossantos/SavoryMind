@@ -10,10 +10,10 @@ const Body = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-export async function POST(req: Request, ctx: { params: { id: string } }) {
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   return handle(async () => {
     const session = await requireAdmin();
-    const id = Number(ctx.params.id);
+    const id = Number((await ctx.params).id);
     const r = getRequest(id);
     if (!r) throw new HttpError(404, "Not found");
     const body = Body.parse(await req.json());

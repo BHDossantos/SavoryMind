@@ -17,13 +17,13 @@ import { AdminRequestPanel } from "@/components/AdminRequestPanel";
 export default async function AdminRequestDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "admin") redirect("/dashboard");
 
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const request = getRequest(id);
   if (!request) notFound();
 

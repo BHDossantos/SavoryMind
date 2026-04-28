@@ -11,10 +11,14 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { RequestActions } from "@/components/RequestActions";
 
-export default async function BookingDetailPage({ params }: { params: { id: string } }) {
+export default async function BookingDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const request = getRequest(id);
   if (!request) notFound();
   if (request.user_id !== session.userId && session.role !== "admin") notFound();

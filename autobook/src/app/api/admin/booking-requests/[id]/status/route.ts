@@ -18,10 +18,10 @@ const Body = z.object({
   notes: z.string().optional(),
 });
 
-export async function PUT(req: Request, ctx: { params: { id: string } }) {
+export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   return handle(async () => {
     const session = await requireAdmin();
-    const id = Number(ctx.params.id);
+    const id = Number((await ctx.params).id);
     if (!getRequest(id)) throw new HttpError(404, "Not found");
     const body = Body.parse(await req.json());
     setStatus(id, body.status, session.userId, body.notes ?? null);
