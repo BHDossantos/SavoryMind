@@ -11,6 +11,7 @@ from ..models import (
     Availability,
     BlockedTime,
     Provider,
+    Review,
     Role,
     Service,
     User,
@@ -24,6 +25,14 @@ router = APIRouter(prefix="/appointments", tags=["appointments"])
 def _to_out(session: Session, a: Appointment) -> AppointmentOut:
     provider = session.get(Provider, a.provider_id)
     service = session.get(Service, a.service_id)
+    has_review = session.exec(
+        select(Review).where(Review.appointment_id == a.id)
+    ).first() is not None
+    can_review = (
+        not has_review
+        and a.status in (AppointmentStatus.confirmed, AppointmentStatus.completed)
+        and a.start_at <= datetime.utcnow()
+    )
     return AppointmentOut(
         id=a.id,
         customer_id=a.customer_id,
@@ -36,6 +45,8 @@ def _to_out(session: Session, a: Appointment) -> AppointmentOut:
         customer_notes=a.customer_notes,
         provider_display_name=provider.display_name if provider else None,
         service_name=service.name if service else None,
+        has_review=has_review,
+        can_review=can_review,
     )
 
 

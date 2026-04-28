@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { api, formatPrice, formatSlot, getStoredUser, type Appointment } from "@/lib/api";
@@ -16,6 +17,7 @@ function AppointmentsInner() {
   const router = useRouter();
   const params = useSearchParams();
   const justBooked = params.get("booked") === "1";
+  const justReviewed = params.get("reviewed") === "1";
 
   const [items, setItems] = useState<Appointment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,11 @@ function AppointmentsInner() {
           Booking confirmed. We'll send a reminder before your appointment.
         </p>
       )}
+      {justReviewed && (
+        <p className="rounded-md bg-emerald-50 px-4 py-3 text-emerald-700">
+          Thanks for the review.
+        </p>
+      )}
       {error && <p className="text-red-600">{error}</p>}
       {!items && !error && <p className="text-slate-500">Loading…</p>}
       {items && items.length === 0 && (
@@ -65,14 +72,27 @@ function AppointmentsInner() {
               </p>
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">{a.status}</p>
             </div>
-            {a.status === "confirmed" && (
-              <button
-                onClick={() => cancel(a.id)}
-                className="text-sm text-red-600 hover:underline"
-              >
-                Cancel
-              </button>
-            )}
+            <div className="flex flex-col items-end gap-2">
+              {a.can_review && (
+                <Link
+                  href={`/appointments/${a.id}/review`}
+                  className="rounded-md bg-amber-400 px-3 py-1.5 text-sm font-semibold text-ink hover:bg-amber-300"
+                >
+                  Leave a review
+                </Link>
+              )}
+              {a.has_review && (
+                <span className="text-sm text-slate-500">★ Reviewed</span>
+              )}
+              {a.status === "confirmed" && new Date(a.start_at) > new Date() && (
+                <button
+                  onClick={() => cancel(a.id)}
+                  className="text-sm text-red-600 hover:underline"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </li>
         ))}
       </ul>

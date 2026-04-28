@@ -62,6 +62,20 @@ export interface Appointment {
   customer_notes: string;
   provider_display_name: string | null;
   service_name: string | null;
+  has_review: boolean;
+  can_review: boolean;
+}
+
+export interface Review {
+  id: number;
+  appointment_id: number;
+  customer_id: number;
+  provider_id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  customer_first_name: string | null;
+  service_name: string | null;
 }
 
 export interface AvailabilityWindow {
@@ -147,6 +161,9 @@ export const api = {
   providerAppointments: () => request<Appointment[]>("/appointments/provider"),
   cancelAppointment: (id: number) =>
     request<Appointment>(`/appointments/${id}/cancel`, { method: "POST" }),
+  createReview: (body: { appointment_id: number; rating: number; comment?: string }) =>
+    request<Review>("/reviews", { method: "POST", body: JSON.stringify(body) }),
+  getProviderReviews: (id: number) => request<Review[]>(`/providers/${id}/reviews`),
 
   // provider-side
   getMyProvider: () => request<Provider>("/providers/me"),

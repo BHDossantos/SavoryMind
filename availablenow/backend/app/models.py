@@ -89,3 +89,13 @@ class Appointment(SQLModel, table=True):
     total_price_cents: int
     customer_notes: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Review(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    appointment_id: int = Field(foreign_key="appointment.id", unique=True)
+    customer_id: int = Field(foreign_key="user.id", index=True)
+    provider_id: int = Field(foreign_key="provider.id", index=True)
+    rating: int  # 1..5
+    comment: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -114,6 +114,26 @@ class AppointmentOut(BaseModel):
     customer_notes: str
     provider_display_name: Optional[str] = None
     service_name: Optional[str] = None
+    has_review: bool = False
+    can_review: bool = False
+
+
+class ReviewIn(BaseModel):
+    appointment_id: int
+    rating: int
+    comment: str = ""
+
+
+class ReviewOut(BaseModel):
+    id: int
+    appointment_id: int
+    customer_id: int
+    provider_id: int
+    rating: int
+    comment: str
+    created_at: datetime
+    customer_first_name: Optional[str] = None
+    service_name: Optional[str] = None
 
 
 TokenOut.model_rebuild()
