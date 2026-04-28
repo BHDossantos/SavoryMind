@@ -27,9 +27,12 @@ class Settings(BaseSettings):
     app_name: str = "SavoryMind API"
     database_url: str = "sqlite:///./savorymind.db"
     cors_origins: list[str] = _default_cors_origins()
-    # Allow any Cloud Run revision URL (e.g. https://savorymind-frontend-abc123-ew.a.run.app)
-    # so the app keeps working before custom domains are wired up.
-    cors_origin_regex: str = r"https://[a-z0-9-]+\.a\.run\.app$"
+    # Cloud Run revision URLs for *this project's* frontend services only.
+    # The previous regex (https://[a-z0-9-]+\.a\.run\.app$) accepted any Cloud
+    # Run URL across all of GCP, which is far too broad — anyone with a Cloud
+    # Run service could hit our API with credentials. This pattern requires
+    # the savorymind- prefix on the service name.
+    cors_origin_regex: str = r"https://savorymind-[a-z0-9-]+\.a\.run\.app$"
     secret_key: str = "savorymind-super-secret-change-in-production-32chars"
     algorithm: str = "HS256"
     access_token_expire_days: int = 30

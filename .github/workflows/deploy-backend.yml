@@ -73,6 +73,9 @@ jobs:
             --region europe-west1 \
             --platform managed \
             --allow-unauthenticated \
+            --memory 1Gi \
+            --cpu 1 \
+            --min-instances 1 \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
             --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net"

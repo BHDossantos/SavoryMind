@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,8 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.core.rate_limit import limiter
+
+logger = logging.getLogger(__name__)
 
 # Initialise Sentry before the FastAPI app is constructed so its integration
 # can hook into the request lifecycle. No DSN → SDK becomes a no-op, which is
@@ -199,9 +202,13 @@ def health():
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-    except Exception as exc:
+    except Exception:
+        # Log the full exception server-side (Sentry + Cloud Run logs) but
+        # never return it to the caller — it can leak DSN fragments,
+        # connection strings, and authentication failure details.
+        logger.exception("/health database probe failed")
         return JSONResponse(
             status_code=503,
-            content={"status": "degraded", "db_error": str(exc)},
+            content={"status": "degraded", "db": "unavailable"},
         )
     return {"status": "ok", "db": "ok"}
