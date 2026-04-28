@@ -28,6 +28,7 @@ export default function AdminHome() {
       </div>
       <nav className="flex gap-3 flex-wrap">
         <Link href="/admin/venues" className="btn btn-secondary">Venues</Link>
+        <Link href="/admin/import" className="btn btn-secondary">Import</Link>
         <Link href="/admin/bookings" className="btn btn-secondary">Bookings</Link>
         <Link href="/admin/promos" className="btn btn-secondary">Promos</Link>
         <Link href="/admin/rules" className="btn btn-secondary">Rules</Link>

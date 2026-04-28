@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 
 export default function AdminVenues() {
@@ -26,6 +27,7 @@ export default function AdminVenues() {
         <div className="flex gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…"
             className="bg-night-900 border border-white/10 rounded-lg px-3 py-2" />
+          <Link href="/admin/import" className="btn btn-secondary">Import CSV / JSON</Link>
           <button onClick={() => setEditing(BLANK)} className="btn btn-primary">+ New venue</button>
         </div>
       </div>

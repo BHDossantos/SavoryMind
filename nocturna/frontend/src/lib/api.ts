@@ -26,6 +26,16 @@ export const api = {
   post: <T,>(p: string, body?: unknown) => request<T>(p, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
   put: <T,>(p: string, body?: unknown) => request<T>(p, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
   del: <T,>(p: string) => request<T>(p, { method: 'DELETE' }),
+  upload: async <T,>(p: string, form: FormData): Promise<T> => {
+    const headers: Record<string, string> = {};
+    const t = token();
+    if (t) headers['Authorization'] = `Bearer ${t}`;
+    const res = await fetch(`${BASE}${p}`, { method: 'POST', body: form, headers, cache: 'no-store' });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!res.ok) throw Object.assign(new Error(data?.detail || res.statusText), { status: res.status, data });
+    return data as T;
+  },
 };
 
 export function setToken(t: string | null) {

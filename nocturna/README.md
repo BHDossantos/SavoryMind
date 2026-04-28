@@ -82,6 +82,29 @@ nocturna/
 └─ docker-compose.nocturna.yml
 ```
 
+## Importing real venue data
+
+Two ways to bring real Rome (or any-city) data into the database:
+
+1. **Admin UI** → `/admin/import` — drop a CSV / JSON file, see a row-by-row
+   diff in dry-run, then click *Commit*. Existing venues match on `slug` and are
+   updated in place. Errors are reported per row without rolling back the
+   successful ones.
+2. **API** — `POST /api/admin/import/venues` (admin token):
+   ```bash
+   curl -F file=@nocturna/backend/app/seed/data/rome_venues_real.csv \
+        -F dry_run=false \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        http://localhost:8001/api/admin/import/venues
+   ```
+   `GET /api/admin/import/template` returns the column spec and CSV header.
+
+A starter set of **60 real Rome venues** ships in
+`backend/app/seed/data/rome_venues_real*.csv` — restaurants, bars, speakeasies,
+rooftops, clubs, live music, and late-night food, all with real addresses,
+coordinates, opening hours, contact info, and Instagram handles. Drop them on
+the admin importer to replace the placeholder seed.
+
 ## Recommendation engine
 
 Rule-based weighted scoring (no LLM needed for the core loop). Weights:

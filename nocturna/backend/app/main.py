@@ -18,6 +18,7 @@ from app.api.routes import (
     chat,
     partner,
     admin as admin_routes,
+    admin_import,
 )
 from app.seed.load_data import bootstrap_admin, seed_cities, seed_venues
 
@@ -72,5 +73,6 @@ for r in (
     chat.router,
     partner.router,
     admin_routes.router,
+    admin_import.router,
 ):
     app.include_router(r)
