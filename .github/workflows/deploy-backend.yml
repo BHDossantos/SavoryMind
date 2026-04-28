@@ -22,20 +22,56 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Ensure Cloud SQL instance and database exist
+        env:
+          DB_PASSWORD: ${{ secrets.CLOUD_SQL_PASSWORD }}
+        run: |
+          PROJECT=savorymind
+          REGION=europe-west1
+          INSTANCE=savorymind-db
+          DB_NAME=savorymind
+
+          if gcloud sql instances describe "$INSTANCE" --project="$PROJECT" >/dev/null 2>&1; then
+            echo "Cloud SQL instance '$INSTANCE' exists. Syncing postgres password to secret."
+            gcloud sql users set-password postgres \
+              --instance="$INSTANCE" \
+              --password="$DB_PASSWORD" \
+              --project="$PROJECT"
+          else
+            echo "Creating Cloud SQL instance '$INSTANCE' (first-time setup, ~5-10 minutes)..."
+            gcloud sql instances create "$INSTANCE" \
+              --database-version=POSTGRES_16 \
+              --tier=db-f1-micro \
+              --region="$REGION" \
+              --root-password="$DB_PASSWORD" \
+              --storage-size=10GB \
+              --storage-type=SSD \
+              --backup-start-time=03:00 \
+              --project="$PROJECT"
+          fi
+
+          echo "Ensuring database '$DB_NAME' exists..."
+          gcloud sql databases create "$DB_NAME" \
+            --instance="$INSTANCE" \
+            --project="$PROJECT" 2>/dev/null || echo "Database '$DB_NAME' already exists."
+
       - name: Deploy backend to Cloud Run
         working-directory: backend
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           SOCIAL_LOGIN_SECRET: ${{ secrets.SOCIAL_LOGIN_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DB_PASSWORD: ${{ secrets.CLOUD_SQL_PASSWORD }}
         run: |
+          DB_URL="postgresql://postgres:${DB_PASSWORD}@/savorymind?host=/cloudsql/savorymind:europe-west1:savorymind-db"
           gcloud run deploy savorymind-api \
             --source . \
             --region europe-west1 \
             --platform managed \
             --allow-unauthenticated \
+            --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30|DATABASE_URL=${DB_URL}"
 
       - name: Map api.savorymind.net to backend
         run: |
