@@ -57,8 +57,21 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    payload = data.model_dump(exclude_none=True)
+
+    # account_type is set-once. After it's chosen, only an admin flow (not this
+    # endpoint) may change it — otherwise a diner/consumer could self-promote
+    # to restaurant tier.
     was_no_type = current_user.account_type is None
-    for field, value in data.model_dump(exclude_none=True).items():
+    if "account_type" in payload and not was_no_type:
+        raise HTTPException(
+            status_code=403,
+            detail="account_type cannot be changed after initial setup.",
+        )
+
+    for field, value in payload.items():
+        if field not in ProfileUpdate.model_fields:
+            continue
         setattr(current_user, field, value)
     db.commit()
     db.refresh(current_user)
