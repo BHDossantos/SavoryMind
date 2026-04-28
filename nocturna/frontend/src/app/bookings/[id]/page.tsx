@@ -30,7 +30,14 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       <p className="text-xs text-gold-400/60">
         We'll confirm shortly. You can also reach the venue at {b.venue?.contact?.phone || '—'}.
       </p>
-      {b.plan_id && <Link href={`/feedback/${b.plan_id}`} className="btn btn-secondary mt-4">After your night, leave feedback</Link>}
+      <div className="flex flex-wrap gap-2 mt-4">
+        {b.plan_id && (
+          <Link href={`/plan/${b.plan_id}/bookings`} className="btn btn-secondary">All stops in this plan</Link>
+        )}
+        {b.plan_id && (
+          <Link href={`/feedback/${b.plan_id}`} className="btn btn-ghost">Leave feedback</Link>
+        )}
+      </div>
     </div>
   );
 }

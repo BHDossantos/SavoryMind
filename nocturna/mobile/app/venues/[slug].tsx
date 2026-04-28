@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { ScrollView, Text, View, Pressable, Linking, Platform } from 'react-native';
 import { api } from '@/services/api';
 import { styles, colors } from '@/lib/theme';
 
@@ -34,6 +34,15 @@ export default function VenueDetail() {
           <Text style={styles.btnSecondaryText}>Request VIP table</Text>
         </Pressable>
       )}
+      <Pressable style={styles.btnSecondary} onPress={() => {
+        const label = encodeURIComponent(v.name);
+        const url = Platform.OS === 'ios'
+          ? `https://maps.apple.com/?q=${label}&ll=${v.lat},${v.lng}`
+          : `https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}&destination_place_id=${label}`;
+        Linking.openURL(url);
+      }}>
+        <Text style={styles.btnSecondaryText}>Open in Maps</Text>
+      </Pressable>
     </ScrollView>
   );
 }

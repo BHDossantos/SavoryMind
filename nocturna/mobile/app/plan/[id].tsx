@@ -36,8 +36,11 @@ export default function PlanResults() {
               <Text style={styles.dim}>{s.summary}</Text>
             </View>
           ))}
-          <Pressable style={styles.btn} onPress={() => router.push(`/bookings/new?plan_id=${p.id}&venue_id=${p.stops[0]?.venue_id}`)}>
+          <Pressable style={styles.btn} onPress={() => router.push(`/bookings/new?plan_id=${p.id}`)}>
             <Text style={styles.btnText}>Book this plan</Text>
+          </Pressable>
+          <Pressable style={styles.btnSecondary} onPress={() => router.push(`/plan/${p.id}/bookings`)}>
+            <Text style={styles.btnSecondaryText}>View bookings</Text>
           </Pressable>
           <Pressable style={styles.btnSecondary} onPress={() => share(p)}>
             <Text style={styles.btnSecondaryText}>Share</Text>

@@ -77,6 +77,41 @@ def list_venues(
     return [_venue_to_dict(v) for v in rows]
 
 
+@router.get("/near")
+def near(
+    db: Session = Depends(get_db),
+    lat: float = Query(...),
+    lng: float = Query(...),
+    city: Optional[str] = None,
+    limit: int = 12,
+    open_now: bool = False,
+):
+    """Venues nearest a given lat/lng, ranked by haversine distance.
+
+    Optionally filter by `city` and `open_now` (uses each venue's stored
+    opening_hours). Distance returned in km so the client can render.
+    """
+    from datetime import datetime
+    from app.services import scoring
+
+    qry = db.query(Venue).filter(Venue.active == True)  # noqa: E712
+    if city:
+        qry = qry.filter(Venue.city == city)
+    rows = qry.all()
+    now = datetime.now()
+    ranked = []
+    for v in rows:
+        km = scoring.haversine_km(lat, lng, v.lat, v.lng)
+        if open_now and not scoring.is_open_at(v.opening_hours or {}, now):
+            continue
+        ranked.append((km, v))
+    ranked.sort(key=lambda t: t[0])
+    return [
+        {**_venue_to_dict(v), "distance_km": round(km, 2)}
+        for km, v in ranked[:limit]
+    ]
+
+
 @router.get("/trending")
 def trending(db: Session = Depends(get_db), city: str = "rome", limit: int = 8):
     rows = (

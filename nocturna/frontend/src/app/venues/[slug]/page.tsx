@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { RouteMap } from '@/components/map/RouteMap';
 import type { Venue } from '../../../../../shared/types';
 
 export default function VenueDetail({ params }: { params: { slug: string } }) {
@@ -29,6 +30,12 @@ export default function VenueDetail({ params }: { params: { slug: string } }) {
           {v.promoted && <span className="chip !text-accent-500 !border-accent-500/30">Featured</span>}
         </div>
       </header>
+
+      <RouteMap
+        height={280}
+        showRoute={false}
+        points={[{ id: v.id, lat: v.lat, lng: v.lng, label: v.name, sub: v.address }]}
+      />
 
       <section className="card grid grid-cols-1 md:grid-cols-3 gap-4">
         <div><div className="label">Address</div><div>{v.address}</div></div>
@@ -72,6 +79,11 @@ export default function VenueDetail({ params }: { params: { slug: string } }) {
         {v.vip_available && (
           <Link href={`/bookings/new?venue_id=${v.id}&request_type=vip_table`} className="btn btn-secondary">Request VIP table</Link>
         )}
+        <a
+          className="btn btn-secondary"
+          href={`https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}&destination_place_id=${encodeURIComponent(v.name)}`}
+          target="_blank" rel="noreferrer"
+        >Get directions</a>
         {v.contact?.instagram && <a className="btn btn-ghost" href={v.contact.instagram} target="_blank">Instagram</a>}
       </div>
     </article>

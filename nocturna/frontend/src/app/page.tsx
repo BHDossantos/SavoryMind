@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CITIES, INTENTS, VIBES } from '../../../shared/constants/options';
 import { TrendingVenues } from '@/components/home/TrendingVenues';
 import { HiddenGems } from '@/components/home/HiddenGems';
+import { NearMe } from '@/components/home/NearMe';
 
 const QUICK_INTENTS = [
   { value: 'date_night',   label: 'Date Night',     blurb: 'Romantic dinner + sexy cocktail bar' },
@@ -49,6 +50,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <NearMe />
 
       <section>
         <h2 className="font-display text-3xl mb-4">Trending venues</h2>

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { RouteMap } from '@/components/map/RouteMap';
 import type { Plan } from '../../../../shared/types';
 
 export default function PlanCard({ plan }: { plan: Plan }) {
@@ -23,6 +24,16 @@ export default function PlanCard({ plan }: { plan: Plan }) {
           <h3 className="font-display text-2xl text-gold-400 mt-1">{plan.label}</h3>
         </div>
         {plan.dress_code && <span className="chip">Dress: {plan.dress_code}</span>}
+      </div>
+
+      <div className="mt-4">
+        <RouteMap
+          height={180}
+          points={plan.stops.map((s, i) => ({
+            id: s.venue_id, lat: s.lat, lng: s.lng,
+            label: `${i + 1}. ${s.name}`, sub: s.neighborhood,
+          }))}
+        />
       </div>
 
       <ol className="mt-5 space-y-4">
@@ -47,7 +58,7 @@ export default function PlanCard({ plan }: { plan: Plan }) {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        <Link className="btn btn-primary flex-1" href={`/bookings/new?plan_id=${plan.id}&venue_id=${plan.stops[0]?.venue_id}`}>
+        <Link className="btn btn-primary flex-1" href={`/bookings/new?plan_id=${plan.id}`}>
           Book this plan
         </Link>
         <button onClick={handleShare} className="btn btn-secondary">Share</button>
