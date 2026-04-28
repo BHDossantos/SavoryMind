@@ -12,6 +12,7 @@ import ScoreBadge from "@/components/ScoreBadge";
 import RiskFlags from "@/components/RiskFlags";
 import Stat from "@/components/Stat";
 import ScenarioSimulator from "@/components/ScenarioSimulator";
+import Attachments from "@/components/Attachments";
 
 const STATUSES: PipelineStatus[] = [
   "lead",
@@ -142,6 +143,8 @@ export default function DealDetailPage() {
       </section>
 
       <ScenarioSimulator deal={deal} />
+
+      <Attachments deal={deal} />
 
       <section className="card p-5">
         <h2 className="font-semibold">Plain-English insights</h2>

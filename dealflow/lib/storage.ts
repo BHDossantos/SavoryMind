@@ -1,6 +1,12 @@
 "use client";
 
-import type { Deal, DealInput, PipelineStatus, Priority } from "./types";
+import type {
+  Attachment,
+  Deal,
+  DealInput,
+  PipelineStatus,
+  Priority,
+} from "./types";
 
 const KEY = "dealflow.deals.v1";
 
@@ -53,6 +59,20 @@ export const dealsRepo = {
   },
   remove(id: string) {
     write(read().filter((d) => d.id !== id));
+  },
+  addAttachment(id: string, attachment: Attachment) {
+    const deal = dealsRepo.get(id);
+    if (!deal) return;
+    const attachments = [...(deal.attachments ?? []), attachment];
+    dealsRepo.update(id, { attachments });
+  },
+  removeAttachment(id: string, attachmentId: string) {
+    const deal = dealsRepo.get(id);
+    if (!deal) return;
+    const attachments = (deal.attachments ?? []).filter(
+      (a) => a.id !== attachmentId,
+    );
+    dealsRepo.update(id, { attachments });
   },
   seedDemoIfEmpty() {
     if (read().length > 0) return;

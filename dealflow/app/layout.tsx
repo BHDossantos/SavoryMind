@@ -38,6 +38,9 @@ export default function RootLayout({
               <Link className="btn-ghost" href="/pipeline">
                 Pipeline
               </Link>
+              <Link className="btn-ghost" href="/compare">
+                Compare
+              </Link>
               <Link className="btn-primary" href="/deals/new">
                 + New Deal
               </Link>

@@ -8,6 +8,7 @@ import type { Deal } from "@/lib/types";
 import DealCard from "@/components/DealCard";
 import Stat from "@/components/Stat";
 import { eur } from "@/lib/format";
+import { dealsToCsv, downloadCsv } from "@/lib/csv";
 
 export default function DashboardPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -58,9 +59,23 @@ export default function DashboardPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Saved deals</h2>
-          <Link href="/deals/new" className="btn-primary">
-            + New Deal
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={deals.length === 0}
+              onClick={() => {
+                const csv = dealsToCsv(deals);
+                const date = new Date().toISOString().slice(0, 10);
+                downloadCsv(`dealflow-deals-${date}.csv`, csv);
+              }}
+            >
+              Export CSV
+            </button>
+            <Link href="/deals/new" className="btn-primary">
+              + New Deal
+            </Link>
+          </div>
         </div>
         {deals.length === 0 ? (
           <div className="card p-8 text-center text-sm text-slate-600">

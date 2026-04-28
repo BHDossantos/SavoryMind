@@ -50,6 +50,16 @@ export interface Deal extends DealInput {
   createdAt: string;
   status: PipelineStatus;
   priority: Priority;
+  attachments?: Attachment[];
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  dataUrl: string; // base64 data URL
+  addedAt: string;
 }
 
 export interface Financials {

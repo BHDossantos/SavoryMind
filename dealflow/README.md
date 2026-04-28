@@ -17,6 +17,10 @@ Enter the financials of a target business and instantly get:
 - Plain-English insights
 - A pipeline (Lead → Evaluating → Negotiating → Under contract → Closed / Passed)
 - A one-click LOI generator (downloadable text)
+- A scenario simulator (what-if % sliders for asking price, revenue, rent, labor)
+- A comparison view (up to 4 deals side-by-side, best-value highlighting)
+- Document attachments per deal (PDF, images, etc., stored locally)
+- CSV export of all deals with key metrics
 
 ## Tech
 
