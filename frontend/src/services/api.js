@@ -1,7 +1,7 @@
 // In production call the backend directly from the browser (no Next.js proxy needed).
-// NEXT_PUBLIC_API_URL must be set in Vercel dashboard → savorymind-api.onrender.com URL.
+// NEXT_PUBLIC_API_URL must be set at build time (Cloud Run / GitHub Actions) → https://api.savorymind.net.
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
-const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://savorymind-api.onrender.com";
+const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
 function getBaseUrl() {
   if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
   const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
