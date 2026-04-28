@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     access_token_expire_days: int = 30
     social_login_secret: str = "dev-social-secret"
 
+    # Email (Resend). Empty string disables sends — useful in dev.
+    resend_api_key: str = ""
+    resend_from_email: str = "noreply@savorymind.net"
+
+    # Error tracking (Sentry). Empty string disables Sentry entirely.
+    sentry_dsn: str = ""
+    sentry_environment: str = "development"
+
     class Config:
         env_file = ".env"
 

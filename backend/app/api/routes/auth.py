@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from typing import Optional
 from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.config import settings
+from ...core.rate_limit import limiter
 from ...core.security import get_current_user
 from ...schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse, ProfileUpdate, SocialLoginRequest
 from ...services import auth_service
@@ -12,13 +13,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-def register(data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
     token, user = auth_service.register(db, data)
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     token, user = auth_service.login(db, data)
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
@@ -29,7 +32,9 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/social", response_model=TokenResponse, status_code=200)
+@limiter.limit("10/minute")
 def social_login(
+    request: Request,
     data: SocialLoginRequest,
     db: Session = Depends(get_db),
     x_social_secret: Optional[str] = Header(default=None),

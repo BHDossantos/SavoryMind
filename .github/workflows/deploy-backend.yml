@@ -63,6 +63,9 @@ jobs:
           SOCIAL_LOGIN_SECRET: ${{ secrets.SOCIAL_LOGIN_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DB_PASSWORD: ${{ secrets.CLOUD_SQL_PASSWORD }}
+          # Optional — leave the secret unset and the app will simply skip Sentry / email sends.
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           DB_URL="postgresql://postgres:${DB_PASSWORD}@/savorymind?host=/cloudsql/savorymind:europe-west1:savorymind-db"
           gcloud run deploy savorymind-api \
@@ -72,7 +75,7 @@ jobs:
             --allow-unauthenticated \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30|DATABASE_URL=${DB_URL}"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net"
 
       - name: Map api.savorymind.net to backend
         run: |

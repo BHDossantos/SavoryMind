@@ -1,9 +1,25 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.rate_limit import limiter
+
+# Initialise Sentry before the FastAPI app is constructed so its integration
+# can hook into the request lifecycle. No DSN → SDK becomes a no-op, which is
+# what we want in local dev.
+if settings.sentry_dsn:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.sentry_environment,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
 from app.models import User, MenuItem, Review  # noqa: F401
 from app.models.consumer import WinePairing, MusicMood, SocialConnection, BehaviorLog  # noqa: F401
 from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # noqa: F401
@@ -142,6 +158,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -171,4 +190,18 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    """Readiness probe — verifies the database is actually reachable.
+
+    Returns 200 only if a `SELECT 1` succeeds. Otherwise returns 503 so
+    Cloud Run / load balancers can stop sending traffic to a degraded
+    instance instead of letting users hit it and get 500s.
+    """
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "db_error": str(exc)},
+        )
+    return {"status": "ok", "db": "ok"}
