@@ -1,7 +1,7 @@
 // In production call the backend directly from the browser (no Next.js proxy needed).
-// NEXT_PUBLIC_API_URL must be set in Vercel dashboard → savorymind-api.onrender.com URL.
+// NEXT_PUBLIC_API_URL is set at build/deploy time (see deploy-frontend.yml).
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
-const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://savorymind-api.onrender.com";
+const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
 function getBaseUrl() {
   if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
   const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -31,9 +31,10 @@ async function request(path, options = {}, _attempt = 0) {
     throw new Error("Server is unreachable. It may still be starting up — please wait a moment and try again.");
   }
 
-  // Only treat 401 as "session expired" for protected endpoints, not auth endpoints
+  // 401 = invalid/expired token → force logout. 403 = wrong account_type or
+  // forbidden action → let the caller surface the error message instead.
   const isAuthEndpoint = path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/auth/social");
-  if ((res.status === 401 || res.status === 403) && !isAuthEndpoint) {
+  if (res.status === 401 && !isAuthEndpoint) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
