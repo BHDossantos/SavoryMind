@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  AINarrative,
   Attachment,
   Deal,
   DealInput,
@@ -65,6 +66,17 @@ export const dealsRepo = {
     if (!deal) return;
     const attachments = [...(deal.attachments ?? []), attachment];
     dealsRepo.update(id, { attachments });
+  },
+  setNarrative(id: string, narrative: AINarrative) {
+    return dealsRepo.update(id, { aiNarrative: narrative });
+  },
+  clearNarrative(id: string) {
+    const deal = dealsRepo.get(id);
+    if (!deal) return;
+    const { aiNarrative, ...rest } = deal;
+    void aiNarrative;
+    const all = read().map((d) => (d.id === id ? (rest as Deal) : d));
+    write(all);
   },
   removeAttachment(id: string, attachmentId: string) {
     const deal = dealsRepo.get(id);

@@ -13,6 +13,7 @@ import RiskFlags from "@/components/RiskFlags";
 import Stat from "@/components/Stat";
 import ScenarioSimulator from "@/components/ScenarioSimulator";
 import Attachments from "@/components/Attachments";
+import AIAnalysis from "@/components/AIAnalysis";
 
 const STATUSES: PipelineStatus[] = [
   "lead",
@@ -143,6 +144,8 @@ export default function DealDetailPage() {
       </section>
 
       <ScenarioSimulator deal={deal} />
+
+      <AIAnalysis deal={deal} />
 
       <Attachments deal={deal} />
 

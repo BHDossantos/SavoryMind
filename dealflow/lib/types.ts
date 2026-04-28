@@ -51,6 +51,23 @@ export interface Deal extends DealInput {
   status: PipelineStatus;
   priority: Priority;
   attachments?: Attachment[];
+  aiNarrative?: AINarrative;
+}
+
+export type AIVerdict = "pursue" | "negotiate_hard" | "pass";
+
+export interface AINegotiationPoint {
+  point: string;
+  leverage: string;
+}
+
+export interface AINarrative {
+  thesis: string;
+  verdict: AIVerdict;
+  key_concerns: string[];
+  negotiation_playbook: AINegotiationPoint[];
+  due_diligence_checklist: string[];
+  generatedAt: string;
 }
 
 export interface Attachment {

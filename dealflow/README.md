@@ -21,6 +21,8 @@ Enter the financials of a target business and instantly get:
 - A comparison view (up to 4 deals side-by-side, best-value highlighting)
 - Document attachments per deal (PDF, images, etc., stored locally)
 - CSV export of all deals with key metrics
+- AI deal analysis (Claude Opus 4.7): investment thesis, verdict, key
+  concerns, negotiation playbook, and due-diligence checklist
 
 ## Tech
 
@@ -33,10 +35,15 @@ Enter the financials of a target business and instantly get:
 ```bash
 cd dealflow
 npm install
+cp .env.example .env.local   # optional — only needed for AI analysis
 npm run dev
 ```
 
 Then open http://localhost:3000.
+
+The AI analysis button calls Claude Opus 4.7 via the Anthropic SDK. It is
+optional — without `ANTHROPIC_API_KEY`, the rest of the app works and the
+button returns a clear 503 message. Get a key at console.anthropic.com.
 
 The app seeds two demo deals on first load. Add your own from `+ New Deal`.
 
