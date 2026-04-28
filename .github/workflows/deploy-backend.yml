@@ -76,8 +76,16 @@ jobs:
 
       - name: Map api.savorymind.net to backend
         run: |
-          gcloud run domain-mappings create \
-            --service savorymind-api \
-            --domain api.savorymind.net \
-            --region europe-west1 \
-            --project savorymind 2>/dev/null || echo "Domain mapping already exists or domain not yet verified"
+          if gcloud run domain-mappings describe \
+              --domain api.savorymind.net \
+              --region europe-west1 \
+              --project savorymind >/dev/null 2>&1; then
+            echo "Domain mapping for api.savorymind.net already exists."
+          else
+            echo "Creating domain mapping for api.savorymind.net..."
+            gcloud run domain-mappings create \
+              --service savorymind-api \
+              --domain api.savorymind.net \
+              --region europe-west1 \
+              --project savorymind
+          fi
