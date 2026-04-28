@@ -40,6 +40,22 @@ def _log(db: Session, user_id: int, action_type: str, meta: dict | None = None) 
         db.rollback()
 
 
+def _safe_loads(raw: str | None, fallback):
+    """Tolerate malformed/empty JSON columns instead of 500-ing the whole route."""
+    if not raw:
+        return fallback
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        return fallback
+
+
+_MUSIC_FALLBACK = {
+    "genres": [], "artists": [], "bpm_range": "", "vibe": "",
+    "spotify_query": "", "amazon_station": "", "alexa_command": "",
+}
+
+
 # ── Wine Pairing ──────────────────────────────────────────────────────────────
 
 @router.post("/wine-pairing", response_model=WinePairingResponse, status_code=201)
@@ -51,7 +67,7 @@ def create_wine_pairing(
     _require_consumer(current_user)
     record = wine_service.save_pairing(db, current_user.id, body.dish_name, body.dish_description)
     _log(db, current_user.id, "wine_pairing", {"dish": body.dish_name})
-    recs = [WineRecommendation(**r) for r in json.loads(record.recommendations)]
+    recs = [WineRecommendation(**r) for r in _safe_loads(record.recommendations, [])]
     return WinePairingResponse(id=record.id, dish_name=record.dish_name, recommendations=recs, created_at=record.created_at)
 
 
@@ -61,7 +77,7 @@ def list_wine_pairings(db: Session = Depends(get_db), current_user: User = Depen
     records = wine_service.get_pairings(db, current_user.id)
     result = []
     for r in records:
-        recs = [WineRecommendation(**w) for w in json.loads(r.recommendations)]
+        recs = [WineRecommendation(**w) for w in _safe_loads(r.recommendations, [])]
         result.append(WinePairingResponse(id=r.id, dish_name=r.dish_name, recommendations=recs, created_at=r.created_at))
     return result
 
@@ -77,7 +93,7 @@ def create_music_mood(
     _require_consumer(current_user)
     record = music_service.save_music_mood(db, current_user.id, body.mood, body.food_type, body.occasion)
     _log(db, current_user.id, "music_mood", {"mood": body.mood, "food_type": body.food_type})
-    recs = MusicRecommendation(**json.loads(record.recommendations))
+    recs = MusicRecommendation(**_safe_loads(record.recommendations, _MUSIC_FALLBACK))
     return MusicMoodResponse(
         id=record.id, mood=record.mood, food_type=record.food_type,
         occasion=record.occasion, recommendations=recs, created_at=record.created_at,
@@ -90,7 +106,7 @@ def list_music_moods(db: Session = Depends(get_db), current_user: User = Depends
     records = music_service.get_music_moods(db, current_user.id)
     result = []
     for r in records:
-        recs = MusicRecommendation(**json.loads(r.recommendations))
+        recs = MusicRecommendation(**_safe_loads(r.recommendations, {}))
         result.append(MusicMoodResponse(
             id=r.id, mood=r.mood, food_type=r.food_type,
             occasion=r.occasion, recommendations=recs, created_at=r.created_at,
