@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { handle } from "@/lib/api";
 import { HttpError, createSession, createUser, findUserByEmail } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 
 const Body = z.object({
   email: z.string().email(),
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
     }
     const user = await createUser(body);
     await createSession({ userId: user.id, email: user.email, role: user.role });
+    void notify({ userId: user.id, kind: "welcome" });
     return { id: user.id, email: user.email, role: user.role };
   });
 }

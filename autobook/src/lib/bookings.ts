@@ -5,6 +5,7 @@ import type {
   ConfirmedBookingRow,
   RequestStatus,
 } from "./db";
+import { notify, statusKind } from "./notifications";
 
 export const STATUS_LABELS: Record<RequestStatus, string> = {
   submitted: "Submitted",
@@ -133,6 +134,7 @@ export function createRequest(input: CreateRequestInput): BookingRequestRow {
   const id = Number(result.lastInsertRowid);
   recordStatus(id, null, "submitted", input.userId, "Request submitted");
   matchCandidates(id);
+  void notify({ userId: input.userId, requestId: id, kind: "request_received" });
   return getRequest(id)!;
 }
 
@@ -162,6 +164,17 @@ export function setStatus(
   if (!cur) return;
   if (cur.status === newStatus) return;
   recordStatus(requestId, cur.status, newStatus, changedBy, notes);
+  const kind = statusKind(newStatus);
+  if (kind && shouldNotify(cur.status, newStatus)) {
+    void notify({ userId: cur.user_id, requestId, kind });
+  }
+}
+
+function shouldNotify(oldStatus: RequestStatus, newStatus: RequestStatus): boolean {
+  // Don't spam users every time admin toggles between in_review/searching/contacting.
+  const inProgress: RequestStatus[] = ["in_review", "searching", "contacting"];
+  if (inProgress.includes(oldStatus) && inProgress.includes(newStatus)) return false;
+  return true;
 }
 
 export function matchCandidates(requestId: number) {

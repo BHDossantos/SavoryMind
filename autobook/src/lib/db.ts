@@ -12,22 +12,6 @@ declare global {
   var __autobookDb: Database.Database | undefined;
 }
 
-function init(database: Database.Database) {
-  database.pragma("journal_mode = WAL");
-  database.pragma("foreign_keys = ON");
-  database.exec(SCHEMA);
-}
-
-export const db: Database.Database =
-  global.__autobookDb ??
-  (() => {
-    const d = new Database(DB_PATH);
-    init(d);
-    return d;
-  })();
-
-if (process.env.NODE_ENV !== "production") global.__autobookDb = db;
-
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,6 +105,18 @@ CREATE TABLE IF NOT EXISTS contact_attempts (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  request_id INTEGER REFERENCES booking_requests(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  delivered_at TEXT,
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS confirmed_bookings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   request_id INTEGER NOT NULL UNIQUE REFERENCES booking_requests(id) ON DELETE CASCADE,
@@ -139,6 +135,22 @@ CREATE TABLE IF NOT EXISTS confirmed_bookings (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `;
+
+function init(database: Database.Database) {
+  database.pragma("journal_mode = WAL");
+  database.pragma("foreign_keys = ON");
+  database.exec(SCHEMA);
+}
+
+export const db: Database.Database =
+  global.__autobookDb ??
+  (() => {
+    const d = new Database(DB_PATH);
+    init(d);
+    return d;
+  })();
+
+if (process.env.NODE_ENV !== "production") global.__autobookDb = db;
 
 export type Role = "user" | "admin";
 export type RequestStatus =

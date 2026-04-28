@@ -5,5 +5,4 @@ out
 .DS_Store
 .env
 .env.local
-data/*.db
-data/*.db-journal
+data/
