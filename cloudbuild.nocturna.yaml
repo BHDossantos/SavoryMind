@@ -1,0 +1,208 @@
+# Google Cloud Build — deploys Nocturna backend + frontend to Cloud Run.
+#
+# Runs alongside cloudbuild.yaml (which deploys SavoryMind). Pin to this
+# config explicitly via the trigger or `gcloud builds submit --config`.
+#
+# Required substitutions (set in Cloud Build trigger or gcloud CLI):
+#   _REGION                 Cloud Run region, e.g. europe-west1
+#   _SECRET_KEY             Random 32-char string for JWT signing
+#   _ADMIN_EMAIL            Bootstrap admin email
+#   _ADMIN_PASSWORD         Bootstrap admin password (rotate after first login)
+#
+# Optional substitutions (defaults to empty -> console-fallback in the app):
+#   _STRIPE_SECRET_KEY      Stripe live or test secret key
+#   _STRIPE_WEBHOOK_SECRET  whsec_xxx, from the Cloud Run webhook endpoint
+#   _ANTHROPIC_API_KEY      Enables AI concierge with Claude tool-use
+#   _TWILIO_SID             Twilio account SID
+#   _TWILIO_TOKEN           Twilio auth token
+#   _TWILIO_FROM_SMS        E.164 SMS sender, e.g. +14155550100
+#   _TWILIO_FROM_WHATSAPP   whatsapp:+14155238886 (default sandbox)
+#   _SENDGRID_KEY           SendGrid API key
+#   _SENDGRID_FROM          Verified SendGrid sender, e.g. no-reply@nocturna.app
+#   _MAPBOX_TOKEN           pk.... — enables real maps; without it the SVG fallback renders
+#   _DATABASE_URL           Override to a Cloud SQL Postgres URL (recommended for prod);
+#                           defaults to SQLite on GCS (cheap, single-instance only)
+#
+# First-time deploy:
+#   1. Set _APP_BASE_URL to a placeholder, run the build
+#   2. Note the frontend Cloud Run URL from the Console
+#   3. Update _APP_BASE_URL to the real URL, re-run
+
+substitutions:
+  _REGION: europe-west1
+  _SECRET_KEY: change-me-32chars-in-trigger-settings
+  _ADMIN_EMAIL: admin@nocturna.app
+  _ADMIN_PASSWORD: change-me-after-first-login
+  _APP_BASE_URL: https://placeholder.example
+  _STRIPE_SECRET_KEY: ""
+  _STRIPE_WEBHOOK_SECRET: ""
+  _ANTHROPIC_API_KEY: ""
+  _TWILIO_SID: ""
+  _TWILIO_TOKEN: ""
+  _TWILIO_FROM_SMS: ""
+  _TWILIO_FROM_WHATSAPP: "whatsapp:+14155238886"
+  _SENDGRID_KEY: ""
+  _SENDGRID_FROM: "no-reply@nocturna.app"
+  _MAPBOX_TOKEN: ""
+  _DATABASE_URL: ""
+
+steps:
+  # ── Infra: GCS bucket for the SQLite database (skipped if _DATABASE_URL is set) ──
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: create-bucket
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -z "$_DATABASE_URL" ]; then
+          gsutil mb -p $PROJECT_ID -l $_REGION gs://$PROJECT_ID-nocturna-db 2>/dev/null || true
+        else
+          echo "Using external DATABASE_URL; skipping GCS bucket"
+        fi
+
+  # ── Backend: build + push ─────────────────────────────────────────────
+  - name: "gcr.io/cloud-builders/docker"
+    id: build-api
+    args:
+      - build
+      - -t
+      - gcr.io/$PROJECT_ID/nocturna-api
+      - ./nocturna/backend
+    waitFor: ["-"]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-api
+    args: ["push", "gcr.io/$PROJECT_ID/nocturna-api"]
+    waitFor: ["build-api"]
+
+  # ── Backend: deploy to Cloud Run ─────────────────────────────────────
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: deploy-api
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -n "$_DATABASE_URL" ]; then
+          DB_URL="$_DATABASE_URL"
+          VOLUME_FLAGS=""
+        else
+          DB_URL="sqlite:////data/nocturna.db"
+          VOLUME_FLAGS="--add-volume=name=db,type=cloud-storage,bucket=$PROJECT_ID-nocturna-db --add-volume-mount=volume=db,mount-path=/data"
+        fi
+
+        # Build the env var string (escape commas in CORS list as ^@^ delimiter)
+        ENV_VARS="^@^"
+        ENV_VARS="${ENV_VARS}NOCTURNA_APP_ENV=prod"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_DATABASE_URL=$DB_URL"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_SECRET_KEY=$_SECRET_KEY"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_ADMIN_BOOTSTRAP_EMAIL=$_ADMIN_EMAIL"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_ADMIN_BOOTSTRAP_PASSWORD=$_ADMIN_PASSWORD"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_APP_BASE_URL=$_APP_BASE_URL"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_CORS_ORIGINS=[\"$_APP_BASE_URL\"]"
+        ENV_VARS="${ENV_VARS}@NOCTURNA_SEED_ON_STARTUP=true"
+        [ -n "$_STRIPE_SECRET_KEY" ]    && ENV_VARS="${ENV_VARS}@NOCTURNA_STRIPE_SECRET_KEY=$_STRIPE_SECRET_KEY"
+        [ -n "$_STRIPE_WEBHOOK_SECRET" ] && ENV_VARS="${ENV_VARS}@NOCTURNA_STRIPE_WEBHOOK_SECRET=$_STRIPE_WEBHOOK_SECRET"
+        [ -n "$_ANTHROPIC_API_KEY" ]    && ENV_VARS="${ENV_VARS}@ANTHROPIC_API_KEY=$_ANTHROPIC_API_KEY"
+        [ -n "$_TWILIO_SID" ]           && ENV_VARS="${ENV_VARS}@NOCTURNA_TWILIO_SID=$_TWILIO_SID"
+        [ -n "$_TWILIO_TOKEN" ]         && ENV_VARS="${ENV_VARS}@NOCTURNA_TWILIO_TOKEN=$_TWILIO_TOKEN"
+        [ -n "$_TWILIO_FROM_SMS" ]      && ENV_VARS="${ENV_VARS}@NOCTURNA_TWILIO_FROM_SMS=$_TWILIO_FROM_SMS"
+        [ -n "$_TWILIO_FROM_WHATSAPP" ] && ENV_VARS="${ENV_VARS}@NOCTURNA_TWILIO_FROM_WHATSAPP=$_TWILIO_FROM_WHATSAPP"
+        [ -n "$_SENDGRID_KEY" ]         && ENV_VARS="${ENV_VARS}@NOCTURNA_SENDGRID_KEY=$_SENDGRID_KEY"
+        [ -n "$_SENDGRID_FROM" ]        && ENV_VARS="${ENV_VARS}@NOCTURNA_SENDGRID_FROM=$_SENDGRID_FROM"
+
+        gcloud run deploy nocturna-api \
+          --image gcr.io/$PROJECT_ID/nocturna-api \
+          --region $_REGION \
+          --platform managed \
+          --allow-unauthenticated \
+          --min-instances 0 \
+          --max-instances 3 \
+          --memory 1Gi \
+          --cpu 1 \
+          --port 8080 \
+          $VOLUME_FLAGS \
+          --set-env-vars "$ENV_VARS"
+    waitFor: ["push-api", "create-bucket"]
+
+  # ── Capture backend URL for frontend build ───────────────────────────
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: get-api-url
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        URL=$(gcloud run services describe nocturna-api --region $_REGION --format "value(status.url)")
+        echo "$URL" > /workspace/nocturna_api_url.txt
+        echo "Nocturna API URL: $URL"
+    waitFor: ["deploy-api"]
+
+  # ── Frontend: build + push (bakes NEXT_PUBLIC_* into the bundle) ─────
+  - name: "gcr.io/cloud-builders/docker"
+    id: build-web
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        API_URL=$(cat /workspace/nocturna_api_url.txt)
+        docker build \
+          -f nocturna/frontend/Dockerfile.prod \
+          --build-arg NEXT_PUBLIC_API_URL=$API_URL \
+          --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=$_MAPBOX_TOKEN \
+          -t gcr.io/$PROJECT_ID/nocturna-web \
+          ./nocturna/frontend
+    waitFor: ["get-api-url"]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-web
+    args: ["push", "gcr.io/$PROJECT_ID/nocturna-web"]
+    waitFor: ["build-web"]
+
+  # ── Frontend: deploy to Cloud Run ────────────────────────────────────
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: deploy-web
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        API_URL=$(cat /workspace/nocturna_api_url.txt)
+        gcloud run deploy nocturna-web \
+          --image gcr.io/$PROJECT_ID/nocturna-web \
+          --region $_REGION \
+          --platform managed \
+          --allow-unauthenticated \
+          --min-instances 0 \
+          --max-instances 3 \
+          --memory 512Mi \
+          --cpu 1 \
+          --port 8080 \
+          --set-env-vars "NEXT_PUBLIC_API_URL=$API_URL,NEXT_PUBLIC_MAPBOX_TOKEN=$_MAPBOX_TOKEN"
+    waitFor: ["push-web"]
+
+  # ── Print final URLs ─────────────────────────────────────────────────
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: summary
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        API_URL=$(gcloud run services describe nocturna-api --region $_REGION --format "value(status.url)")
+        WEB_URL=$(gcloud run services describe nocturna-web --region $_REGION --format "value(status.url)")
+        echo ""
+        echo "═══════════════════════════════════════════════════════════"
+        echo "  Nocturna deployed."
+        echo "  API:     $API_URL"
+        echo "  Web:     $WEB_URL"
+        echo "  Webhook: $API_URL/api/payments/webhook"
+        echo ""
+        echo "  Next:"
+        echo "  · Update _APP_BASE_URL to $WEB_URL and redeploy if not set"
+        echo "  · Register the webhook URL in Stripe and copy whsec_*"
+        echo "    into _STRIPE_WEBHOOK_SECRET, then redeploy"
+        echo "═══════════════════════════════════════════════════════════"
+    waitFor: ["deploy-web"]
+
+images:
+  - gcr.io/$PROJECT_ID/nocturna-api
+  - gcr.io/$PROJECT_ID/nocturna-web
+
+timeout: 1500s

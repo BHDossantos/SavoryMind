@@ -12,6 +12,7 @@ from .payment import Payment
 from .chat import ChatThread, ChatMessage
 from .notification import NotificationLog
 from .partner import PartnerProfile
+from .webhook_event import WebhookEvent
 
 __all__ = [
     "User",
@@ -30,4 +31,5 @@ __all__ = [
     "ChatMessage",
     "NotificationLog",
     "PartnerProfile",
+    "WebhookEvent",
 ]

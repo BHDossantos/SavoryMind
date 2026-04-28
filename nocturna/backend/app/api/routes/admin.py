@@ -177,6 +177,7 @@ def update_booking(
     b = db.query(Booking).get(booking_id)
     if not b:
         raise HTTPException(404, "Not found")
+    prev_status = b.status
     b.status = payload.status
     if payload.admin_notes is not None:
         b.admin_notes = payload.admin_notes
@@ -185,6 +186,15 @@ def update_booking(
     if payload.commission_eur is not None:
         b.commission_eur = payload.commission_eur
     db.commit()
+    if prev_status != b.status:
+        from app.services import notifications
+        venue = db.query(Venue).get(b.venue_id)
+        if venue:
+            notifications.notify_booking_status_change(
+                db, b, venue,
+                user_email=b.contact_email,
+                user_phone=b.contact_phone,
+            )
     return {"ok": True}
 
 

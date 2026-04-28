@@ -51,6 +51,20 @@ pip install -r requirements.txt
 pytest
 ```
 
+## Deploy to Cloud Run
+
+See [`DEPLOY.md`](./DEPLOY.md) for the full Cloud Build / Cloud Run flow.
+TL;DR:
+
+```bash
+gcloud builds submit \
+  --config=cloudbuild.nocturna.yaml \
+  --substitutions=_REGION=europe-west1,_SECRET_KEY=$(openssl rand -hex 32),_APP_BASE_URL=https://placeholder.example
+```
+
+The build prints both Cloud Run URLs at the end. Re-run with the real
+`_APP_BASE_URL` to fix CORS + Stripe success URLs.
+
 ## Project layout
 
 ```

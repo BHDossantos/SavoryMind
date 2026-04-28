@@ -162,15 +162,42 @@ def send_push(db: Session, expo_token: str, title: str, body: str, data: Optiona
 
 
 def notify_booking_received(db: Session, booking, venue, user_email: Optional[str], user_phone: Optional[str], whatsapp: Optional[str], expo_token: Optional[str]):
-    summary = (
-        f"Nocturna booking #{booking.id} at {venue.name} on {booking.date} {booking.time} "
-        f"for {booking.group_size} ({booking.request_type}). Status: {booking.status}."
+    from app.services import templates as tpl
+    subject, body = tpl.booking_received(
+        venue.name, booking.date, booking.time, booking.group_size, booking.request_type, booking.id,
     )
     if user_email:
-        send_email(db, user_email, "Your Nocturna booking request", summary, user_id=booking.user_id, booking_id=booking.id)
+        send_email(db, user_email, subject, body, user_id=booking.user_id, booking_id=booking.id)
     if user_phone:
-        send_sms(db, user_phone, summary, user_id=booking.user_id, booking_id=booking.id)
+        send_sms(db, user_phone, body, user_id=booking.user_id, booking_id=booking.id)
     if whatsapp:
-        send_whatsapp(db, whatsapp, summary, user_id=booking.user_id, booking_id=booking.id)
+        send_whatsapp(db, whatsapp, body, user_id=booking.user_id, booking_id=booking.id)
     if expo_token:
-        send_push(db, expo_token, "Booking received", summary, data={"booking_id": booking.id}, user_id=booking.user_id, booking_id=booking.id)
+        send_push(db, expo_token, "Booking received", body, data={"booking_id": booking.id}, user_id=booking.user_id, booking_id=booking.id)
+
+
+def notify_booking_status_change(db: Session, booking, venue, *, user_email: Optional[str], user_phone: Optional[str], expo_token: Optional[str] = None):
+    """Send the right templated email/SMS/push when a booking transitions.
+
+    Called after admin or partner updates a booking status. No-op for
+    intermediate states (new -> pending) or unknown transitions.
+    """
+    from app.services import templates as tpl
+    status = booking.status
+    if status == "confirmed":
+        subject, body = tpl.booking_confirmed(
+            venue.name, booking.date, booking.time, booking.group_size,
+            venue.dress_code, booking.venue_response, booking.id,
+        )
+    elif status == "rejected":
+        subject, body = tpl.booking_rejected(venue.name, booking.venue_response, booking.id)
+    elif status == "cancelled":
+        subject, body = tpl.booking_cancelled(venue.name, booking.id)
+    else:
+        return
+    if user_email:
+        send_email(db, user_email, subject, body, user_id=booking.user_id, booking_id=booking.id)
+    if user_phone:
+        send_sms(db, user_phone, body, user_id=booking.user_id, booking_id=booking.id)
+    if expo_token:
+        send_push(db, expo_token, subject, body, data={"booking_id": booking.id, "status": status}, user_id=booking.user_id, booking_id=booking.id)

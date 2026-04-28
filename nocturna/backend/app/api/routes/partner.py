@@ -174,9 +174,19 @@ def update_booking_status(
         raise HTTPException(404, "Not found")
     if b.venue_id not in (p.venue_ids or []):
         raise HTTPException(403, "Not your booking")
+    prev_status = b.status
     b.status = payload.status
     b.venue_response = payload.response
     db.commit()
+    if prev_status != b.status:
+        from app.services import notifications
+        venue = db.query(Venue).get(b.venue_id)
+        if venue:
+            notifications.notify_booking_status_change(
+                db, b, venue,
+                user_email=b.contact_email,
+                user_phone=b.contact_phone,
+            )
     return {"ok": True}
 
 

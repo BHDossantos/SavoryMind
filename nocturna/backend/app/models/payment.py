@@ -21,5 +21,8 @@ class Payment(Base):
     status = Column(String, default="pending", nullable=False)
     # pending|succeeded|failed|refunded
     receipt_url = Column(String, nullable=True)
+    last_stripe_event_id = Column(String, nullable=True, index=True)
+    last_event_type = Column(String, nullable=True)
+    failure_message = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

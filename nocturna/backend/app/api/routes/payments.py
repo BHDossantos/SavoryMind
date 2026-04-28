@@ -57,20 +57,23 @@ def mock_confirm(payment_id: int, db: Session = Depends(get_db)):
 
 @router.post("/webhook")
 async def webhook(request: Request, db: Session = Depends(get_db)):
+    """Stripe webhook receiver.
+
+    - Verifies signature using NOCTURNA_STRIPE_WEBHOOK_SECRET
+    - Idempotent: duplicate event IDs are no-ops
+    - Dispatches checkout, payment_intent, invoice, refund, subscription
+      events to the right handlers; sends receipt / failure emails as
+      a side effect
+    """
     sig = request.headers.get("stripe-signature", "")
     raw = await request.body()
+    if not pay.is_stripe_configured():
+        return {"received": True, "ignored": "stripe_not_configured"}
     try:
         event = pay.verify_webhook(raw, sig)
-    except Exception as e:
-        raise HTTPException(400, f"Invalid signature: {e}")
-    if not event:
-        return {"received": True, "ignored": "no_stripe"}
-    if event.get("type") in ("checkout.session.completed", "invoice.payment_succeeded"):
-        obj = event["data"]["object"]
-        payment_id = (obj.get("metadata") or {}).get("payment_id")
-        if payment_id:
-            pay.mark_payment_succeeded(db, int(payment_id), obj.get("payment_intent"))
-    return {"received": True}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return pay.handle_webhook_event(db, dict(event))
 
 
 @router.get("/me")
