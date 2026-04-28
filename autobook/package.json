@@ -10,6 +10,7 @@
     "seed": "tsx src/lib/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.3.0",
     "jose": "^5.9.6",
