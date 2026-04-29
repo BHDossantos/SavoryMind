@@ -4,7 +4,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, formatPrice, getStoredUser, type Service } from "@/lib/api";
 
-const EMPTY = { name: "", description: "", duration_minutes: 30, price_cents: 2500, currency: "EUR", active: true };
+const EMPTY = {
+  name: "",
+  description: "",
+  duration_minutes: 30,
+  price_cents: 2500,
+  currency: "EUR",
+  active: true,
+  deposit_required: false,
+  deposit_amount_cents: 0,
+};
 
 export default function ServicesPage() {
   const router = useRouter();
@@ -56,6 +65,14 @@ export default function ServicesPage() {
               <p className="font-medium">{s.name}</p>
               <p className="text-sm text-slate-500">
                 {s.duration_minutes} min · {formatPrice(s.price_cents, s.currency)}
+                {s.deposit_required && s.deposit_amount_cents > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-amber-700">
+                      {formatPrice(s.deposit_amount_cents, s.currency)} deposit
+                    </span>
+                  </>
+                )}
               </p>
             </div>
             <button
@@ -117,6 +134,40 @@ export default function ServicesPage() {
               className="mt-1 w-full rounded-md border border-slate-300 p-2"
             />
           </label>
+        </div>
+        <div className="space-y-2 rounded-md border border-slate-200 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={draft.deposit_required}
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  deposit_required: e.target.checked,
+                  deposit_amount_cents: e.target.checked ? draft.deposit_amount_cents || 500 : 0,
+                })
+              }
+            />
+            Require deposit to confirm booking
+          </label>
+          {draft.deposit_required && (
+            <label className="block text-sm">
+              Deposit amount (EUR)
+              <input
+                type="number"
+                min={1}
+                step="0.5"
+                value={(draft.deposit_amount_cents / 100).toString()}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    deposit_amount_cents: Math.round(Number(e.target.value) * 100),
+                  })
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 p-2"
+              />
+            </label>
+          )}
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button

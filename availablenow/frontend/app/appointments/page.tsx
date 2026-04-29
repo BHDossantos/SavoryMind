@@ -70,7 +70,14 @@ function AppointmentsInner() {
               <p className="mt-1 text-sm">
                 {formatSlot(a.start_at)} · {formatPrice(a.total_price_cents)}
               </p>
-              <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">{a.status}</p>
+              <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
+                {a.status}
+                {a.deposit_amount_cents > 0 && (
+                  <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
+                    deposit · {a.payment_status}
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex flex-col items-end gap-2">
               {a.can_review && (

@@ -68,7 +68,15 @@ export default function BookPage({ params }: { params: { serviceId: string } }) 
     }
     setSubmitting(true);
     try {
-      await api.book({ service_id: serviceId, start_at: selected, customer_notes: notes });
+      const result = await api.book({
+        service_id: serviceId,
+        start_at: selected,
+        customer_notes: notes,
+      });
+      if (result.checkout_url) {
+        window.location.href = result.checkout_url;
+        return;
+      }
       router.push("/appointments?booked=1");
     } catch (e) {
       setError(String((e as Error).message));
@@ -87,6 +95,12 @@ export default function BookPage({ params }: { params: { serviceId: string } }) 
         <p className="text-slate-600">
           {service.duration_minutes} min · {formatPrice(service.price_cents, service.currency)}
         </p>
+        {service.deposit_required && service.deposit_amount_cents > 0 && (
+          <p className="mt-2 inline-block rounded-md bg-amber-50 px-3 py-1.5 text-sm text-amber-800">
+            {formatPrice(service.deposit_amount_cents, service.currency)} deposit required to
+            confirm. Refundable if you cancel more than 2h before.
+          </p>
+        )}
       </div>
 
       <section>

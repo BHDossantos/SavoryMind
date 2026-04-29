@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
     cors_origins: str = "http://localhost:3001,http://localhost:3000"
+    frontend_url: str = "http://localhost:3001"
+    stripe_secret_key: str = ""  # empty = stub mode (no real Stripe calls)
+    stripe_webhook_secret: str = ""
+    pending_payment_ttl_minutes: int = 15
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

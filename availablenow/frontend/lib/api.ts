@@ -43,7 +43,11 @@ export interface Service {
   price_cents: number;
   currency: string;
   active: boolean;
+  deposit_required: boolean;
+  deposit_amount_cents: number;
 }
+
+export type PaymentStatus = "not_required" | "pending" | "paid" | "refunded" | "failed";
 
 export interface Slot {
   start_at: string;
@@ -59,11 +63,19 @@ export interface Appointment {
   end_at: string;
   status: string;
   total_price_cents: number;
+  deposit_amount_cents: number;
+  payment_status: PaymentStatus;
   customer_notes: string;
   provider_display_name: string | null;
   service_name: string | null;
   has_review: boolean;
   can_review: boolean;
+}
+
+export interface BookingResult {
+  appointment: Appointment;
+  checkout_url: string | null;
+  payment_id: number | null;
 }
 
 export interface Review {
@@ -156,7 +168,9 @@ export const api = {
   getProviderSlots: (providerId: number, serviceId: number, days = 7) =>
     request<Slot[]>(`/providers/${providerId}/slots?service_id=${serviceId}&days=${days}`),
   book: (body: { service_id: number; start_at: string; customer_notes?: string }) =>
-    request<Appointment>("/appointments", { method: "POST", body: JSON.stringify(body) }),
+    request<BookingResult>("/appointments", { method: "POST", body: JSON.stringify(body) }),
+  stubConfirmPayment: (paymentId: number) =>
+    request<{ status: string }>(`/payments/stub-confirm/${paymentId}`, { method: "POST" }),
   myAppointments: () => request<Appointment[]>("/appointments/mine"),
   providerAppointments: () => request<Appointment[]>("/appointments/provider"),
   cancelAppointment: (id: number) =>

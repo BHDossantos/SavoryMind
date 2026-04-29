@@ -19,6 +19,14 @@ class AppointmentStatus(str, Enum):
     no_show = "no_show"
 
 
+class PaymentStatus(str, Enum):
+    not_required = "not_required"
+    pending = "pending"
+    paid = "paid"
+    refunded = "refunded"
+    failed = "failed"
+
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
@@ -59,6 +67,8 @@ class Service(SQLModel, table=True):
     price_cents: int
     currency: str = "EUR"
     active: bool = True
+    deposit_required: bool = False
+    deposit_amount_cents: int = 0
 
 
 class Availability(SQLModel, table=True):
@@ -87,8 +97,26 @@ class Appointment(SQLModel, table=True):
     end_at: datetime
     status: AppointmentStatus = Field(default=AppointmentStatus.confirmed)
     total_price_cents: int
+    deposit_amount_cents: int = 0
+    payment_status: PaymentStatus = Field(default=PaymentStatus.not_required)
     customer_notes: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Payment(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    appointment_id: int = Field(foreign_key="appointment.id", index=True)
+    customer_id: int = Field(foreign_key="user.id", index=True)
+    provider_id: int = Field(foreign_key="provider.id", index=True)
+    amount_cents: int
+    currency: str = "EUR"
+    status: PaymentStatus = Field(default=PaymentStatus.pending)
+    provider_kind: str = "stripe"  # "stripe" or "stub"
+    provider_session_id: str = ""  # stripe checkout session id
+    provider_payment_id: str = ""  # stripe payment intent id once known
+    refunded_amount_cents: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Review(SQLModel, table=True):

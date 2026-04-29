@@ -3,20 +3,23 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
-from ..availability_engine import _overlaps_any
+from ..availability_engine import _overlaps_any, _payment_active
 from ..db import get_session
 from ..models import (
     Appointment,
     AppointmentStatus,
     Availability,
     BlockedTime,
+    Payment,
+    PaymentStatus,
     Provider,
     Review,
     Role,
     Service,
     User,
 )
-from ..schemas import AppointmentOut, BookingIn
+from ..payments_client import create_checkout_session, refund_payment_intent
+from ..schemas import AppointmentOut, BookingIn, BookingOut
 from ..security import get_current_user
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -42,6 +45,8 @@ def _to_out(session: Session, a: Appointment) -> AppointmentOut:
         end_at=a.end_at,
         status=a.status,
         total_price_cents=a.total_price_cents,
+        deposit_amount_cents=a.deposit_amount_cents,
+        payment_status=a.payment_status,
         customer_notes=a.customer_notes,
         provider_display_name=provider.display_name if provider else None,
         service_name=service.name if service else None,
@@ -79,16 +84,18 @@ def _slot_is_open(session: Session, provider_id: int, start_at: datetime, end_at
             Appointment.start_at < end_at,
         )
     ).all()
-    busy = [(b.start_at, b.end_at) for b in blocked] + [(a.start_at, a.end_at) for a in booked]
+    busy = [(b.start_at, b.end_at) for b in blocked] + [
+        (a.start_at, a.end_at) for a in booked if _payment_active(a)
+    ]
     return not _overlaps_any(start_at, end_at, busy)
 
 
-@router.post("", response_model=AppointmentOut)
+@router.post("", response_model=BookingOut)
 def create_appointment(
     payload: BookingIn,
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
-) -> AppointmentOut:
+) -> BookingOut:
     service = session.get(Service, payload.service_id)
     if not service or not service.active:
         raise HTTPException(status_code=404, detail="Service not found")
@@ -98,6 +105,8 @@ def create_appointment(
         raise HTTPException(status_code=400, detail="Cannot book in the past")
     if not _slot_is_open(session, service.provider_id, start_at, end_at):
         raise HTTPException(status_code=409, detail="Slot is not available")
+
+    needs_deposit = service.deposit_required and service.deposit_amount_cents > 0
     appt = Appointment(
         customer_id=user.id,
         provider_id=service.provider_id,
@@ -105,12 +114,49 @@ def create_appointment(
         start_at=start_at,
         end_at=end_at,
         total_price_cents=service.price_cents,
+        deposit_amount_cents=service.deposit_amount_cents if needs_deposit else 0,
+        payment_status=PaymentStatus.pending if needs_deposit else PaymentStatus.not_required,
         customer_notes=payload.customer_notes,
     )
     session.add(appt)
+    session.flush()
+
+    checkout_url: str | None = None
+    payment_id: int | None = None
+    if needs_deposit:
+        provider = session.get(Provider, service.provider_id)
+        payment = Payment(
+            appointment_id=appt.id,
+            customer_id=user.id,
+            provider_id=service.provider_id,
+            amount_cents=service.deposit_amount_cents,
+            currency=service.currency,
+            status=PaymentStatus.pending,
+        )
+        session.add(payment)
+        session.flush()
+        checkout = create_checkout_session(
+            appointment_id=appt.id,
+            payment_id=payment.id,
+            amount_cents=service.deposit_amount_cents,
+            currency=service.currency,
+            description=f"Deposit · {service.name} at {provider.display_name if provider else ''}",
+            customer_email=user.email,
+        )
+        payment.provider_session_id = checkout.id
+        if checkout.payment_intent_id:
+            payment.provider_payment_id = checkout.payment_intent_id
+        session.add(payment)
+        checkout_url = checkout.url
+        payment_id = payment.id
+
     session.commit()
     session.refresh(appt)
-    return _to_out(session, appt)
+    return BookingOut(
+        appointment=_to_out(session, appt),
+        checkout_url=checkout_url,
+        payment_id=payment_id,
+    )
 
 
 @router.get("/mine", response_model=list[AppointmentOut])
@@ -158,9 +204,30 @@ def cancel_appointment(
         raise HTTPException(status_code=403, detail="Forbidden")
     if appt.status != AppointmentStatus.confirmed:
         raise HTTPException(status_code=400, detail=f"Cannot cancel from status {appt.status}")
+
     appt.status = (
-        AppointmentStatus.cancelled_by_customer if is_customer else AppointmentStatus.cancelled_by_provider
+        AppointmentStatus.cancelled_by_customer
+        if is_customer
+        else AppointmentStatus.cancelled_by_provider
     )
+
+    # Refund policy: full refund if cancelled >2h before start OR cancelled by provider.
+    payment = session.exec(
+        select(Payment).where(
+            Payment.appointment_id == appt.id, Payment.status == PaymentStatus.paid
+        )
+    ).first()
+    if payment:
+        eligible_for_refund = is_provider or appt.start_at - datetime.utcnow() > timedelta(hours=2)
+        if eligible_for_refund:
+            refund = refund_payment_intent(payment.provider_payment_id, payment.amount_cents)
+            payment.status = PaymentStatus.refunded
+            payment.refunded_amount_cents = refund.amount_cents
+            payment.updated_at = datetime.utcnow()
+            session.add(payment)
+            appt.payment_status = PaymentStatus.refunded
+        # else: deposit forfeit, payment stays paid
+
     session.add(appt)
     session.commit()
     session.refresh(appt)

@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr
 
-from .models import AppointmentStatus, Role
+from .models import AppointmentStatus, PaymentStatus, Role
 
 
 class SignupIn(BaseModel):
@@ -68,6 +68,8 @@ class ServiceIn(BaseModel):
     price_cents: int
     currency: str = "EUR"
     active: bool = True
+    deposit_required: bool = False
+    deposit_amount_cents: int = 0
 
 
 class ServiceOut(ServiceIn):
@@ -111,11 +113,19 @@ class AppointmentOut(BaseModel):
     end_at: datetime
     status: AppointmentStatus
     total_price_cents: int
+    deposit_amount_cents: int = 0
+    payment_status: PaymentStatus = PaymentStatus.not_required
     customer_notes: str
     provider_display_name: Optional[str] = None
     service_name: Optional[str] = None
     has_review: bool = False
     can_review: bool = False
+
+
+class BookingOut(BaseModel):
+    appointment: AppointmentOut
+    checkout_url: Optional[str] = None  # set if a deposit is required
+    payment_id: Optional[int] = None
 
 
 class ReviewIn(BaseModel):

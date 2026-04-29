@@ -8,3 +8,4 @@ passlib==1.7.4
 bcrypt==4.0.1
 python-multipart==0.0.12
 email-validator==2.2.0
+stripe==10.12.0

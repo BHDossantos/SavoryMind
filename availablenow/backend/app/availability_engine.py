@@ -6,11 +6,24 @@ from typing import Iterable
 
 from sqlmodel import Session, select
 
-from .models import Appointment, AppointmentStatus, Availability, BlockedTime, Service
+from .config import settings
+from .models import Appointment, AppointmentStatus, Availability, BlockedTime, PaymentStatus, Service
 
 
 def _combine(d: date, t: time) -> datetime:
     return datetime.combine(d, t)
+
+
+def _payment_active(appt: Appointment) -> bool:
+    """Whether an appointment should currently block its slot.
+
+    Confirmed appointments always block, except those with a pending deposit
+    older than the TTL (the customer abandoned Stripe Checkout) — those release.
+    """
+    if appt.payment_status != PaymentStatus.pending:
+        return True
+    age = datetime.utcnow() - appt.created_at
+    return age < timedelta(minutes=settings.pending_payment_ttl_minutes)
 
 
 def compute_slots(
@@ -52,7 +65,7 @@ def compute_slots(
     ).all()
     busy: list[tuple[datetime, datetime]] = [
         (b.start_at, b.end_at) for b in blocked
-    ] + [(a.start_at, a.end_at) for a in booked]
+    ] + [(a.start_at, a.end_at) for a in booked if _payment_active(a)]
 
     duration = timedelta(minutes=service_duration_minutes)
     step = timedelta(minutes=step_minutes)

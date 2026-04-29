@@ -137,9 +137,9 @@ BARBERS = [
         "average_rating": 4.9,
         "review_count": 154,
         "services": [
-            ("Men's haircut", 45, 4000),
+            ("Men's haircut", 45, 4000, True, 1000),
             ("Hot towel shave", 30, 3000),
-            ("Haircut + beard", 75, 6000),
+            ("Haircut + beard", 75, 6000, True, 1500),
         ],
     },
     {
@@ -253,13 +253,20 @@ def run() -> None:
             session.commit()
             session.refresh(provider)
 
-            for name, duration, price in spec["services"]:
+            for entry in spec["services"]:
+                if len(entry) == 5:
+                    name, duration, price, deposit_req, deposit_amt = entry
+                else:
+                    name, duration, price = entry
+                    deposit_req, deposit_amt = False, 0
                 session.add(
                     Service(
                         provider_id=provider.id,
                         name=name,
                         duration_minutes=duration,
                         price_cents=price,
+                        deposit_required=deposit_req,
+                        deposit_amount_cents=deposit_amt,
                     )
                 )
 

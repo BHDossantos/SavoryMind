@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import init_db
-from .routers import appointments, auth, availability, providers, reviews, search, services
+from .routers import appointments, auth, availability, payments, providers, reviews, search, services
 
 app = FastAPI(title="AvailableNow API", version="0.1.0")
 
@@ -33,3 +33,4 @@ app.include_router(availability.router)
 app.include_router(search.router)
 app.include_router(appointments.router)
 app.include_router(reviews.router)
+app.include_router(payments.router)
