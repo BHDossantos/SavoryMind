@@ -27,6 +27,12 @@ class PaymentStatus(str, Enum):
     failed = "failed"
 
 
+class ApprovalStatus(str, Enum):
+    pending = "pending"
+    approved = "approved"
+    suspended = "suspended"
+
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
@@ -53,6 +59,8 @@ class Provider(SQLModel, table=True):
     longitude: float = 0.0
     languages: str = "it,en"  # csv
     is_verified: bool = False
+    approval_status: ApprovalStatus = Field(default=ApprovalStatus.pending)
+    suspended_reason: str = ""
     average_rating: float = 0.0
     review_count: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)

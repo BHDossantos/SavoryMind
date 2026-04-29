@@ -43,6 +43,11 @@ export default function Nav() {
               Provider dashboard
             </Link>
           )}
+          {user?.role === "admin" && (
+            <Link href="/admin" className="hover:underline">
+              Admin
+            </Link>
+          )}
           {user ? (
             <>
               <span className="text-slate-500">Hi, {user.first_name}</span>

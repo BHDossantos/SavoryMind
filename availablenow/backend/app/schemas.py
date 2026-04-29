@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr
 
-from .models import AppointmentStatus, PaymentStatus, Role
+from .models import ApprovalStatus, AppointmentStatus, PaymentStatus, Role
 
 
 class SignupIn(BaseModel):
@@ -57,6 +57,7 @@ class ProviderOut(BaseModel):
     neighborhood: str
     languages: str
     is_verified: bool
+    approval_status: ApprovalStatus = ApprovalStatus.pending
     average_rating: float
     review_count: int
 

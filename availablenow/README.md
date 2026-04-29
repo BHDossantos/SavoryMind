@@ -30,6 +30,27 @@ npm run dev                # http://localhost:3001
 
 The frontend reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8001`).
 
-## Out of v0
+## Demo logins
 
-Reviews, payments/Stripe, admin panel, push/SMS/WhatsApp, real geosearch, "auto-fill cancellations," promotions, multi-business accounts.
+- Customer: `demo@availablenow.app` / `password123`
+- Provider: `marco@romebarbers.it` / `password123` (any seeded barber works)
+- Admin: `admin@availablenow.app` / `admin123`
+
+## Stripe deposits
+
+Deposits use Stripe Checkout. Set `STRIPE_SECRET_KEY` and
+`STRIPE_WEBHOOK_SECRET` in the backend `.env` to use real Stripe;
+leave them empty for **stub mode**, which simulates the deposit flow
+end-to-end without real money so the booking → pay → refund path is
+testable locally.
+
+## Provider approval
+
+New providers self-signup as `pending` and don't appear in public
+search until an admin approves them at `/admin/providers?status=pending`.
+
+## Out of scope (next slices)
+
+Push/SMS/WhatsApp reminders, real geosearch with Google Places,
+auto-fill cancellations, promotions, multi-business accounts,
+disputes/refund workflow.

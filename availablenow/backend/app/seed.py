@@ -7,7 +7,7 @@ from datetime import time
 from sqlmodel import Session, select
 
 from .db import engine, init_db
-from .models import Availability, Provider, Role, Service, User
+from .models import ApprovalStatus, Availability, Provider, Role, Service, User
 from .security import hash_password
 
 
@@ -224,6 +224,18 @@ def run() -> None:
                 )
             )
 
+        # admin user
+        if not session.exec(select(User).where(User.email == "admin@availablenow.app")).first():
+            session.add(
+                User(
+                    email="admin@availablenow.app",
+                    password_hash=hash_password("admin123"),
+                    first_name="Admin",
+                    last_name="",
+                    role=Role.admin,
+                )
+            )
+
         for spec in BARBERS:
             user = User(
                 email=spec["email"],
@@ -246,6 +258,7 @@ def run() -> None:
                 address=spec["address"],
                 languages=spec["languages"],
                 is_verified=spec["is_verified"],
+                approval_status=ApprovalStatus.approved,
                 average_rating=spec["average_rating"],
                 review_count=spec["review_count"],
             )
@@ -281,9 +294,10 @@ def run() -> None:
                 )
 
         session.commit()
-        print(f"Seeded {len(BARBERS)} providers and 1 demo customer.")
-        print("Login as customer: demo@availablenow.app / password123")
-        print("Login as a provider e.g.: marco@romebarbers.it / password123")
+        print(f"Seeded {len(BARBERS)} providers, 1 demo customer, 1 admin.")
+        print("Customer login: demo@availablenow.app / password123")
+        print("Provider login (e.g.): marco@romebarbers.it / password123")
+        print("Admin login: admin@availablenow.app / admin123")
 
 
 if __name__ == "__main__":

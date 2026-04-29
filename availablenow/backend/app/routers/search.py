@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from ..availability_engine import next_slot_for_provider
 from ..db import get_session
-from ..models import Provider, Service
+from ..models import ApprovalStatus, Provider, Service
 from ..schemas import ProviderSearchOut
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -20,7 +20,7 @@ def search_providers(
     max_price_cents: Optional[int] = Query(None),
     session: Session = Depends(get_session),
 ) -> list[ProviderSearchOut]:
-    stmt = select(Provider)
+    stmt = select(Provider).where(Provider.approval_status == ApprovalStatus.approved)
     if category:
         stmt = stmt.where(Provider.category == category)
     if city:

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from ..db import get_session
-from ..models import Provider, Role, Service, User
+from ..models import ApprovalStatus, Provider, Role, Service, User
 from ..schemas import ProviderIn, ProviderOut, ServiceOut
 from ..security import get_current_user, require_role
 
@@ -48,7 +48,7 @@ def get_my_profile(
 @router.get("/{provider_id}", response_model=ProviderOut)
 def get_provider(provider_id: int, session: Session = Depends(get_session)) -> ProviderOut:
     p = session.get(Provider, provider_id)
-    if not p:
+    if not p or p.approval_status != ApprovalStatus.approved:
         raise HTTPException(status_code=404, detail="Provider not found")
     return ProviderOut.model_validate(p, from_attributes=True)
 

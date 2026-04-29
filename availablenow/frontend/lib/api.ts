@@ -13,6 +13,8 @@ export interface User {
   role: Role;
 }
 
+export type ApprovalStatus = "pending" | "approved" | "suspended";
+
 export interface Provider {
   id: number;
   user_id: number;
@@ -25,8 +27,26 @@ export interface Provider {
   neighborhood: string;
   languages: string;
   is_verified: boolean;
+  approval_status: ApprovalStatus;
   average_rating: number;
   review_count: number;
+}
+
+export interface AdminDashboard {
+  users: { total: number; customers: number };
+  providers: { total: number; pending: number; suspended: number };
+  bookings: { today: number; last_7_days: number; cancellations_last_7_days: number };
+  gross_booking_value_cents: number;
+  deposits_held_cents: number;
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: Role;
+  created_at: string;
 }
 
 export interface ProviderSearchResult extends Provider {
@@ -171,6 +191,28 @@ export const api = {
     request<BookingResult>("/appointments", { method: "POST", body: JSON.stringify(body) }),
   stubConfirmPayment: (paymentId: number) =>
     request<{ status: string }>(`/payments/stub-confirm/${paymentId}`, { method: "POST" }),
+
+  // admin
+  adminDashboard: () => request<AdminDashboard>("/admin/dashboard"),
+  adminProviders: (status?: ApprovalStatus) => {
+    const qs = status ? `?status=${status}` : "";
+    return request<Provider[]>(`/admin/providers${qs}`);
+  },
+  adminApproveProvider: (id: number) =>
+    request<Provider>(`/admin/providers/${id}/approve`, { method: "POST" }),
+  adminSuspendProvider: (id: number, reason: string) =>
+    request<Provider>(
+      `/admin/providers/${id}/suspend?reason=${encodeURIComponent(reason)}`,
+      { method: "POST" }
+    ),
+  adminBookings: (status?: string) => {
+    const qs = status ? `?status=${status}` : "";
+    return request<Appointment[]>(`/admin/bookings${qs}`);
+  },
+  adminUsers: (role?: Role) => {
+    const qs = role ? `?role=${role}` : "";
+    return request<AdminUser[]>(`/admin/users${qs}`);
+  },
   myAppointments: () => request<Appointment[]>("/appointments/mine"),
   providerAppointments: () => request<Appointment[]>("/appointments/provider"),
   cancelAppointment: (id: number) =>
