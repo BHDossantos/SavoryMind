@@ -8,10 +8,6 @@ import DiscordProvider from "next-auth/providers/discord";
 import TwitterProvider from "next-auth/providers/twitter";
 import LinkedInProvider from "next-auth/providers/linkedin";
 
-// Server-side only — not exposed to browser
-const BASE_URL = process.env.BACKEND_URL || "http://localhost:8000";
-const SOCIAL_SECRET = process.env.SOCIAL_LOGIN_SECRET || "dev-social-secret";
-
 // Only include providers whose env vars are present
 const providers = [];
 
@@ -89,48 +85,31 @@ if (process.env.LINKEDIN_CLIENT_ID) {
   );
 }
 
-export default NextAuth({
+export const authOptions = {
   providers,
   session: { strategy: "jwt" },
 
   callbacks: {
+    // We no longer call the backend from this server-side callback. Doing so
+    // would land the refresh cookie on the Next.js server (not the user's
+    // browser). Instead we stash the OAuth profile here and let the client
+    // call /api/auth/social-bridge — that route's response goes to the
+    // browser and so its Set-Cookie is delivered to the user.
     async jwt({ token, account, profile }) {
       if (account) {
-        // First sign-in: exchange social profile for our backend JWT
-        try {
-          const res = await fetch(`${BASE_URL}/api/auth/social`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-social-secret": SOCIAL_SECRET,
-            },
-            body: JSON.stringify({
-              provider: account.provider,
-              provider_id: account.providerAccountId,
-              email: token.email || "",
-              name: token.name || "",
-              avatar_url: token.picture || "",
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            token.backendToken = data.access_token;
-            token.backendUser = data.user;
-          } else {
-            token.backendError = `Backend returned ${res.status}`;
-          }
-        } catch (err) {
-          token.backendError = "Backend unreachable";
-        }
+        token.oauthProfile = {
+          provider: account.provider,
+          provider_id: account.providerAccountId,
+          email: token.email || "",
+          name: token.name || "",
+          avatar_url: token.picture || "",
+        };
       }
       return token;
     },
 
     async session({ session, token }) {
-      session.backendToken = token.backendToken;
-      session.backendUser = token.backendUser;
-      session.backendError = token.backendError;
+      session.oauthProfile = token.oauthProfile;
       return session;
     },
   },
@@ -139,4 +118,6 @@ export default NextAuth({
     signIn: "/login",
     error: "/login",
   },
-});
+};
+
+export default NextAuth(authOptions);

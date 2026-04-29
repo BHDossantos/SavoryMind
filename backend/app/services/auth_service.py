@@ -2,7 +2,14 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from ..models.user import User
 from ..schemas.auth import UserRegister, UserLogin
-from ..core.security import hash_password, verify_password, create_access_token
+from ..core.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    REFRESH_TOKEN_TYPE,
+)
 from .seed_data import seed_database, seed_consumer_data, seed_diner_data
 
 
@@ -15,7 +22,14 @@ def _seed_for_type(db: Session, user: User) -> None:
         seed_diner_data(db, user.id)
 
 
-def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[str, User]:
+def _issue_tokens(user: User) -> tuple[str, str]:
+    return (
+        create_access_token(user.id, user.email),
+        create_refresh_token(user.id, user.email),
+    )
+
+
+def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[str, str, User]:
     if db.query(User).filter(User.email == data.email.lower()).first():
         raise HTTPException(status_code=400, detail="Email already registered.")
 
@@ -42,8 +56,8 @@ def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[
         seed_diner_data(db, user_id=user.id)
     # staff: no seeding
 
-    token = create_access_token(user.id, user.email)
-    return token, user
+    access, refresh = _issue_tokens(user)
+    return access, refresh, user
 
 
 def social_login(
@@ -53,7 +67,7 @@ def social_login(
     email: str,
     name: str,
     avatar_url: str = "",
-) -> tuple[str, User]:
+) -> tuple[str, str, User]:
     # 1. Exact match on social identity
     user = db.query(User).filter(
         User.social_provider == provider,
@@ -85,16 +99,38 @@ def social_login(
         db.commit()
         db.refresh(user)
 
-    token = create_access_token(user.id, user.email)
-    return token, user
+    access, refresh = _issue_tokens(user)
+    return access, refresh, user
 
 
-def login(db: Session, data: UserLogin) -> tuple[str, User]:
+def login(db: Session, data: UserLogin) -> tuple[str, str, User]:
     user = db.query(User).filter(User.email == data.email.lower()).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
         )
-    token = create_access_token(user.id, user.email)
-    return token, user
+    access, refresh = _issue_tokens(user)
+    return access, refresh, user
+
+
+def refresh_session(db: Session, refresh_token: str) -> tuple[str, str, User]:
+    """Validate a refresh token and mint a new access + refresh pair.
+
+    The refresh token is rotated on every call — clients must use the newly
+    returned refresh token for the next refresh, and the old one is no longer
+    accepted (because we'll add jti revocation in a follow-up). For now,
+    rotation is just hygiene.
+    """
+    try:
+        payload = decode_token(refresh_token, REFRESH_TOKEN_TYPE)
+        user_id = int(payload.get("sub", 0))
+    except (ValueError, KeyError):
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+
+    access, new_refresh = _issue_tokens(user)
+    return access, new_refresh, user

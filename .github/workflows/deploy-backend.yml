@@ -78,7 +78,7 @@ jobs:
             --min-instances 1 \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_DAYS=30|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net"
 
       - name: Map api.savorymind.net to backend
         run: |

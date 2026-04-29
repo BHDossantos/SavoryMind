@@ -168,7 +168,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_origin_regex=settings.cors_origin_regex,
-    allow_credentials=False,
+    # Required so the browser sends the httpOnly refresh-token cookie on
+    # cross-origin requests (frontend savorymind.net → api.savorymind.net).
+    # Note: with credentials enabled, allow_origins MUST be explicit (no "*")
+    # — the cors_origins list above and the project-scoped regex satisfy that.
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

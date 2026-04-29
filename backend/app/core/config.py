@@ -35,8 +35,17 @@ class Settings(BaseSettings):
     cors_origin_regex: str = r"https://savorymind-[a-z0-9-]+\.a\.run\.app$"
     secret_key: str = "savorymind-super-secret-change-in-production-32chars"
     algorithm: str = "HS256"
-    access_token_expire_days: int = 30
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
     social_login_secret: str = "dev-social-secret"
+
+    # Refresh-token cookie. Defaults are safe for production; overridden by
+    # env vars for local dev (no HTTPS, no shared parent domain).
+    cookie_name: str = "sm_refresh"
+    cookie_secure: bool = True
+    cookie_samesite: str = "lax"  # "strict" would block the OAuth round-trip from /api/auth/...
+    cookie_domain: str = ""        # empty = host-only; prod sets ".savorymind.net"
+    cookie_path: str = "/"
 
     # Email (Resend). Empty string disables sends — useful in dev.
     resend_api_key: str = ""
