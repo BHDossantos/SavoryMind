@@ -46,19 +46,19 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const description = v.description
     || `${v.name} in ${v.neighborhood}, ${cityTitle}. ${v.type.replace('_', ' ')}, average €${v.avg_price_eur}/pp${v.vip_available ? ', VIP table available' : ''}. Reserve through Nocturna.`;
   const url = `${SITE_URL}/venues/${v.slug}`;
-  const image = v.photos?.[0];
+  const ogImage = `${SITE_URL}/og/venue/${v.slug}`;
   return {
     title,
     description,
     alternates: { canonical: url },
     openGraph: {
       title, description, url, siteName: SITE_NAME, type: 'website',
-      ...(image ? { images: [{ url: image }] } : {}),
+      images: [{ url: ogImage, width: 1200, height: 630, alt: v.name }],
     },
     twitter: {
-      card: image ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title, description,
-      ...(image ? { images: [image] } : {}),
+      images: [ogImage],
     },
   };
 }

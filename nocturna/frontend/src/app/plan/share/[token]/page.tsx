@@ -20,12 +20,16 @@ export async function generateMetadata({ params }: { params: { token: string } }
     ? `${stopNames}. ${stops} stops, ~€${p.estimated_cost_eur}/pp, ${p.total_travel_min} min total travel. Plan curated by Nocturna.`
     : `A curated night plan in ${cityTitle}. Open it in Nocturna.`;
   const url = `${SITE_URL}/plan/share/${params.token}`;
+  const ogImage = `${SITE_URL}/og/plan/${params.token}`;
   return {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, siteName: SITE_NAME, type: 'website' },
-    twitter: { card: 'summary', title, description },
+    openGraph: {
+      title, description, url, siteName: SITE_NAME, type: 'website',
+      images: [{ url: ogImage, width: 1200, height: 630, alt: p.label }],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
     robots: { index: false, follow: true }, // shared plans are private-ish
   };
 }

@@ -35,5 +35,7 @@ class Booking(Base):
     venue_response = Column(Text, nullable=True)
     admin_notes = Column(Text, nullable=True)
 
+    reminder_sent_at = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

@@ -47,6 +47,7 @@ substitutions:
   _POSTHOG_KEY: ""
   _POSTHOG_HOST: "https://eu.i.posthog.com"
   _SITE_URL: ""
+  _CRON_TOKEN: ""
   _DATABASE_URL: ""
 
 steps:
@@ -112,6 +113,7 @@ steps:
         [ -n "$_TWILIO_FROM_WHATSAPP" ] && ENV_VARS="${ENV_VARS}@NOCTURNA_TWILIO_FROM_WHATSAPP=$_TWILIO_FROM_WHATSAPP"
         [ -n "$_SENDGRID_KEY" ]         && ENV_VARS="${ENV_VARS}@NOCTURNA_SENDGRID_KEY=$_SENDGRID_KEY"
         [ -n "$_SENDGRID_FROM" ]        && ENV_VARS="${ENV_VARS}@NOCTURNA_SENDGRID_FROM=$_SENDGRID_FROM"
+        [ -n "$_CRON_TOKEN" ]           && ENV_VARS="${ENV_VARS}@NOCTURNA_CRON_TOKEN=$_CRON_TOKEN"
 
         gcloud run deploy nocturna-api \
           --image gcr.io/$PROJECT_ID/nocturna-api \

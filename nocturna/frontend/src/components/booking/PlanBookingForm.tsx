@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { capture } from '@/lib/analytics';
+import { useT } from '@/lib/i18n';
 import type { Plan } from '../../../../shared/types';
 
 const REQUEST_TYPES = [
@@ -33,6 +34,7 @@ interface PerStopState {
 export default function PlanBookingForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useT();
   const planId = Number(params.get('plan_id'));
 
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -99,31 +101,29 @@ export default function PlanBookingForm() {
   return (
     <form onSubmit={submit} className="max-w-3xl mx-auto space-y-6">
       <header>
-        <p className="label">Book your night</p>
+        <p className="label">{t('book.kicker')}</p>
         <h1 className="font-display text-3xl mt-1">{plan.label}</h1>
-        <p className="text-gold-400/60 text-sm mt-1">
-          One submission books all {plan.stops.length} stops. We'll confirm each within 30 min via WhatsApp / email.
-        </p>
+        <p className="text-gold-400/60 text-sm mt-1">{t('book.sub', { n: plan.stops.length })}</p>
       </header>
 
       <section className="card space-y-3">
-        <h2 className="label">Your contact</h2>
+        <h2 className="label">{t('book.your_contact')}</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Name" required value={shared.contact_name} onChange={(v) => setShared({ ...shared, contact_name: v })} />
-          <Input label="Phone" required value={shared.contact_phone} onChange={(v) => setShared({ ...shared, contact_phone: v })} />
-          <Input label="Email" type="email" required value={shared.contact_email} onChange={(v) => setShared({ ...shared, contact_email: v })} />
-          <Input label="Group size" type="number" required value={String(shared.group_size)} onChange={(v) => setShared({ ...shared, group_size: Number(v) || 2 })} />
+          <Input label={t('book.field.name')} required value={shared.contact_name} onChange={(v) => setShared({ ...shared, contact_name: v })} />
+          <Input label={t('book.field.phone')} required value={shared.contact_phone} onChange={(v) => setShared({ ...shared, contact_phone: v })} />
+          <Input label={t('book.field.email')} type="email" required value={shared.contact_email} onChange={(v) => setShared({ ...shared, contact_email: v })} />
+          <Input label={t('book.field.group')} type="number" required value={String(shared.group_size)} onChange={(v) => setShared({ ...shared, group_size: Number(v) || 2 })} />
         </div>
         <textarea
           rows={2}
-          placeholder="Anything we should tell every venue? (anniversary, dietary, etc.)"
+          placeholder={t('book.notes_placeholder')}
           value={shared.notes} onChange={(e) => setShared({ ...shared, notes: e.target.value })}
           className="w-full bg-night-900 border border-white/10 rounded-lg px-3 py-2"
         />
       </section>
 
       <section className="space-y-3">
-        <h2 className="label">Stops in this plan</h2>
+        <h2 className="label">{t('book.stops_label')}</h2>
         {plan.stops.map((s, i) => {
           const st = stops[i];
           if (!st) return null;
@@ -141,21 +141,21 @@ export default function PlanBookingForm() {
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={!st.skip} onChange={(e) => setStop(i, { skip: !e.target.checked })} />
-                  Include
+                  {t('book.include')}
                 </label>
               </div>
               {!st.skip && (
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <Select label="Request type" value={st.request_type} onChange={(v) => setStop(i, { request_type: v })}
+                  <Select label={t('book.request_type')} value={st.request_type} onChange={(v) => setStop(i, { request_type: v })}
                     options={REQUEST_TYPES.map(r => ({ value: r.value, label: r.label }))} />
-                  <Input label="Time" type="time" value={st.time} onChange={(v) => setStop(i, { time: v })} />
+                  <Input label={t('book.time')} type="time" value={st.time} onChange={(v) => setStop(i, { time: v })} />
                   <label className="col-span-2 flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={st.vip_interest === 'yes'}
                       onChange={(e) => setStop(i, { vip_interest: e.target.checked ? 'yes' : 'no' })} />
-                    Interested in VIP table here
+                    {t('book.vip_here')}
                   </label>
                   <textarea
-                    placeholder="Notes for this venue (optional)"
+                    placeholder={t('book.notes_for_venue')}
                     rows={2} value={st.notes} onChange={(e) => setStop(i, { notes: e.target.value })}
                     className="col-span-2 bg-night-900 border border-white/10 rounded-lg px-3 py-2"
                   />
@@ -168,7 +168,7 @@ export default function PlanBookingForm() {
 
       {err && <p className="text-accent-500 text-sm">{err}</p>}
       <button disabled={busy || skippedAll} className="btn btn-primary w-full disabled:opacity-30">
-        {busy ? 'Sending…' : `Submit ${stops.filter(s => !s.skip).length} booking request(s)`}
+        {busy ? t('book.submitting') : t('book.submit', { n: stops.filter(s => !s.skip).length })}
       </button>
     </form>
   );

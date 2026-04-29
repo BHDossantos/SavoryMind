@@ -52,6 +52,21 @@ def booking_rejected(venue_name: str, reason: Optional[str], booking_id: int) ->
     return subject, body
 
 
+def booking_reminder(venue_name: str, time: str, address: Optional[str], dress_code: Optional[str], booking_id: int) -> tuple[str, str]:
+    subject = f"Nocturna · tonight at {venue_name} ({time})"
+    body = (
+        f"Quick reminder — your Nocturna booking is in 1 hour.\n\n"
+        f"  · {venue_name}\n"
+        f"  · {time}\n"
+    )
+    if address:
+        body += f"  · {address}\n"
+    if dress_code:
+        body += f"  · Dress: {dress_code}\n"
+    body += f"\nRef #{booking_id}. Have a great night.\nNocturna"
+    return subject, body
+
+
 def booking_cancelled(venue_name: str, booking_id: int) -> tuple[str, str]:
     subject = f"Nocturna · cancelled — {venue_name}"
     body = (

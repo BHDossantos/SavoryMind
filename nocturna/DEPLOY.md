@@ -85,6 +85,41 @@ When `_DATABASE_URL` is set, the build skips the GCS bucket step automatically.
 4. Trigger a test event from the Stripe Dashboard — verify it shows up in the
    admin notifications log at `/admin/notifications`.
 
+## Booking reminders (Cloud Scheduler)
+
+Nocturna has a reminder cron at `POST /api/cron/reminders` that scans bookings
+starting in the next 60 minutes (`window_min` defaults to 30) and sends a
+templated SMS + email + push if not already reminded. Idempotent — `reminder_sent_at`
+is stamped on each Booking.
+
+Authenticate either with the bootstrap admin JWT or with a shared secret in
+the `X-Cron-Token` header (set `_CRON_TOKEN` and pass it to Cloud Run via
+`NOCTURNA_CRON_TOKEN`).
+
+```bash
+# Generate a cron token
+CRON_TOKEN=$(openssl rand -hex 24)
+
+# Inject into the backend env (re-run cloudbuild with this set, or use
+# `gcloud run services update nocturna-api --update-env-vars=NOCTURNA_CRON_TOKEN=$CRON_TOKEN`)
+
+# Schedule a 15-minute job
+gcloud scheduler jobs create http nocturna-reminders \
+  --schedule="*/15 * * * *" \
+  --location=$REGION \
+  --uri="https://nocturna-api-….run.app/api/cron/reminders" \
+  --http-method=POST \
+  --headers="X-Cron-Token=$CRON_TOKEN" \
+  --time-zone="Europe/Rome"
+```
+
+You can also kick it manually from any admin context:
+
+```bash
+curl -X POST "https://nocturna-api-….run.app/api/cron/reminders" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ## Verifying a deploy
 
 ```bash
