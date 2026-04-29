@@ -5,3 +5,11 @@ from .consumer import WinePairing, MusicMood, SocialConnection, BehaviorLog, Pan
 from .restaurant_ext import Booking, CRMCustomer, Staff, SalesLog
 from .kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog
 from .diner import DinerBooking, DinerVisit
+from .home_services import (
+    HomeProvider,
+    HomeProviderService,
+    HomeJobRequest,
+    HomeQuote,
+    HomeBooking,
+    HomeReview,
+)

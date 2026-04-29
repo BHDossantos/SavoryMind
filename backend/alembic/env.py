@@ -28,6 +28,14 @@ from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # n
 from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: E402, F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: E402, F401
 from app.models.notification import Notification  # noqa: E402, F401
+from app.models.home_services import (  # noqa: E402, F401
+    HomeProvider,
+    HomeProviderService,
+    HomeJobRequest,
+    HomeQuote,
+    HomeBooking,
+    HomeReview,
+)
 
 
 config = context.config

@@ -53,6 +53,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">Sign in</Link>
+            <Link href="/home-services" className="text-sm text-gray-600 hover:text-gray-900 font-medium">Home services</Link>
             <Link href="/signup" className="bg-gray-900 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
               Get started
             </Link>

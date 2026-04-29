@@ -235,4 +235,32 @@ export const api = {
 
   // Restaurant — Diner reviews from customers
   getDinerReviews: () => request("/api/restaurant/diner-reviews"),
+
+  // Home Services (AvailableNow Home)
+  getHomeCategories: () => request("/api/home/categories"),
+  searchHomeProviders: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""))
+    ).toString();
+    return request(`/api/home/search/providers${qs ? `?${qs}` : ""}`);
+  },
+  getMyHomeProvider: () => request("/api/home/providers/me"),
+  upsertHomeProvider: (data) => request("/api/home/providers/me", { method: "POST", body: JSON.stringify(data) }),
+  updateHomeProvider: (data) => request("/api/home/providers/me", { method: "PATCH", body: JSON.stringify(data) }),
+  listMyHomeServices: () => request("/api/home/providers/me/services"),
+  addHomeService: (data) => request("/api/home/providers/me/services", { method: "POST", body: JSON.stringify(data) }),
+  deleteHomeService: (id) => request(`/api/home/providers/me/services/${id}`, { method: "DELETE" }),
+  listProviderJobFeed: () => request("/api/home/providers/me/jobs"),
+  listProviderHomeBookings: () => request("/api/home/providers/me/bookings"),
+  submitHomeQuote: (jobId, data) => request(`/api/home/providers/me/jobs/${jobId}/quote`, { method: "POST", body: JSON.stringify(data) }),
+  createHomeJob: (data) => request("/api/home/customer/jobs", { method: "POST", body: JSON.stringify(data) }),
+  listMyHomeJobs: () => request("/api/home/customer/jobs"),
+  getMyHomeJob: (id) => request(`/api/home/customer/jobs/${id}`),
+  cancelMyHomeJob: (id) => request(`/api/home/customer/jobs/${id}/cancel`, { method: "POST" }),
+  listQuotesForMyJob: (jobId) => request(`/api/home/customer/jobs/${jobId}/quotes`),
+  acceptHomeQuote: (quoteId) => request(`/api/home/customer/quotes/${quoteId}/accept`, { method: "POST" }),
+  listMyHomeBookings: () => request("/api/home/customer/bookings"),
+  updateHomeBookingStatus: (id, data) => request(`/api/home/bookings/${id}/status`, { method: "POST", body: JSON.stringify(data) }),
+  reviewHomeBooking: (id, data) => request(`/api/home/customer/bookings/${id}/review`, { method: "POST", body: JSON.stringify(data) }),
+  getProviderReviews: (providerId) => request(`/api/home/providers/${providerId}/reviews`),
 };
