@@ -9,6 +9,9 @@ from ..models import (
     ApprovalStatus,
     Appointment,
     AppointmentStatus,
+    Notification,
+    NotificationKind,
+    NotificationStatus,
     PaymentStatus,
     Provider,
     Review,
@@ -16,6 +19,7 @@ from ..models import (
     Service,
     User,
 )
+from ..notifications_service import process_due
 from ..schemas import AppointmentOut, ProviderOut
 from ..security import require_role
 
@@ -173,6 +177,43 @@ def list_bookings(
             )
         )
     return out
+
+
+@router.get("/notifications")
+def list_notifications(
+    status: Optional[NotificationStatus] = Query(None),
+    kind: Optional[NotificationKind] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[dict]:
+    stmt = select(Notification).order_by(Notification.scheduled_at.desc()).limit(limit)
+    if status:
+        stmt = stmt.where(Notification.status == status)
+    if kind:
+        stmt = stmt.where(Notification.kind == kind)
+    rows = session.exec(stmt).all()
+    return [
+        {
+            "id": n.id,
+            "user_id": n.user_id,
+            "appointment_id": n.appointment_id,
+            "kind": n.kind,
+            "channel": n.channel,
+            "to_address": n.to_address,
+            "subject": n.subject,
+            "status": n.status,
+            "scheduled_at": n.scheduled_at.isoformat(),
+            "sent_at": n.sent_at.isoformat() if n.sent_at else None,
+            "error": n.error,
+        }
+        for n in rows
+    ]
+
+
+@router.post("/notifications/run")
+def run_notifications_now(session: Session = Depends(get_session)) -> dict:
+    sent = process_due(session)
+    return {"sent": sent}
 
 
 @router.get("/users")

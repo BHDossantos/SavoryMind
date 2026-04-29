@@ -33,6 +33,20 @@ class ApprovalStatus(str, Enum):
     suspended = "suspended"
 
 
+class NotificationKind(str, Enum):
+    booking_confirmed = "booking_confirmed"
+    reminder_24h = "reminder_24h"
+    reminder_2h = "reminder_2h"
+    booking_cancelled = "booking_cancelled"
+
+
+class NotificationStatus(str, Enum):
+    pending = "pending"
+    sent = "sent"
+    failed = "failed"
+    cancelled = "cancelled"
+
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
@@ -125,6 +139,23 @@ class Payment(SQLModel, table=True):
     refunded_amount_cents: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Notification(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    appointment_id: Optional[int] = Field(default=None, foreign_key="appointment.id", index=True)
+    kind: NotificationKind
+    channel: str = "email"  # only email for now
+    to_address: str
+    subject: str
+    body: str
+    status: NotificationStatus = Field(default=NotificationStatus.pending)
+    scheduled_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    sent_at: Optional[datetime] = None
+    error: str = ""
+    provider_message_id: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Review(SQLModel, table=True):

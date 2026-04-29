@@ -49,8 +49,19 @@ testable locally.
 New providers self-signup as `pending` and don't appear in public
 search until an admin approves them at `/admin/providers?status=pending`.
 
+## Email notifications
+
+Booking confirmation + 24h and 2h reminders + cancellation emails are
+enqueued automatically as bookings move through their lifecycle. An
+in-process APScheduler tick (default every 60s) sends due notifications
+via Resend.
+
+Set `RESEND_API_KEY` for real sends; leave empty for stub mode (the
+`Notification` row is the only record). Admin can audit + manually run
+the queue at `/admin/notifications`.
+
 ## Out of scope (next slices)
 
-Push/SMS/WhatsApp reminders, real geosearch with Google Places,
-auto-fill cancellations, promotions, multi-business accounts,
-disputes/refund workflow.
+SMS/WhatsApp reminders, real geosearch with Google Places, auto-fill
+cancellations, promotions, multi-business accounts, disputes/refund
+workflow.

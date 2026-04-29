@@ -49,6 +49,27 @@ export interface AdminUser {
   created_at: string;
 }
 
+export type NotificationStatus = "pending" | "sent" | "failed" | "cancelled";
+export type NotificationKind =
+  | "booking_confirmed"
+  | "reminder_24h"
+  | "reminder_2h"
+  | "booking_cancelled";
+
+export interface AdminNotification {
+  id: number;
+  user_id: number;
+  appointment_id: number | null;
+  kind: NotificationKind;
+  channel: string;
+  to_address: string;
+  subject: string;
+  status: NotificationStatus;
+  scheduled_at: string;
+  sent_at: string | null;
+  error: string;
+}
+
 export interface ProviderSearchResult extends Provider {
   next_slot: string | null;
   min_price_cents: number | null;
@@ -213,6 +234,15 @@ export const api = {
     const qs = role ? `?role=${role}` : "";
     return request<AdminUser[]>(`/admin/users${qs}`);
   },
+  adminNotifications: (params: { status?: NotificationStatus; kind?: NotificationKind } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set("status", params.status);
+    if (params.kind) qs.set("kind", params.kind);
+    const s = qs.toString();
+    return request<AdminNotification[]>(`/admin/notifications${s ? "?" + s : ""}`);
+  },
+  adminRunNotifications: () =>
+    request<{ sent: number }>("/admin/notifications/run", { method: "POST" }),
   myAppointments: () => request<Appointment[]>("/appointments/mine"),
   providerAppointments: () => request<Appointment[]>("/appointments/provider"),
   cancelAppointment: (id: number) =>

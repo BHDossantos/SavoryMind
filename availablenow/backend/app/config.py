@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""  # empty = stub mode (no real Stripe calls)
     stripe_webhook_secret: str = ""
     pending_payment_ttl_minutes: int = 15
+    resend_api_key: str = ""  # empty = stub mode (no real sends)
+    notifications_from_email: str = "noreply@availablenow.app"
+    notifications_from_name: str = "AvailableNow"
+    notifications_tick_seconds: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

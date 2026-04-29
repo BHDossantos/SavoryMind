@@ -18,6 +18,7 @@ from ..models import (
     Service,
     User,
 )
+from ..notifications_service import enqueue_cancellation, enqueue_for_appointment
 from ..payments_client import create_checkout_session, refund_payment_intent
 from ..schemas import AppointmentOut, BookingIn, BookingOut
 from ..security import get_current_user
@@ -150,6 +151,11 @@ def create_appointment(
         checkout_url = checkout.url
         payment_id = payment.id
 
+    # No-deposit bookings are immediately confirmed → notify now.
+    # Deposit bookings get notified by the payments webhook / stub-confirm flow.
+    if not needs_deposit:
+        enqueue_for_appointment(session, appt.id)
+
     session.commit()
     session.refresh(appt)
     return BookingOut(
@@ -229,6 +235,7 @@ def cancel_appointment(
         # else: deposit forfeit, payment stays paid
 
     session.add(appt)
+    enqueue_cancellation(session, appt.id)
     session.commit()
     session.refresh(appt)
     return _to_out(session, appt)

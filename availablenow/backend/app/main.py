@@ -1,8 +1,13 @@
+import logging
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session
 
 from .config import settings
-from .db import init_db
+from .db import engine, init_db
+from .notifications_service import process_due
 from .routers import (
     admin,
     appointments,
@@ -14,6 +19,19 @@ from .routers import (
     search,
     services,
 )
+
+logger = logging.getLogger("availablenow.main")
+_scheduler: BackgroundScheduler | None = None
+
+
+def _process_due_tick() -> None:
+    try:
+        with Session(engine) as session:
+            sent = process_due(session)
+            if sent:
+                logger.info("Sent %d notification(s)", sent)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Notification tick failed: %s", e)
 
 app = FastAPI(title="AvailableNow API", version="0.1.0")
 
@@ -28,7 +46,26 @@ app.add_middleware(
 
 @app.on_event("startup")
 def _startup() -> None:
+    global _scheduler
     init_db()
+    _scheduler = BackgroundScheduler(daemon=True)
+    _scheduler.add_job(
+        _process_due_tick,
+        "interval",
+        seconds=settings.notifications_tick_seconds,
+        id="notifications_tick",
+        max_instances=1,
+        coalesce=True,
+    )
+    _scheduler.start()
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    global _scheduler
+    if _scheduler:
+        _scheduler.shutdown(wait=False)
+        _scheduler = None
 
 
 @app.get("/health")

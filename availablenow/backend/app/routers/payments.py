@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 
 from ..db import get_session
 from ..models import Appointment, AppointmentStatus, Payment, PaymentStatus, User
+from ..notifications_service import enqueue_for_appointment
 from ..payments_client import is_stub_mode, verify_webhook
 from ..security import get_current_user
 
@@ -20,6 +21,7 @@ def _mark_paid(session: Session, payment: Payment) -> None:
     if appt:
         appt.payment_status = PaymentStatus.paid
         session.add(appt)
+        enqueue_for_appointment(session, appt.id)
     session.add(payment)
 
 
