@@ -26,9 +26,28 @@ export default function VenueDetailClient({ slug, initial }: {
 
   const today = ['mon','tue','wed','thu','fri','sat','sun'][new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   const todayHours = (v.opening_hours as any)[today] || [];
+  const photos = (v.photos || []).filter(Boolean);
 
   return (
     <article className="max-w-4xl mx-auto space-y-6">
+      {photos.length > 0 && (
+        <div className="rounded-2xl overflow-hidden border border-white/10">
+          <div className={`grid gap-1 ${photos.length === 1 ? 'grid-cols-1' : photos.length === 2 ? 'grid-cols-2' : 'grid-cols-4 grid-rows-2'}`}>
+            {photos.slice(0, photos.length === 1 ? 1 : photos.length === 2 ? 2 : 5).map((src, i) => (
+              <a
+                key={`${src}-${i}`}
+                href={src}
+                target="_blank"
+                rel="noreferrer"
+                className={`relative block ${photos.length >= 3 && i === 0 ? 'col-span-2 row-span-2' : ''}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`${v.name} — photo ${i + 1}`} className="object-cover w-full h-full aspect-[4/3]" loading={i === 0 ? 'eager' : 'lazy'} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       <header>
         <p className="label">{v.neighborhood} · {v.type}</p>
         <h1 className="font-display text-5xl text-gold-400 mt-2">{v.name}</h1>

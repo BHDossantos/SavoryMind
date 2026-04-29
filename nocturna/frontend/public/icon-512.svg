@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#1f1a30"/>
+      <stop offset="60%" stop-color="#0e0c17"/>
+      <stop offset="100%" stop-color="#08070d"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e7c878"/>
+      <stop offset="100%" stop-color="#b89441"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Crescent moon -->
+  <path
+    d="M310 132c-78 18-136 88-136 170s58 152 136 170c-104 6-188-72-188-170s84-176 188-170z"
+    fill="url(#gold)" opacity="0.95"/>
+  <!-- Star sparkle -->
+  <g fill="url(#gold)" opacity="0.9">
+    <circle cx="385" cy="170" r="6"/>
+    <circle cx="410" cy="200" r="3"/>
+    <circle cx="372" cy="240" r="4"/>
+  </g>
+  <!-- Wordmark "N" -->
+  <text x="256" y="450" font-family="Georgia, 'Cormorant Garamond', serif" font-size="64"
+        text-anchor="middle" fill="url(#gold)" letter-spacing="6">NOCTURNA</text>
+</svg>

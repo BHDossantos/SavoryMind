@@ -3,6 +3,7 @@ import '../styles/globals.css';
 import { I18nProvider } from '@/lib/i18n';
 import HeaderNav from '@/components/layout/HeaderNav';
 import AnalyticsProvider from '@/components/layout/AnalyticsProvider';
+import InstallPrompt from '@/components/layout/InstallPrompt';
 import { SITE_URL, SITE_NAME } from '@/lib/api-server';
 
 const description =
@@ -37,8 +38,21 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} — Plan your perfect night`,
     description,
   },
+  manifest: '/manifest.webmanifest',
+  themeColor: '#08070d',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: SITE_NAME,
+  },
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/icon-192.svg', sizes: '192x192' },
+      { url: '/icon-512.svg', sizes: '512x512' },
+    ],
   },
 };
 
@@ -71,6 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AnalyticsProvider />
           <HeaderNav />
           <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
+          <InstallPrompt />
           <footer className="border-t border-white/5 mt-20 py-10 text-center text-xs text-gold-500/60">
             © {new Date().getFullYear()} {SITE_NAME} · Plan beautifully · Drink responsibly
           </footer>

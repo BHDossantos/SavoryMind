@@ -12,19 +12,32 @@ export function TrendingVenues({ city = 'rome' }: { city?: string }) {
   if (!items.length) return <p className="text-gold-400/60">Loading…</p>;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {items.slice(0, 6).map((v) => (
-        <Link key={v.id} href={`/venues/${v.slug}`} className="card hover:border-gold-500/40 transition block">
-          <div className="flex items-baseline justify-between">
-            <h3 className="font-display text-xl text-gold-400">{v.name}</h3>
-            {v.promoted ? <span className="chip">Featured</span> : null}
-          </div>
-          <p className="text-xs text-gold-400/60 mt-1">{v.neighborhood} · {v.type} · €{v.avg_price_eur}/pp</p>
-          <p className="text-sm text-white/80 mt-2 line-clamp-2">{v.description}</p>
-          <div className="mt-3 flex flex-wrap gap-1">
-            {v.vibe_tags.slice(0, 4).map((t) => <span key={t} className="chip">{t}</span>)}
-          </div>
-        </Link>
-      ))}
+      {items.slice(0, 6).map((v) => {
+        const photo = (v.photos || []).find(Boolean);
+        return (
+          <Link key={v.id} href={`/venues/${v.slug}`} className="card hover:border-gold-500/40 transition block !p-0 overflow-hidden">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt={v.name} className="w-full aspect-[16/9] object-cover" loading="lazy" />
+            ) : (
+              <div className="w-full aspect-[16/9] bg-gradient-to-br from-night-700 to-night-900 flex items-center justify-center">
+                <span className="font-display text-4xl text-gold-400/40">{v.name.charAt(0)}</span>
+              </div>
+            )}
+            <div className="p-5">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="font-display text-xl text-gold-400 truncate">{v.name}</h3>
+                {v.promoted ? <span className="chip shrink-0">Featured</span> : null}
+              </div>
+              <p className="text-xs text-gold-400/60 mt-1">{v.neighborhood} · {v.type} · €{v.avg_price_eur}/pp</p>
+              <p className="text-sm text-white/80 mt-2 line-clamp-2">{v.description}</p>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {v.vibe_tags.slice(0, 4).map((t) => <span key={t} className="chip">{t}</span>)}
+              </div>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
