@@ -133,6 +133,10 @@ export const api = {
   getMe: () => request("/api/auth/me"),
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
 
+  // OAuth — Spotify (real Authorization Code flow)
+  startSpotifyAuth: () => request("/api/oauth/spotify/start"),
+  disconnectSpotify: () => request("/api/oauth/spotify/disconnect", { method: "POST" }),
+
   // Restaurant — Menu
   getDashboardStats: () => request("/api/menu/stats"),
   getMenuItems: (category) => request(`/api/menu/${category ? `?category=${category}` : ""}`),

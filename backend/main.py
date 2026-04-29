@@ -29,7 +29,7 @@ from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # n
 from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
-from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth
 
 # Columns to add to existing `users` table on older deployments
 _USER_MIGRATIONS = [
@@ -102,6 +102,14 @@ _USER_AVAILABILITY_MIGRATIONS = [
 _NOTIFICATION_MIGRATIONS: list[tuple[str, str]] = []   # table created by create_all
 _DINER_REVIEW_MIGRATIONS: list[tuple[str, str]] = []   # table created by create_all
 
+_SOCIAL_CONNECTION_MIGRATIONS = [
+    ("access_token",      "TEXT"),
+    ("refresh_token",     "TEXT"),
+    ("token_expires_at",  "DATETIME"),
+    ("scopes",            "VARCHAR(500)"),
+    ("provider_user_id",  "VARCHAR(255)"),
+]
+
 
 def _run_migrations():
     with engine.connect() as conn:
@@ -132,6 +140,12 @@ def _run_migrations():
         for col, col_type in _USER_AVAILABILITY_MIGRATIONS:
             try:
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
+        for col, col_type in _SOCIAL_CONNECTION_MIGRATIONS:
+            try:
+                conn.execute(text(f"ALTER TABLE social_connections ADD COLUMN {col} {col_type}"))
                 conn.commit()
             except Exception:
                 pass
@@ -188,6 +202,7 @@ app.include_router(diner.router, prefix="/api")
 app.include_router(staff_portal.router, prefix="/api")
 app.include_router(discover.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
+app.include_router(oauth.router, prefix="/api")
 
 
 @app.get("/")

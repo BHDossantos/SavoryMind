@@ -66,6 +66,10 @@ jobs:
           # Optional — leave the secret unset and the app will simply skip Sentry / email sends.
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Spotify OAuth — leave both secrets unset and the /api/oauth/spotify/* endpoints
+          # respond with 503 so the UI cleanly shows "not configured".
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         run: |
           DB_URL="postgresql://postgres:${DB_PASSWORD}@/savorymind?host=/cloudsql/savorymind:europe-west1:savorymind-db"
           gcloud run deploy savorymind-api \
@@ -78,7 +82,7 @@ jobs:
             --min-instances 1 \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net"
 
       - name: Map api.savorymind.net to backend
         run: |

@@ -35,6 +35,14 @@ class SocialConnection(Base):
     connected = Column(Boolean, default=False)
     username = Column(String, nullable=True)
     profile_url = Column(String, nullable=True)
+    # OAuth tokens for real provider integrations (currently only Spotify
+    # actually populates these). Stored as plaintext for now — a future
+    # hardening pass should encrypt with a KMS-managed key.
+    access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+    scopes = Column(String, nullable=True)
+    provider_user_id = Column(String, nullable=True)  # e.g. Spotify user URI/id
 
 
 class BehaviorLog(Base):

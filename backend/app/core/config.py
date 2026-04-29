@@ -55,6 +55,18 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     sentry_environment: str = "development"
 
+    # Spotify OAuth (real provider integration). Empty CLIENT_ID disables
+    # the Spotify connect feature — endpoints respond with 503 so the UI can
+    # gracefully fall back to the stub.
+    # Register an app at developer.spotify.com → set the redirect URI to
+    # SPOTIFY_REDIRECT_URI in the dashboard and provide both halves below.
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+    spotify_redirect_uri: str = "http://localhost:8000/api/oauth/spotify/callback"
+    # Where to send the user after Spotify redirects back to us. Path is
+    # appended; defaults to the social-connect page.
+    frontend_url: str = "http://localhost:3000"
+
     class Config:
         env_file = ".env"
 
