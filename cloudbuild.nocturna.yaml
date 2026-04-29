@@ -46,6 +46,7 @@ substitutions:
   _MAPBOX_TOKEN: ""
   _POSTHOG_KEY: ""
   _POSTHOG_HOST: "https://eu.i.posthog.com"
+  _SITE_URL: ""
   _DATABASE_URL: ""
 
 steps:
@@ -146,12 +147,14 @@ steps:
       - -c
       - |
         API_URL=$(cat /workspace/nocturna_api_url.txt)
+        SITE_URL="${_SITE_URL:-$_APP_BASE_URL}"
         docker build \
           -f nocturna/frontend/Dockerfile.prod \
           --build-arg NEXT_PUBLIC_API_URL=$API_URL \
           --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=$_MAPBOX_TOKEN \
           --build-arg NEXT_PUBLIC_POSTHOG_KEY=$_POSTHOG_KEY \
           --build-arg NEXT_PUBLIC_POSTHOG_HOST=$_POSTHOG_HOST \
+          --build-arg NEXT_PUBLIC_SITE_URL=$SITE_URL \
           -t gcr.io/$PROJECT_ID/nocturna-web \
           ./nocturna/frontend
     waitFor: ["get-api-url"]
@@ -179,7 +182,7 @@ steps:
           --memory 512Mi \
           --cpu 1 \
           --port 8080 \
-          --set-env-vars "NEXT_PUBLIC_API_URL=$API_URL,NEXT_PUBLIC_MAPBOX_TOKEN=$_MAPBOX_TOKEN,NEXT_PUBLIC_POSTHOG_KEY=$_POSTHOG_KEY,NEXT_PUBLIC_POSTHOG_HOST=$_POSTHOG_HOST"
+          --set-env-vars "NEXT_PUBLIC_API_URL=$API_URL,NEXT_PUBLIC_MAPBOX_TOKEN=$_MAPBOX_TOKEN,NEXT_PUBLIC_POSTHOG_KEY=$_POSTHOG_KEY,NEXT_PUBLIC_POSTHOG_HOST=$_POSTHOG_HOST,NEXT_PUBLIC_SITE_URL=${_SITE_URL:-$_APP_BASE_URL}"
     waitFor: ["push-web"]
 
   # ── Print final URLs ─────────────────────────────────────────────────

@@ -1,25 +1,36 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import type { Metadata } from 'next';
+import { apiServer, SITE_URL, SITE_NAME } from '@/lib/api-server';
+import SharedPlanClient from '@/components/results/SharedPlanClient';
 import type { Plan } from '../../../../../../shared/types';
-import PlanCard from '@/components/results/PlanCard';
 
-export default function SharePage({ params }: { params: { token: string } }) {
-  const [plan, setPlan] = useState<Plan | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+async function loadPlan(token: string): Promise<Plan | null> {
+  try { return await apiServer<Plan>(`/api/plans/share/${token}`); }
+  catch { return null; }
+}
 
-  useEffect(() => {
-    api.get<Plan>(`/api/plans/share/${params.token}`).then(setPlan)
-      .catch((e) => setErr(e?.message || 'Plan not found'));
-  }, [params.token]);
+export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
+  const p = await loadPlan(params.token);
+  if (!p) return { title: `Shared plan · ${SITE_NAME}`, robots: { index: false, follow: false } };
 
-  if (err) return <p className="text-accent-500">{err}</p>;
-  if (!plan) return <p className="text-gold-400/60">Loading shared plan…</p>;
-  return (
-    <div className="max-w-2xl mx-auto">
-      <p className="label text-center">Shared with you</p>
-      <h1 className="font-display text-4xl text-center mt-2 mb-6">{plan.label}</h1>
-      <PlanCard plan={plan} />
-    </div>
-  );
+  const stops = p.stops?.length || 0;
+  const cityTitle = p.city.charAt(0).toUpperCase() + p.city.slice(1).replace('_', ' ');
+  const title = `${p.label} · ${cityTitle} | ${SITE_NAME}`;
+  const stopNames = (p.stops || []).map(s => s.name).filter(Boolean).join(' → ');
+  const description = stops
+    ? `${stopNames}. ${stops} stops, ~€${p.estimated_cost_eur}/pp, ${p.total_travel_min} min total travel. Plan curated by Nocturna.`
+    : `A curated night plan in ${cityTitle}. Open it in Nocturna.`;
+  const url = `${SITE_URL}/plan/share/${params.token}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, siteName: SITE_NAME, type: 'website' },
+    twitter: { card: 'summary', title, description },
+    robots: { index: false, follow: true }, // shared plans are private-ish
+  };
+}
+
+export default async function SharePage({ params }: { params: { token: string } }) {
+  const initial = await loadPlan(params.token);
+  return <SharedPlanClient token={params.token} initial={initial} />;
 }
