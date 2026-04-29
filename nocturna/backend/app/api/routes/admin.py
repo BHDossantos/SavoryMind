@@ -136,12 +136,29 @@ def list_bookings(
     db: Session = Depends(get_db),
     admin=Depends(require_admin),
     status: Optional[str] = None,
+    q: Optional[str] = None,
+    vip: Optional[bool] = None,
     limit: int = 200,
 ):
     qry = db.query(Booking)
     if status:
         qry = qry.filter(Booking.status == status)
+    if vip is True:
+        qry = qry.filter(Booking.vip_interest == "yes")
+    if q:
+        like = f"%{q}%"
+        qry = qry.filter(
+            (Booking.contact_name.ilike(like))
+            | (Booking.contact_phone.ilike(like))
+            | (Booking.contact_email.ilike(like))
+        )
     rows = qry.order_by(Booking.created_at.desc()).limit(limit).all()
+    venue_ids = list({b.venue_id for b in rows if b.venue_id})
+    venues_by_id = {
+        v.id: v for v in (
+            db.query(Venue).filter(Venue.id.in_(venue_ids)).all() if venue_ids else []
+        )
+    }
     return [
         {
             "id": b.id,
@@ -154,6 +171,9 @@ def list_bookings(
             "group_size": b.group_size,
             "request_type": b.request_type,
             "vip_interest": b.vip_interest,
+            "budget_eur": b.budget_eur,
+            "bottle_preference": b.bottle_preference,
+            "arrival_time": b.arrival_time,
             "contact_name": b.contact_name,
             "contact_phone": b.contact_phone,
             "contact_email": b.contact_email,
@@ -161,7 +181,15 @@ def list_bookings(
             "admin_notes": b.admin_notes,
             "venue_response": b.venue_response,
             "commission_eur": b.commission_eur,
+            "reminder_sent_at": b.reminder_sent_at.isoformat() if b.reminder_sent_at else None,
             "created_at": b.created_at.isoformat() if b.created_at else None,
+            "venue": (lambda v: {
+                "id": v.id, "slug": v.slug, "name": v.name,
+                "neighborhood": v.neighborhood, "city": v.city,
+                "address": v.address, "phone": (v.contact or {}).get("phone"),
+                "whatsapp": (v.contact or {}).get("whatsapp"),
+                "dress_code": v.dress_code,
+            })(venues_by_id[b.venue_id]) if b.venue_id in venues_by_id else None,
         }
         for b in rows
     ]

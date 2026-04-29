@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,7 @@ from app.core.db import get_db
 from app.core.security import get_current_user_optional
 from app.models import Plan, User, Venue
 from app.services import analytics, recommender
+from app.services.rate_limit import PLANNER as PLANNER_LIMIT
 from app.services.recommender import PlannerInput
 
 router = APIRouter(prefix="/api", tags=["planner"])
@@ -37,9 +38,14 @@ class PlannerRequest(BaseModel):
 @router.post("/planner/generate")
 def generate(
     req: PlannerRequest,
+    request: Request,
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user_optional),
 ):
+    if not user:
+        ip = request.client.host if request.client else "unknown"
+        if not PLANNER_LIMIT.take(ip):
+            raise HTTPException(429, "Rate limit hit — try again in a minute or sign in.")
     when = req.requested_for or datetime.utcnow()
     inp = PlannerInput(
         city=req.city,

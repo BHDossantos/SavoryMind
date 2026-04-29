@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from app.core.db import get_db
 from app.core.security import get_current_user_optional
 from app.models import Booking, PartnerProfile, Plan, User, Venue
 from app.services import analytics, notifications
+from app.services.rate_limit import BOOKING as BOOKING_LIMIT
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
@@ -32,9 +33,14 @@ class BookingIn(BaseModel):
 @router.post("")
 def create_booking(
     payload: BookingIn,
+    request: Request,
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user_optional),
 ):
+    if not user:
+        ip = request.client.host if request.client else "unknown"
+        if not BOOKING_LIMIT.take(ip):
+            raise HTTPException(429, "Too many booking requests from this connection — please slow down.")
     venue = db.query(Venue).get(payload.venue_id)
     if not venue:
         raise HTTPException(404, "Venue not found")
@@ -153,6 +159,7 @@ def _default_request_type(venue_type: str) -> str:
 def book_plan(
     plan_id: int,
     payload: PlanBookingIn,
+    request: Request,
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user_optional),
 ):
@@ -161,6 +168,10 @@ def book_plan(
     Skips stops the caller marked `skip=true`. Returns the list of created
     bookings plus the plan id; same notification fan-out as single bookings.
     """
+    if not user:
+        ip = request.client.host if request.client else "unknown"
+        if not BOOKING_LIMIT.take(ip, n=2.0):
+            raise HTTPException(429, "Too many booking requests from this connection — please slow down.")
     plan = db.query(Plan).get(plan_id)
     if not plan:
         raise HTTPException(404, "Plan not found")
