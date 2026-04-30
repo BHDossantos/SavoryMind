@@ -117,6 +117,81 @@ def test_unknown_profile_field_silently_ignored(client):
     assert r.json()["display_name"] == "Updated"
 
 
+def test_register_mobile_client_returns_refresh_token_in_body(client):
+    """X-Client-Type: mobile signals that the caller has no cookie jar
+    (React Native fetch) and needs the refresh token in the JSON body so
+    it can store it in SecureStore."""
+    r = client.post(
+        "/api/auth/register",
+        headers={"X-Client-Type": "mobile"},
+        json={
+            "email": "mobile@example.com",
+            "password": "password123",
+            "display_name": "Mobile User",
+            "account_type": "consumer",
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["access_token"]
+    assert body["refresh_token"], "mobile client must receive refresh in body"
+    # Web client doesn't send the header → no refresh_token field
+    r2 = client.post("/api/auth/register", json={
+        "email": "web@example.com", "password": "password123",
+        "display_name": "Web User", "account_type": "consumer",
+    })
+    assert r2.json().get("refresh_token") is None
+
+
+def test_mobile_refresh_via_x_refresh_token_header(client):
+    """Mobile flow: send the refresh token in the X-Refresh-Token header
+    instead of relying on the cookie."""
+    r = client.post(
+        "/api/auth/register",
+        headers={"X-Client-Type": "mobile"},
+        json={"email": "m@example.com", "password": "password123",
+              "display_name": "Mobile", "account_type": "consumer"},
+    )
+    refresh = r.json()["refresh_token"]
+    assert refresh
+
+    # Clear cookies so the cookie path can't satisfy the request
+    client.cookies.clear()
+
+    r = client.post(
+        "/api/auth/refresh",
+        headers={"X-Client-Type": "mobile", "X-Refresh-Token": refresh},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["access_token"]
+    assert body["refresh_token"], "rotated refresh token must come back in body for mobile"
+
+
+def test_mobile_logout_revokes_via_header(client):
+    """Mobile logout: pass the refresh token via X-Refresh-Token. The
+    server should revoke its jti so subsequent refreshes 401."""
+    r = client.post(
+        "/api/auth/register",
+        headers={"X-Client-Type": "mobile"},
+        json={"email": "m@example.com", "password": "password123",
+              "display_name": "Mobile", "account_type": "consumer"},
+    )
+    refresh = r.json()["refresh_token"]
+
+    out = client.post("/api/auth/logout", headers={"X-Refresh-Token": refresh})
+    assert out.status_code == 204
+
+    # Stolen-cookie replay (mobile flavour): cookie is gone, but the attacker
+    # has the token value. Sending it back as the header must 401.
+    client.cookies.clear()
+    r = client.post(
+        "/api/auth/refresh",
+        headers={"X-Client-Type": "mobile", "X-Refresh-Token": refresh},
+    )
+    assert r.status_code == 401
+
+
 def test_logout_revokes_jti_so_cookie_cant_be_reused(client):
     """The full point of jti revocation: after logout, presenting the same
     refresh cookie back to /refresh must 401, even though the JWT itself

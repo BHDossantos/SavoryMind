@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../constants/colors';
 
-WebBrowser.maybeCompleteAuthSession();
-
-const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
 
-const OTHER_PROVIDERS = [
+// Native social-login was removed because the previous implementation
+// required shipping SOCIAL_LOGIN_SECRET inside the mobile bundle, which
+// defeats the purpose of the secret. Real OAuth on mobile needs a backend
+// endpoint that verifies the provider's signed ID token (e.g. Google) —
+// not yet wired up. Until then, social providers route through the web
+// app, which has the proper OAuth bridge already.
+const SOCIAL_PROVIDERS = [
+  { id: 'google',   label: 'Google',    bg: '#fff',     emoji: 'G',  fg: '#4285F4' },
   { id: 'github',   label: 'GitHub',    bg: '#1a1a1a', emoji: '🐙' },
   { id: 'azure-ad', label: 'Microsoft', bg: '#0078d4', emoji: '🪟' },
   { id: 'apple',    label: 'Apple',     bg: '#000000', emoji: '🍎' },
@@ -26,64 +28,18 @@ const OTHER_PROVIDERS = [
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, loginSocial } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
   const [error, setError] = useState(null);
 
-  const [, googleResponse, googlePrompt] = Google.useAuthRequest({
-    clientId: GOOGLE_CLIENT_ID || 'placeholder',
-    redirectUri: makeRedirectUri({ scheme: 'savorymind' }),
-  });
-
-  useEffect(() => {
-    if (!googleResponse) return;
-    if (googleResponse.type === 'success') {
-      handleGoogleSuccess(googleResponse.authentication?.accessToken);
-    } else if (googleResponse.type === 'error') {
-      setError('Google sign-in failed. Please try again.');
-      setSocialLoading(null);
-    } else {
-      setSocialLoading(null);
-    }
-  }, [googleResponse]);
-
-  const handleGoogleSuccess = async (accessToken) => {
-    if (!accessToken) { setError('Google sign-in failed.'); setSocialLoading(null); return; }
-    try {
-      const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }).then((r) => r.json());
-
-      await loginSocial({
-        provider: 'google',
-        provider_id: userInfo.sub,
-        email: userInfo.email,
-        name: userInfo.name,
-        avatar_url: userInfo.picture,
-      });
-    } catch (e) {
-      setError(e.message || 'Google sign-in failed.');
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const handleGooglePress = async () => {
-    if (!GOOGLE_CLIENT_ID) { setError('Google sign-in not configured. Use email login or visit the web app.'); return; }
-    setSocialLoading('google');
-    setError(null);
-    await googlePrompt();
-  };
-
-  const handleOtherProvider = async (p) => {
+  const handleSocialProvider = async (p) => {
     setSocialLoading(p.id);
     setError(null);
     try {
-      const url = `${WEB_APP_URL}/login`;
-      await WebBrowser.openBrowserAsync(url);
+      await WebBrowser.openBrowserAsync(`${WEB_APP_URL}/login`);
     } catch {
       setError('Could not open browser.');
     } finally {
@@ -119,29 +75,19 @@ export default function LoginScreen() {
 
           {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
 
-          {/* Google */}
-          <TouchableOpacity style={styles.googleBtn} onPress={handleGooglePress} disabled={busy}>
-            {socialLoading === 'google'
-              ? <ActivityIndicator color="#4285F4" size="small" />
-              : <Text style={styles.googleG}>G</Text>
-            }
-            <Text style={styles.googleText}>
-              {socialLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Other providers icon row */}
+          {/* Social providers — open the web app's OAuth flow in a browser.
+              Native OAuth on mobile is a separate follow-up. */}
           <View style={styles.socialRow}>
-            {OTHER_PROVIDERS.map((p) => (
+            {SOCIAL_PROVIDERS.map((p) => (
               <TouchableOpacity
                 key={p.id}
-                style={[styles.socialIcon, { backgroundColor: p.bg }]}
-                onPress={() => handleOtherProvider(p)}
+                style={[styles.socialIcon, { backgroundColor: p.bg, borderWidth: p.id === 'google' ? 1 : 0, borderColor: '#d1d5db' }]}
+                onPress={() => handleSocialProvider(p)}
                 disabled={busy}
               >
                 {socialLoading === p.id
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.socialEmoji}>{p.emoji}</Text>
+                  ? <ActivityIndicator color={p.fg || '#fff'} size="small" />
+                  : <Text style={[styles.socialEmoji, p.fg && { color: p.fg, fontWeight: '800' }]}>{p.emoji}</Text>
                 }
               </TouchableOpacity>
             ))}

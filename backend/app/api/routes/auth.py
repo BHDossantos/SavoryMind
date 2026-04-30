@@ -41,20 +41,47 @@ def _clear_refresh_cookie(response: Response) -> None:
     response.delete_cookie(**kwargs)
 
 
+def _is_mobile_client(client_type: Optional[str]) -> bool:
+    """The native client signals itself with X-Client-Type: mobile so we
+    know to surface the refresh token in the response body. Web clients
+    don't send this header — they use the httpOnly cookie as before."""
+    return (client_type or "").strip().lower() == "mobile"
+
+
+def _build_token_response(access: str, refresh: str, user, mobile: bool) -> TokenResponse:
+    return TokenResponse(
+        access_token=access,
+        user=UserResponse.model_validate(user),
+        refresh_token=refresh if mobile else None,
+    )
+
+
 @router.post("/register", response_model=TokenResponse, status_code=201)
 @limiter.limit("5/minute")
-def register(request: Request, response: Response, data: UserRegister, db: Session = Depends(get_db)):
+def register(
+    request: Request,
+    response: Response,
+    data: UserRegister,
+    db: Session = Depends(get_db),
+    x_client_type: Optional[str] = Header(default=None),
+):
     access, refresh, user = auth_service.register(db, data)
     _set_refresh_cookie(response, refresh)
-    return TokenResponse(access_token=access, user=UserResponse.model_validate(user))
+    return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
-def login(request: Request, response: Response, data: UserLogin, db: Session = Depends(get_db)):
+def login(
+    request: Request,
+    response: Response,
+    data: UserLogin,
+    db: Session = Depends(get_db),
+    x_client_type: Optional[str] = Header(default=None),
+):
     access, refresh, user = auth_service.login(db, data)
     _set_refresh_cookie(response, refresh)
-    return TokenResponse(access_token=access, user=UserResponse.model_validate(user))
+    return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
 @router.get("/me", response_model=UserResponse)
@@ -70,6 +97,7 @@ def social_login(
     data: SocialLoginRequest,
     db: Session = Depends(get_db),
     x_social_secret: Optional[str] = Header(default=None),
+    x_client_type: Optional[str] = Header(default=None),
 ):
     expected = settings.social_login_secret
     # In production (non-SQLite DB) the secret must always be provided and correct.
@@ -81,7 +109,7 @@ def social_login(
         db, data.provider, data.provider_id, data.email, data.name, data.avatar_url
     )
     _set_refresh_cookie(response, refresh)
-    return TokenResponse(access_token=access, user=UserResponse.model_validate(user))
+    return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -91,15 +119,23 @@ def refresh(
     response: Response,
     db: Session = Depends(get_db),
     sm_refresh: Optional[str] = Cookie(default=None),
+    x_refresh_token: Optional[str] = Header(default=None),
+    x_client_type: Optional[str] = Header(default=None),
 ):
-    """Mint a fresh access token (and rotate the refresh cookie) using the
-    httpOnly refresh cookie set at login. No body required.
+    """Mint a fresh access token using the refresh token. Web clients send
+    the value via the httpOnly cookie; mobile sends it as X-Refresh-Token
+    because RN's fetch doesn't carry a cookie jar.
+
+    Whichever path provided the token, it gets rotated — the rotation
+    revokes the old jti server-side (auth_service.refresh_session) so a
+    stolen copy stops working after the legitimate user's next refresh.
     """
-    if not sm_refresh:
+    refresh_token = x_refresh_token or sm_refresh
+    if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token.")
-    access, new_refresh, user = auth_service.refresh_session(db, sm_refresh)
+    access, new_refresh, user = auth_service.refresh_session(db, refresh_token)
     _set_refresh_cookie(response, new_refresh)
-    return TokenResponse(access_token=access, user=UserResponse.model_validate(user))
+    return _build_token_response(access, new_refresh, user, _is_mobile_client(x_client_type))
 
 
 @router.post("/logout", status_code=204)
@@ -107,11 +143,12 @@ def logout(
     response: Response,
     db: Session = Depends(get_db),
     sm_refresh: Optional[str] = Cookie(default=None),
+    x_refresh_token: Optional[str] = Header(default=None),
 ):
     """Clear the refresh cookie AND server-side revoke the JTI so a stolen
-    copy can't keep refreshing. The short-lived access token in the
-    client's memory will expire on its own (≤ access_token_expire_minutes)."""
-    auth_service.logout(db, sm_refresh)
+    copy can't keep refreshing. Mobile clients pass their refresh token via
+    X-Refresh-Token header since they have no cookie jar."""
+    auth_service.logout(db, x_refresh_token or sm_refresh)
     _clear_refresh_cookie(response)
     return Response(status_code=204)
 

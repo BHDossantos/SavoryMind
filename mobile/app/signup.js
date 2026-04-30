@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../constants/colors';
 
-WebBrowser.maybeCompleteAuthSession();
-
-const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
 
-const OTHER_PROVIDERS = [
+// Native Google sign-in was removed — see comment in app/login.js. All
+// social providers route through the web app's OAuth flow until a real
+// ID-token-verifying mobile bridge is wired on the backend.
+const SOCIAL_PROVIDERS = [
+  { id: 'google',   label: 'Google',    bg: '#fff',     emoji: 'G',  fg: '#4285F4' },
   { id: 'github',   label: 'GitHub',    bg: '#1a1a1a', emoji: '🐙' },
   { id: 'azure-ad', label: 'Microsoft', bg: '#0078d4', emoji: '🪟' },
   { id: 'apple',    label: 'Apple',     bg: '#000000', emoji: '🍎' },
@@ -29,7 +28,7 @@ const TYPES = [
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { register, loginSocial } = useAuth();
+  const { register } = useAuth();
   const { type: defaultType } = useLocalSearchParams();
   const [form, setForm] = useState({
     email: '', password: '', display_name: '', account_type: defaultType || 'consumer',
@@ -40,42 +39,7 @@ export default function SignupScreen() {
 
   const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setError(null); };
 
-  const [, googleResponse, googlePrompt] = Google.useAuthRequest({
-    clientId: GOOGLE_CLIENT_ID || 'placeholder',
-    redirectUri: makeRedirectUri({ scheme: 'savorymind' }),
-  });
-
-  useEffect(() => {
-    if (!googleResponse) return;
-    if (googleResponse.type === 'success') {
-      handleGoogleSuccess(googleResponse.authentication?.accessToken);
-    } else {
-      setSocialLoading(null);
-    }
-  }, [googleResponse]);
-
-  const handleGoogleSuccess = async (accessToken) => {
-    if (!accessToken) { setSocialLoading(null); return; }
-    try {
-      const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }).then((r) => r.json());
-      await loginSocial({ provider: 'google', provider_id: userInfo.sub, email: userInfo.email, name: userInfo.name, avatar_url: userInfo.picture });
-    } catch (e) {
-      setError(e.message || 'Google sign-in failed.');
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const handleGooglePress = async () => {
-    if (!GOOGLE_CLIENT_ID) { setError('Google sign-in not configured. Use email or visit the web app.'); return; }
-    setSocialLoading('google');
-    setError(null);
-    await googlePrompt();
-  };
-
-  const handleOtherProvider = async (p) => {
+  const handleSocialProvider = async (p) => {
     setSocialLoading(p.id);
     try { await WebBrowser.openBrowserAsync(WEB_APP_URL + '/login'); }
     catch { setError('Could not open browser.'); }
@@ -111,15 +75,19 @@ export default function SignupScreen() {
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.sub}>Free to start — no card needed.</Text>
 
-          {/* Google */}
-          <TouchableOpacity style={styles.googleBtn} onPress={handleGooglePress} disabled={loading || !!socialLoading}>
-            {socialLoading === 'google' ? <ActivityIndicator color="#4285F4" size="small" /> : <Text style={styles.googleG}>G</Text>}
-            <Text style={styles.googleText}>{socialLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}</Text>
-          </TouchableOpacity>
+          {/* Social providers — open the web app's OAuth flow in a browser. */}
           <View style={styles.socialRow}>
-            {OTHER_PROVIDERS.map((p) => (
-              <TouchableOpacity key={p.id} style={[styles.socialIcon, { backgroundColor: p.bg }]} onPress={() => handleOtherProvider(p)} disabled={loading || !!socialLoading}>
-                {socialLoading === p.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.socialEmoji}>{p.emoji}</Text>}
+            {SOCIAL_PROVIDERS.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.socialIcon, { backgroundColor: p.bg, borderWidth: p.id === 'google' ? 1 : 0, borderColor: '#d1d5db' }]}
+                onPress={() => handleSocialProvider(p)}
+                disabled={loading || !!socialLoading}
+              >
+                {socialLoading === p.id
+                  ? <ActivityIndicator color={p.fg || '#fff'} size="small" />
+                  : <Text style={[styles.socialEmoji, p.fg && { color: p.fg, fontWeight: '800' }]}>{p.emoji}</Text>
+                }
               </TouchableOpacity>
             ))}
           </View>

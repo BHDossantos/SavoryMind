@@ -1,37 +1,144 @@
 import * as SecureStore from 'expo-secure-store';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.savorymind.net';
-const TOKEN_KEY = 'sm_auth_token';
+
+// SecureStore keys. The native equivalents of:
+//   web: in-memory access token + httpOnly refresh cookie
+// On mobile we have neither — RN's fetch has no cookie jar — so both
+// tokens go through SecureStore, which is OS-keychain-backed (Keychain
+// on iOS, EncryptedSharedPreferences on Android). That's safer than
+// AsyncStorage and roughly equivalent to httpOnly cookies for this
+// threat model.
+const ACCESS_KEY = 'sm_auth_token';
+const REFRESH_KEY = 'sm_refresh_token';
 
 export const tokenStore = {
-  get: () => SecureStore.getItemAsync(TOKEN_KEY),
-  set: (t) => SecureStore.setItemAsync(TOKEN_KEY, t),
-  remove: () => SecureStore.deleteItemAsync(TOKEN_KEY),
+  getAccess: () => SecureStore.getItemAsync(ACCESS_KEY),
+  setAccess: (t) => SecureStore.setItemAsync(ACCESS_KEY, t),
+  getRefresh: () => SecureStore.getItemAsync(REFRESH_KEY),
+  setRefresh: (t) => SecureStore.setItemAsync(REFRESH_KEY, t),
+  clear: () => Promise.all([
+    SecureStore.deleteItemAsync(ACCESS_KEY),
+    SecureStore.deleteItemAsync(REFRESH_KEY),
+  ]),
+  // Legacy alias kept so any pre-refactor callers don't crash mid-flight.
+  // Same effect as `clear()`.
+  remove: () => Promise.all([
+    SecureStore.deleteItemAsync(ACCESS_KEY),
+    SecureStore.deleteItemAsync(REFRESH_KEY),
+  ]),
 };
 
-async function request(path, options = {}) {
-  const token = await tokenStore.get();
+let _onUnauthenticated = null;
+export function setUnauthenticatedHandler(fn) {
+  _onUnauthenticated = fn;
+}
+
+// Coalesce parallel 401-driven refresh attempts onto a single in-flight
+// promise so a screen that fires three queries doesn't fan out to three
+// /refresh calls. Also makes recovery deterministic — every caller awaits
+// the same outcome.
+let _refreshInFlight = null;
+
+async function _doRefresh() {
+  const refresh = await tokenStore.getRefresh();
+  if (!refresh) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Type': 'mobile',
+        'X-Refresh-Token': refresh,
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.access_token) await tokenStore.setAccess(data.access_token);
+    if (data.refresh_token) await tokenStore.setRefresh(data.refresh_token);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function tryRefresh() {
+  if (_refreshInFlight) return _refreshInFlight;
+  _refreshInFlight = _doRefresh().finally(() => { _refreshInFlight = null; });
+  return _refreshInFlight;
+}
+
+async function request(path, options = {}, _didRefresh = false) {
+  const token = await tokenStore.getAccess();
   const headers = {
     'Content-Type': 'application/json',
+    'X-Client-Type': 'mobile',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  // 30-min access tokens expire mid-session — transparently refresh once.
+  // Auth endpoints excluded so a real "wrong password" doesn't get masked
+  // as a refresh-then-retry loop.
+  const isAuthEndpoint =
+    path.startsWith('/api/auth/login') ||
+    path.startsWith('/api/auth/register') ||
+    path.startsWith('/api/auth/refresh') ||
+    path.startsWith('/api/auth/logout');
+
+  if (res.status === 401 && !isAuthEndpoint && !_didRefresh) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return request(path, options, true);
+    }
+    // Refresh failed → really logged out. Wipe local creds and let the app
+    // route the user back to /login via the registered handler.
+    await tokenStore.clear();
+    if (_onUnauthenticated) _onUnauthenticated();
+    throw new Error('Session expired. Please log in again.');
+  }
+
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
   return data;
 }
 
+async function _saveTokensFrom(result) {
+  if (result?.access_token) await tokenStore.setAccess(result.access_token);
+  if (result?.refresh_token) await tokenStore.setRefresh(result.refresh_token);
+}
+
 export const api = {
   // Auth
-  register: (data) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-  login: async (data) => {
-    const result = await request('/api/auth/login', { method: 'POST', body: JSON.stringify(data) });
-    if (result?.access_token) await tokenStore.set(result.access_token);
+  register: async (data) => {
+    const result = await request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) });
+    await _saveTokensFrom(result);
     return result;
   },
-  logout: () => tokenStore.remove(),
+  login: async (data) => {
+    const result = await request('/api/auth/login', { method: 'POST', body: JSON.stringify(data) });
+    await _saveTokensFrom(result);
+    return result;
+  },
+  // Server-side revoke (jti blacklist) plus local clear. If the network
+  // call fails we still wipe local creds so the user isn't stuck logged
+  // in client-side.
+  logout: async () => {
+    const refresh = await tokenStore.getRefresh();
+    try {
+      await fetch(`${BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'X-Client-Type': 'mobile',
+          ...(refresh ? { 'X-Refresh-Token': refresh } : {}),
+        },
+      });
+    } catch {}
+    await tokenStore.clear();
+  },
+  refresh: tryRefresh,
   getMe: () => request('/api/auth/me'),
 
   // Menu
@@ -136,19 +243,10 @@ export const api = {
   getMenuTrends: () => request('/api/restaurant/trends'),
   getMarketingInsights: () => request('/api/restaurant/marketing'),
 
-  // Social login — exchanges provider profile for our backend JWT
-  socialLogin: async ({ provider, provider_id, email, name, avatar_url }) => {
-    const result = await fetch(`${BASE_URL}/api/auth/social`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-social-secret': process.env.EXPO_PUBLIC_SOCIAL_LOGIN_SECRET || 'dev-social-secret',
-      },
-      body: JSON.stringify({ provider, provider_id, email: email || '', name: name || '', avatar_url: avatar_url || '' }),
-    });
-    const data = await result.json();
-    if (!result.ok) throw new Error(data.detail || 'Social login failed');
-    if (data.access_token) await tokenStore.set(data.access_token);
-    return data;
-  },
+  // (Removed) socialLogin — used to ship the SOCIAL_LOGIN_SECRET in client
+  // env vars, which defeats the secret. Real OAuth on mobile would use
+  // expo-auth-session (already installed) to redirect through the
+  // provider, exchange the auth code via a short-lived bridge route on
+  // the backend, and never expose the social secret to the device. Until
+  // that's wired up, mobile uses email+password only.
 };

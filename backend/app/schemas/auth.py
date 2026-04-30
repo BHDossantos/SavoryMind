@@ -107,6 +107,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type:   str = "bearer"
     user:         UserResponse
+    # Only populated for native-client requests (X-Client-Type: mobile).
+    # Web clients keep getting the refresh token via httpOnly cookie so it
+    # stays unreachable from JS. Mobile can't read Set-Cookie reliably and
+    # has its own secure storage (SecureStore / Keychain), so we hand the
+    # value over in the body for that flow only.
+    refresh_token: Optional[str] = None
 
 
 class ProfileUpdate(BaseModel):
