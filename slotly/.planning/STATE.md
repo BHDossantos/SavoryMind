@@ -35,7 +35,8 @@ Last shipped commit on `claude/appointment-booking-platform-FYizt`:
 - **Q-01** Do we need a `Business` table for shops with multiple barbers in v1, or wait until a customer asks? Deferred — most Rome barbers operate as solo accounts.
 - **Q-02** Cancellation policy — do we need provider-configurable policies (flexible / moderate / strict) or is a flat 2h rule enough for v1? Flat for now.
 - **Q-03** Reviews — moderation? For v1 anyone can post; admin manual takedown via DB. Add moderation tooling if abuse appears.
-- **Q-04** GSD installer — should we run `npx get-shit-done-cc@latest` in `slotly/` to get the official slash commands and agent definitions? Currently we hand-rolled the planning files.
+- **Q-04** ~~GSD installer — should we run `npx get-shit-done-cc@latest` in `slotly/`?~~ **Resolved Phase 06.** Installed for Claude Code: 85 commands under `.claude/commands/gsd/`, 33 agents under `.claude/agents/`, 11 hooks under `.claude/hooks/`, plus framework data under `.claude/get-shit-done/`. Hand-rolled `.planning/` files reconciled to the official `config.json` schema.
+- **Q-05** GSD wants a project-root `CLAUDE.md` with marker-bounded sections sourced from `PROJECT.md`, `STACK.md`, `CONVENTIONS.md`, `ARCHITECTURE.md`. We have `PROJECT.md`. The other three don't exist yet. The intended generator is `gsd-tools generate-claude-md` (per the framework's own template), available globally via `npm i -g @gsd-build/sdk`. Open: do we hand-write a minimal `CLAUDE.md` now, or wait until the user runs the SDK generator?
 
 ## Blockers
 

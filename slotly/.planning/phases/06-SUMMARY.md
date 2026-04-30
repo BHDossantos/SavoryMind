@@ -1,10 +1,11 @@
 # Phase 06 — Slotly rebrand + GSD adoption
 
-**Status:** in_progress
+**Status:** done
 **Commits:**
 - `834821a chore(slotly): rename availablenow -> slotly` — directory rename via `git mv`
 - `96513b3 chore(slotly): update brand strings to Slotly` — content edits
-- this commit — `.planning/` artifacts + migration kit
+- `e982fd7 docs(slotly): GSD planning + migration kit` — `.planning/` artifacts + migration kit
+- this commit — official GSD installer (`.claude/`) + config reconciliation
 
 ## Goal
 
@@ -29,9 +30,13 @@ Pivot the project from working name "AvailableNow" to "Slotly" (the chosen GitHu
 
 No new technical decisions — meta-phase.
 
-## Open questions
+## Open questions resolved
 
-- Q-04 — should we run `npx get-shit-done-cc@latest` inside `slotly/` to install the official GSD slash commands and agent definitions? Currently we hand-rolled the planning files to match the framework's structure without installing the toolchain. Hand-rolled docs are framework-compatible but the user won't have `/gsd-plan-phase` etc. available until the installer runs.
+- ✅ Q-04 — installed `npx get-shit-done-cc@latest --claude --local` (v1.38.5). Dropped 85 commands, 33 agents, 11 hooks, and the framework's `.claude/get-shit-done/` data dir (~4 MB total). `.planning/config.json` reconciled to the official schema (`mode`, `granularity`, nested `workflow` / `planning` / `parallelization` / `gates` / `safety` / `hooks` / `agent_skills`).
+
+## New open question (Q-05)
+
+GSD wants a project-root `CLAUDE.md` with marker-bounded sections sourced from `PROJECT.md` plus `STACK.md`, `CONVENTIONS.md`, `ARCHITECTURE.md` (the latter three don't exist). The framework's intended generator is `gsd-tools generate-claude-md` from `@gsd-build/sdk`, which the local installer skipped (`Skipping SDK check for local install — install @gsd-build/sdk globally if you need /gsd-* CLI support.`). Decision deferred — the user can either install the SDK globally (`npm i -g @gsd-build/sdk`) and run `gsd-tools generate-claude-md`, or we hand-write a minimal `CLAUDE.md` next phase.
 
 ## Verified
 
