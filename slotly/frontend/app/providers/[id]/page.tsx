@@ -82,7 +82,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
           )}
         </h2>
         {reviews.length === 0 ? (
-          <p className="text-slate-500">No reviews from AvailableNow customers yet.</p>
+          <p className="text-slate-500">No reviews from Slotly customers yet.</p>
         ) : (
           <ul className="space-y-3">
             {reviews.map((r) => (

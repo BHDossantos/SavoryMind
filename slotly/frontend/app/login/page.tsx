@@ -74,7 +74,7 @@ function LoginInner() {
         </Link>
       </p>
       <p className="rounded bg-slate-100 p-3 text-xs text-slate-600">
-        Demo accounts: <code>demo@availablenow.app</code> / <code>password123</code> (customer),{" "}
+        Demo accounts: <code>demo@slotly.app</code> / <code>password123</code> (customer),{" "}
         <code>marco@romebarbers.it</code> / <code>password123</code> (provider).
       </p>
     </div>

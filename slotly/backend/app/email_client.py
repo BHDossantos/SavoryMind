@@ -11,7 +11,7 @@ import httpx
 
 from .config import settings
 
-logger = logging.getLogger("availablenow.email")
+logger = logging.getLogger("slotly.email")
 
 
 def is_stub_mode() -> bool:

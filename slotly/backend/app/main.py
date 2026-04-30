@@ -20,7 +20,7 @@ from .routers import (
     services,
 )
 
-logger = logging.getLogger("availablenow.main")
+logger = logging.getLogger("slotly.main")
 _scheduler: BackgroundScheduler | None = None
 
 
@@ -33,7 +33,7 @@ def _process_due_tick() -> None:
     except Exception as e:  # noqa: BLE001
         logger.warning("Notification tick failed: %s", e)
 
-app = FastAPI(title="AvailableNow API", version="0.1.0")
+app = FastAPI(title="Slotly API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

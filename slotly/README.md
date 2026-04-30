@@ -1,4 +1,4 @@
-# AvailableNow
+# Slotly
 
 Real-time appointment booking for local services. Find who's available now, book instantly.
 
@@ -32,9 +32,9 @@ The frontend reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8001`).
 
 ## Demo logins
 
-- Customer: `demo@availablenow.app` / `password123`
+- Customer: `demo@slotly.app` / `password123`
 - Provider: `marco@romebarbers.it` / `password123` (any seeded barber works)
-- Admin: `admin@availablenow.app` / `admin123`
+- Admin: `admin@slotly.app` / `admin123`
 
 ## Stripe deposits
 

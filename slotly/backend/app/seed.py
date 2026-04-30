@@ -213,10 +213,10 @@ def run() -> None:
             return
 
         # demo customer
-        if not session.exec(select(User).where(User.email == "demo@availablenow.app")).first():
+        if not session.exec(select(User).where(User.email == "demo@slotly.app")).first():
             session.add(
                 User(
-                    email="demo@availablenow.app",
+                    email="demo@slotly.app",
                     password_hash=hash_password("password123"),
                     first_name="Demo",
                     last_name="Customer",
@@ -225,10 +225,10 @@ def run() -> None:
             )
 
         # admin user
-        if not session.exec(select(User).where(User.email == "admin@availablenow.app")).first():
+        if not session.exec(select(User).where(User.email == "admin@slotly.app")).first():
             session.add(
                 User(
-                    email="admin@availablenow.app",
+                    email="admin@slotly.app",
                     password_hash=hash_password("admin123"),
                     first_name="Admin",
                     last_name="",
@@ -295,9 +295,9 @@ def run() -> None:
 
         session.commit()
         print(f"Seeded {len(BARBERS)} providers, 1 demo customer, 1 admin.")
-        print("Customer login: demo@availablenow.app / password123")
+        print("Customer login: demo@slotly.app / password123")
         print("Provider login (e.g.): marco@romebarbers.it / password123")
-        print("Admin login: admin@availablenow.app / admin123")
+        print("Admin login: admin@slotly.app / admin123")
 
 
 if __name__ == "__main__":

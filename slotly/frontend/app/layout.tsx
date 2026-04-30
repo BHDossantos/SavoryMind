@@ -3,7 +3,7 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "AvailableNow — Book local services instantly",
+  title: "Slotly — Book local services instantly",
   description:
     "Find barbers, salons, and beauty professionals available now near you. Real-time booking.",
 };

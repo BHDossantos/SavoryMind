@@ -48,7 +48,7 @@ export default function ProviderDashboardPage() {
   if (needsProfile) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Welcome to AvailableNow</h1>
+        <h1 className="text-2xl font-bold">Welcome to Slotly</h1>
         <p>Let's set up your provider profile to start receiving bookings.</p>
         <Link
           href="/provider/profile"

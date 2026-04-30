@@ -1,7 +1,7 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
-const TOKEN_KEY = "availablenow.token";
-const USER_KEY = "availablenow.user";
+const TOKEN_KEY = "slotly.token";
+const USER_KEY = "slotly.user";
 
 export type Role = "customer" | "provider" | "admin";
 

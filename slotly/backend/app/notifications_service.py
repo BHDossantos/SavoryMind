@@ -17,7 +17,7 @@ from .models import (
     User,
 )
 
-logger = logging.getLogger("availablenow.notifications")
+logger = logging.getLogger("slotly.notifications")
 
 
 def _format_when(start_at: datetime) -> str:
@@ -34,7 +34,7 @@ def _render(
 ) -> tuple[str, str]:
     when = _format_when(appt.start_at)
     where = ", ".join(p for p in [provider.address, provider.neighborhood, provider.city] if p)
-    base_signoff = "\n\n— AvailableNow"
+    base_signoff = "\n\n— Slotly"
 
     if kind == NotificationKind.booking_confirmed:
         subject = f"Booking confirmed · {service.name} at {provider.display_name}"
@@ -82,7 +82,7 @@ def _render(
             f"{base_signoff}"
         )
     else:
-        subject = "AvailableNow update"
+        subject = "Slotly update"
         body = "You have an update about your booking."
     return subject, body
 
