@@ -41,11 +41,11 @@ Booking reminder cron (T-60min, idempotent). Branded OG image generators
 feedback + auth. Admin bookings UX overhaul. Guest rate limiter. CSV
 exports (bookings / payments / commissions). Saved venues / favourites.
 
-## Phase 8 · GSD bootstrap + i18n completion [shipped — `a685022`, `<i18n-sha>`]
+## Phase 8 · GSD bootstrap + i18n completion [shipped — `a685022`, `a322acf`]
 
 - `a685022` — adopt GSD methodology: `PROJECT.md`, `REQUIREMENTS.md`,
   `ROADMAP.md`, `STATE.md` bootstrap.
-- `<i18n-sha>` — task **`t-i18n-complete`** shipped: useT() wired into
+- `a322acf` — task **`t-i18n-complete`** shipped: useT() wired into
   bookings detail, chat, groups (new + token), my-plans, profile,
   premium. ~50 new dictionary keys (mybook / chat / group / myplans /
   profile / premium / common.*) added in EN + IT.
