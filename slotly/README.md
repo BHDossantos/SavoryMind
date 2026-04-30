@@ -2,6 +2,10 @@
 
 Real-time appointment booking for local services. Find who's available now, book instantly.
 
+This project follows the [GSD spec-driven workflow](https://github.com/gsd-build/get-shit-done). Vision, requirements, roadmap, and per-phase summaries live in [`.planning/`](.planning/).
+
+Currently parked inside `BHDossantos/SavoryMind` while we prepare the move to `BHDossantos/Slotly` — see [`MIGRATION.md`](MIGRATION.md).
+
 This v0 covers the end-to-end booking loop: signup → provider profile + services + availability → customer search → book → cancel.
 
 ## Stack

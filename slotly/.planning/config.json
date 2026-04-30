@@ -1,0 +1,38 @@
+{
+  "project_code": "slotly",
+  "mode": "spec_driven",
+  "granularity": "atomic",
+  "runtime": "claude_code",
+  "model_profile": "balanced",
+  "resolve_model_ids": "omit",
+  "workflow": {
+    "ui_phase": true,
+    "ui_safety_gate": true,
+    "discuss_mode": "assumptions",
+    "context_coverage_gate": true,
+    "skip_discuss": false,
+    "nyquist_validation": false,
+    "drift_action": "warn",
+    "drift_threshold": 0.3
+  },
+  "parallelization": {
+    "enabled": true
+  },
+  "planning": {
+    "atomic_tasks": true,
+    "xml_plan_format": true,
+    "wave_based_execution": true
+  },
+  "hooks": {
+    "workflow_guard": false
+  },
+  "intel": {
+    "enabled": false
+  },
+  "git": {
+    "commit_docs": true,
+    "phase_branch_prefix": "phase/",
+    "atomic_commits": true
+  },
+  "model_overrides": {}
+}
