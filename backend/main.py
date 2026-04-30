@@ -1,13 +1,16 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from sqlalchemy import text, inspect as sa_inspect
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine
 from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -31,124 +34,29 @@ from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth
 
-# Columns to add to existing `users` table on older deployments
-_USER_MIGRATIONS = [
-    ("first_name",           "VARCHAR(100)"),
-    ("last_name",            "VARCHAR(100)"),
-    ("city",                 "VARCHAR(150)"),
-    ("country",              "VARCHAR(100)"),
-    ("latitude",             "REAL"),
-    ("longitude",            "REAL"),
-    ("music_genres",         "TEXT"),
-    ("cuisine_preferences",  "TEXT"),
-    ("dietary_preferences",  "TEXT"),
-    ("drinking_habits",      "TEXT"),
-    ("recipe_interests",     "TEXT"),
-    ("onboarding_completed", "BOOLEAN DEFAULT FALSE"),
-    ("social_provider",      "VARCHAR(50)"),
-    ("social_id",            "VARCHAR(255)"),
-    ("employer_id",          "INTEGER"),
-    ("kitchen_style",        "VARCHAR(100)"),
-    ("skill_level",          "VARCHAR(50)"),
-    ("cooking_frequency",    "VARCHAR(50)"),
-    ("cooking_time_pref",    "VARCHAR(50)"),
-    ("flavor_profile",       "TEXT"),
-    ("cooking_goals",        "TEXT"),
-    ("meal_types",           "TEXT"),
-    ("kitchen_tools",        "TEXT"),
-    ("ingredient_budget",    "VARCHAR(50)"),
-    ("music_moods",          "TEXT"),
-    ("non_alcoholic_ok",     "BOOLEAN"),
-    ("cuisine_dislikes",     "TEXT"),
-    ("dining_occasions",     "TEXT"),
-    ("atmosphere_prefs",     "TEXT"),
-    ("dining_budget",        "VARCHAR(50)"),
-    ("dining_frequency",     "VARCHAR(50)"),
-    ("dining_group",         "TEXT"),
-    ("business_type",        "VARCHAR(50)"),
-    ("restaurant_cuisine",   "TEXT"),
-    ("service_type",         "TEXT"),
-    ("dining_style",         "VARCHAR(50)"),
-    ("target_audience",      "TEXT"),
-    ("peak_hours",           "TEXT"),
-    ("restaurant_goals",     "TEXT"),
-    ("wine_program",         "TEXT"),
-    ("seating_capacity",     "INTEGER"),
-    ("serves_wine",          "BOOLEAN"),
-    ("serves_cocktails",     "BOOLEAN"),
-    ("serves_beer",          "BOOLEAN"),
-]
 
-_STAFF_TIME_MIGRATIONS = [
-    ("staff_user_id", "INTEGER"),
-    ("is_open",       "BOOLEAN DEFAULT FALSE"),
-]
+def _run_alembic_migrations():
+    """Apply schema migrations via Alembic.
 
-_BOOKING_MIGRATIONS = [
-    ("diner_user_id", "INTEGER"),
-    ("source",        "VARCHAR DEFAULT 'manual'"),
-]
+    Self-healing across three states:
+    - Empty database (e.g. fresh local dev) → upgrade head creates the schema.
+    - Existing database from a pre-Alembic deploy (no `alembic_version` table)
+      → stamp head, recording that the live schema matches the baseline
+      without re-running create-table statements that would fail.
+    - Database already managed by Alembic → upgrade head applies any
+      pending migrations.
+    """
+    alembic_ini = Path(__file__).parent / "alembic.ini"
+    cfg = AlembicConfig(str(alembic_ini))
 
-_DINER_BOOKING_MIGRATIONS = [
-    ("restaurant_user_id",    "INTEGER"),
-    ("restaurant_booking_id", "INTEGER"),
-]
-
-_USER_AVAILABILITY_MIGRATIONS = [
-    ("available_time_slots", "TEXT"),
-    ("booking_window_days",  "INTEGER DEFAULT 60"),
-]
-
-_NOTIFICATION_MIGRATIONS: list[tuple[str, str]] = []   # table created by create_all
-_DINER_REVIEW_MIGRATIONS: list[tuple[str, str]] = []   # table created by create_all
-
-_SOCIAL_CONNECTION_MIGRATIONS = [
-    ("access_token",      "TEXT"),
-    ("refresh_token",     "TEXT"),
-    ("token_expires_at",  "DATETIME"),
-    ("scopes",            "VARCHAR(500)"),
-    ("provider_user_id",  "VARCHAR(255)"),
-]
-
-
-def _run_migrations():
-    with engine.connect() as conn:
-        for col, col_type in _USER_MIGRATIONS:
-            try:
-                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_type}"))
-                conn.commit()
-            except Exception:
-                pass
-        for col, col_type in _STAFF_TIME_MIGRATIONS:
-            try:
-                conn.execute(text(f"ALTER TABLE staff_time_logs ADD COLUMN {col} {col_type}"))
-                conn.commit()
-            except Exception:
-                pass
-        for col, col_type in _BOOKING_MIGRATIONS:
-            try:
-                conn.execute(text(f"ALTER TABLE bookings ADD COLUMN {col} {col_type}"))
-                conn.commit()
-            except Exception:
-                pass
-        for col, col_type in _DINER_BOOKING_MIGRATIONS:
-            try:
-                conn.execute(text(f"ALTER TABLE diner_bookings ADD COLUMN {col} {col_type}"))
-                conn.commit()
-            except Exception:
-                pass
-        for col, col_type in _USER_AVAILABILITY_MIGRATIONS:
-            try:
-                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_type}"))
-                conn.commit()
-            except Exception:
-                pass
-        for col, col_type in _SOCIAL_CONNECTION_MIGRATIONS:
-            try:
-                conn.execute(text(f"ALTER TABLE social_connections ADD COLUMN {col} {col_type}"))
-                conn.commit()
-            except Exception:
-                pass
+    existing = set(sa_inspect(engine).get_table_names())
+    if "alembic_version" in existing:
+        alembic_command.upgrade(cfg, "head")
+    elif "users" in existing:
+        # Brownfield: schema already exists from create_all. Mark it as baseline.
+        alembic_command.stamp(cfg, "head")
+    else:
+        alembic_command.upgrade(cfg, "head")
 
 
 _DEFAULT_SECRET = "savorymind-super-secret-change-in-production-32chars"
@@ -168,8 +76,7 @@ async def lifespan(app: FastAPI):
             "SOCIAL_LOGIN_SECRET is the insecure default value. "
             "Set the SOCIAL_LOGIN_SECRET environment variable before deploying to production."
         )
-    Base.metadata.create_all(bind=engine)
-    _run_migrations()
+    _run_alembic_migrations()
     yield
 
 
