@@ -112,10 +112,16 @@ CREATE TABLE IF NOT EXISTS notifications (
   channel TEXT NOT NULL,
   subject TEXT NOT NULL,
   body TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at TEXT NOT NULL DEFAULT (datetime('now')),
   delivered_at TEXT,
   error TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_notifications_pending
+  ON notifications(next_attempt_at)
+  WHERE delivered_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS confirmed_bookings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -137,6 +143,10 @@ CREATE TABLE IF NOT EXISTS confirmed_bookings (
 `;
 
 function init(database: Database.Database) {
+  // Wait up to 5s for any other process holding a write lock — `next build`
+  // spawns parallel page-data workers that all init the DB at once and would
+  // otherwise SQLITE_BUSY out during initial WAL setup.
+  database.pragma("busy_timeout = 5000");
   database.pragma("journal_mode = WAL");
   database.pragma("foreign_keys = ON");
   database.exec(SCHEMA);

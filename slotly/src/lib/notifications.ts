@@ -109,13 +109,20 @@ function describeCategory(category: string) {
   );
 }
 
+export const MAX_ATTEMPTS = 5;
+
 export interface NotifyInput {
   userId: number;
   requestId?: number | null;
   kind: NotificationKind;
 }
 
-export async function notify(input: NotifyInput): Promise<void> {
+/**
+ * Enqueue a notification. Synchronous SQLite insert — never calls Resend
+ * inline. The worker (src/lib/notifyWorker.ts) drains the queue with
+ * exponential backoff, so a Resend outage doesn't lose events.
+ */
+export function notify(input: NotifyInput): void {
   const user = db
     .prepare("SELECT id, email, first_name FROM users WHERE id = ?")
     .get(input.userId) as UserContact | undefined;
@@ -136,35 +143,63 @@ export async function notify(input: NotifyInput): Promise<void> {
   const tpl = template(input.kind, user, request, confirmation);
   const channel = process.env.RESEND_API_KEY ? "email" : "console";
 
-  const insert = db.prepare(
+  db.prepare(
     `INSERT INTO notifications (user_id, request_id, channel, subject, body)
      VALUES (?, ?, ?, ?, ?)`,
-  );
-  const result = insert.run(
-    user.id,
-    input.requestId ?? null,
-    channel,
-    tpl.subject,
-    tpl.body,
-  );
-  const notificationId = Number(result.lastInsertRowid);
+  ).run(user.id, input.requestId ?? null, channel, tpl.subject, tpl.body);
+}
 
-  try {
-    if (process.env.RESEND_API_KEY) {
-      await sendViaResend({ to: user.email, ...tpl });
-    } else {
-      console.log(
-        `[notify:console] to=${user.email} subject="${tpl.subject}"\n${tpl.body}\n`,
-      );
-    }
-    db.prepare(
-      `UPDATE notifications SET delivered_at = datetime('now') WHERE id = ?`,
-    ).run(notificationId);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[notify] delivery failed: ${msg}`);
-    db.prepare(`UPDATE notifications SET error = ? WHERE id = ?`).run(msg, notificationId);
+export interface PendingNotification {
+  id: number;
+  user_email: string;
+  channel: string;
+  subject: string;
+  body: string;
+  attempts: number;
+}
+
+export function claimPending(limit: number): PendingNotification[] {
+  return db
+    .prepare(
+      `SELECT n.id, n.subject, n.body, n.channel, n.attempts, u.email AS user_email
+       FROM notifications n
+       JOIN users u ON u.id = n.user_id
+       WHERE n.delivered_at IS NULL
+         AND n.attempts < ?
+         AND n.next_attempt_at <= datetime('now')
+       ORDER BY n.id ASC
+       LIMIT ?`,
+    )
+    .all(MAX_ATTEMPTS, limit) as PendingNotification[];
+}
+
+export async function dispatch(row: PendingNotification): Promise<void> {
+  if (row.channel === "email" && process.env.RESEND_API_KEY) {
+    await sendViaResend({ to: row.user_email, subject: row.subject, body: row.body });
+  } else {
+    console.log(
+      `[notify:console] to=${row.user_email} subject="${row.subject}"\n${row.body}\n`,
+    );
   }
+}
+
+export function markDelivered(id: number): void {
+  db.prepare(
+    `UPDATE notifications SET delivered_at = datetime('now'), error = NULL WHERE id = ?`,
+  ).run(id);
+}
+
+export function markFailed(id: number, attempts: number, err: unknown): void {
+  const msg = (err instanceof Error ? err.message : String(err)).slice(0, 1000);
+  const nextAttempts = attempts + 1;
+  const backoffSeconds = Math.min(60 * 60, 30 * 2 ** attempts);
+  db.prepare(
+    `UPDATE notifications
+     SET attempts = ?,
+         error = ?,
+         next_attempt_at = datetime('now', ?)
+     WHERE id = ?`,
+  ).run(nextAttempts, msg, `+${backoffSeconds} seconds`, id);
 }
 
 async function sendViaResend(opts: { to: string; subject: string; body: string }) {
