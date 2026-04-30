@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Linking } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Linking, Image } from 'react-native';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 const MOODS    = ['Happy', 'Romantic', 'Relaxed', 'Energetic', 'Cozy', 'Adventurous', 'Melancholic', 'Celebratory'];
 const CUISINES = ['Italian', 'Japanese', 'Mexican', 'French', 'Indian', 'American', 'Mediterranean', 'Thai'];
@@ -15,6 +15,7 @@ const STREAMING = [
 ];
 
 export default function MusicScreen() {
+  const router = useRouter();
   const [mood, setMood]           = useState('');
   const [cuisine, setCuisine]     = useState('');
   const [result, setResult]       = useState(null);
@@ -22,13 +23,63 @@ export default function MusicScreen() {
   const [loading, setLoading]     = useState(false);
   const [histLoading, setHistLoading] = useState(true);
   const [error, setError]         = useState(null);
+  // Real Spotify integration: when the user is connected, we replace the
+  // generic deep-link buttons below the result card with actual playable
+  // tracks pulled from /v1/search using the user's stored token.
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyTracks, setSpotifyTracks]   = useState(null);   // null = not yet attempted
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [spotifyAuthError, setSpotifyAuthError] = useState(false);
 
   const loadHistory = async () => {
     try { const data = await api.getMusicMoods(); setHistory(data.slice(0, 6)); } catch {}
     finally { setHistLoading(false); }
   };
 
-  useFocusEffect(useCallback(() => { loadHistory(); }, []));
+  const refreshSpotifyConnectionState = async () => {
+    try {
+      const conns = await api.getConnections();
+      setSpotifyConnected(!!conns.find((c) => c.platform === 'spotify' && c.connected));
+    } catch {}
+  };
+
+  useFocusEffect(useCallback(() => {
+    loadHistory();
+    refreshSpotifyConnectionState();
+  }, []));
+
+  // After we get a music-mood result, fetch real tracks if connected.
+  useEffect(() => {
+    if (!result || !spotifyConnected) {
+      setSpotifyTracks(null);
+      setSpotifyAuthError(false);
+      return;
+    }
+    // Compose a search query from the result. The backend doesn't yet
+    // include the original web's `spotify_query` field on the mobile
+    // response shape, so derive one from genre + mood.
+    const query = [result.genre_recommendation, result.mood].filter(Boolean).join(' ').trim()
+      || result.mood || 'dinner mood';
+
+    let cancelled = false;
+    setSpotifyLoading(true);
+    setSpotifyAuthError(false);
+    api.searchSpotify(query, 10)
+      .then((data) => {
+        if (cancelled) return;
+        setSpotifyTracks(data.tracks || []);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const msg = err.message || '';
+        if (msg.includes('Spotify session expired') || msg.includes('not connected') || msg.includes('rejected')) {
+          setSpotifyAuthError(true);
+        }
+        setSpotifyTracks([]);
+      })
+      .finally(() => { if (!cancelled) setSpotifyLoading(false); });
+    return () => { cancelled = true; };
+  }, [result?.id, spotifyConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGenerate = async () => {
     if (!mood) { setError('Pick a mood first.'); return; }
@@ -98,19 +149,62 @@ export default function MusicScreen() {
               <View style={styles.resultRow}><Text style={styles.rrLabel}>Tempo</Text><Text style={styles.rrValue}>{result.tempo}</Text></View>
             )}
 
-            <Text style={styles.streamLabel}>Play now on</Text>
-            <View style={styles.streamRow}>
-              {STREAMING.map((s) => (
-                <TouchableOpacity
-                  key={s.id}
-                  style={[styles.streamBtn, { backgroundColor: s.color }]}
-                  onPress={() => openStreaming(s, result.genre_recommendation)}
-                >
-                  <Text style={styles.streamEmoji}>{s.emoji}</Text>
-                  <Text style={styles.streamName}>{s.label}</Text>
+            {/* Connected → real tracks via /v1/search; disconnected → the
+                old emoji deep-link buttons. The connected branch is the
+                whole point of the OAuth flow we shipped. */}
+            {spotifyConnected ? (
+              <View>
+                <Text style={styles.streamLabel}>Top matches on your Spotify</Text>
+                {spotifyAuthError ? (
+                  <TouchableOpacity onPress={() => router.push('/(consumer)/social')} style={styles.reconnectBox}>
+                    <Text style={styles.reconnectText}>Your Spotify session expired. Tap to reconnect.</Text>
+                  </TouchableOpacity>
+                ) : spotifyLoading ? (
+                  <View style={{ paddingVertical: 14 }}>
+                    <ActivityIndicator color="#1DB954" />
+                  </View>
+                ) : spotifyTracks && spotifyTracks.length > 0 ? (
+                  spotifyTracks.map((t) => (
+                    <TouchableOpacity
+                      key={t.id}
+                      style={styles.trackRow}
+                      onPress={() => t.external_url && Linking.openURL(t.external_url)}
+                      activeOpacity={0.7}
+                    >
+                      {t.album_image
+                        ? <Image source={{ uri: t.album_image }} style={styles.trackArt} />
+                        : <View style={[styles.trackArt, { backgroundColor: C.gray[200] }]} />}
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.trackName} numberOfLines={1}>{t.name}</Text>
+                        <Text style={styles.trackArtists} numberOfLines={1}>{(t.artists || []).join(', ')}</Text>
+                      </View>
+                      <Text style={styles.trackOpen}>Open ↗</Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={styles.trackEmpty}>No tracks matched on your Spotify — try a different mood.</Text>
+                )}
+              </View>
+            ) : (
+              <>
+                <Text style={styles.streamLabel}>Play now on</Text>
+                <View style={styles.streamRow}>
+                  {STREAMING.map((s) => (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[styles.streamBtn, { backgroundColor: s.color }]}
+                      onPress={() => openStreaming(s, result.genre_recommendation)}
+                    >
+                      <Text style={styles.streamEmoji}>{s.emoji}</Text>
+                      <Text style={styles.streamName}>{s.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity onPress={() => router.push('/(consumer)/social')} style={styles.connectBanner}>
+                  <Text style={styles.connectBannerText}>🔗 Connect Spotify for real tracks instead of search links</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              </>
+            )}
           </View>
         )}
 
@@ -162,6 +256,16 @@ const styles = StyleSheet.create({
   streamBtn:          { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10 },
   streamEmoji:        { fontSize: 16 },
   streamName:         { fontSize: 11, fontWeight: '700', color: '#fff' },
+  trackRow:           { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  trackArt:           { width: 40, height: 40, borderRadius: 6, backgroundColor: C.gray[200] },
+  trackName:          { fontSize: 13, fontWeight: '600', color: C.gray[900] },
+  trackArtists:       { fontSize: 12, color: C.gray[500], marginTop: 2 },
+  trackOpen:          { fontSize: 12, color: '#1DB954', fontWeight: '700' },
+  trackEmpty:         { fontSize: 12, color: C.gray[500], paddingVertical: 10 },
+  reconnectBox:       { padding: 12, backgroundColor: '#fef3c7', borderRadius: 10, borderWidth: 1, borderColor: '#fcd34d' },
+  reconnectText:      { fontSize: 12, color: '#92400e', fontWeight: '600', textAlign: 'center' },
+  connectBanner:      { marginTop: 12, padding: 10, backgroundColor: '#dcfce7', borderRadius: 10, borderWidth: 1, borderColor: '#86efac' },
+  connectBannerText:  { fontSize: 12, color: '#16a34a', fontWeight: '600', textAlign: 'center' },
   histTitle:          { fontSize: 14, fontWeight: '700', color: C.gray[700], marginBottom: 10 },
   histCard:           { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: C.gray[100] },
   histMood:           { fontSize: 13, fontWeight: '600', color: C.gray[800] },

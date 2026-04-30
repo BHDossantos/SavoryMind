@@ -225,6 +225,23 @@ export const api = {
   getShoppingList: (dietary = '') => request(`/api/consumer/shopping-list?dietary=${dietary}`),
   getDailySuggestion: (mood = '') => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
+  // OAuth — Spotify (real Authorization Code flow). Same backend endpoints
+  // the web client uses (see /api/oauth/spotify/* routes); only difference
+  // is mobile opens authorize_url in WebBrowser instead of redirecting the
+  // tab. After OAuth completes the backend redirects to FRONTEND_URL/
+  // consumer/social?spotify=connected — the user closes the browser, mobile
+  // refetches connections on focus, and the connection card flips to
+  // "Connected as <Spotify display name>".
+  startSpotifyAuth:    () => request('/api/oauth/spotify/start'),
+  disconnectSpotify:   () => request('/api/oauth/spotify/disconnect', { method: 'POST' }),
+  searchSpotify:       (query, limit = 12) => request('/api/oauth/spotify/search', { method: 'POST', body: JSON.stringify({ query, limit }) }),
+
+  // Aggregated theme summary across a restaurant's reviews — top
+  // complaints / praise / themes / tone breakdown derived from Claude's
+  // per-review extraction. Empty top_* lists when ANTHROPIC_API_KEY isn't
+  // set on the backend.
+  getReviewThemes:     () => request('/api/reviews/themes'),
+
   // Consumer — Culinary Assistant (Claude Opus 4.7).
   // Backend route: POST /api/consumer/assistant {question} → {title, answer}.
   // Returns "Assistant not configured" if ANTHROPIC_API_KEY is unset on

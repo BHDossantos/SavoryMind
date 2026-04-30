@@ -23,6 +23,7 @@ export default function ConsumerLayout() {
           from the dashboard. The tab bar already has 6 entries; a 7th
           would crowd the layout. */}
       <Tabs.Screen name="assistant" options={{ href: null }} />
+      <Tabs.Screen name="social"    options={{ href: null }} />
     </Tabs>
   );
 }

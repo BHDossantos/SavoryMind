@@ -3,14 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Activi
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
-import { useFocusEffect } from 'expo-router';
-
-const PLATFORMS = [
-  { id: 'spotify',       icon: '🎧', name: 'Spotify' },
-];
+import { useFocusEffect, useRouter } from 'expo-router';
 
 export default function ConsumerProfile() {
   const { user, logout, setUser } = useAuth();
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [savingProfile, setSavingProfile] = useState(false);
@@ -36,15 +33,9 @@ export default function ConsumerProfile() {
     finally { setSavingProfile(false); }
   };
 
-  const toggleConnection = async (platformId) => {
-    const current = connections[platformId];
-    try {
-      const updated = await api.updateConnection(platformId, {
-        platform: platformId, connected: !current?.connected, username: null,
-      });
-      setConnections((prev) => ({ ...prev, [platformId]: updated }));
-    } catch {}
-  };
+  // Spotify is the only connected service that uses real OAuth — the
+  // labels-only flow was removed elsewhere in this PR. Tapping the
+  // Spotify row routes to the dedicated connect screen.
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -72,23 +63,24 @@ export default function ConsumerProfile() {
         </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Connected Services</Text>
-        {PLATFORMS.map((p) => {
-          const conn = connections[p.id];
-          return (
-            <View key={p.id} style={styles.platformRow}>
-              <Text style={styles.platformIcon}>{p.icon}</Text>
-              <Text style={styles.platformName}>{p.name}</Text>
-              <TouchableOpacity
-                style={[styles.connectBtn, conn?.connected && styles.connectedBtn]}
-                onPress={() => toggleConnection(p.id)}
-              >
-                <Text style={[styles.connectBtnText, conn?.connected && styles.connectedBtnText]}>
-                  {conn?.connected ? 'Connected ✓' : 'Connect'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+        <TouchableOpacity
+          style={styles.platformRow}
+          onPress={() => router.push('/(consumer)/social')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.platformIcon}>🎧</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.platformName}>Spotify</Text>
+            {connections.spotify?.connected && connections.spotify?.username && (
+              <Text style={styles.platformSub}>Connected as {connections.spotify.username}</Text>
+            )}
+          </View>
+          <View style={[styles.connectBtn, connections.spotify?.connected && styles.connectedBtn]}>
+            <Text style={[styles.connectBtnText, connections.spotify?.connected && styles.connectedBtnText]}>
+              {connections.spotify?.connected ? 'Connected ✓' : 'Connect'}
+            </Text>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -108,7 +100,8 @@ const styles = StyleSheet.create({
   saveBtnText:     { color: '#fff', fontWeight: '700', fontSize: 15 },
   platformRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: C.gray[100] },
   platformIcon:    { fontSize: 22, marginRight: 12 },
-  platformName:    { flex: 1, fontSize: 14, fontWeight: '600', color: C.gray[800] },
+  platformName:    { fontSize: 14, fontWeight: '600', color: C.gray[800] },
+  platformSub:     { fontSize: 12, color: C.gray[500], marginTop: 2 },
   connectBtn:      { borderWidth: 1.5, borderColor: C.consumer.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   connectBtnText:  { fontSize: 12, fontWeight: '700', color: C.consumer.primary },
   connectedBtn:    { backgroundColor: C.consumer.light, borderColor: C.consumer.border },
