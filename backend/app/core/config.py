@@ -67,6 +67,13 @@ class Settings(BaseSettings):
     # appended; defaults to the social-connect page.
     frontend_url: str = "http://localhost:3000"
 
+    # Fernet key (32-byte url-safe base64) used to encrypt OAuth tokens at
+    # rest in the social_connections table. The default below is for local
+    # dev only — main.py refuses to start in production unless this is
+    # overridden by the TOKEN_ENCRYPTION_KEY env var. Generate a new prod
+    # key with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+    token_encryption_key: str = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
+
     class Config:
         env_file = ".env"
 

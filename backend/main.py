@@ -61,6 +61,7 @@ def _run_alembic_migrations():
 
 _DEFAULT_SECRET = "savorymind-super-secret-change-in-production-32chars"
 _DEFAULT_SOCIAL_SECRET = "dev-social-secret"
+_DEFAULT_TOKEN_ENCRYPTION_KEY = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
 
 
 @asynccontextmanager
@@ -75,6 +76,12 @@ async def lifespan(app: FastAPI):
         raise RuntimeError(
             "SOCIAL_LOGIN_SECRET is the insecure default value. "
             "Set the SOCIAL_LOGIN_SECRET environment variable before deploying to production."
+        )
+    if settings.token_encryption_key == _DEFAULT_TOKEN_ENCRYPTION_KEY and is_prod:
+        raise RuntimeError(
+            "TOKEN_ENCRYPTION_KEY is the insecure default value. "
+            "Generate a fresh key with `python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"` "
+            "and set it as an env var before deploying to production."
         )
     _run_alembic_migrations()
     yield
