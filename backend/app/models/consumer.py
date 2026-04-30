@@ -32,7 +32,7 @@ class SocialConnection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    platform = Column(String, nullable=False)  # spotify | amazon_music | alexa | instagram | tiktok
+    platform = Column(String, nullable=False)  # spotify (others removed — no viable OAuth)
     connected = Column(Boolean, default=False)
     username = Column(String, nullable=True)
     profile_url = Column(String, nullable=True)

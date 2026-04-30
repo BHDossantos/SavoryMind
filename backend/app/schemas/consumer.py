@@ -42,8 +42,6 @@ class MusicRecommendation(BaseModel):
     bpm_range: str
     vibe: str
     spotify_query: str
-    amazon_station: str
-    alexa_command: str
 
 
 class MusicMoodResponse(BaseModel):

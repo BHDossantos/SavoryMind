@@ -47,7 +47,6 @@ export default function MusicMood() {
   }, []);
 
   const connectedSpotify = connections.find((c) => c.platform === "spotify" && c.connected);
-  const connectedAmazon  = connections.find((c) => c.platform === "amazon_music" && c.connected);
 
   // Whenever the rendered result changes and we're connected to Spotify, fetch
   // real tracks matching the recommended search query so the user can play
@@ -272,32 +271,6 @@ export default function MusicMood() {
                         ) : null}
                       </div>
                     )}
-                  </div>
-
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${connectedAmazon ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔵</span>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-800">Amazon Music</p>
-                        <p className="text-xs text-gray-500">Station: {display.amazon_station}</p>
-                      </div>
-                    </div>
-                    {connectedAmazon ? (
-                      <span className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-full font-medium">Playing</span>
-                    ) : (
-                      <a href="/consumer/social" className="text-xs bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full font-medium">Connect</a>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔵</span>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-800">Amazon Alexa</p>
-                        <p className="text-xs text-gray-500 italic">"{display.alexa_command}"</p>
-                      </div>
-                    </div>
-                    <span className="text-xs bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full">Say it</span>
                   </div>
                 </div>
               </div>

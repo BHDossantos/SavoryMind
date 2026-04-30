@@ -7,10 +7,6 @@ import { useFocusEffect } from 'expo-router';
 
 const PLATFORMS = [
   { id: 'spotify',       icon: '🎧', name: 'Spotify' },
-  { id: 'amazon_music',  icon: '🎵', name: 'Amazon Music' },
-  { id: 'alexa',         icon: '🔵', name: 'Alexa' },
-  { id: 'instagram',     icon: '📷', name: 'Instagram' },
-  { id: 'tiktok',        icon: '🎬', name: 'TikTok' },
 ];
 
 export default function ConsumerProfile() {
