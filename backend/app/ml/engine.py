@@ -6,8 +6,12 @@ Combines three signal sources ranked by recency weight:
   2. Behavior logs       (what the user actually does over time)
   3. History records     (WinePairing, MusicMood, DinerVisit)
 
-No external ML libraries required — uses weighted scoring and
-frequency analysis achievable in pure Python.
+When ANTHROPIC_API_KEY is set, the public entrypoints
+(build_consumer_recommendations / build_diner_recommendations) ask
+Claude Opus 4.7 to produce contextual recommendations from the same
+inputs. If Claude is unavailable (no key, network failure, schema
+mismatch), the original weighted-scoring path runs as a graceful
+fallback so users on a key-less deployment still get useful output.
 """
 import json
 from collections import defaultdict
@@ -15,6 +19,7 @@ from sqlalchemy.orm import Session
 from ..models.user import User
 from ..models.consumer import BehaviorLog, WinePairing, MusicMood, SocialConnection
 from ..models.diner import DinerVisit
+from ..services import claude_client
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -113,15 +118,95 @@ def get_pairing_history(db: Session, user_id: int) -> dict:
 
 # ── Consumer Recommendations ──────────────────────────────────────────────────
 
+# Fixed schema — keeps Claude's output compatible with the existing frontend
+# rendering (icon emoji, deep-link `action` strings) and prevents the model
+# from inventing wild fields the UI can't handle.
+_CONSUMER_REC_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "recommendations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type":       {"type": "string", "enum": [
+                        "wine_pairing", "beer_pairing", "spirits_pairing", "cocktails_pairing",
+                        "music", "recipe", "connect", "insight",
+                    ]},
+                    "title":      {"type": "string"},
+                    "body":       {"type": "string"},
+                    "icon":       {"type": "string"},
+                    "action":     {"type": "string"},
+                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                },
+                "required": ["type", "title", "body", "icon", "action", "confidence"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["recommendations"],
+    "additionalProperties": False,
+}
+
+
+_CONSUMER_REC_SYSTEM = """You are SavoryMind's personalisation engine for the consumer experience.
+Given a user's onboarding profile, recent behaviour and pairing history, produce 3–5
+genuinely useful, *specific* recommendations that get them deeper into the app.
+
+Rules for the output:
+- Mix recommendation types — don't return five wine pairings.
+- Each `body` must reference at least one concrete signal from the input data
+  (a dish they paired before, a mood they set N times, a cuisine they listed).
+- `action` is a deep-link the frontend opens. Use one of these patterns exactly:
+    wine_pairing?dish=<dish>
+    pairings?type=<wine|beer|spirits|cocktails>
+    music?mood=<mood>      or just  music
+    explore_recipes?cuisine=<cuisine>     or  explore_recipes?diet=<diet>
+    connections
+- `icon` is a single emoji matching the type (🍷 wine, 🍺 beer, 🥃 spirits, 🍸 cocktails,
+  🎵 music, 🍳 recipe, 🥗 dietary, 🔗 connection, 💡 insight).
+- `confidence` reflects how strong the signal is (0.5 weak, 0.8 strong, 0.95 explicit history match).
+- If signals are thin, still produce 3 reasonable recommendations rather than refusing.
+
+Tone for `title` and `body`: warm, second-person, sentence case. Title ≤ 8 words.
+Body ≤ 25 words.
+"""
+
+
 def build_consumer_recommendations(db: Session, user: User) -> list[dict]:
-    """
-    Returns up to 5 personalised recommendations for a consumer user.
-    Each item has: type, title, body, icon, action, confidence (0-1).
-    """
+    """Top-level entrypoint. Tries Claude; falls back to weighted scoring."""
     profile  = get_user_profile(user)
     behavior = get_behavior_summary(db, user.id)
     history  = get_pairing_history(db, user.id)
 
+    if claude_client.is_configured():
+        # Trim the payload — Claude doesn't need defaultdicts or sets.
+        payload = {
+            "profile":  profile,
+            "behavior": {
+                "action_counts":   dict(behavior.get("action_counts", {})),
+                "recipe_cuisines": list(behavior.get("recipe_cuisines", []))[:20],
+                "total_actions":   behavior.get("total_actions", 0),
+            },
+            "history": {
+                "top_dishes":  history.get("top_dishes", [])[:5],
+                "fav_mood":    history.get("fav_mood"),
+                "mood_counts": dict(history.get("mood_counts", {})),
+                "total_pairings": history.get("total_pairings", 0),
+                "total_moods":    history.get("total_moods", 0),
+            },
+        }
+        result = claude_client.call_json(_CONSUMER_REC_SYSTEM, payload, _CONSUMER_REC_SCHEMA)
+        if result and isinstance(result.get("recommendations"), list) and result["recommendations"]:
+            return result["recommendations"]
+
+    return _build_consumer_recommendations_rules(profile, behavior, history, db, user)
+
+
+def _build_consumer_recommendations_rules(profile, behavior, history, db, user) -> list[dict]:
+    """Original rules-based engine — used when Claude is unavailable."""
     recs: list[dict] = []
 
     # ── Signal: repeat favorite dish ─────────────────────────────────────────
@@ -286,14 +371,80 @@ def get_diner_insights(db: Session, user_id: int) -> dict:
     }
 
 
+_DINER_REC_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "recommendations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type":       {"type": "string", "enum": [
+                        "restaurant", "discovery", "dish", "wine", "insight", "onboarding",
+                    ]},
+                    "title":      {"type": "string"},
+                    "body":       {"type": "string"},
+                    "icon":       {"type": "string"},
+                    "action":     {"type": "string"},
+                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                },
+                "required": ["type", "title", "body", "icon", "action", "confidence"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["recommendations"],
+    "additionalProperties": False,
+}
+
+
+_DINER_REC_SYSTEM = """You are SavoryMind's personalisation engine for the diner experience.
+Given a diner's onboarding profile and visit history, produce 3–5 genuinely
+useful recommendations.
+
+Rules:
+- Mix types: rebooking, discovery of new cuisines, chasing a favourite dish, wine-list filters, insights.
+- Each `body` must reference at least one concrete signal (a restaurant name, a cuisine they listed,
+  their would-return percentage, visit count).
+- `action` patterns:
+    book?restaurant=<name>
+    discover?cuisine=<cuisine>     or  discover?filter=wine_list
+    search?dish=<dish>
+    visits/new
+- `icon` matches the type (🍽️ restaurant, 🗺️ discovery, ⭐ dish, 🍷 wine, 💡 insight, 📝 onboarding).
+- `confidence`: 0.95 explicit history (favourite dish, top restaurant), 0.7 cuisine prefs, 0.6 inferred.
+- Cold-start (zero visits): suggest logging the first visit + a discovery pick from their cuisines.
+
+Tone: warm, second-person, sentence case. Title ≤ 8 words, body ≤ 25 words.
+"""
+
+
 def build_diner_recommendations(db: Session, user: User) -> list[dict]:
-    """
-    Returns up to 5 personalised recommendations for a diner user based on
-    visit history and onboarding preferences.
-    """
+    """Top-level entrypoint. Tries Claude; falls back to rules."""
     profile  = get_user_profile(user)
     insights = get_diner_insights(db, user.id)
 
+    if claude_client.is_configured():
+        payload = {
+            "profile": profile,
+            "insights": {
+                "top_restaurants":    insights.get("top_restaurants", [])[:5],
+                "favorite_items":     insights.get("favorite_items", [])[:5],
+                "would_return_pct":   insights.get("would_return_pct", 0),
+                "total_visits":       insights.get("total_visits", 0),
+            },
+        }
+        result = claude_client.call_json(_DINER_REC_SYSTEM, payload, _DINER_REC_SCHEMA)
+        if result and isinstance(result.get("recommendations"), list) and result["recommendations"]:
+            return result["recommendations"]
+
+    return _build_diner_recommendations_rules(profile, insights)
+
+
+def _build_diner_recommendations_rules(profile, insights) -> list[dict]:
+    """Original rules-based engine — used when Claude is unavailable."""
     recs: list[dict] = []
 
     # ── Return to top-rated spot ──────────────────────────────────────────────
