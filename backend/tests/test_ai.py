@@ -193,3 +193,192 @@ def test_assistant_returns_try_again_on_claude_failure(client, monkeypatch):
         assert r.status_code == 200
         body = r.json()
         assert body["title"] == "Try again"
+
+
+# ---- Restaurant insights (trends + marketing + training) -----------------
+
+
+def test_marketing_insights_uses_claude_when_configured(client, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="restaurant")
+
+    fake = {
+        "actions": [{
+            "icon": "💌",
+            "title": "Reactivate quiet VIPs",
+            "detail": "Of your 412 guests only 28 are VIP — send a 15% off code to top spenders this week.",
+            "priority": "high",
+        }],
+        "tips": [{"icon": "📲", "tip": "Post tasting-menu shots Tue+Thu — 22% lift in covers."}],
+    }
+    with patch("app.services.trends_service.claude_client.call_json", return_value=fake):
+        r = client.get("/api/restaurant/marketing", headers=auth_headers(access))
+        assert r.status_code == 200
+        body = r.json()
+        assert body["actions"] == fake["actions"]
+        assert body["tips"] == fake["tips"]
+        # Overview is still computed locally (raw aggregates) regardless
+        assert "total_guests" in body["overview"]
+
+
+def test_marketing_insights_falls_back_to_rules(client, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    access, _ = register_user(client, account_type="restaurant")
+    r = client.get("/api/restaurant/marketing", headers=auth_headers(access))
+    assert r.status_code == 200
+    body = r.json()
+    assert isinstance(body["actions"], list)
+    assert isinstance(body["tips"], list)
+    # Rules fallback always returns the "Ask for reviews" low-priority action
+    titles = [a["title"] for a in body["actions"]]
+    assert "Ask for reviews" in titles
+
+
+def test_training_recommendations_uses_claude_when_configured(client, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="restaurant")
+
+    fake = {"recommendations": [{
+        "staff": "All Team",
+        "priority": "low",
+        "type": "general",
+        "title": "Wine pairing workshop",
+        "detail": "Team performing well — invest in upskilling.",
+        "actions": ["Book sommelier", "Schedule 90-min session"],
+    }]}
+    with patch("app.services.training_service.claude_client.call_json", return_value=fake):
+        r = client.get("/api/owner/training", headers=auth_headers(access))
+        assert r.status_code == 200
+        assert r.json()["recommendations"] == fake["recommendations"]
+
+
+def test_training_recommendations_falls_back_to_rules(client, monkeypatch):
+    """When ANTHROPIC_API_KEY is unset, rules engine returns a non-empty
+    list — exact contents depend on whatever the restaurant registration
+    seeded as demo waste/time/staff data. We just verify the fallback
+    actually fires (no Claude call, valid shape)."""
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    access, _ = register_user(client, account_type="restaurant")
+    r = client.get("/api/owner/training", headers=auth_headers(access))
+    assert r.status_code == 200
+    recs = r.json()["recommendations"]
+    assert len(recs) >= 1
+    # Each rec has the rules-engine schema
+    for rec in recs:
+        assert {"staff", "priority", "type", "title", "detail", "actions"} <= set(rec.keys())
+
+
+# ---- Review theme extraction ---------------------------------------------
+
+
+def _wipe_seeded_reviews(db_session):
+    """Restaurant registration seeds demo reviews so the dashboard isn't
+    empty for a new account. Tests that assert on freshly-created reviews
+    need a clean slate."""
+    from app.models.review import Review
+    db_session.query(Review).delete()
+    db_session.commit()
+
+
+def test_review_create_stores_claude_themes(client, db_session, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="restaurant")
+    _wipe_seeded_reviews(db_session)
+
+    from app.models.menu import MenuItem
+    db_session.add(MenuItem(user_id=1, name="Test Steak", category="Mains", price=24, cost=8))
+    db_session.commit()
+
+    fake_themes = {
+        "themes":     ["service speed", "value for money"],
+        "complaints": ["long wait"],
+        "praise":     ["attentive waiter"],
+        "tone":       "mixed",
+    }
+    with patch("app.services.sentiment_service.claude_client.call_json", return_value=fake_themes):
+        r = client.post("/api/reviews/", headers=auth_headers(access), json={
+            "customer_name": "Anya",
+            "menu_item":     "Test Steak",
+            "rating":        4,
+            "comment":       "Great steak but the wait was painful — server was attentive though.",
+        })
+        assert r.status_code == 201, r.text
+
+    from app.models.review import Review
+    review = db_session.query(Review).order_by(Review.id.desc()).first()
+    assert review.tone == "mixed"
+    import json
+    assert json.loads(review.themes) == ["service speed", "value for money"]
+    assert json.loads(review.complaints) == ["long wait"]
+    assert json.loads(review.praise) == ["attentive waiter"]
+    assert review.sentiment_label in ("positive", "neutral", "negative")
+
+
+def test_review_create_still_saves_when_claude_returns_none(client, db_session, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="restaurant")
+    _wipe_seeded_reviews(db_session)
+
+    from app.models.menu import MenuItem
+    db_session.add(MenuItem(user_id=1, name="Test Pasta", category="Mains", price=18, cost=6))
+    db_session.commit()
+
+    with patch("app.services.sentiment_service.claude_client.call_json", return_value=None):
+        r = client.post("/api/reviews/", headers=auth_headers(access), json={
+            "customer_name": "Bob",
+            "menu_item":     "Test Pasta",
+            "rating":        5,
+            "comment":       "The pasta was incredible, real al dente, perfect sauce.",
+        })
+        assert r.status_code == 201
+
+    from app.models.review import Review
+    review = db_session.query(Review).order_by(Review.id.desc()).first()
+    assert review.sentiment_label == "positive"
+    assert review.themes is None
+    assert review.tone is None
+
+
+def test_themes_summary_aggregates_across_reviews(client, db_session, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="restaurant")
+    _wipe_seeded_reviews(db_session)
+
+    from app.models.menu import MenuItem
+    db_session.add(MenuItem(user_id=1, name="Test Risotto", category="Mains", price=22, cost=7))
+    db_session.commit()
+
+    responses = [
+        {"themes": ["wait time"], "complaints": ["slow service"], "praise": ["fresh ingredients"], "tone": "frustrated"},
+        {"themes": ["wait time"], "complaints": ["slow service"], "praise": [],                    "tone": "frustrated"},
+        {"themes": ["value"],     "complaints": [],               "praise": ["fresh ingredients"], "tone": "positive"},
+    ]
+    with patch("app.services.sentiment_service.claude_client.call_json", side_effect=responses):
+        for i in range(3):
+            client.post("/api/reviews/", headers=auth_headers(access), json={
+                "customer_name": f"Reviewer{i}",
+                "menu_item":     "Test Risotto",
+                "rating":        3,
+                "comment":       "This is a review with enough characters to enrich.",
+            })
+
+    r = client.get("/api/reviews/themes", headers=auth_headers(access))
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total_reviews"] == 3
+    assert body["enriched_reviews"] == 3
+    top_themes = {t["label"]: t["count"] for t in body["top_themes"]}
+    assert top_themes["wait time"] == 2
+    assert body["tone_breakdown"]["frustrated"] == 2
+    assert body["tone_breakdown"]["positive"] == 1
+
+
+def test_themes_summary_empty_when_no_reviews(client, db_session):
+    access, _ = register_user(client, account_type="restaurant")
+    _wipe_seeded_reviews(db_session)
+    r = client.get("/api/reviews/themes", headers=auth_headers(access))
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total_reviews"] == 0
+    assert body["enriched_reviews"] == 0
+    assert body["top_themes"] == []
