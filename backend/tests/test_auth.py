@@ -117,6 +117,42 @@ def test_unknown_profile_field_silently_ignored(client):
     assert r.json()["display_name"] == "Updated"
 
 
+def test_logout_revokes_jti_so_cookie_cant_be_reused(client):
+    """The full point of jti revocation: after logout, presenting the same
+    refresh cookie back to /refresh must 401, even though the JWT itself
+    is still cryptographically valid for ~30 days."""
+    register_user(client)
+    stolen_cookie = client.cookies.get("sm_refresh")
+
+    r = client.post("/api/auth/logout")
+    assert r.status_code == 204
+
+    # Re-attach the cookie that an attacker would have captured pre-logout
+    client.cookies.set("sm_refresh", stolen_cookie)
+    r = client.post("/api/auth/refresh")
+    assert r.status_code == 401
+
+
+def test_refresh_rotation_revokes_old_jti(client):
+    """Token-family / replay detection: after a successful /refresh, the
+    OLD cookie value must be unusable. Whoever has the old cookie (the
+    attacker who stole it) gets 401 on next use."""
+    register_user(client)
+    old_cookie = client.cookies.get("sm_refresh")
+
+    # Legitimate refresh — gets a new cookie
+    r = client.post("/api/auth/refresh")
+    assert r.status_code == 200
+    new_cookie = client.cookies.get("sm_refresh")
+    assert new_cookie != old_cookie
+
+    # Attacker tries to replay the old cookie
+    client.cookies.clear()
+    client.cookies.set("sm_refresh", old_cookie)
+    r = client.post("/api/auth/refresh")
+    assert r.status_code == 401
+
+
 def test_register_duplicate_email(client):
     register_user(client)
     r = client.post("/api/auth/register", json={

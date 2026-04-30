@@ -103,9 +103,15 @@ def refresh(
 
 
 @router.post("/logout", status_code=204)
-def logout(response: Response):
-    """Clear the refresh cookie. The short-lived access token in the client's
-    memory will expire on its own (≤ access_token_expire_minutes)."""
+def logout(
+    response: Response,
+    db: Session = Depends(get_db),
+    sm_refresh: Optional[str] = Cookie(default=None),
+):
+    """Clear the refresh cookie AND server-side revoke the JTI so a stolen
+    copy can't keep refreshing. The short-lived access token in the
+    client's memory will expire on its own (≤ access_token_expire_minutes)."""
+    auth_service.logout(db, sm_refresh)
     _clear_refresh_cookie(response)
     return Response(status_code=204)
 
