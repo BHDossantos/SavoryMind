@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { HeartButton } from '@/components/venue/HeartButton';
 import type { Venue } from '../../../../shared/types';
 
 export function TrendingVenues({ city = 'rome' }: { city?: string }) {
@@ -15,7 +16,10 @@ export function TrendingVenues({ city = 'rome' }: { city?: string }) {
       {items.slice(0, 6).map((v) => {
         const photo = (v.photos || []).find(Boolean);
         return (
-          <Link key={v.id} href={`/venues/${v.slug}`} className="card hover:border-gold-500/40 transition block !p-0 overflow-hidden">
+          <Link key={v.id} href={`/venues/${v.slug}`} className="card hover:border-gold-500/40 transition block !p-0 overflow-hidden relative">
+            <div className="absolute top-3 right-3 z-10">
+              <HeartButton slug={v.slug} name={v.name} />
+            </div>
             {photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photo} alt={v.name} className="w-full aspect-[16/9] object-cover" loading="lazy" />

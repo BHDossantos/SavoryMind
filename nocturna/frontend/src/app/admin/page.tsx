@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, getToken } from '@/lib/api';
 
 export default function AdminHome() {
   const [d, setD] = useState<any>(null);
@@ -10,6 +10,20 @@ export default function AdminHome() {
 
   if (err) return <p className="text-accent-500">Admin only — {err}</p>;
   if (!d) return <p>Loading…</p>;
+
+  async function downloadCSV(path: string, filename: string) {
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const token = getToken();
+    const res = await fetch(`${base}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!res.ok) { alert(`Export failed: ${res.statusText}`); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="space-y-6">
@@ -36,6 +50,19 @@ export default function AdminHome() {
         <Link href="/admin/cities" className="btn btn-secondary">Cities</Link>
         <Link href="/admin/partners" className="btn btn-secondary">Partners</Link>
       </nav>
+
+      <section className="card">
+        <h2 className="label">Exports (CSV)</h2>
+        <p className="text-xs text-gold-400/60 mt-1">Last 90 days. Use ?days= to override.</p>
+        <div className="mt-3 flex gap-2 flex-wrap">
+          <button onClick={() => downloadCSV('/api/admin/export/bookings.csv?days=90', `nocturna-bookings.csv`)}
+            className="btn btn-ghost">Download bookings</button>
+          <button onClick={() => downloadCSV('/api/admin/export/payments.csv?days=90', `nocturna-payments.csv`)}
+            className="btn btn-ghost">Download payments</button>
+          <button onClick={() => downloadCSV('/api/admin/export/commissions.csv?days=90', `nocturna-commissions.csv`)}
+            className="btn btn-ghost">Download commissions</button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { RouteMap } from '@/components/map/RouteMap';
+import { HeartButton } from '@/components/venue/HeartButton';
 import type { Venue } from '../../../../shared/types';
 
 type VenueWithExtras = Venue & { promos?: any[]; events?: any[] };
@@ -50,7 +51,10 @@ export default function VenueDetailClient({ slug, initial }: {
       )}
       <header>
         <p className="label">{v.neighborhood} · {v.type}</p>
-        <h1 className="font-display text-5xl text-gold-400 mt-2">{v.name}</h1>
+        <div className="flex items-start justify-between gap-4 mt-2">
+          <h1 className="font-display text-5xl text-gold-400">{v.name}</h1>
+          <HeartButton slug={v.slug} name={v.name} />
+        </div>
         <p className="text-gold-400/70 mt-2">{v.description}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {v.vibe_tags.map((tag) => <span key={tag} className="chip">{tag}</span>)}
