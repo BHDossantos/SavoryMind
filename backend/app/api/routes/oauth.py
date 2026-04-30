@@ -117,6 +117,45 @@ def spotify_callback(
     return RedirectResponse(url=f"{redirect_base}?spotify=connected", status_code=302)
 
 
+@router.post("/spotify/search")
+def spotify_search(
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Search the user's Spotify for tracks matching `query`. Used by the
+    Music Mood page to surface real, playable tracks instead of a static
+    search-URL link. Refreshes the stored access token if it's expired.
+
+    Body: {"query": "<text>", "limit": <1-50>}
+    """
+    _ensure_spotify_configured()
+    query = (body.get("query") or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="`query` is required.")
+    limit = int(body.get("limit") or 20)
+
+    conn = (
+        db.query(SocialConnection)
+        .filter(SocialConnection.user_id == current_user.id, SocialConnection.platform == "spotify")
+        .first()
+    )
+    if not conn or not conn.connected:
+        raise HTTPException(status_code=409, detail="Spotify is not connected for this user.")
+
+    try:
+        access_token = spotify_service.get_fresh_access_token(db, conn)
+    except spotify_service.SpotifyAuthError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    try:
+        tracks = spotify_service.search_tracks(access_token, query, limit)
+    except (HTTPError, URLError, TimeoutError) as e:
+        raise HTTPException(status_code=502, detail=f"Spotify search failed: {e}")
+
+    return {"tracks": tracks, "query": query}
+
+
 @router.post("/spotify/disconnect", status_code=204)
 def spotify_disconnect(
     current_user: User = Depends(get_current_user),

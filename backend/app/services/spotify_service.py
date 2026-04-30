@@ -34,6 +34,7 @@ from ..core.security import _b64url_decode, _b64url_encode
 SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_PROFILE_URL = "https://api.spotify.com/v1/me"
+SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search"
 
 # Minimal scopes for the MVP. Adding playlist creation later requires
 # `playlist-modify-private playlist-modify-public`. Web Playback SDK requires
@@ -158,3 +159,105 @@ def refresh_access_token(refresh_token: str) -> dict:
 def fetch_profile(access_token: str) -> dict:
     """Returns the Spotify /v1/me payload (display_name, id, email, ...)."""
     return _http_get_json(SPOTIFY_PROFILE_URL, access_token)
+
+
+# ---- Higher-level helpers used by API routes ----------------------------
+#
+# These are deliberately kept here (rather than in oauth.py) so the rules for
+# token freshness and Spotify-error mapping live with everything else
+# Spotify-shaped.
+
+# How much slack to leave before the stored access_token actually expires.
+# Calling Spotify with a token that's seconds-from-expiry is a coin-flip
+# between success and a 401, so we refresh anything within this window.
+_TOKEN_REFRESH_LEEWAY_SECONDS = 60
+
+
+class SpotifyAuthError(Exception):
+    """Raised when the user's Spotify connection is no longer usable
+    (refresh token rejected, missing tokens, etc.). API routes should
+    surface this as 401 so the UI can prompt the user to reconnect.
+    """
+
+
+def get_fresh_access_token(db, conn) -> str:
+    """Return a non-expired access_token for `conn`, refreshing via the
+    stored refresh_token if needed. Mutates and commits `conn` so the next
+    call won't refresh again until close to expiry.
+
+    Raises SpotifyAuthError if the connection lacks tokens or Spotify
+    rejects the refresh — the row is marked disconnected so the UI shows
+    the "Connect Spotify" CTA again.
+    """
+    if not conn or not conn.access_token:
+        raise SpotifyAuthError("Spotify is not connected.")
+
+    now = datetime.utcnow()
+    expires_at = conn.token_expires_at
+    if expires_at and expires_at - now > timedelta(seconds=_TOKEN_REFRESH_LEEWAY_SECONDS):
+        return conn.access_token
+
+    if not conn.refresh_token:
+        # Token is expired and we have no way to refresh — full reconnect.
+        conn.connected = False
+        db.commit()
+        raise SpotifyAuthError("Spotify session expired — please reconnect.")
+
+    try:
+        refreshed = refresh_access_token(conn.refresh_token)
+    except (HTTPError, URLError, TimeoutError) as e:
+        # Network / Spotify-side failure. Don't mark disconnected — likely
+        # transient. Caller will get a 502 from the route layer.
+        raise SpotifyAuthError(f"Spotify token refresh failed: {e}") from e
+
+    new_access = refreshed.get("access_token")
+    if not new_access:
+        # Spotify accepted the request but didn't return a token — usually
+        # means the refresh token itself was revoked. Force reconnect.
+        conn.connected = False
+        conn.access_token = None
+        conn.refresh_token = None
+        conn.token_expires_at = None
+        db.commit()
+        raise SpotifyAuthError("Spotify refresh token was rejected — please reconnect.")
+
+    conn.access_token = new_access
+    if refreshed.get("refresh_token"):
+        # Spotify only sometimes rotates the refresh token; keep the old one
+        # if not. If it does rotate, store the new one.
+        conn.refresh_token = refreshed["refresh_token"]
+    expires_in = int(refreshed.get("expires_in", 3600))
+    conn.token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+    if refreshed.get("scope"):
+        conn.scopes = refreshed["scope"]
+    db.commit()
+    return new_access
+
+
+def search_tracks(access_token: str, query: str, limit: int = 20) -> list[dict]:
+    """Search Spotify for tracks matching `query`. Returns a normalized list
+    of {id, name, artists, album, album_image, preview_url, external_url,
+    uri, duration_ms}, capped at `limit` (Spotify max 50).
+    """
+    limit = max(1, min(int(limit or 20), 50))
+    url = f"{SPOTIFY_SEARCH_URL}?{urlencode({'q': query, 'type': 'track', 'limit': limit})}"
+    payload = _http_get_json(url, access_token)
+    items = (payload.get("tracks") or {}).get("items") or []
+    out = []
+    for t in items:
+        if not t:
+            continue
+        album = t.get("album") or {}
+        images = album.get("images") or []
+        out.append({
+            "id": t.get("id"),
+            "name": t.get("name"),
+            "artists": [a.get("name") for a in (t.get("artists") or []) if a],
+            "album": album.get("name"),
+            "album_image": images[0]["url"] if images else None,
+            "preview_url": t.get("preview_url"),
+            "external_url": (t.get("external_urls") or {}).get("spotify"),
+            "uri": t.get("uri"),
+            "duration_ms": t.get("duration_ms"),
+        })
+    return out

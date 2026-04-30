@@ -136,6 +136,7 @@ export const api = {
   // OAuth — Spotify (real Authorization Code flow)
   startSpotifyAuth: () => request("/api/oauth/spotify/start"),
   disconnectSpotify: () => request("/api/oauth/spotify/disconnect", { method: "POST" }),
+  searchSpotify: (query, limit = 12) => request("/api/oauth/spotify/search", { method: "POST", body: JSON.stringify({ query, limit }) }),
 
   // Restaurant — Menu
   getDashboardStats: () => request("/api/menu/stats"),
