@@ -2,10 +2,12 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 interface Msg { role: 'user' | 'assistant'; content: string; plans?: any[] }
 
 export default function Chat() {
+  const { t } = useT();
   const [token, setToken] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -34,8 +36,8 @@ export default function Chat() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="font-display text-4xl text-center">Concierge</h1>
-      <p className="text-center text-gold-400/60">Ask anything. "Romantic Trastevere date under €120 tonight."</p>
+      <h1 className="font-display text-4xl text-center">{t('chat.h')}</h1>
+      <p className="text-center text-gold-400/60">{t('chat.sub')}</p>
       <div ref={scrollRef} className="card mt-6 h-[60vh] overflow-y-auto space-y-3">
         {msgs.map((m, i) => (
           <div key={i} className={`max-w-[80%] ${m.role === 'user' ? 'ml-auto bg-gold-500/20' : 'bg-night-700/50'} rounded-2xl px-4 py-3`}>
@@ -59,14 +61,14 @@ export default function Chat() {
             )}
           </div>
         ))}
-        {busy && <div className="text-gold-400/50">Thinking…</div>}
+        {busy && <div className="text-gold-400/50">{t('chat.thinking')}</div>}
       </div>
       <div className="flex gap-2 mt-3">
         <input value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder="Plan a sexy date night near Trastevere under €150"
+          placeholder={t('chat.placeholder')}
           className="flex-1 bg-night-900 border border-white/10 rounded-lg px-3 py-2" />
-        <button onClick={send} className="btn btn-primary" disabled={busy}>Send</button>
+        <button onClick={send} className="btn btn-primary" disabled={busy}>{t('common.send')}</button>
       </div>
     </div>
   );

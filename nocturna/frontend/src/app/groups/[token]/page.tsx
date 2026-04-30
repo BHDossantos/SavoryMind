@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function GroupPage({ params }: { params: { token: string } }) {
+  const { t } = useT();
   const [g, setG] = useState<any>(null);
   const [voter, setVoter] = useState('');
   const [name, setName] = useState('');
@@ -22,12 +24,12 @@ export default function GroupPage({ params }: { params: { token: string } }) {
     const r = await api.post(`/api/groups/${params.token}/close`); setG(r);
   }
 
-  if (!g) return <p className="text-gold-400/60">Loading group…</p>;
+  if (!g) return <p className="text-gold-400/60">{t('group.loading')}</p>;
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <h1 className="font-display text-3xl">{g.title || 'Tonight'}</h1>
-      <p className="text-gold-400/60 text-sm">Status: {g.status} · {g.city} · {new Date(g.requested_for).toLocaleString()}</p>
-      <input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)}
+      <p className="text-gold-400/60 text-sm">{t('group.status')}: {g.status} · {g.city} · {new Date(g.requested_for).toLocaleString()}</p>
+      <input placeholder={t('group.your_name')} value={name} onChange={(e) => setName(e.target.value)}
         className="bg-night-900 border border-white/10 rounded-lg px-3 py-2" />
       <div className="space-y-3">
         {g.options.map((o: any) => (
@@ -37,15 +39,15 @@ export default function GroupPage({ params }: { params: { token: string } }) {
               <div className="text-xs text-gold-400/60">Vibe score {Math.round((o.vibe_score || 0) * 100)}%</div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="chip">{g.tally?.[o.plan_id] || 0} votes</span>
-              <button onClick={() => vote(o.plan_id)} className="btn btn-primary">Vote</button>
+              <span className="chip">{g.tally?.[o.plan_id] || 0} {t('group.votes')}</span>
+              <button onClick={() => vote(o.plan_id)} className="btn btn-primary">{t('group.vote')}</button>
             </div>
           </div>
         ))}
       </div>
-      {g.status === 'open' && <button onClick={close} className="btn btn-secondary">Close voting</button>}
-      {g.selected_plan_id && <p>Winner: plan {g.selected_plan_id}</p>}
-      <p className="text-xs text-gold-400/60">Share: {typeof window !== 'undefined' && `${location.origin}/groups/${g.invite_token}`}</p>
+      {g.status === 'open' && <button onClick={close} className="btn btn-secondary">{t('group.close_voting')}</button>}
+      {g.selected_plan_id && <p>{t('group.winner', { id: g.selected_plan_id })}</p>}
+      <p className="text-xs text-gold-400/60">{t('group.share')}: {typeof window !== 'undefined' && `${location.origin}/groups/${g.invite_token}`}</p>
     </div>
   );
 }

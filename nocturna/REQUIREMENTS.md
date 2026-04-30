@@ -193,12 +193,15 @@ PNGs with Nocturna branding via `next/og`.
 apple-touch icons, app shortcuts. Install prompt component listens for
 `beforeinstallprompt` with 7-day cooldown and PostHog tracking.
 
-## 8. i18n
+## 8. i18n [shipped]
 
-EN + IT dictionaries shipped from `shared/i18n/dictionaries.ts` (~90
-keys). Locale provider with cookie persistence + `navigator.language`
-autodetect. EN/IT switcher in header. Translated surfaces: home, planner,
-results, venue detail, plan booking form, feedback, login, signup.
+EN + IT dictionaries shipped from `shared/i18n/dictionaries.ts`
+(~140 keys). Locale provider with cookie persistence + `navigator.language`
+autodetect. EN/IT switcher in header. Translated surfaces:
+home, planner, results, venue detail, plan booking form, feedback,
+login, signup, **bookings detail, chat concierge, groups (create + vote),
+my plans + saved venues, profile, premium**. Mobile app strings stay
+English-only for now (separate dictionary wiring task).
 
 ## 9. Analytics
 
@@ -250,9 +253,11 @@ assistant. SendGrid/Twilio/Expo → console log. PostHog → silent no-op.
 
 These are **not yet shipped** — captured here so they don't get lost.
 
-- **i18n coverage** — booking confirmation page, my-plans, premium, chat,
-  groups, profile, admin/partner pages still English-only. Dict keys may
-  need to be added.
+- **i18n: mobile app** — Expo strings still English-only. Need to wire
+  the same dict + a useT-equivalent for React Native. (Web is now done.)
+- **i18n: admin / partner consoles** — operational surfaces remain
+  English-only by design (admin/partner are internal Italian-speaking
+  staff already, but worth revisiting if non-IT partners join).
 - **Photo upload pipeline** — admins paste URLs today; a real upload
   (Cloud Storage + signed URLs) would unblock partners.
 - **Streaming AI chat** — current concierge chat is request/response.

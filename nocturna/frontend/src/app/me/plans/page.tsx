@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, getToken } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 interface SavedVenue {
   id: number; slug: string; name: string; type: string;
@@ -10,6 +11,7 @@ interface SavedVenue {
 }
 
 export default function MyPlans() {
+  const { t } = useT();
   const [plans, setPlans] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [saved, setSaved] = useState<SavedVenue[] | null>(null);
@@ -33,8 +35,8 @@ export default function MyPlans() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <section>
-        <h1 className="font-display text-3xl mb-4">My plans</h1>
-        {!plans.length ? <p className="text-gold-400/60">No plans yet. <Link href="/plan/new" className="underline">Plan one →</Link></p> : (
+        <h1 className="font-display text-3xl mb-4">{t('myplans.h')}</h1>
+        {!plans.length ? <p className="text-gold-400/60">{t('myplans.empty')} <Link href="/plan/new" className="underline">{t('myplans.plan_one')} →</Link></p> : (
           <ul className="space-y-3">
             {plans.map((p) => (
               <li key={p.id} className="card flex items-center justify-between">
@@ -42,7 +44,7 @@ export default function MyPlans() {
                   <div className="font-medium text-gold-400">{p.label}</div>
                   <div className="text-xs text-gold-400/60">{p.city} · €{p.estimated_cost_eur} · {p.total_travel_min}m</div>
                 </div>
-                <Link href={`/plan/results?ids=${p.id}`} className="btn btn-secondary">Open</Link>
+                <Link href={`/plan/results?ids=${p.id}`} className="btn btn-secondary">{t('myplans.open')}</Link>
               </li>
             ))}
           </ul>
@@ -50,15 +52,15 @@ export default function MyPlans() {
       </section>
 
       <section>
-        <h2 className="font-display text-3xl mb-4">My bookings</h2>
-        {!bookings.length ? <p className="text-gold-400/60">No bookings yet.</p> : (
+        <h2 className="font-display text-3xl mb-4">{t('myplans.bookings_h')}</h2>
+        {!bookings.length ? <p className="text-gold-400/60">{t('myplans.bookings_empty')}</p> : (
           <ul className="space-y-3">
             {bookings.map((b) => (
               <li key={b.id} className="card">
                 <div className="flex justify-between">
                   <div>
                     <div className="font-medium text-gold-400">{b.venue?.name}</div>
-                    <div className="text-xs text-gold-400/60">{b.date} {b.time} · {b.group_size} ppl · {b.request_type}</div>
+                    <div className="text-xs text-gold-400/60">{b.date} {b.time} · {b.group_size} · {b.request_type}</div>
                   </div>
                   <span className="chip capitalize">{b.status}</span>
                 </div>
@@ -69,11 +71,11 @@ export default function MyPlans() {
       </section>
 
       <section>
-        <h2 className="font-display text-3xl mb-4">Saved venues</h2>
+        <h2 className="font-display text-3xl mb-4">{t('myplans.saved_h')}</h2>
         {saved === null ? (
-          <p className="text-gold-400/60">Loading…</p>
+          <p className="text-gold-400/60">{t('common.loading')}</p>
         ) : saved.length === 0 ? (
-          <p className="text-gold-400/60">No favourites yet — tap the heart on any venue.</p>
+          <p className="text-gold-400/60">{t('myplans.saved_empty')}</p>
         ) : (
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {saved.map((v) => (
@@ -87,8 +89,8 @@ export default function MyPlans() {
                     {v.neighborhood} · {v.city} · {v.type} · €{v.avg_price_eur}/pp
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {(v.vibe_tags || []).slice(0, 3).map(t => (
-                      <span key={t} className="chip">{t}</span>
+                    {(v.vibe_tags || []).slice(0, 3).map(tag => (
+                      <span key={tag} className="chip">{tag}</span>
                     ))}
                   </div>
                 </Link>

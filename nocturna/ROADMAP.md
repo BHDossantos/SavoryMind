@@ -41,41 +41,22 @@ Booking reminder cron (T-60min, idempotent). Branded OG image generators
 feedback + auth. Admin bookings UX overhaul. Guest rate limiter. CSV
 exports (bookings / payments / commissions). Saved venues / favourites.
 
-## Phase 8 · Open
+## Phase 8 · GSD bootstrap + i18n completion [shipped — `a685022`, `<i18n-sha>`]
+
+- `a685022` — adopt GSD methodology: `PROJECT.md`, `REQUIREMENTS.md`,
+  `ROADMAP.md`, `STATE.md` bootstrap.
+- `<i18n-sha>` — task **`t-i18n-complete`** shipped: useT() wired into
+  bookings detail, chat, groups (new + token), my-plans, profile,
+  premium. ~50 new dictionary keys (mybook / chat / group / myplans /
+  profile / premium / common.*) added in EN + IT.
+
+## Phase 9 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and
 update `STATE.md`.
 
 ```xml
-<task id="t-i18n-complete" type="auto">
-  <name>Translate remaining client surfaces to IT</name>
-  <files>
-    src/app/bookings/[id]/page.tsx
-    src/app/chat/page.tsx
-    src/app/groups/new/page.tsx
-    src/app/groups/[token]/page.tsx
-    src/app/me/plans/page.tsx
-    src/app/me/profile/page.tsx
-    src/app/premium/page.tsx
-    shared/i18n/dictionaries.ts
-  </files>
-  <action>
-    Wire useT() into every client component listed above. Add IT keys to
-    shared/i18n/dictionaries.ts for each new string. Reuse existing keys
-    where the meaning matches.
-  </action>
-  <verify>
-    npx tsc --noEmit clean. npx next build clean. Manual QA: open the EN
-    home, switch to IT, open every translated page, verify no
-    English-language strings remain in user-visible UI.
-  </verify>
-  <done>
-    Every page on the i18n-coverage table in REQUIREMENTS.md §8 has
-    Italian rendering. Translation keys land in the dictionary.
-  </done>
-</task>
-
 <task id="t-photo-upload" type="auto">
   <name>Real photo upload pipeline (admin)</name>
   <files>

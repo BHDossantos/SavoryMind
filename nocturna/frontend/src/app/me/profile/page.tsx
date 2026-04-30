@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { CITIES, MUSIC, BUDGET_BANDS, STYLES } from '../../../../../shared/constants/options';
+import { useT } from '@/lib/i18n';
+import { CITIES, BUDGET_BANDS, STYLES } from '../../../../../shared/constants/options';
 
 export default function Profile() {
+  const { t } = useT();
   const [me, setMe] = useState<any>(null);
   const [saved, setSaved] = useState(false);
 
@@ -14,15 +16,15 @@ export default function Profile() {
     setSaved(true); setTimeout(() => setSaved(false), 2000);
   }
 
-  if (!me) return <p className="text-gold-400/60">Sign in to manage profile.</p>;
+  if (!me) return <p className="text-gold-400/60">{t('profile.signin_required')}</p>;
   const prefs = me.prefs || {};
 
   return (
     <div className="max-w-xl mx-auto card space-y-3">
-      <h1 className="font-display text-3xl">Your profile</h1>
-      <input placeholder="Name" value={me.name || ''} onChange={(e) => setMe({ ...me, name: e.target.value })}
+      <h1 className="font-display text-3xl">{t('profile.h')}</h1>
+      <input placeholder={t('profile.name')} value={me.name || ''} onChange={(e) => setMe({ ...me, name: e.target.value })}
         className="w-full bg-night-900 border border-white/10 rounded-lg px-3 py-2" />
-      <input placeholder="Phone" value={me.phone || ''} onChange={(e) => setMe({ ...me, phone: e.target.value })}
+      <input placeholder={t('profile.phone')} value={me.phone || ''} onChange={(e) => setMe({ ...me, phone: e.target.value })}
         className="w-full bg-night-900 border border-white/10 rounded-lg px-3 py-2" />
       <select value={me.home_city} onChange={(e) => setMe({ ...me, home_city: e.target.value })}
         className="w-full bg-night-900 border border-white/10 rounded-lg px-3 py-2">
@@ -38,8 +40,8 @@ export default function Profile() {
         className="w-full bg-night-900 border border-white/10 rounded-lg px-3 py-2">
         {STYLES.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
-      <button onClick={save} className="btn btn-primary">Save</button>
-      {saved && <p className="text-gold-400">Saved.</p>}
+      <button onClick={save} className="btn btn-primary">{t('common.save')}</button>
+      {saved && <p className="text-gold-400">{t('common.saved')}</p>}
     </div>
   );
 }
