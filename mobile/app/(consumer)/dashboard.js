@@ -47,6 +47,22 @@ export default function ConsumerDashboard() {
         ))}
       </View>
 
+      {/* Featured: Culinary Assistant — the one feature backed by a real
+          LLM (Claude Opus 4.7), so it earns visual weight over the
+          rule-based pairing/music tiles above. */}
+      <TouchableOpacity
+        style={styles.assistantCard}
+        onPress={() => router.push('/(consumer)/assistant')}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.assistantEmoji}>👨‍🍳</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.assistantTitle}>Ask the Culinary Assistant</Text>
+          <Text style={styles.assistantSub}>Real-time help with recipes, fixes, pairings, and substitutions.</Text>
+        </View>
+        <Text style={styles.assistantArrow}>→</Text>
+      </TouchableOpacity>
+
       {pairings.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Recent Pairings</Text>
@@ -87,6 +103,11 @@ const styles = StyleSheet.create({
   quickCard:   { width: '47%', backgroundColor: C.consumer.light, borderRadius: 16, padding: 16, borderWidth: 1.5, alignItems: 'center' },
   quickIcon:   { fontSize: 32, marginBottom: 8 },
   quickLabel:  { fontSize: 13, fontWeight: '700', color: C.consumer.text, textAlign: 'center' },
+  assistantCard:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.consumer.primary, borderRadius: 16, padding: 16, marginBottom: 28 },
+  assistantEmoji:   { fontSize: 32 },
+  assistantTitle:   { fontSize: 15, fontWeight: '800', color: '#fff' },
+  assistantSub:     { fontSize: 12, color: '#fff', opacity: 0.85, marginTop: 2, lineHeight: 16 },
+  assistantArrow:   { fontSize: 20, color: '#fff', fontWeight: '700' },
   sectionTitle:{ fontSize: 15, fontWeight: '700', color: C.gray[800], marginBottom: 10 },
   recentCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: C.gray[100] },
   recentIcon:  { fontSize: 22 },

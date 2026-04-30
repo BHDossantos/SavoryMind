@@ -225,6 +225,12 @@ export const api = {
   getShoppingList: (dietary = '') => request(`/api/consumer/shopping-list?dietary=${dietary}`),
   getDailySuggestion: (mood = '') => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
+  // Consumer — Culinary Assistant (Claude Opus 4.7).
+  // Backend route: POST /api/consumer/assistant {question} → {title, answer}.
+  // Returns "Assistant not configured" if ANTHROPIC_API_KEY is unset on
+  // the server, so the mobile UI can render that gracefully without crashing.
+  askAssistant: (question) => request('/api/consumer/assistant', { method: 'POST', body: JSON.stringify({ question }) }),
+
   // Diner
   getDinerSummary: () => request('/api/diner/summary'),
   getDinerBookings: () => request('/api/diner/bookings'),
