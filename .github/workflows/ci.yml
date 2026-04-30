@@ -1,0 +1,47 @@
+name: CI
+
+# Runs the backend test suite on every push to any branch and on every PR to
+# main. The goal is to protect the work in PR #18 (auth refactor, Spotify
+# OAuth, OAuth-token encryption, account_type set-once guard, /health
+# sanitization) from silent regressions.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        working-directory: backend
+        # Tests use SQLite + a fixed Fernet dev key, both set up in
+        # tests/conftest.py — no GitHub secrets required for the suite to
+        # run. CI just needs Python + the requirements installed.
+        run: pytest tests/ -v
