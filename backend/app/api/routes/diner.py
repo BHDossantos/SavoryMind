@@ -7,7 +7,7 @@ from ...core.security import get_current_user
 from ...models.user import User
 from ...models.diner import DinerReview
 from ...services import diner_service, discovery_service, discover_service
-from ...ml.engine import build_diner_recommendations
+from ...insights.engine import build_diner_recommendations
 
 router = APIRouter(prefix="/diner", tags=["diner"])
 
@@ -81,7 +81,7 @@ def diner_summary(db: Session = Depends(get_db), user: User = Depends(require_di
     return diner_service.get_diner_summary(db, user.id)
 
 
-# ── Recommendations (ML engine) ───────────────────────────────────────────────
+# ── Recommendations (Claude + rules fallback) ───────────────────────────────────────────────
 
 @router.get("/recommendations")
 def diner_recommendations(db: Session = Depends(get_db), user: User = Depends(require_diner)):

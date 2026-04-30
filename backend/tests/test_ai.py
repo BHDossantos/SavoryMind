@@ -94,7 +94,7 @@ def test_consumer_recommendations_uses_claude_when_configured(client, db_session
         }
     ]
 
-    with patch("app.ml.engine.claude_client.call_json", return_value={"recommendations": fake_recs}) as m:
+    with patch("app.insights.engine.claude_client.call_json", return_value={"recommendations": fake_recs}) as m:
         r = client.get("/api/consumer/recommendations", headers=auth_headers(access))
         assert r.status_code == 200
         # Claude was called exactly once
@@ -108,7 +108,7 @@ def test_consumer_recommendations_falls_back_when_claude_returns_empty(client, d
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
     access, _ = register_user(client, account_type="consumer")
 
-    with patch("app.ml.engine.claude_client.call_json", return_value=None):
+    with patch("app.insights.engine.claude_client.call_json", return_value=None):
         r = client.get("/api/consumer/recommendations", headers=auth_headers(access))
         assert r.status_code == 200
         # Falls back to rules — same item shape
@@ -133,7 +133,7 @@ def test_diner_recommendations_uses_claude_when_configured(client, db_session, m
             "confidence": 0.93,
         }
     ]
-    with patch("app.ml.engine.claude_client.call_json", return_value={"recommendations": fake_recs}):
+    with patch("app.insights.engine.claude_client.call_json", return_value={"recommendations": fake_recs}):
         r = client.get("/api/diner/recommendations", headers=auth_headers(access))
         assert r.status_code == 200
         assert r.json() == fake_recs

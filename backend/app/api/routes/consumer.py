@@ -15,7 +15,7 @@ from ...schemas.consumer import (
     MealMemoryCreate, MealMemoryResponse,
 )
 from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service
-from ...ml.engine import build_consumer_recommendations
+from ...insights.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
 
@@ -174,7 +174,7 @@ def log_behavior(
     return {"status": "logged"}
 
 
-# ── AI Recommendations (ML engine) ───────────────────────────────────────────
+# ── Recommendations (Claude + rules fallback) ───────────────────────────────────────────
 
 @router.get("/recommendations")
 def get_recommendations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
