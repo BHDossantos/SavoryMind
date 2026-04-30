@@ -1,0 +1,10 @@
+{
+  "project": "DealFlow AI",
+  "planning_root": "dealflow/.planning",
+  "workflow": "discuss -> plan -> execute -> verify",
+  "mode": "interactive",
+  "planning": {
+    "commit_docs": true
+  },
+  "notes": "GSD-style discipline applied without the gsd-build CLI installed. /gsd-* slash commands in this file are descriptive — they map to phase artifacts under this directory."
+}
