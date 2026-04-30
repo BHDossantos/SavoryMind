@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db, type UserRow, type Role } from "./db";
 
-const COOKIE_NAME = "autobook_session";
+const COOKIE_NAME = "slotly_session";
 const ALG = "HS256";
 
 function secret() {

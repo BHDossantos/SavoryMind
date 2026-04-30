@@ -23,7 +23,7 @@ export default function LandingPage() {
         </h1>
         <p className="mx-auto max-w-xl text-ink/70">
           Skip the calling, the language barrier, and the chasing of confirmations.
-          AutoBook handles restaurants, bars, salons, gyms, and nightlife — end to end.
+          Slotly handles restaurants, bars, salons, gyms, and nightlife — end to end.
         </p>
         <div className="flex justify-center gap-3 pt-2">
           <Link href="/signup" className="btn btn-accent">Book something now</Link>

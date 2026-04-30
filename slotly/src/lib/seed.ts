@@ -1,7 +1,7 @@
 import { db } from "./db";
 import bcrypt from "bcryptjs";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@autobook.local";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@slotly.local";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "admin1234";
 
 const businesses: Array<{

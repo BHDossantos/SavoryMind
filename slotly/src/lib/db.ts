@@ -3,13 +3,13 @@ import path from "node:path";
 import fs from "node:fs";
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DATA_DIR, "autobook.db");
+const DB_PATH = path.join(DATA_DIR, "slotly.db");
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 declare global {
   // eslint-disable-next-line no-var
-  var __autobookDb: Database.Database | undefined;
+  var __slotlyDb: Database.Database | undefined;
 }
 
 const SCHEMA = `
@@ -143,14 +143,14 @@ function init(database: Database.Database) {
 }
 
 export const db: Database.Database =
-  global.__autobookDb ??
+  global.__slotlyDb ??
   (() => {
     const d = new Database(DB_PATH);
     init(d);
     return d;
   })();
 
-if (process.env.NODE_ENV !== "production") global.__autobookDb = db;
+if (process.env.NODE_ENV !== "production") global.__slotlyDb = db;
 
 export type Role = "user" | "admin";
 export type RequestStatus =

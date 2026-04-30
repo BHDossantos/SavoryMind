@@ -228,7 +228,7 @@ export function BookingForm() {
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-ink/50">
-          By submitting, you authorize AutoBook AI to contact businesses on your behalf.
+          By submitting, you authorize Slotly to contact businesses on your behalf.
         </p>
         <button className="btn-accent" disabled={loading}>
           {loading ? "Submitting…" : "Handle it"}

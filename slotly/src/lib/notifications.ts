@@ -50,18 +50,18 @@ function template(
   switch (kind) {
     case "welcome":
       return {
-        subject: "Welcome to AutoBook",
-        body: `Hi ${name},\n\nThanks for signing up. Tell us what you want booked and we'll handle the rest.\n\n— AutoBook`,
+        subject: "Welcome to Slotly",
+        body: `Hi ${name},\n\nThanks for signing up. Tell us what you want booked and we'll handle the rest.\n\n— Slotly`,
       };
     case "request_received":
       return {
         subject: "We received your booking request",
-        body: `Hi ${name},\n\nWe got your request for ${reqLine}. We'll start working on it now.\n\n— AutoBook`,
+        body: `Hi ${name},\n\nWe got your request for ${reqLine}. We'll start working on it now.\n\n— Slotly`,
       };
     case "in_progress":
       return {
         subject: "We're working on your booking",
-        body: `Hi ${name},\n\nWe're contacting venues for ${reqLine}. We'll let you know as soon as we have something.\n\n— AutoBook`,
+        body: `Hi ${name},\n\nWe're contacting venues for ${reqLine}. We'll let you know as soon as we have something.\n\n— Slotly`,
       };
     case "needs_approval": {
       const detail = confirmation
@@ -69,7 +69,7 @@ function template(
         : "an alternative option";
       return {
         subject: "We found an option — your approval needed",
-        body: `Hi ${name},\n\nWe found ${detail}. Open the app to approve it or ask us to keep looking.\n\n— AutoBook`,
+        body: `Hi ${name},\n\nWe found ${detail}. Open the app to approve it or ask us to keep looking.\n\n— Slotly`,
       };
     }
     case "confirmed": {
@@ -80,18 +80,18 @@ function template(
         : "your venue";
       return {
         subject: "Your booking is confirmed",
-        body: `Hi ${name},\n\nYou're booked: ${detail}.\n\n— AutoBook`,
+        body: `Hi ${name},\n\nYou're booked: ${detail}.\n\n— Slotly`,
       };
     }
     case "failed":
       return {
         subject: "We couldn't complete this booking",
-        body: `Hi ${name},\n\nWe couldn't confirm ${reqLine}. Open the app to try a different time or place.\n\n— AutoBook`,
+        body: `Hi ${name},\n\nWe couldn't confirm ${reqLine}. Open the app to try a different time or place.\n\n— Slotly`,
       };
     case "cancelled":
       return {
         subject: "Your booking request was cancelled",
-        body: `Hi ${name},\n\n${reqLine} has been cancelled.\n\n— AutoBook`,
+        body: `Hi ${name},\n\n${reqLine} has been cancelled.\n\n— Slotly`,
       };
   }
 }
@@ -168,7 +168,7 @@ export async function notify(input: NotifyInput): Promise<void> {
 }
 
 async function sendViaResend(opts: { to: string; subject: string; body: string }) {
-  const from = process.env.NOTIFICATION_FROM ?? "AutoBook <onboarding@resend.dev>";
+  const from = process.env.NOTIFICATION_FROM ?? "Slotly <onboarding@resend.dev>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
