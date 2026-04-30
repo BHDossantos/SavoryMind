@@ -1,0 +1,47 @@
+name: Mobile CI
+
+# Runs the mobile Jest suite on every push and PR to main. The mobile
+# package.json's full Expo dep tree is currently behind one SDK and
+# doesn't `npm install` cleanly — but the test build is configured to
+# only need plain Jest + Babel (see mobile/babel.config.js's NODE_ENV=test
+# branch and the moduleNameMapper for expo-secure-store), so we install
+# only the test deps here. When mobile gets a proper SDK 55 alignment
+# pass, this workflow can switch to `npm ci` from package-lock.json.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-tests:
+    name: Mobile Jest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install test-only deps
+        working-directory: mobile
+        # Bypass the full Expo dep tree (which has stale pins blocking
+        # `npm install`). Tests only need jest + babel transformation.
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts --omit=optional \
+            jest@^29.7.0 \
+            babel-jest@^29.7.0 \
+            @babel/core@^7.24.0 \
+            @babel/preset-env@^7.24.0
+
+      - name: Run Jest
+        working-directory: mobile
+        run: npx jest --no-coverage --ci
