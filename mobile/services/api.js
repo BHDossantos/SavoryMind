@@ -272,4 +272,57 @@ export const api = {
   // provider, exchange the auth code via a short-lived bridge route on
   // the backend, and never expose the social secret to the device. Until
   // that's wired up, mobile uses email+password only.
+
+  // ── Parity batch with web (commit "fix everything") ──────────────
+
+  // Consumer profile (separate from /api/auth/profile — patches
+  // consumer-specific fields)
+  updateConsumerProfile: (data) => request('/api/consumer/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Consumer — Pantry inventory + on-hand recipe matching
+  getPantry:        ()       => request('/api/consumer/pantry'),
+  addPantryItem:    (data)   => request('/api/consumer/pantry', { method: 'POST', body: JSON.stringify(data) }),
+  deletePantryItem: (id)     => request(`/api/consumer/pantry/${id}`, { method: 'DELETE' }),
+  clearPantry:      ()       => request('/api/consumer/pantry', { method: 'DELETE' }),
+  getPantryRecipes: ()       => request('/api/consumer/pantry/recipes'),
+
+  // Consumer — Meal memories / journal
+  getMemories:    ()      => request('/api/consumer/memories'),
+  createMemory:   (data)  => request('/api/consumer/memories', { method: 'POST', body: JSON.stringify(data) }),
+  deleteMemory:   (id)    => request(`/api/consumer/memories/${id}`, { method: 'DELETE' }),
+
+  // Consumer — Delivery (note: backend currently returns hard-coded
+  // suggestions; treat as a discovery feature, not real ordering)
+  getDeliveryDishes:      (craving, budget = '') => request(`/api/consumer/delivery/dishes?craving=${craving}&budget=${budget}`),
+  getDeliveryRestaurants: (cuisine)              => request(`/api/consumer/delivery/restaurants?cuisine=${encodeURIComponent(cuisine)}`),
+
+  // Notifications — bell badge + dropdown UX
+  getNotifications:        () => request('/api/notifications'),
+  markNotificationsRead:   () => request('/api/notifications/read', { method: 'PATCH' }),
+
+  // Restaurant — booking accept/decline
+  confirmBooking: (id) => request(`/api/restaurant/bookings/${id}/confirm`, { method: 'PATCH' }),
+  declineBooking: (id) => request(`/api/restaurant/bookings/${id}/decline`, { method: 'PATCH' }),
+
+  // Restaurant — own availability (for online bookings via diner side)
+  getMyAvailability:    () => request('/api/discover/my-availability'),
+  updateMyAvailability: (data) => request('/api/discover/my-availability', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Restaurant — kitchen aggregate summary (different shape from getDishTimes)
+  getKitchenSummary: () => request('/api/owner/kitchen/summary'),
+
+  // Restaurant — staff edit (already has create/delete; web has updateStaff too)
+  updateStaff: (id, data) => request(`/api/restaurant/staff/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Diner — discovery + booking flow
+  getRestaurant:    (id)        => request(`/api/discover/restaurants/${id}`),
+  getAvailability:  (id, date)  => request(`/api/discover/availability/${id}?check_date=${date}`),
+  requestBooking:   (data)      => request('/api/discover/book', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Diner — reviews
+  createDinerReview: (data) => request('/api/diner/reviews', { method: 'POST', body: JSON.stringify(data) }),
+  getMyDinerReviews: ()     => request('/api/diner/reviews'),
+
+  // Restaurant — diner reviews from customers
+  getDinerReviews: () => request('/api/restaurant/diner-reviews'),
 };

@@ -24,6 +24,8 @@ export default function ConsumerLayout() {
           would crowd the layout. */}
       <Tabs.Screen name="assistant" options={{ href: null }} />
       <Tabs.Screen name="social"    options={{ href: null }} />
+      <Tabs.Screen name="pantry"    options={{ href: null }} />
+      <Tabs.Screen name="journal"   options={{ href: null }} />
     </Tabs>
   );
 }
