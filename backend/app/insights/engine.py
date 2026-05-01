@@ -169,6 +169,10 @@ Rules for the output:
   🎵 music, 🍳 recipe, 🥗 dietary, 🔗 connection, 💡 insight).
 - `confidence` reflects how strong the signal is (0.5 weak, 0.8 strong, 0.95 explicit history match).
 - If signals are thin, still produce 3 reasonable recommendations rather than refusing.
+- If a `spotify_listening` field is present, treat it as the strongest taste signal
+  — reference a specific top artist or genre in at least one body when relevant
+  (e.g. "Your heavy Rosalía rotation pairs well with Spanish reds — try this Rioja
+  with paella"). Don't force it if no food/wine connection makes sense.
 
 Tone for `title` and `body`: warm, second-person, sentence case. Title ≤ 8 words.
 Body ≤ 25 words.
@@ -198,6 +202,29 @@ def build_consumer_recommendations(db: Session, user: User) -> list[dict]:
                 "total_moods":    history.get("total_moods", 0),
             },
         }
+
+        # Opportunistic Spotify listening signal — when the user has
+        # connected Spotify with the user-top-read scope, drop their top
+        # artists / genres / tracks into the prompt so recommendations
+        # can reference real listening taste ("you've been on heavy
+        # rotation with Bad Bunny — try this Latin pairing"). Wrapped in
+        # try/except because the SocialConnection model is in a sibling
+        # subpackage and we never want a Spotify error to break a recs
+        # request.
+        try:
+            from ..models.consumer import SocialConnection
+            from ..services.spotify_service import get_listening_signal
+            spotify_conn = (
+                db.query(SocialConnection)
+                .filter(SocialConnection.user_id == user.id, SocialConnection.platform == "spotify")
+                .first()
+            )
+            signal = get_listening_signal(db, spotify_conn)
+            if signal:
+                payload["spotify_listening"] = signal
+        except Exception:  # noqa: BLE001 — recs is read-only; never fail it
+            pass
+
         result = claude_client.call_json(_CONSUMER_REC_SYSTEM, payload, _CONSUMER_REC_SCHEMA)
         if result and isinstance(result.get("recommendations"), list) and result["recommendations"]:
             return result["recommendations"]

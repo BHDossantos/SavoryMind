@@ -102,6 +102,77 @@ def test_consumer_recommendations_uses_claude_when_configured(client, db_session
         assert r.json() == fake_recs
 
 
+def test_consumer_recommendations_includes_spotify_listening_signal(client, db_session, monkeypatch):
+    """When the user has Spotify connected and the listening helper
+    returns a signal, the recommendation engine MUST drop it into the
+    Claude prompt payload as the spotify_listening field. Verifies the
+    closed loop between OAuth and personalisation."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="consumer")
+
+    # Mark Spotify connected with a fake (still-fresh) token so the engine
+    # finds the row when it looks for a listening signal.
+    from datetime import datetime, timedelta
+    from app.models.consumer import SocialConnection
+    conn = db_session.query(SocialConnection).filter_by(user_id=1, platform="spotify").first()
+    conn.connected = True
+    conn.access_token = "stub"
+    conn.refresh_token = "stub_r"
+    conn.token_expires_at = datetime.utcnow() + timedelta(hours=1)
+    db_session.commit()
+
+    fake_signal = {
+        "top_artists": ["Bad Bunny", "Rosalía"],
+        "top_genres":  ["latin", "reggaeton"],
+        "top_tracks":  [{"name": "DÁKITI", "artists": ["Bad Bunny"]}],
+    }
+
+    captured = {}
+
+    def fake_call_json(system, payload, schema, **kwargs):
+        # Capture the payload Claude would have received so we can assert
+        # the listening signal made it through.
+        captured["payload"] = payload
+        return {"recommendations": [{
+            "type": "wine_pairing", "title": "Latin pairing",
+            "body": "Your heavy Bad Bunny rotation pairs well with Spanish reds.",
+            "icon": "🍷", "action": "wine_pairing?dish=paella", "confidence": 0.9,
+        }]}
+
+    with patch("app.insights.engine.claude_client.call_json", side_effect=fake_call_json):
+        with patch("app.services.spotify_service.get_listening_signal", return_value=fake_signal) as ls:
+            r = client.get("/api/consumer/recommendations", headers=auth_headers(access))
+            assert r.status_code == 200
+            assert ls.call_count == 1, "engine should query Spotify when user is connected"
+
+    assert captured["payload"].get("spotify_listening") == fake_signal
+
+
+def test_consumer_recommendations_skips_listening_when_spotify_not_connected(client, monkeypatch):
+    """No Spotify connection → no spotify_listening field in the payload.
+    Verifies the engine doesn't accidentally call Spotify for users who
+    aren't connected."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+    access, _ = register_user(client, account_type="consumer")
+
+    captured = {}
+
+    def fake_call_json(system, payload, schema, **kwargs):
+        captured["payload"] = payload
+        return {"recommendations": [{
+            "type": "wine_pairing", "title": "x", "body": "y",
+            "icon": "🍷", "action": "wine_pairing", "confidence": 0.7,
+        }]}
+
+    with patch("app.insights.engine.claude_client.call_json", side_effect=fake_call_json):
+        with patch("app.services.spotify_service.get_listening_signal") as ls:
+            ls.return_value = None
+            r = client.get("/api/consumer/recommendations", headers=auth_headers(access))
+            assert r.status_code == 200
+
+    assert "spotify_listening" not in captured["payload"]
+
+
 def test_consumer_recommendations_falls_back_when_claude_returns_empty(client, db_session, monkeypatch):
     """A null / malformed response from Claude must not produce an empty
     rec list — the rules-based engine fills in."""

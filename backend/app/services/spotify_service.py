@@ -35,11 +35,19 @@ SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_PROFILE_URL = "https://api.spotify.com/v1/me"
 SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search"
+SPOTIFY_TOP_ARTISTS_URL = "https://api.spotify.com/v1/me/top/artists"
+SPOTIFY_TOP_TRACKS_URL = "https://api.spotify.com/v1/me/top/tracks"
 
-# Minimal scopes for the MVP. Adding playlist creation later requires
-# `playlist-modify-private playlist-modify-public`. Web Playback SDK requires
-# `streaming` and Spotify Premium on the user's account.
-SPOTIFY_SCOPES = "user-read-private user-read-email"
+# Scopes the SavoryMind app requests. Adding new ones here means existing
+# connections need to reconnect to grant them — until they do, calls that
+# need the new scope will get 403 from Spotify, which we surface as a
+# SpotifyAuthError so the UI can prompt a reconnect.
+#
+# user-read-private / user-read-email: profile data (display name, ID).
+# user-top-read: top artists / top tracks for personalisation signal in
+#   the recommendation engine. Falls back to no listening signal if the
+#   user hasn't granted it yet.
+SPOTIFY_SCOPES = "user-read-private user-read-email user-top-read"
 
 STATE_TYPE = "spotify_oauth_state"
 
@@ -232,6 +240,86 @@ def get_fresh_access_token(db, conn) -> str:
         conn.scopes = refreshed["scope"]
     db.commit()
     return new_access
+
+
+def get_top_artists(access_token: str, limit: int = 10, time_range: str = "short_term") -> list[dict]:
+    """Fetch the user's top artists from Spotify. time_range:
+      short_term  ≈ last 4 weeks (default — freshest taste signal)
+      medium_term ≈ last 6 months
+      long_term   ≈ several years
+    Returns a normalised list of {name, genres}. Empty list on any
+    failure (missing scope, network error, malformed response) so callers
+    can degrade silently."""
+    limit = max(1, min(int(limit or 10), 50))
+    url = f"{SPOTIFY_TOP_ARTISTS_URL}?{urlencode({'limit': limit, 'time_range': time_range})}"
+    try:
+        payload = _http_get_json(url, access_token)
+    except (HTTPError, URLError, TimeoutError):
+        return []
+    items = payload.get("items") or []
+    return [
+        {"name": a.get("name"), "genres": (a.get("genres") or [])[:4]}
+        for a in items if a and a.get("name")
+    ]
+
+
+def get_top_tracks(access_token: str, limit: int = 10, time_range: str = "short_term") -> list[dict]:
+    """Top tracks (with artist names) for the same time-range matrix as
+    get_top_artists. Returns normalised {name, artists}. Empty on failure."""
+    limit = max(1, min(int(limit or 10), 50))
+    url = f"{SPOTIFY_TOP_TRACKS_URL}?{urlencode({'limit': limit, 'time_range': time_range})}"
+    try:
+        payload = _http_get_json(url, access_token)
+    except (HTTPError, URLError, TimeoutError):
+        return []
+    items = payload.get("items") or []
+    out = []
+    for t in items:
+        if not t or not t.get("name"):
+            continue
+        out.append({
+            "name": t.get("name"),
+            "artists": [a.get("name") for a in (t.get("artists") or []) if a and a.get("name")],
+        })
+    return out
+
+
+def get_listening_signal(db, conn) -> dict | None:
+    """Convenience wrapper used by the recommendation engine. Refreshes
+    the access token if needed (so callers don't have to), fetches top
+    artists + tracks, and returns a compact dict ready to drop into a
+    Claude prompt payload. Returns None when the user isn't connected
+    or every Spotify call failed (e.g. user hasn't granted user-top-read
+    yet — common for connections that predate this commit)."""
+    if not conn or not conn.connected:
+        return None
+    try:
+        access_token = get_fresh_access_token(db, conn)
+    except SpotifyAuthError:
+        return None
+
+    artists = get_top_artists(access_token, limit=10)
+    tracks  = get_top_tracks(access_token, limit=10)
+    if not artists and not tracks:
+        return None
+
+    # Aggregate genres across the top artists into a deduped list — gives
+    # the LLM a compact "user's musical palette" signal.
+    seen_genres: list[str] = []
+    seen = set()
+    for a in artists:
+        for g in a.get("genres", []):
+            if g and g not in seen:
+                seen_genres.append(g)
+                seen.add(g)
+    return {
+        "top_artists": [a["name"] for a in artists][:10],
+        "top_genres":  seen_genres[:8],
+        "top_tracks":  [
+            {"name": t["name"], "artists": t["artists"][:2]}
+            for t in tracks[:6]
+        ],
+    }
 
 
 def search_tracks(access_token: str, query: str, limit: int = 20) -> list[dict]:
