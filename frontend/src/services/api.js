@@ -149,6 +149,12 @@ export const api = {
   // Restaurant — Reviews
   getReviews: () => request("/api/reviews/"),
   getSentimentSummary: () => request("/api/reviews/summary"),
+  // Aggregated theme summary across a restaurant's reviews — top
+  // complaints / praise / themes / tone breakdown derived from Claude's
+  // per-review extraction (sentiment_service.extract_themes). Empty
+  // top_* lists when ANTHROPIC_API_KEY isn't set on the backend or no
+  // reviews have been enriched yet.
+  getReviewThemes: () => request("/api/reviews/themes"),
   createReview: (data) => request("/api/reviews/", { method: "POST", body: JSON.stringify(data) }),
   deleteReview: (id) => request(`/api/reviews/${id}`, { method: "DELETE" }),
 
