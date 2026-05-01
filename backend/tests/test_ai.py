@@ -148,6 +148,35 @@ def test_consumer_recommendations_includes_spotify_listening_signal(client, db_s
     assert captured["payload"].get("spotify_listening") == fake_signal
 
 
+def test_connections_response_exposes_scopes_for_reconnect_nudge(client, db_session):
+    """The frontend reads conn.scopes to decide whether to show the
+    "Reconnect for richer recommendations" nudge. If this field
+    silently disappears from the schema, every existing user loses
+    the feature — assert it's there."""
+    from datetime import datetime, timedelta
+    register_user(client, account_type="consumer")
+    from app.models.consumer import SocialConnection
+    conn = db_session.query(SocialConnection).filter_by(user_id=1, platform="spotify").first()
+    conn.connected = True
+    conn.access_token = "stub"
+    conn.refresh_token = "stub_r"
+    conn.token_expires_at = datetime.utcnow() + timedelta(hours=1)
+    conn.scopes = "user-read-private user-read-email"  # legacy, missing user-top-read
+    db_session.commit()
+
+    # Re-login because register's access token has been used; fresh client
+    # state per test makes that simpler than re-using the access from above.
+    login = client.post("/api/auth/login", json={"email": "alice@example.com", "password": "password123"})
+    headers = auth_headers(login.json()["access_token"])
+
+    r = client.get("/api/consumer/connections", headers=headers)
+    assert r.status_code == 200
+    spotify = next((c for c in r.json() if c["platform"] == "spotify"), None)
+    assert spotify is not None
+    assert "scopes" in spotify, "scopes field must be in the response so the UI can detect missing-scope upgrades"
+    assert spotify["scopes"] == "user-read-private user-read-email"
+
+
 def test_consumer_recommendations_skips_listening_when_spotify_not_connected(client, monkeypatch):
     """No Spotify connection → no spotify_listening field in the payload.
     Verifies the engine doesn't accidentally call Spotify for users who

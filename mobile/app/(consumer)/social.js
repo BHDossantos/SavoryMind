@@ -110,6 +110,20 @@ export default function SpotifyConnectScreen() {
               </View>
             </View>
 
+            {/* Reconnect nudge — see web social.js for rationale. The
+                three Spotify endpoints (connect / disconnect / search)
+                all still work on the old scope, so we surface the
+                upgrade benefit without forcing a reconnect. */}
+            {isConnected && conn.scopes != null
+                && !String(conn.scopes).split(/\s+/).includes('user-top-read') && (
+              <View style={styles.nudgeBox}>
+                <Text style={styles.nudgeText}>
+                  <Text style={styles.nudgeBold}>Reconnect for richer recommendations.</Text>{' '}
+                  Granting Spotify's "top tracks" permission lets us tailor wine and food picks to what you actually listen to.
+                </Text>
+              </View>
+            )}
+
             <View style={styles.actionRow}>
               {isConnected ? (
                 <>
@@ -156,6 +170,9 @@ const styles = StyleSheet.create({
   cardSub:       { fontSize: 12, color: C.gray[500], marginTop: 4, lineHeight: 16 },
   connectedPill: { fontSize: 11, fontWeight: '700', color: '#16a34a', backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   connectedAs:   { fontSize: 13, color: '#16a34a', fontWeight: '600', marginTop: 6 },
+  nudgeBox:      { marginTop: 4, padding: 10, borderRadius: 10, backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#fcd34d' },
+  nudgeText:     { fontSize: 12, color: '#92400e', lineHeight: 16 },
+  nudgeBold:     { fontWeight: '700' },
 
   actionRow:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   primaryBtn:    { backgroundColor: '#1DB954', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 18, flexGrow: 1, alignItems: 'center' },

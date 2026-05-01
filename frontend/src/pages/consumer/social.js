@@ -128,6 +128,21 @@ export default function SocialConnect() {
               </p>
             )}
 
+            {/* Reconnect nudge — when a connection predates the
+                user-top-read scope upgrade, the recommendation engine
+                gets no listening signal from this user. The Spotify
+                connect / disconnect / search calls all still work
+                with the older scope, so we don't force a reconnect;
+                we just surface the upgrade benefit. */}
+            {isConnected && conn.scopes !== undefined && conn.scopes !== null
+                && !conn.scopes.split(/\s+/).includes('user-top-read') && (
+              <div className="mt-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                <span className="font-semibold">Reconnect for richer recommendations.</span>{" "}
+                Granting Spotify's "top tracks" permission lets us tailor wine and
+                food picks to what you actually listen to.
+              </div>
+            )}
+
             <div className="mt-3 flex flex-wrap gap-2">
               {isConnected ? (
                 <>
