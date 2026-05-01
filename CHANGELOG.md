@@ -4,11 +4,11 @@ Project-level changelog. Reverse-chronological. New entries go at the top.
 
 ## Unreleased — PR #18
 
-A 26-commit consolidation that started as three security audit fixes and grew into
-a full security + AI + multi-platform overhaul. Branch
+A 30-commit consolidation that started as three security audit fixes and grew into
+a full security + AI + multi-platform overhaul + mobile/web parity sweep. Branch
 `claude/fix-screenshot-api-error-8JNoK`. **Squash on merge** is the right strategy —
 the per-commit history is useful for bisecting if something regresses, but `main`
-doesn't need 26 entries.
+doesn't need 30 entries.
 
 ### Activation prerequisites — add these to repo Actions secrets *before* merging
 
@@ -147,6 +147,30 @@ OAuth handshake) is now a real Authorization Code flow with playable tracks.
 - **SDK 54 → 55 alignment**. The mobile package.json was pinned to versions that no
   longer existed on npm (`expo-haptics@~14.2.0` was canary-only). Aligned every dep with
   Expo SDK 55's bundled native modules manifest. `npm install` now resolves cleanly.
+- **Parity sweep — 5 new screens** closing the bulk of the mobile-vs-web gap (see commit
+  baf4c1d):
+  - **Pantry** (consumer): ingredient inventory grouped by category, "what can I make?"
+    recipe matcher via `/api/consumer/pantry/recipes`, optimistic delete with rollback.
+  - **Journal** (consumer): mood-tagged meal memories. Inline form, soft-delete with
+    confirm.
+  - **Notifications** (top-level): bell with unread badge on the consumer dashboard,
+    list screen at `/notifications`, marks read on visit (best-effort).
+  - **Employees** (restaurant): staff portal account management with role chips. Surfaces
+    from the More tab.
+  - **Restaurant detail** (diner): full booking flow at `(diner)/restaurant/[id]`.
+    Date-aware availability, party-size selector, tap a slot → `/api/discover/book`.
+- **API method parity**: 25 missing methods added to `mobile/services/api.js` covering
+  pantry, journal, notifications, delivery, restaurant booking actions, restaurant
+  availability, diner discovery + booking, diner reviews.
+- **Deliberate platform difference (NOT a gap)**: web has separate `wine.js` +
+  `beverages.js` routes; mobile keeps the existing `pairings.js` (single tabbed screen).
+  Single-screen-with-segmented-tabs is better mobile UX than three routes; documented
+  here so the next audit doesn't flag it as missing parity.
+- **Deferred consumer pages** (intentional, not blocking parity): `cook.js` (timer-only,
+  low value before voice/locale work lands), `guided-cooking.js` (385 LOC requires real
+  product investment, not parity port), `explore.js` (overlaps existing dashboard
+  recommendations), `order.js` (delivery API on backend is hard-coded suggestions, not
+  real ordering), `welcome.js` (mobile lands on dashboard directly).
 
 ### Schema migrations (Alembic)
 
@@ -168,13 +192,13 @@ Three additive migrations, all safe-to-rerun:
   invokable; doesn't change behavior on its own.
 - **CI workflows**:
   - `.github/workflows/ci.yml` — backend pytest (62 cases) + frontend Jest (21 cases).
-  - `.github/workflows/mobile-ci.yml` — mobile Jest (29 cases).
+  - `.github/workflows/mobile-ci.yml` — mobile Jest (47 cases).
   - All three jobs run on every push to any branch + every PR to main.
 
 ### Tests
 
-113 automated tests across three layers, full path-coverage matrix on the AI/auth
-machinery:
+**142 automated tests** across three layers (63 backend / 32 web / 47 mobile). Full
+path-coverage matrix on the AI/auth machinery:
 
 |                         | Claude on (key set) | Claude off (key unset) | Claude fails (network/refusal) |
 |-------------------------|---------------------|------------------------|--------------------------------|
@@ -185,6 +209,31 @@ machinery:
 | review save              | VADER + LLM themes | VADER only             | VADER only (theme cols null)   |
 | review themes summary    | aggregated         | empty                  | partial                        |
 | culinary assistant       | LLM                | "setup needed" message | "try-again" message            |
+
+Mobile screen coverage matrix (each screen has at least empty-state, populated-state,
+and primary-action assertions):
+
+| Screen                       | Tests | What's verified                                              |
+|------------------------------|-------|--------------------------------------------------------------|
+| `services/api.js`            | 14    | tokenStore, X-Client-Type, Bearer auth, 401-refresh-retry    |
+| `contexts/AuthContext`       | 6     | mount restore, login/register/logout state machine           |
+| `app/login.js`               | 4     | form submit, error surfacing, social fallback                |
+| `app/(consumer)/assistant`   | 5     | greeting, send→reply, suggestion chips, error card           |
+| `app/(consumer)/pantry`      | 4     | empty/full, add, find-recipes flow                           |
+| `app/(consumer)/journal`     | 3     | empty/full, save                                             |
+| `app/notifications`          | 4     | empty/full, mark-read on mount, legacy wrapper shape         |
+| `app/(restaurant)/employees` | 3     | empty/full, create with role chip                            |
+| `app/(diner)/restaurant/[id]`| 4     | restaurant info, slots, tap-to-book, no-slots empty          |
+
+Web screen coverage matrix:
+
+| Surface                    | Tests | What's verified                                                |
+|----------------------------|-------|----------------------------------------------------------------|
+| `services/api.js`          | 13    | credentials:include, 401-refresh-retry, login/refresh excluded |
+| `context/AuthContext`      | 6     | mount-restore, cached hydration, login/register/logout         |
+| `pages/login.js`           | 5     | form submit, social provider guard, NextAuth signIn            |
+| `pages/sentiment.js`       | 4     | themes panel render contract (the bug catcher)                 |
+| `pages/consumer/social.js` | 4     | Spotify reconnect nudge gating on user-top-read scope          |
 
 ### Known caveats
 
@@ -202,11 +251,22 @@ machinery:
 
 ### Files touched
 
-390+ across backend (Python/FastAPI/SQLAlchemy/Alembic), frontend (Next.js / React /
+400+ across backend (Python/FastAPI/SQLAlchemy/Alembic), frontend (Next.js / React /
 Tailwind), mobile (Expo SDK 55 / React Native 0.83 / expo-router), CI (GitHub Actions),
-infra (Cloud Run deploy workflow). New top-level files: `CHANGELOG.md` (this),
-`backend/app/services/claude_client.py`, `backend/app/services/spotify_service.py`,
-`backend/app/api/routes/oauth.py`, `backend/app/core/encrypted_field.py`,
-`backend/app/models/auth_revocation.py`, `frontend/src/pages/api/auth/social-bridge.js`,
-`mobile/app/(consumer)/assistant.js`, `mobile/app/(consumer)/social.js`, plus 8 test
-files and 3 Alembic migrations.
+infra (Cloud Run deploy workflow). New top-level files:
+
+- Backend: `app/services/claude_client.py`, `app/services/spotify_service.py`,
+  `app/api/routes/oauth.py`, `app/core/encrypted_field.py`, `app/models/auth_revocation.py`
+- Frontend: `pages/api/auth/social-bridge.js`
+- Mobile (10 new screens): `app/(consumer)/{assistant,social,pantry,journal}.js`,
+  `app/(restaurant)/employees.js`, `app/(diner)/restaurant/[id].js`,
+  `app/notifications.js`
+- Tests (13 new files): 4 backend (`tests/test_ai.py` and the auth/encryption/health
+  suites that were already there got extended), 5 web (`__tests__/sentiment.test.js`,
+  `__tests__/login.test.js`, `__tests__/social.test.js`, `services/__tests__/api.test.js`,
+  `context/__tests__/AuthContext.test.js`), 9 mobile (api + AuthContext + login +
+  assistant + pantry + journal + notifications + employees + restaurant detail)
+- Alembic: 3 migrations (`4490178aadd3`, `2d78950e0987`, `d655b6eb282c`)
+- CI: `.github/workflows/ci.yml` (backend + frontend), `.github/workflows/mobile-ci.yml`
+- Tooling: `.claude/` directory (GSD framework, 362 files installed via npx, intentional)
+- Docs: `CHANGELOG.md` (this)
