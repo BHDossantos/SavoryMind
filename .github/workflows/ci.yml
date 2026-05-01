@@ -45,3 +45,28 @@ jobs:
         # tests/conftest.py — no GitHub secrets required for the suite to
         # run. CI just needs Python + the requirements installed.
         run: pytest tests/ -v
+
+  frontend-tests:
+    name: Frontend Jest
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        # next/jest doesn't need any post-install scripts for the tests
+        # to run; --ignore-scripts trims a noticeable chunk of CI time.
+        run: npm ci --ignore-scripts
+
+      - name: Run Jest
+        working-directory: frontend
+        run: npx jest --no-coverage --ci
