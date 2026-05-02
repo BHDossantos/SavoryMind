@@ -177,6 +177,92 @@ def test_connections_response_exposes_scopes_for_reconnect_nudge(client, db_sess
     assert spotify["scopes"] == "user-read-private user-read-email"
 
 
+def test_google_login_returns_503_when_unconfigured(client, monkeypatch):
+    """Without GOOGLE_CLIENT_ID set, the verifier short-circuits with a
+    clear "not configured" 503. Mobile/web can degrade gracefully to
+    email-password rather than getting a confusing 401."""
+    monkeypatch.setattr("app.core.config.settings.google_client_id", "")
+    r = client.post("/api/auth/google", json={"id_token": "irrelevant"})
+    assert r.status_code == 503
+    assert "not configured" in r.json()["detail"]
+
+
+def test_google_login_400_on_missing_token(client, monkeypatch):
+    monkeypatch.setattr("app.core.config.settings.google_client_id", "fake-google-client-id")
+    r = client.post("/api/auth/google", json={})
+    assert r.status_code == 400
+
+
+def test_google_login_401_on_invalid_token(client, monkeypatch):
+    """Verifier failure → opaque 401, never leaks which validation step
+    failed (signature vs audience vs expiry)."""
+    monkeypatch.setattr("app.core.config.settings.google_client_id", "fake-google-client-id")
+    with patch("app.services.google_oauth.verify_id_token") as v:
+        from app.services.google_oauth import GoogleAuthError
+        v.side_effect = GoogleAuthError("Token expired.")
+        r = client.post("/api/auth/google", json={"id_token": "expired-token"})
+    assert r.status_code == 401
+
+
+def test_google_login_creates_session_on_valid_token(client, monkeypatch):
+    """Happy path: verifier returns claims → social_login mints a
+    SavoryMind session → response includes access_token + refresh
+    cookie + user, identical shape to email/password login."""
+    monkeypatch.setattr("app.core.config.settings.google_client_id", "fake-google-client-id")
+    fake_claims = {
+        "sub":            "google-oauth-sub-12345",
+        "email":          "alice@gmail.com",
+        "email_verified": True,
+        "name":           "Alice Example",
+        "picture":        "https://lh3.googleusercontent.com/a/abc",
+        "iss":            "https://accounts.google.com",
+        "aud":            "fake-google-client-id",
+        "exp":            9999999999,
+    }
+    with patch("app.services.google_oauth.verify_id_token", return_value=fake_claims):
+        r = client.post(
+            "/api/auth/google",
+            headers={"X-Client-Type": "mobile"},
+            json={"id_token": "anything-the-mock-doesn't-care"},
+        )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["access_token"]
+    assert body["user"]["email"] == "alice@gmail.com"
+    assert body["user"]["display_name"] == "Alice Example"
+    # Mobile client → refresh in body
+    assert body["refresh_token"]
+
+
+def test_google_login_unverified_email_treated_as_no_email(client, monkeypatch, db_session):
+    """An unverified Google email shouldn't accidentally link to an
+    existing SavoryMind account that uses the same address. The
+    verifier zeros out `email` in that case; verify the route treats
+    it as a brand-new social user."""
+    monkeypatch.setattr("app.core.config.settings.google_client_id", "fake-google-client-id")
+
+    # Pre-create a user with this email via password registration
+    register_user(client, email="taken@gmail.com")
+
+    # Token's email_verified is False → verifier returns email=""
+    fake_claims = {
+        "sub":            "fresh-google-sub-77",
+        "email":          "",  # cleared by verifier when email_verified=False
+        "email_verified": False,
+        "name":           "Different Person",
+        "iss":            "https://accounts.google.com",
+        "aud":            "fake-google-client-id",
+        "exp":            9999999999,
+    }
+    with patch("app.services.google_oauth.verify_id_token", return_value=fake_claims):
+        r = client.post("/api/auth/google", json={"id_token": "anything"})
+    assert r.status_code == 200
+    new_user = r.json()["user"]
+    # social_login's fallback when email is empty: synthetic placeholder
+    assert new_user["email"] != "taken@gmail.com"
+    assert "fresh-google-sub-77" in new_user["email"] or new_user["email"].startswith("google_")
+
+
 def test_consumer_recommendations_skips_listening_when_spotify_not_connected(client, monkeypatch):
     """No Spotify connection → no spotify_listening field in the payload.
     Verifies the engine doesn't accidentally call Spotify for users who

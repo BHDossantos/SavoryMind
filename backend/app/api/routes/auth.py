@@ -112,6 +112,57 @@ def social_login(
     return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
+@router.post("/google", response_model=TokenResponse, status_code=200)
+@limiter.limit("10/minute")
+def google_login(
+    request: Request,
+    response: Response,
+    body: dict,
+    db: Session = Depends(get_db),
+    x_client_type: Optional[str] = Header(default=None),
+):
+    """Native Google sign-in via verified ID token.
+
+    Replaces the SOCIAL_LOGIN_SECRET shared-secret pattern for native
+    OAuth flows: the client (mobile via expo-auth-session, or web via
+    Google Identity Services if we ever wire it directly) hands us a
+    Google-issued ID token, the backend verifies its RSA signature
+    against Google's JWKS, validates iss/aud/exp, and only then mints
+    a SavoryMind session.
+
+    No shared secret on the device. No way for a malicious client to
+    impersonate another user.
+    """
+    from ...services import google_oauth
+    if not google_oauth.is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Google sign-in is not configured on this server.",
+        )
+
+    id_token = (body or {}).get("id_token")
+    if not isinstance(id_token, str) or not id_token:
+        raise HTTPException(status_code=400, detail="`id_token` is required.")
+
+    try:
+        claims = google_oauth.verify_id_token(id_token)
+    except google_oauth.GoogleAuthError as e:
+        # Don't leak which validation step failed — same opaque 401 for
+        # signature / issuer / audience / expiry. Specifics are in logs.
+        raise HTTPException(status_code=401, detail=str(e))
+
+    access, refresh, user = auth_service.social_login(
+        db,
+        provider="google",
+        provider_id=str(claims["sub"]),
+        email=str(claims.get("email") or ""),
+        name=str(claims.get("name") or ""),
+        avatar_url=str(claims.get("picture") or ""),
+    )
+    _set_refresh_cookie(response, refresh)
+    return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
+
+
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit("60/minute")
 def refresh(

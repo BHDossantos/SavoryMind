@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     # key with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
     token_encryption_key: str = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
 
+    # Google OAuth — Client ID of the Google OAuth app that mobile/web uses.
+    # Required as the `aud` claim on Google-issued ID tokens; without it the
+    # /api/auth/google endpoint refuses to verify (returns 503). Set on the
+    # mobile/web side via EXPO_PUBLIC_GOOGLE_CLIENT_ID / GOOGLE_CLIENT_ID and
+    # registered at console.cloud.google.com → APIs & Services → Credentials.
+    google_client_id: str = ""
+
     class Config:
         env_file = ".env"
 
