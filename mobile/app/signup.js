@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../constants/colors';
 
-const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
+WebBrowser.maybeCompleteAuthSession();
 
-// Native Google sign-in was removed — see comment in app/login.js. All
-// social providers route through the web app's OAuth flow until a real
-// ID-token-verifying mobile bridge is wired on the backend.
+const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
+// Google → native flow when configured (commit "wire mobile expo-auth-session"),
+// WebBrowser fallback otherwise. Other providers route through the web
+// app's OAuth flow until each gets its own backend ID-token verifier.
 const SOCIAL_PROVIDERS = [
   { id: 'google',   label: 'Google',    bg: '#fff',     emoji: 'G',  fg: '#4285F4' },
   { id: 'github',   label: 'GitHub',    bg: '#1a1a1a', emoji: '🐙' },
@@ -28,7 +32,7 @@ const TYPES = [
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, loginGoogle } = useAuth();
   const { type: defaultType } = useLocalSearchParams();
   const [form, setForm] = useState({
     email: '', password: '', display_name: '', account_type: defaultType || 'consumer',
@@ -39,8 +43,54 @@ export default function SignupScreen() {
 
   const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setError(null); };
 
+  // Native Google flow (mirrors login.js — see comments there for the
+  // why). When EXPO_PUBLIC_GOOGLE_CLIENT_ID isn't set, the Google tile
+  // falls through to the WebBrowser path with the rest of the providers.
+  const [, googleResponse, googlePrompt] = Google.useAuthRequest({
+    clientId: GOOGLE_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  useEffect(() => {
+    if (!googleResponse) return;
+    if (googleResponse.type === 'success') {
+      const idToken = googleResponse.authentication?.idToken
+        || googleResponse.params?.id_token;
+      if (!idToken) {
+        setError("Google sign-in didn't return an ID token. Try again.");
+        setSocialLoading(null);
+        return;
+      }
+      (async () => {
+        try {
+          await loginGoogle(idToken);
+        } catch (e) {
+          setError(e.message || 'Google sign-in failed.');
+        } finally {
+          setSocialLoading(null);
+        }
+      })();
+    } else if (googleResponse.type === 'error') {
+      setError('Google sign-in failed. Please try again.');
+      setSocialLoading(null);
+    } else {
+      setSocialLoading(null);
+    }
+  }, [googleResponse]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSocialProvider = async (p) => {
     setSocialLoading(p.id);
+    setError(null);
+
+    if (p.id === 'google' && GOOGLE_CLIENT_ID) {
+      try {
+        await googlePrompt();
+        return;
+      } catch (e) {
+        // Fall through to WebBrowser if the native sheet can't open.
+      }
+    }
+
     try { await WebBrowser.openBrowserAsync(WEB_APP_URL + '/login'); }
     catch { setError('Could not open browser.'); }
     finally { setSocialLoading(null); }

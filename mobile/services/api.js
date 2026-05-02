@@ -81,11 +81,18 @@ async function request(path, options = {}, _didRefresh = false) {
   // 30-min access tokens expire mid-session — transparently refresh once.
   // Auth endpoints excluded so a real "wrong password" doesn't get masked
   // as a refresh-then-retry loop.
+  // Don't auto-refresh on auth endpoints — a 401 there means "wrong
+  // password" (login) or "invalid id_token" (google) or "verifier
+  // refused you" (social), not "your access token expired". Calling
+  // /refresh in those cases would mask the real error and leave the
+  // user staring at a misleading "Session expired" message.
   const isAuthEndpoint =
     path.startsWith('/api/auth/login') ||
     path.startsWith('/api/auth/register') ||
     path.startsWith('/api/auth/refresh') ||
-    path.startsWith('/api/auth/logout');
+    path.startsWith('/api/auth/logout') ||
+    path.startsWith('/api/auth/google') ||
+    path.startsWith('/api/auth/social');
 
   if (res.status === 401 && !isAuthEndpoint && !_didRefresh) {
     const refreshed = await tryRefresh();
@@ -119,6 +126,20 @@ export const api = {
   },
   login: async (data) => {
     const result = await request('/api/auth/login', { method: 'POST', body: JSON.stringify(data) });
+    await _saveTokensFrom(result);
+    return result;
+  },
+  // Native Google sign-in. Caller hands over the id_token from
+  // expo-auth-session's Google provider response.authentication.idToken
+  // (NOT the accessToken — that's a regular OAuth token without the
+  // signed claims our backend needs to verify the user's identity).
+  // Backend cryptographically validates the token via Google's JWKS
+  // and mints a SavoryMind session — no shared secret on the device.
+  googleLogin: async (idToken) => {
+    const result = await request('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ id_token: idToken }),
+    });
     await _saveTokensFrom(result);
     return result;
   },

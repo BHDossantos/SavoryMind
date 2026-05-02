@@ -1,21 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../constants/colors';
 
-const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
+WebBrowser.maybeCompleteAuthSession();
 
-// Native social-login was removed because the previous implementation
-// required shipping SOCIAL_LOGIN_SECRET inside the mobile bundle, which
-// defeats the purpose of the secret. Real OAuth on mobile needs a backend
-// endpoint that verifies the provider's signed ID token (e.g. Google) —
-// not yet wired up. Until then, social providers route through the web
-// app, which has the proper OAuth bridge already.
+const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
+// EXPO_PUBLIC_GOOGLE_CLIENT_ID enables native Google sign-in via
+// expo-auth-session. Without it, Google falls through to the same
+// WebBrowser-to-web-app fallback the other providers use. The client ID
+// here MUST match GOOGLE_CLIENT_ID on the backend (the `aud` claim
+// the verifier checks).
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
+// Google → native flow when configured, WebBrowser fallback otherwise.
+// All other providers route through the web app's OAuth flow until each
+// gets its own backend ID-token verifier (see services/google_oauth.py).
 const SOCIAL_PROVIDERS = [
   { id: 'google',   label: 'Google',    bg: '#fff',     emoji: 'G',  fg: '#4285F4' },
   { id: 'github',   label: 'GitHub',    bg: '#1a1a1a', emoji: '🐙' },
@@ -28,16 +34,69 @@ const SOCIAL_PROVIDERS = [
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
   const [error, setError] = useState(null);
 
+  // expo-auth-session Google provider. When GOOGLE_CLIENT_ID isn't set
+  // we still build the request (with a placeholder) but never prompt
+  // — the social tile falls through to the WebBrowser path below.
+  const [, googleResponse, googlePrompt] = Google.useAuthRequest({
+    clientId: GOOGLE_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    // 'openid' guarantees we get an idToken back; 'profile' + 'email'
+    // populate the claims social_login() reads to build the user.
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  // Watch for the Google flow completing — the user has either granted
+  // (success), denied (error), or dismissed the sheet. On success we
+  // hand the idToken to the backend verifier.
+  useEffect(() => {
+    if (!googleResponse) return;
+    if (googleResponse.type === 'success') {
+      const idToken = googleResponse.authentication?.idToken
+        || googleResponse.params?.id_token;  // fallback for response_type=token
+      if (!idToken) {
+        setError('Google sign-in didn\'t return an ID token. Try again.');
+        setSocialLoading(null);
+        return;
+      }
+      (async () => {
+        try {
+          await loginGoogle(idToken);
+        } catch (e) {
+          setError(e.message || 'Google sign-in failed.');
+        } finally {
+          setSocialLoading(null);
+        }
+      })();
+    } else if (googleResponse.type === 'error') {
+      setError('Google sign-in failed. Please try again.');
+      setSocialLoading(null);
+    } else {
+      setSocialLoading(null);  // cancel / dismiss
+    }
+  }, [googleResponse]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSocialProvider = async (p) => {
     setSocialLoading(p.id);
     setError(null);
+
+    // Native Google flow when configured. Falls through to the
+    // WebBrowser path on failure or when GOOGLE_CLIENT_ID is unset.
+    if (p.id === 'google' && GOOGLE_CLIENT_ID) {
+      try {
+        await googlePrompt();
+        return;  // useEffect above handles the response
+      } catch (e) {
+        // Fall through to WebBrowser fallback if the native sheet
+        // can't be presented (e.g. simulator without Google services).
+      }
+    }
+
     try {
       await WebBrowser.openBrowserAsync(`${WEB_APP_URL}/login`);
     } catch {

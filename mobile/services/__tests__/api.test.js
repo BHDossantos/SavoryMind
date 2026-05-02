@@ -202,6 +202,43 @@ describe('login flow', () => {
 });
 
 
+describe('googleLogin flow', () => {
+  test('POSTs the id_token to /api/auth/google and stores both tokens', async () => {
+    global.fetch.mockReturnValueOnce(Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        access_token:  'access-from-google',
+        refresh_token: 'refresh-from-google',
+        user: { id: 33, email: 'g@example.com' },
+      }),
+    }));
+
+    const result = await api.googleLogin('eyJhbGc.IDTOKEN.signed');
+
+    const [url, opts] = global.fetch.mock.calls[0];
+    expect(url).toBe('http://test-backend/api/auth/google');
+    expect(opts.method).toBe('POST');
+    expect(JSON.parse(opts.body)).toEqual({ id_token: 'eyJhbGc.IDTOKEN.signed' });
+    // Mobile path: refresh comes back in body, gets stored alongside access
+    expect(result.user.id).toBe(33);
+    expect(await tokenStore.getAccess()).toBe('access-from-google');
+    expect(await tokenStore.getRefresh()).toBe('refresh-from-google');
+  });
+
+  test('propagates the backend detail when the verifier rejects', async () => {
+    global.fetch.mockReturnValueOnce(Promise.resolve({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ detail: 'Token expired.' }),
+    }));
+    await expect(api.googleLogin('expired')).rejects.toThrow('Token expired.');
+    // No tokens written when the call failed
+    expect(await tokenStore.getAccess()).toBeNull();
+  });
+});
+
+
 describe('logout flow', () => {
   test('calls /auth/logout with the refresh token, then clears local store', async () => {
     await tokenStore.setAccess('a');

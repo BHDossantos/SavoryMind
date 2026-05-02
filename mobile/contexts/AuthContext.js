@@ -45,6 +45,16 @@ export function AuthProvider({ children }) {
     return result.user;
   };
 
+  // Native Google sign-in (commit "wire mobile expo-auth-session"). The
+  // login/signup screens hand over the id_token from expo-auth-session's
+  // Google provider; api.googleLogin saves the access + refresh tokens
+  // to SecureStore, we just sync the user into context.
+  const loginGoogle = async (idToken) => {
+    const result = await api.googleLogin(idToken);
+    setUser(result.user);
+    return result.user;
+  };
+
   // socialLogin / loginSocial were removed — see comment in services/api.js
   // for the migration plan (expo-auth-session + a backend bridge route,
   // not yet wired up).
@@ -62,7 +72,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginGoogle, logout, setUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -91,6 +91,7 @@ async function request(path, options = {}, _attempt = 0, _didRefresh = false) {
     path.startsWith("/api/auth/login") ||
     path.startsWith("/api/auth/register") ||
     path.startsWith("/api/auth/social") ||
+    path.startsWith("/api/auth/google") ||
     path.startsWith("/api/auth/refresh") ||
     path.startsWith("/api/auth/logout");
 

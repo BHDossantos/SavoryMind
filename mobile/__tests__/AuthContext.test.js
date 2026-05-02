@@ -14,11 +14,12 @@ import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 // Mocks must be hoisted — declare them before importing the SUT.
 jest.mock('../services/api', () => ({
   api: {
-    login:    jest.fn(),
-    register: jest.fn(),
-    logout:   jest.fn(),
-    getMe:    jest.fn(),
-    refresh:  jest.fn(),
+    login:       jest.fn(),
+    register:    jest.fn(),
+    logout:      jest.fn(),
+    getMe:       jest.fn(),
+    refresh:     jest.fn(),
+    googleLogin: jest.fn(),
   },
   tokenStore: {
     getAccess:  jest.fn().mockResolvedValue(null),
@@ -38,7 +39,7 @@ const { AuthProvider, useAuth } = require('../contexts/AuthContext');
 // test as buttons + text — keeps assertions focused on the state changes,
 // not on the navigation chrome of the real screens.
 function AuthHarness() {
-  const { user, loading, login, register, logout } = useAuth();
+  const { user, loading, login, register, loginGoogle, logout } = useAuth();
   return (
     <View>
       <Text testID="loading">{loading ? 'loading' : 'ready'}</Text>
@@ -51,6 +52,9 @@ function AuthHarness() {
         onPress={() => register({ email: 'r@b.com', password: 'pw', display_name: 'R', account_type: 'consumer' })}
       >
         <Text>register</Text>
+      </TouchableOpacity>
+      <TouchableOpacity testID="google-btn" onPress={() => loginGoogle('eyJhbGc.fake-id-token')}>
+        <Text>googleLogin</Text>
       </TouchableOpacity>
       <TouchableOpacity testID="logout-btn" onPress={() => logout()}>
         <Text>logout</Text>
@@ -143,6 +147,27 @@ describe('AuthProvider', () => {
     expect(api.getMe).not.toHaveBeenCalled();
     await waitFor(() => expect(getByTestId('user').props.children).toBe('r@b.com'));
   });
+
+  test('loginGoogle hands the id_token to api.googleLogin and surfaces the user', async () => {
+    api.googleLogin.mockResolvedValue({
+      access_token:  'a',
+      refresh_token: 'r',
+      user: { id: 12, email: 'g@example.com' },
+    });
+
+    const { getByTestId } = render(
+      <AuthProvider>
+        <AuthHarness />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(getByTestId('loading').props.children).toBe('ready'));
+
+    await act(async () => { fireEvent.press(getByTestId('google-btn')); });
+
+    expect(api.googleLogin).toHaveBeenCalledWith('eyJhbGc.fake-id-token');
+    await waitFor(() => expect(getByTestId('user').props.children).toBe('g@example.com'));
+  });
+
 
   test('logout clears the user and calls api.logout', async () => {
     // Start logged in

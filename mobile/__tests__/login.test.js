@@ -17,10 +17,19 @@ jest.mock('expo-router', () => ({
 jest.mock('expo-web-browser', () => ({
   openBrowserAsync: jest.fn().mockResolvedValue({ type: 'opened' }),
   openAuthSessionAsync: jest.fn().mockResolvedValue({ type: 'cancel' }),
+  maybeCompleteAuthSession: jest.fn(),
+}));
+
+// expo-auth-session/providers/google: useAuthRequest returns the standard
+// triple [request, response, promptAsync]. Tests don't drive the Google
+// flow themselves (that's mocked at the AuthContext.loginGoogle layer in
+// AuthContext.test.js); they just need the import to resolve.
+jest.mock('expo-auth-session/providers/google', () => ({
+  useAuthRequest: () => [{}, null, jest.fn().mockResolvedValue({ type: 'cancel' })],
 }));
 
 jest.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ login: mockLogin }),
+  useAuth: () => ({ login: mockLogin, loginGoogle: jest.fn() }),
 }));
 
 const WebBrowser = require('expo-web-browser');
