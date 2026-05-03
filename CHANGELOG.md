@@ -4,11 +4,11 @@ Project-level changelog. Reverse-chronological. New entries go at the top.
 
 ## Unreleased — PR #18
 
-A 30-commit consolidation that started as three security audit fixes and grew into
-a full security + AI + multi-platform overhaul + mobile/web parity sweep. Branch
-`claude/fix-screenshot-api-error-8JNoK`. **Squash on merge** is the right strategy —
-the per-commit history is useful for bisecting if something regresses, but `main`
-doesn't need 30 entries.
+A 33-commit consolidation that started as three security audit fixes and grew into
+a full security + AI + multi-platform overhaul + mobile/web parity sweep + native
+Google sign-in. Branch `claude/fix-screenshot-api-error-8JNoK`. **Squash on merge**
+is the right strategy — the per-commit history is useful for bisecting if something
+regresses, but `main` doesn't need 33 entries.
 
 ### Activation prerequisites — add these to repo Actions secrets *before* merging
 
@@ -26,6 +26,12 @@ any are missing, so the deploy will fail fast rather than silently:
 - `ANTHROPIC_API_KEY` — already set in the existing deploy from the assistant feature,
   so the new AI endpoints (recommendations, trends, marketing, training, review themes)
   light up automatically.
+- `GOOGLE_CLIENT_ID` (optional) — register an OAuth client at console.cloud.google.com
+  → APIs & Services → Credentials, set this to its Client ID. Without it, the new
+  `/api/auth/google` endpoint returns 503 cleanly and mobile's Google tile falls
+  through to the WebBrowser fallback. The mobile app needs the *same* Client ID set
+  as `EXPO_PUBLIC_GOOGLE_CLIENT_ID` (audience claim must match between device and
+  server).
 
 ### Security
 
@@ -172,6 +178,40 @@ OAuth handshake) is now a real Authorization Code flow with playable tracks.
   recommendations), `order.js` (delivery API on backend is hard-coded suggestions, not
   real ordering), `welcome.js` (mobile lands on dashboard directly).
 
+### Native Google sign-in
+
+Closes the only remaining auth gap from the original audit. Replaces the
+SOCIAL_LOGIN_SECRET shared-secret pattern (fine when only Next.js holds the secret,
+dangerous if it ever ships to a client) with a backend that cryptographically verifies
+Google-issued ID tokens.
+
+- **New endpoint `POST /api/auth/google`**. Accepts `{id_token}`, fetches Google's JWKS
+  (cached 5 min), looks up the signing key by `kid`, verifies the RS256 signature,
+  validates `iss` (must be `accounts.google.com` in either form), `aud` (must equal
+  `GOOGLE_CLIENT_ID`), `exp`, and `sub` presence. All failures map to a single opaque
+  401 — specific reason logged but never surfaced to the client.
+- **Unverified-email safety net**. When Google issues a token with `email_verified=false`
+  (sometimes happens for OIDC flows from Workspace tenants), the verifier zeros out the
+  `email` claim. `social_login()` then creates a brand-new user with the Google `sub` as
+  the unique key instead of accidentally linking to an existing SavoryMind account that
+  uses the same address.
+- **Mobile UI wired**. `app/login.js` and `app/signup.js` use
+  `expo-auth-session/providers/google` when `EXPO_PUBLIC_GOOGLE_CLIENT_ID` is set —
+  native sheet, no shared secret on the device. When the env var is unset, the Google
+  tile falls through to the existing WebBrowser-to-web-app path. The
+  `WebBrowser.maybeCompleteAuthSession()` gate handles the redirect.
+- **Bug caught while wiring**: both web and mobile `isAuthEndpoint` guards in `api.js`
+  were missing `/api/auth/google` (and mobile was missing `/api/auth/social` too).
+  Without the guard, a 401 from the verifier triggered the auto-refresh-retry path and
+  surfaced "Session expired" instead of the real error. Fixed pre-emptively on both
+  clients.
+- **Dependencies**: `pyjwt[crypto]==2.12.1` on backend (the `[crypto]` extra pulls in
+  the `cryptography` lib already used by Fernet — no new transitive deps).
+
+What this does NOT replace: `/api/auth/social` (still used by the web NextAuth bridge,
+where the secret never leaves the Next.js server). Both endpoints can issue sessions;
+they just verify identity differently.
+
 ### Schema migrations (Alembic)
 
 Three additive migrations, all safe-to-rerun:
@@ -192,12 +232,12 @@ Three additive migrations, all safe-to-rerun:
   invokable; doesn't change behavior on its own.
 - **CI workflows**:
   - `.github/workflows/ci.yml` — backend pytest (62 cases) + frontend Jest (21 cases).
-  - `.github/workflows/mobile-ci.yml` — mobile Jest (47 cases).
+  - `.github/workflows/mobile-ci.yml` — mobile Jest (50 cases).
   - All three jobs run on every push to any branch + every PR to main.
 
 ### Tests
 
-**142 automated tests** across three layers (63 backend / 32 web / 47 mobile). Full
+**150 automated tests** across three layers (68 backend / 32 web / 50 mobile). Full
 path-coverage matrix on the AI/auth machinery:
 
 |                         | Claude on (key set) | Claude off (key unset) | Claude fails (network/refusal) |
@@ -215,8 +255,8 @@ and primary-action assertions):
 
 | Screen                       | Tests | What's verified                                              |
 |------------------------------|-------|--------------------------------------------------------------|
-| `services/api.js`            | 14    | tokenStore, X-Client-Type, Bearer auth, 401-refresh-retry    |
-| `contexts/AuthContext`       | 6     | mount restore, login/register/logout state machine           |
+| `services/api.js`            | 16    | tokenStore, X-Client-Type, Bearer auth, 401-refresh-retry, googleLogin |
+| `contexts/AuthContext`       | 7     | mount restore, login/register/logout/loginGoogle state machine |
 | `app/login.js`               | 4     | form submit, error surfacing, social fallback                |
 | `app/(consumer)/assistant`   | 5     | greeting, send→reply, suggestion chips, error card           |
 | `app/(consumer)/pantry`      | 4     | empty/full, add, find-recipes flow                           |
