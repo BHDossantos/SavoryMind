@@ -165,6 +165,16 @@ def refresh_session(db: Session, refresh_token: str) -> tuple[str, str, User]:
     except (ValueError, KeyError):
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
 
+    # Tag the JTI on the Sentry scope so any error from this point on is
+    # traceable to the specific refresh-token instance — useful for diagnosing
+    # replay-detection trips.
+    try:
+        import sentry_sdk
+        if jti:
+            sentry_sdk.set_tag("refresh_jti", jti)
+    except Exception:
+        pass
+
     if _is_jti_revoked(db, jti):
         # Stolen-cookie replay or post-logout reuse. Treat as auth failure
         # without leaking which.

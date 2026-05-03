@@ -125,4 +125,20 @@ def get_current_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise exc
+
+    # Tag every authenticated request for Sentry — when something blows up
+    # mid-request, the event lands in Sentry with the user already attached
+    # so triage doesn't need to cross-reference logs against a JTI. No-op
+    # when Sentry isn't initialised (sentry_sdk handles that internally).
+    try:
+        import sentry_sdk
+        sentry_sdk.set_user({
+            "id": user.id,
+            "email": user.email,
+            "account_type": user.account_type,
+        })
+    except Exception:
+        # Sentry SDK should never break a request — swallow any failure.
+        pass
+
     return user

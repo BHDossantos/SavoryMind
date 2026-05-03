@@ -54,9 +54,29 @@ The mobile build env (`EXPO_PUBLIC_GOOGLE_CLIENT_ID`) and the backend env
 (`GOOGLE_CLIENT_ID`) **must be the same value** — the verifier checks the token's `aud`
 claim, which is set by the mobile client. Mismatch → 401 "Token audience mismatch".
 
-### 1d. Check CI is green on the PR head commit
+### 1d. Run the preflight script
 
+Single command that catches every common merge-day mistake:
+
+```bash
+python scripts/preflight.py
 ```
+
+The script:
+- Lists Actions secrets (via `gh secret list` — never reads values)
+- Cross-checks each `secrets.X` reference in `deploy-backend.yml` against the
+  actual secret list — catches typos like `SPOTIFY_CLIENT_KEY` vs `SPOTIFY_CLIENT_SECRET`
+- Flags any secret loaded into the workflow's `env:` block that isn't plumbed
+  through to `gcloud run deploy --set-env-vars` (a common bug: the secret reaches
+  the runner but never the container)
+- Lists which optional secrets are unset, with a one-line note on what feature
+  stays dormant
+
+Exits 0 if no blocking issues, 1 otherwise. Use `--strict` to also fail on warnings.
+
+### 1e. Check CI is green on the PR head commit
+
+```bash
 gh pr checks 18                                    # if you have gh CLI
 # or visit https://github.com/BHDossantos/SavoryMind/pull/18 and look at the checks tab
 ```
