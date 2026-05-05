@@ -139,6 +139,27 @@ curl -X POST https://api.savorymind.net/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"a-real-test-account@example.com","password":"..."}'
 # Look for: access_token in body, sm_refresh cookie in Set-Cookie header
+
+# Auth-gated deep health check — single endpoint that confirms each
+# integration is enabled/dormant/misconfigured. Run this BEFORE poking
+# the individual flows below; the response tells you what to expect.
+curl https://api.savorymind.net/health/deep \
+  -H "Authorization: Bearer <access_token-from-login-above>"
+# Expected fields:
+#   status:        ok          (degraded if DB is unreachable)
+#   db:            ok
+#   integrations:
+#     anthropic:        enabled | dormant
+#     spotify:          enabled | dormant | misconfigured  ← any half-configured pair
+#     google_signin:    enabled | dormant
+#     sentry:           enabled | dormant
+#     token_encryption: enabled | dev_key  ← dev_key in prod = wrong; lifespan should
+#                                            have refused to boot
+#   policy: { access_token_expire_minutes, refresh_token_expire_days,
+#             cookie_secure, cookie_samesite, cookie_domain_set }
+# If anything reads "misconfigured", fix it before touching the actual
+# user-facing flows — that state means the deploy will 500 on first
+# real request to that integration instead of a clean 503.
 ```
 
 ### 3c. Verify the new endpoints exist
