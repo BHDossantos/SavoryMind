@@ -27,6 +27,11 @@ function ScoreBar({ score }) {
 export default function SentimentPage() {
   const [reviews, setReviews] = useState([]);
   const [summary, setSummary] = useState(null);
+  // Claude-extracted top complaints / praise / themes / tone breakdown,
+  // populated by the /api/reviews/themes endpoint. Empty top_* lists
+  // when no reviews have been enriched yet (either ANTHROPIC_API_KEY
+  // isn't set or every review predates the enrichment commit).
+  const [themes, setThemes] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,8 +49,15 @@ export default function SentimentPage() {
   const [dinerReviewsLoading, setDinerReviewsLoading] = useState(false);
 
   const fetchData = () =>
-    Promise.all([api.getMenuItems(), api.getReviews(), api.getSentimentSummary()])
-      .then(([items, r, s]) => { setMenuItems(items); setReviews(r); setSummary(s); })
+    Promise.all([
+      api.getMenuItems(),
+      api.getReviews(),
+      api.getSentimentSummary(),
+      // Themes is opt-in based on Claude availability; never let it
+      // block the page if the route isn't deployed yet or returns 4xx.
+      api.getReviewThemes().catch(() => null),
+    ])
+      .then(([items, r, s, t]) => { setMenuItems(items); setReviews(r); setSummary(s); setThemes(t); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
 
@@ -259,6 +271,94 @@ export default function SentimentPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+
+      {/* What guests are talking about — Claude-derived theme aggregation
+          across reviews. Three states:
+          - no reviews at all → hide entirely (sentiment chart already covers it)
+          - reviews exist but none enriched → empty state pointing at the
+            backfill / API key (covers Claude-less deploys + pre-PR-18 reviews)
+          - enriched reviews exist → render the populated panel. */}
+      {themes && themes.total_reviews > 0 && themes.enriched_reviews === 0 && (
+        <div className="card mb-6" data-testid="themes-empty">
+          <h2 className="text-base font-semibold mb-1">What guests are talking about</h2>
+          <p className="text-sm text-gray-600">
+            None of your {themes.total_reviews} reviews have been analysed yet.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            New reviews are analysed automatically. To enrich existing reviews,
+            run <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">python -m scripts.backfill_themes</code>{" "}
+            (requires <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">ANTHROPIC_API_KEY</code>).
+          </p>
+        </div>
+      )}
+      {themes && themes.enriched_reviews > 0 && (
+        <div className="card mb-6">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-base font-semibold">What guests are talking about</h2>
+            <span className="text-xs text-gray-500">
+              From {themes.enriched_reviews} of {themes.total_reviews} reviews
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {themes.top_complaints && themes.top_complaints.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">
+                  Top complaints
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {themes.top_complaints.map((c) => (
+                    <span key={c.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs">
+                      <span className="font-medium">{c.label}</span>
+                      <span className="text-red-400 font-semibold">×{c.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {themes.top_praise && themes.top_praise.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">
+                  Top praise
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {themes.top_praise.map((p) => (
+                    <span key={p.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-xs">
+                      <span className="font-medium">{p.label}</span>
+                      <span className="text-green-500 font-semibold">×{p.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {themes.top_themes && themes.top_themes.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">
+                  Themes
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {themes.top_themes.map((t) => (
+                    <span key={t.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs">
+                      <span className="font-medium">{t.label}</span>
+                      <span className="text-blue-400 font-semibold">×{t.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          {themes.tone_breakdown && Object.keys(themes.tone_breakdown).length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-3 text-xs">
+              <span className="text-gray-500">Tone:</span>
+              {Object.entries(themes.tone_breakdown).map(([tone, count]) => (
+                <span key={tone} className="text-gray-700">
+                  <span className="capitalize">{tone}</span>{" "}
+                  <span className="text-gray-400 font-semibold">×{count}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

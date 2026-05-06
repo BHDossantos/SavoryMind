@@ -1,0 +1,4 @@
+# Test-only dependencies. Not installed in production (Cloud Run image
+# build uses requirements.txt only). CI installs both: requirements.txt
+# first (so transitive pins resolve against prod versions), then this.
+pytest==9.0.3

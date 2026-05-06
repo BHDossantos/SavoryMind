@@ -1,37 +1,165 @@
 import * as SecureStore from 'expo-secure-store';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.savorymind.net';
-const TOKEN_KEY = 'sm_auth_token';
+
+// SecureStore keys. The native equivalents of:
+//   web: in-memory access token + httpOnly refresh cookie
+// On mobile we have neither — RN's fetch has no cookie jar — so both
+// tokens go through SecureStore, which is OS-keychain-backed (Keychain
+// on iOS, EncryptedSharedPreferences on Android). That's safer than
+// AsyncStorage and roughly equivalent to httpOnly cookies for this
+// threat model.
+const ACCESS_KEY = 'sm_auth_token';
+const REFRESH_KEY = 'sm_refresh_token';
 
 export const tokenStore = {
-  get: () => SecureStore.getItemAsync(TOKEN_KEY),
-  set: (t) => SecureStore.setItemAsync(TOKEN_KEY, t),
-  remove: () => SecureStore.deleteItemAsync(TOKEN_KEY),
+  getAccess: () => SecureStore.getItemAsync(ACCESS_KEY),
+  setAccess: (t) => SecureStore.setItemAsync(ACCESS_KEY, t),
+  getRefresh: () => SecureStore.getItemAsync(REFRESH_KEY),
+  setRefresh: (t) => SecureStore.setItemAsync(REFRESH_KEY, t),
+  clear: () => Promise.all([
+    SecureStore.deleteItemAsync(ACCESS_KEY),
+    SecureStore.deleteItemAsync(REFRESH_KEY),
+  ]),
+  // Legacy alias kept so any pre-refactor callers don't crash mid-flight.
+  // Same effect as `clear()`.
+  remove: () => Promise.all([
+    SecureStore.deleteItemAsync(ACCESS_KEY),
+    SecureStore.deleteItemAsync(REFRESH_KEY),
+  ]),
 };
 
-async function request(path, options = {}) {
-  const token = await tokenStore.get();
+let _onUnauthenticated = null;
+export function setUnauthenticatedHandler(fn) {
+  _onUnauthenticated = fn;
+}
+
+// Coalesce parallel 401-driven refresh attempts onto a single in-flight
+// promise so a screen that fires three queries doesn't fan out to three
+// /refresh calls. Also makes recovery deterministic — every caller awaits
+// the same outcome.
+let _refreshInFlight = null;
+
+async function _doRefresh() {
+  const refresh = await tokenStore.getRefresh();
+  if (!refresh) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Type': 'mobile',
+        'X-Refresh-Token': refresh,
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.access_token) await tokenStore.setAccess(data.access_token);
+    if (data.refresh_token) await tokenStore.setRefresh(data.refresh_token);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function tryRefresh() {
+  if (_refreshInFlight) return _refreshInFlight;
+  _refreshInFlight = _doRefresh().finally(() => { _refreshInFlight = null; });
+  return _refreshInFlight;
+}
+
+async function request(path, options = {}, _didRefresh = false) {
+  const token = await tokenStore.getAccess();
   const headers = {
     'Content-Type': 'application/json',
+    'X-Client-Type': 'mobile',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  // 30-min access tokens expire mid-session — transparently refresh once.
+  // Auth endpoints excluded so a real "wrong password" doesn't get masked
+  // as a refresh-then-retry loop.
+  // Don't auto-refresh on auth endpoints — a 401 there means "wrong
+  // password" (login) or "invalid id_token" (google) or "verifier
+  // refused you" (social), not "your access token expired". Calling
+  // /refresh in those cases would mask the real error and leave the
+  // user staring at a misleading "Session expired" message.
+  const isAuthEndpoint =
+    path.startsWith('/api/auth/login') ||
+    path.startsWith('/api/auth/register') ||
+    path.startsWith('/api/auth/refresh') ||
+    path.startsWith('/api/auth/logout') ||
+    path.startsWith('/api/auth/google') ||
+    path.startsWith('/api/auth/social');
+
+  if (res.status === 401 && !isAuthEndpoint && !_didRefresh) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return request(path, options, true);
+    }
+    // Refresh failed → really logged out. Wipe local creds and let the app
+    // route the user back to /login via the registered handler.
+    await tokenStore.clear();
+    if (_onUnauthenticated) _onUnauthenticated();
+    throw new Error('Session expired. Please log in again.');
+  }
+
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
   return data;
 }
 
+async function _saveTokensFrom(result) {
+  if (result?.access_token) await tokenStore.setAccess(result.access_token);
+  if (result?.refresh_token) await tokenStore.setRefresh(result.refresh_token);
+}
+
 export const api = {
   // Auth
-  register: (data) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-  login: async (data) => {
-    const result = await request('/api/auth/login', { method: 'POST', body: JSON.stringify(data) });
-    if (result?.access_token) await tokenStore.set(result.access_token);
+  register: async (data) => {
+    const result = await request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) });
+    await _saveTokensFrom(result);
     return result;
   },
-  logout: () => tokenStore.remove(),
+  login: async (data) => {
+    const result = await request('/api/auth/login', { method: 'POST', body: JSON.stringify(data) });
+    await _saveTokensFrom(result);
+    return result;
+  },
+  // Native Google sign-in. Caller hands over the id_token from
+  // expo-auth-session's Google provider response.authentication.idToken
+  // (NOT the accessToken — that's a regular OAuth token without the
+  // signed claims our backend needs to verify the user's identity).
+  // Backend cryptographically validates the token via Google's JWKS
+  // and mints a SavoryMind session — no shared secret on the device.
+  googleLogin: async (idToken) => {
+    const result = await request('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ id_token: idToken }),
+    });
+    await _saveTokensFrom(result);
+    return result;
+  },
+  // Server-side revoke (jti blacklist) plus local clear. If the network
+  // call fails we still wipe local creds so the user isn't stuck logged
+  // in client-side.
+  logout: async () => {
+    const refresh = await tokenStore.getRefresh();
+    try {
+      await fetch(`${BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'X-Client-Type': 'mobile',
+          ...(refresh ? { 'X-Refresh-Token': refresh } : {}),
+        },
+      });
+    } catch {}
+    await tokenStore.clear();
+  },
+  refresh: tryRefresh,
   getMe: () => request('/api/auth/me'),
 
   // Menu
@@ -118,6 +246,29 @@ export const api = {
   getShoppingList: (dietary = '') => request(`/api/consumer/shopping-list?dietary=${dietary}`),
   getDailySuggestion: (mood = '') => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
+  // OAuth — Spotify (real Authorization Code flow). Same backend endpoints
+  // the web client uses (see /api/oauth/spotify/* routes); only difference
+  // is mobile opens authorize_url in WebBrowser instead of redirecting the
+  // tab. After OAuth completes the backend redirects to FRONTEND_URL/
+  // consumer/social?spotify=connected — the user closes the browser, mobile
+  // refetches connections on focus, and the connection card flips to
+  // "Connected as <Spotify display name>".
+  startSpotifyAuth:    () => request('/api/oauth/spotify/start'),
+  disconnectSpotify:   () => request('/api/oauth/spotify/disconnect', { method: 'POST' }),
+  searchSpotify:       (query, limit = 12) => request('/api/oauth/spotify/search', { method: 'POST', body: JSON.stringify({ query, limit }) }),
+
+  // Aggregated theme summary across a restaurant's reviews — top
+  // complaints / praise / themes / tone breakdown derived from Claude's
+  // per-review extraction. Empty top_* lists when ANTHROPIC_API_KEY isn't
+  // set on the backend.
+  getReviewThemes:     () => request('/api/reviews/themes'),
+
+  // Consumer — Culinary Assistant (Claude Opus 4.7).
+  // Backend route: POST /api/consumer/assistant {question} → {title, answer}.
+  // Returns "Assistant not configured" if ANTHROPIC_API_KEY is unset on
+  // the server, so the mobile UI can render that gracefully without crashing.
+  askAssistant: (question) => request('/api/consumer/assistant', { method: 'POST', body: JSON.stringify({ question }) }),
+
   // Diner
   getDinerSummary: () => request('/api/diner/summary'),
   getDinerBookings: () => request('/api/diner/bookings'),
@@ -136,19 +287,63 @@ export const api = {
   getMenuTrends: () => request('/api/restaurant/trends'),
   getMarketingInsights: () => request('/api/restaurant/marketing'),
 
-  // Social login — exchanges provider profile for our backend JWT
-  socialLogin: async ({ provider, provider_id, email, name, avatar_url }) => {
-    const result = await fetch(`${BASE_URL}/api/auth/social`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-social-secret': process.env.EXPO_PUBLIC_SOCIAL_LOGIN_SECRET || 'dev-social-secret',
-      },
-      body: JSON.stringify({ provider, provider_id, email: email || '', name: name || '', avatar_url: avatar_url || '' }),
-    });
-    const data = await result.json();
-    if (!result.ok) throw new Error(data.detail || 'Social login failed');
-    if (data.access_token) await tokenStore.set(data.access_token);
-    return data;
-  },
+  // (Removed) socialLogin — used to ship the SOCIAL_LOGIN_SECRET in client
+  // env vars, which defeats the secret. Real OAuth on mobile would use
+  // expo-auth-session (already installed) to redirect through the
+  // provider, exchange the auth code via a short-lived bridge route on
+  // the backend, and never expose the social secret to the device. Until
+  // that's wired up, mobile uses email+password only.
+
+  // ── Parity batch with web (commit "fix everything") ──────────────
+
+  // Consumer profile (separate from /api/auth/profile — patches
+  // consumer-specific fields)
+  updateConsumerProfile: (data) => request('/api/consumer/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Consumer — Pantry inventory + on-hand recipe matching
+  getPantry:        ()       => request('/api/consumer/pantry'),
+  addPantryItem:    (data)   => request('/api/consumer/pantry', { method: 'POST', body: JSON.stringify(data) }),
+  deletePantryItem: (id)     => request(`/api/consumer/pantry/${id}`, { method: 'DELETE' }),
+  clearPantry:      ()       => request('/api/consumer/pantry', { method: 'DELETE' }),
+  getPantryRecipes: ()       => request('/api/consumer/pantry/recipes'),
+
+  // Consumer — Meal memories / journal
+  getMemories:    ()      => request('/api/consumer/memories'),
+  createMemory:   (data)  => request('/api/consumer/memories', { method: 'POST', body: JSON.stringify(data) }),
+  deleteMemory:   (id)    => request(`/api/consumer/memories/${id}`, { method: 'DELETE' }),
+
+  // Consumer — Delivery (note: backend currently returns hard-coded
+  // suggestions; treat as a discovery feature, not real ordering)
+  getDeliveryDishes:      (craving, budget = '') => request(`/api/consumer/delivery/dishes?craving=${craving}&budget=${budget}`),
+  getDeliveryRestaurants: (cuisine)              => request(`/api/consumer/delivery/restaurants?cuisine=${encodeURIComponent(cuisine)}`),
+
+  // Notifications — bell badge + dropdown UX
+  getNotifications:        () => request('/api/notifications'),
+  markNotificationsRead:   () => request('/api/notifications/read', { method: 'PATCH' }),
+
+  // Restaurant — booking accept/decline
+  confirmBooking: (id) => request(`/api/restaurant/bookings/${id}/confirm`, { method: 'PATCH' }),
+  declineBooking: (id) => request(`/api/restaurant/bookings/${id}/decline`, { method: 'PATCH' }),
+
+  // Restaurant — own availability (for online bookings via diner side)
+  getMyAvailability:    () => request('/api/discover/my-availability'),
+  updateMyAvailability: (data) => request('/api/discover/my-availability', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Restaurant — kitchen aggregate summary (different shape from getDishTimes)
+  getKitchenSummary: () => request('/api/owner/kitchen/summary'),
+
+  // Restaurant — staff edit (already has create/delete; web has updateStaff too)
+  updateStaff: (id, data) => request(`/api/restaurant/staff/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Diner — discovery + booking flow
+  getRestaurant:    (id)        => request(`/api/discover/restaurants/${id}`),
+  getAvailability:  (id, date)  => request(`/api/discover/availability/${id}?check_date=${date}`),
+  requestBooking:   (data)      => request('/api/discover/book', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Diner — reviews
+  createDinerReview: (data) => request('/api/diner/reviews', { method: 'POST', body: JSON.stringify(data) }),
+  getMyDinerReviews: ()     => request('/api/diner/reviews'),
+
+  // Restaurant — diner reviews from customers
+  getDinerReviews: () => request('/api/restaurant/diner-reviews'),
 };

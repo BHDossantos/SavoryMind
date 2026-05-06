@@ -35,6 +35,11 @@ export default function MusicMood() {
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Real Spotify tracks fetched via the user's connection. Null = not yet
+  // attempted; [] = attempted and got nothing back; populated = render them.
+  const [spotifyTracks, setSpotifyTracks]       = useState(null);
+  const [spotifyLoading, setSpotifyLoading]     = useState(false);
+  const [spotifyAuthError, setSpotifyAuthError] = useState(false);
 
   useEffect(() => {
     api.getMusicMoods().then(setHistory).catch(() => {});
@@ -42,7 +47,40 @@ export default function MusicMood() {
   }, []);
 
   const connectedSpotify = connections.find((c) => c.platform === "spotify" && c.connected);
-  const connectedAmazon  = connections.find((c) => c.platform === "amazon_music" && c.connected);
+
+  // Whenever the rendered result changes and we're connected to Spotify, fetch
+  // real tracks matching the recommended search query so the user can play
+  // them instead of staring at a static "Search: ..." line.
+  useEffect(() => {
+    const display = result?.recommendations;
+    if (!display?.spotify_query || !connectedSpotify) {
+      setSpotifyTracks(null);
+      setSpotifyAuthError(false);
+      return;
+    }
+    let cancelled = false;
+    setSpotifyLoading(true);
+    setSpotifyAuthError(false);
+    api.searchSpotify(display.spotify_query, 12)
+      .then((data) => {
+        if (cancelled) return;
+        setSpotifyTracks(data.tracks || []);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // 401 = stored token expired and no refresh worked → user must reconnect.
+        // 409 = backend says not connected (race with disconnect elsewhere).
+        // 502 = Spotify-side outage. We surface the first two to the UI; for 502
+        // we just hide the section to avoid noise.
+        const msg = err.message || "";
+        if (msg.includes("Spotify session expired") || msg.includes("not connected") || msg.includes("rejected")) {
+          setSpotifyAuthError(true);
+        }
+        setSpotifyTracks([]);
+      })
+      .finally(() => { if (!cancelled) setSpotifyLoading(false); });
+    return () => { cancelled = true; };
+  }, [result?.id, connectedSpotify]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -176,45 +214,63 @@ export default function MusicMood() {
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-consumer-100">
                 <h3 className="font-semibold text-gray-800 mb-4">▶ Play on your services</h3>
                 <div className="space-y-3">
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${connectedSpotify ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🎧</span>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-800">Spotify</p>
-                        <p className="text-xs text-gray-500">Search: "{display.spotify_query}"</p>
+                  <div className={`p-4 rounded-xl border ${connectedSpotify ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">🎧</span>
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">Spotify</p>
+                          <p className="text-xs text-gray-500">Search: "{display.spotify_query}"</p>
+                        </div>
                       </div>
+                      {connectedSpotify ? (
+                        <a href={`https://open.spotify.com/search/${encodeURIComponent(display.spotify_query)}`} target="_blank" rel="noreferrer" className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-full font-medium">Play ↗</a>
+                      ) : (
+                        <a href="/consumer/social" className="text-xs bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full font-medium">Connect</a>
+                      )}
                     </div>
-                    {connectedSpotify ? (
-                      <a href={`https://open.spotify.com/search/${encodeURIComponent(display.spotify_query)}`} target="_blank" rel="noreferrer" className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-full font-medium">Play ↗</a>
-                    ) : (
-                      <a href="/consumer/social" className="text-xs bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full font-medium">Connect</a>
-                    )}
-                  </div>
 
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${connectedAmazon ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔵</span>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-800">Amazon Music</p>
-                        <p className="text-xs text-gray-500">Station: {display.amazon_station}</p>
+                    {/* Real Spotify tracks — only when connected and the search resolved */}
+                    {connectedSpotify && (
+                      <div className="mt-3 pt-3 border-t border-green-100">
+                        {spotifyAuthError ? (
+                          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            Your Spotify session expired. <a href="/consumer/social" className="underline font-medium">Reconnect</a> to see real tracks.
+                          </div>
+                        ) : spotifyLoading ? (
+                          <p className="text-xs text-gray-500">Finding tracks on your Spotify…</p>
+                        ) : spotifyTracks && spotifyTracks.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Top matches on your Spotify</p>
+                            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                              {spotifyTracks.map((t) => (
+                                <a
+                                  key={t.id}
+                                  href={t.external_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-green-100 transition-colors"
+                                >
+                                  {t.album_image ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={t.album_image} alt="" className="w-10 h-10 rounded shadow-sm flex-shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded bg-gray-200 flex-shrink-0" />
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-medium text-gray-800 truncate">{t.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{(t.artists || []).join(", ")}</p>
+                                  </div>
+                                  <span className="text-xs text-green-700 flex-shrink-0">Open ↗</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        ) : spotifyTracks && spotifyTracks.length === 0 ? (
+                          <p className="text-xs text-gray-500">No tracks matched on your Spotify. Use the Play link above to search instead.</p>
+                        ) : null}
                       </div>
-                    </div>
-                    {connectedAmazon ? (
-                      <span className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-full font-medium">Playing</span>
-                    ) : (
-                      <a href="/consumer/social" className="text-xs bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full font-medium">Connect</a>
                     )}
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔵</span>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-800">Amazon Alexa</p>
-                        <p className="text-xs text-gray-500 italic">"{display.alexa_command}"</p>
-                      </div>
-                    </div>
-                    <span className="text-xs bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full">Say it</span>
                   </div>
                 </div>
               </div>

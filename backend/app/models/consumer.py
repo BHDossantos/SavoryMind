@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from datetime import datetime
 from ..core.database import Base
+from ..core.encrypted_field import EncryptedText
 
 
 class WinePairing(Base):
@@ -31,10 +32,19 @@ class SocialConnection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    platform = Column(String, nullable=False)  # spotify | amazon_music | alexa | instagram | tiktok
+    platform = Column(String, nullable=False)  # spotify (others removed — no viable OAuth)
     connected = Column(Boolean, default=False)
     username = Column(String, nullable=True)
     profile_url = Column(String, nullable=True)
+    # OAuth tokens for real provider integrations (currently only Spotify
+    # actually populates these). Encrypted at rest via Fernet — see
+    # app/core/encrypted_field.py. The DB column remains TEXT, only the
+    # value format changed, so no schema migration is needed.
+    access_token = Column(EncryptedText, nullable=True)
+    refresh_token = Column(EncryptedText, nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+    scopes = Column(String, nullable=True)
+    provider_user_id = Column(String, nullable=True)  # e.g. Spotify user URI/id
 
 
 class BehaviorLog(Base):

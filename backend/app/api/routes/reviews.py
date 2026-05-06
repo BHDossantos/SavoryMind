@@ -21,6 +21,16 @@ def sentiment_summary(db: Session = Depends(get_db), current_user: User = Depend
     return review_service.get_sentiment_summary(db, current_user.id)
 
 
+@router.get("/themes")
+def themes_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Aggregated theme / complaint / praise counts derived from each
+    review's Claude-extracted structured data. top_* lists are empty
+    when no reviews have been enriched yet (either Claude isn't
+    configured or every review predates enrichment)."""
+    _require_restaurant(current_user)
+    return review_service.get_themes_summary(db, current_user.id)
+
+
 @router.get("/", response_model=list[ReviewResponse])
 def list_reviews(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_restaurant(current_user)

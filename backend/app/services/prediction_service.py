@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..models.menu import MenuItem
 from ..schemas.restaurant_ext import SalesPrediction, PredictedItem
 from .menu_service import _compute_revenue
-from ..ml.analytics import get_demand_multipliers, get_sales_trends
+from ..insights.analytics import get_demand_multipliers, get_sales_trends
 
 
 def predict_sales(db: Session, user_id: int) -> SalesPrediction:

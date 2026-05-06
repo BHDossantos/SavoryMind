@@ -12,6 +12,15 @@ class Review(Base):
     menu_item = Column(String, nullable=False)
     rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=False)
+    # VADER-derived numeric polarity. Cheap, runs on every save, never null.
     sentiment_score = Column(Float, default=0.0)
     sentiment_label = Column(String, default="neutral")
+    # Claude-derived structured themes. Best-effort: if the API call fails
+    # at create time, these stay null and the review still saves with the
+    # VADER data above. JSON-encoded lists / single strings stored as Text
+    # so the column type is identical on SQLite and Postgres.
+    themes        = Column(Text, nullable=True)  # JSON list of short tags
+    complaints    = Column(Text, nullable=True)  # JSON list of specific gripes
+    praise        = Column(Text, nullable=True)  # JSON list of specific positives
+    tone          = Column(String, nullable=True)  # one of: positive | neutral | mixed | frustrated | angry
     created_at = Column(DateTime, default=datetime.utcnow)

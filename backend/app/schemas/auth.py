@@ -1,5 +1,19 @@
 from typing import Optional
+from urllib.parse import urlparse
 from pydantic import BaseModel, Field, field_validator
+
+
+def _validate_https_url(v: str) -> str:
+    """Reject anything that isn't an https:// URL with a host. Empty string
+    is allowed (avatar is optional). Prevents javascript:, data:, http:, and
+    malformed values from reaching the database and being rendered as <img src>
+    in the frontend without escaping."""
+    if not v:
+        return v
+    parsed = urlparse(v)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ValueError("avatar_url must be an https:// URL")
+    return v
 
 
 class SocialLoginRequest(BaseModel):
@@ -8,6 +22,11 @@ class SocialLoginRequest(BaseModel):
     email:       str = Field(default="", max_length=150)
     name:        str = Field(default="", max_length=100)
     avatar_url:  str = Field(default="", max_length=500)
+
+    @field_validator("avatar_url")
+    @classmethod
+    def _check_avatar_url(cls, v: str) -> str:
+        return _validate_https_url(v)
 
 
 class UserRegister(BaseModel):
@@ -88,6 +107,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type:   str = "bearer"
     user:         UserResponse
+    # Only populated for native-client requests (X-Client-Type: mobile).
+    # Web clients keep getting the refresh token via httpOnly cookie so it
+    # stays unreachable from JS. Mobile can't read Set-Cookie reliably and
+    # has its own secure storage (SecureStore / Keychain), so we hand the
+    # value over in the body for that flow only.
+    refresh_token: Optional[str] = None
 
 
 class ProfileUpdate(BaseModel):

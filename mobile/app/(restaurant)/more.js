@@ -6,7 +6,8 @@ import { C } from '../../constants/colors';
 const FEATURES = [
   { icon: '📅', title: 'Bookings',       sub: 'Manage reservations',          screen: 'bookings' },
   { icon: '👥', title: 'CRM',            sub: 'Customer loyalty & history',   screen: 'crm' },
-  { icon: '🧑‍🍳', title: 'Staff',        sub: 'Team management',             screen: 'staff' },
+  { icon: '🧑‍🍳', title: 'Staff',        sub: 'Time-clock & shifts',         screen: 'staff' },
+  { icon: '👥', title: 'Employees',      sub: 'Staff portal accounts',        screen: 'employees' },
   { icon: '🔮', title: 'Forecast',       sub: '4-hour sales forecast',        screen: 'predictions' },
   { icon: '🚀', title: 'Trends',         sub: 'Menu trends & rising stars',   screen: 'trends' },
   { icon: '💌', title: 'Marketing',      sub: 'Guest acquisition & loyalty',  screen: 'marketing' },

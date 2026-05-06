@@ -19,6 +19,13 @@ export default function ConsumerLayout() {
       <Tabs.Screen name="pairings"  options={{ title: 'Pairings', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🍷</Text> }} />
       <Tabs.Screen name="music"     options={{ title: 'Music',    tabBarIcon: () => <Text style={{ fontSize: 20 }}>🎵</Text> }} />
       <Tabs.Screen name="profile"   options={{ title: 'Profile',  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />
+      {/* Hidden from the tab bar (href: null) but reachable via router.push
+          from the dashboard. The tab bar already has 6 entries; a 7th
+          would crowd the layout. */}
+      <Tabs.Screen name="assistant" options={{ href: null }} />
+      <Tabs.Screen name="social"    options={{ href: null }} />
+      <Tabs.Screen name="pantry"    options={{ href: null }} />
+      <Tabs.Screen name="journal"   options={{ href: null }} />
     </Tabs>
   );
 }

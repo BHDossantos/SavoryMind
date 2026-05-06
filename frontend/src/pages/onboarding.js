@@ -1181,8 +1181,8 @@ export default function Onboarding() {
         const dest = updated.account_type === "consumer" ? "/consumer/dashboard"
                    : updated.account_type === "diner"    ? "/diner/welcome"
                    : "/dashboard";
-        // Full-page navigation so AuthProvider mounts fresh from localStorage,
-        // avoiding any React-state vs route-change race in _app.js guards.
+        // Full-page navigation so AuthProvider mounts fresh and re-runs
+        // /auth/refresh, avoiding any React-state vs route-change race.
         window.location.assign(dest);
       } catch (e) { setError(e.message || "Something went wrong."); }
       finally { setSaving(false); }

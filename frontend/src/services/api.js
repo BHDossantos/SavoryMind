@@ -2,42 +2,109 @@
 // NEXT_PUBLIC_API_URL is set at build/deploy time (see deploy-frontend.yml).
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
 const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
+
 function getBaseUrl() {
   if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
   const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   return isLocal ? "/backend" : PROD_API;
 }
 
-function getToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
+// In-memory access token. Lives only for the lifetime of this JS context, so
+// XSS cannot persist a stolen token across page reloads (unlike localStorage).
+// AuthContext repopulates this on mount via /api/auth/refresh, which uses the
+// httpOnly refresh cookie that JS cannot read.
+let _accessToken = null;
+let _onUnauthenticated = null;
+
+export function setAccessToken(token) {
+  _accessToken = token || null;
 }
 
-async function request(path, options = {}, _attempt = 0) {
+export function getAccessToken() {
+  return _accessToken;
+}
+
+// AuthContext registers a callback for when refresh fails (cookie missing or
+// rejected). Default = redirect to /login.
+export function setUnauthenticatedHandler(fn) {
+  _onUnauthenticated = fn;
+}
+
+let _refreshInFlight = null;
+
+async function tryRefresh() {
+  // Coalesce concurrent 401s — if 5 requests fail at once, only one /refresh
+  // call is made and they all wait on the same promise.
+  if (_refreshInFlight) return _refreshInFlight;
+
   const BASE_URL = getBaseUrl();
-  const token = getToken();
+  _refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      _accessToken = data.access_token;
+      return data;
+    } catch {
+      return null;
+    } finally {
+      _refreshInFlight = null;
+    }
+  })();
+  return _refreshInFlight;
+}
+
+async function request(path, options = {}, _attempt = 0, _didRefresh = false) {
+  const BASE_URL = getBaseUrl();
   const headers = { "Content-Type": "application/json", ...options.headers };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
 
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+    res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+      // Send the refresh cookie on every request so /auth/refresh works and
+      // the browser keeps it across navigations. Required by the
+      // allow_credentials=True backend CORS policy.
+      credentials: "include",
+    });
   } catch (networkErr) {
     // Auto-retry on network failure (Render cold-start wake-up), up to 3 times
     if (_attempt < 3) {
       await new Promise((r) => setTimeout(r, [3000, 6000, 12000][_attempt]));
-      return request(path, options, _attempt + 1);
+      return request(path, options, _attempt + 1, _didRefresh);
     }
     throw new Error("Server is unreachable. It may still be starting up — please wait a moment and try again.");
   }
 
-  // 401 = invalid/expired token → force logout. 403 = wrong account_type or
-  // forbidden action → let the caller surface the error message instead.
-  const isAuthEndpoint = path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/auth/social");
-  if (res.status === 401 && !isAuthEndpoint) {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+  // 401 = expired/invalid access token. Try to refresh once via the httpOnly
+  // refresh cookie, then retry the original request. If refresh fails, the
+  // user really is logged out.
+  // Auth endpoints are excluded — refreshing on a failed login would mask the
+  // real "wrong password" error.
+  const isAuthEndpoint =
+    path.startsWith("/api/auth/login") ||
+    path.startsWith("/api/auth/register") ||
+    path.startsWith("/api/auth/social") ||
+    path.startsWith("/api/auth/google") ||
+    path.startsWith("/api/auth/refresh") ||
+    path.startsWith("/api/auth/logout");
+
+  if (res.status === 401 && !isAuthEndpoint && !_didRefresh) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return request(path, options, _attempt, true);
+    }
+    // Refresh failed → user is logged out
+    _accessToken = null;
+    if (_onUnauthenticated) {
+      _onUnauthenticated();
+    } else if (typeof window !== "undefined") {
       window.location.href = "/login";
     }
     throw new Error("Session expired. Please log in again.");
@@ -62,8 +129,15 @@ export const api = {
   // Auth
   register: (data) => request("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data) => request("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  refresh: () => request("/api/auth/refresh", { method: "POST" }),
+  logout: () => request("/api/auth/logout", { method: "POST" }),
   getMe: () => request("/api/auth/me"),
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
+
+  // OAuth — Spotify (real Authorization Code flow)
+  startSpotifyAuth: () => request("/api/oauth/spotify/start"),
+  disconnectSpotify: () => request("/api/oauth/spotify/disconnect", { method: "POST" }),
+  searchSpotify: (query, limit = 12) => request("/api/oauth/spotify/search", { method: "POST", body: JSON.stringify({ query, limit }) }),
 
   // Restaurant — Menu
   getDashboardStats: () => request("/api/menu/stats"),
@@ -76,6 +150,12 @@ export const api = {
   // Restaurant — Reviews
   getReviews: () => request("/api/reviews/"),
   getSentimentSummary: () => request("/api/reviews/summary"),
+  // Aggregated theme summary across a restaurant's reviews — top
+  // complaints / praise / themes / tone breakdown derived from Claude's
+  // per-review extraction (sentiment_service.extract_themes). Empty
+  // top_* lists when ANTHROPIC_API_KEY isn't set on the backend or no
+  // reviews have been enriched yet.
+  getReviewThemes: () => request("/api/reviews/themes"),
   createReview: (data) => request("/api/reviews/", { method: "POST", body: JSON.stringify(data) }),
   deleteReview: (id) => request(`/api/reviews/${id}`, { method: "DELETE" }),
 

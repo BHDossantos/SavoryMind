@@ -1,0 +1,38 @@
+name: Mobile CI
+
+# Runs the mobile Jest suite on every push and PR to main.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-tests:
+    name: Mobile Jest
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mobile
+        # --ignore-scripts skips Expo postinstall hooks that try to fetch
+        # native iOS/Android tooling we don't need for the Jest run.
+        run: npm ci --ignore-scripts
+
+      - name: Run Jest
+        working-directory: mobile
+        run: npx jest --no-coverage --ci

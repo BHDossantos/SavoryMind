@@ -17,6 +17,10 @@ function Badge({ label }) {
 export default function SentimentScreen() {
   const [reviews, setReviews] = useState([]);
   const [summary, setSummary] = useState(null);
+  // Claude-extracted top complaints / praise / themes / tone — populated
+  // by the new /api/reviews/themes endpoint. Empty top_* lists when
+  // ANTHROPIC_API_KEY isn't set on the backend.
+  const [themes, setThemes] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,8 +32,13 @@ export default function SentimentScreen() {
 
   const load = async () => {
     try {
-      const [items, r, s] = await Promise.all([api.getMenuItems(), api.getReviews(), api.getSentimentSummary()]);
-      setMenuItems(items); setReviews(r); setSummary(s); setError(null);
+      const [items, r, s, t] = await Promise.all([
+        api.getMenuItems(),
+        api.getReviews(),
+        api.getSentimentSummary(),
+        api.getReviewThemes().catch(() => null),  // never block the page on the optional themes endpoint
+      ]);
+      setMenuItems(items); setReviews(r); setSummary(s); setThemes(t); setError(null);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -87,6 +96,77 @@ export default function SentimentScreen() {
               <View style={styles.summaryItem}><Text style={[styles.summaryVal, { color: C.red }]}>{summary.negative_count}</Text><Text style={styles.summaryLab}>Negative</Text></View>
             </View>
             <SimpleBarChart data={barData} height={120} />
+          </View>
+        )}
+
+        {/* Theme panel — three states:
+            - no reviews → hide (numeric summary above already covers it)
+            - reviews exist but none enriched → empty state explaining why
+            - enriched reviews exist → render the populated panel.
+            Empty state matters because a Claude-less deploy or pre-PR-18
+            data otherwise leaves users staring at a missing panel with no
+            explanation. */}
+        {themes && themes.total_reviews > 0 && themes.enriched_reviews === 0 && (
+          <View style={styles.themesCard} testID="themes-empty">
+            <Text style={styles.themesHeading}>What guests are talking about</Text>
+            <Text style={[styles.themesSub, { marginTop: 6 }]}>
+              None of your {themes.total_reviews} reviews have been analysed yet.
+            </Text>
+            <Text style={[styles.themesSub, { marginTop: 8, color: C.gray[400] }]}>
+              New reviews are analysed automatically. Existing reviews can be
+              enriched by running the backfill script (requires ANTHROPIC_API_KEY).
+            </Text>
+          </View>
+        )}
+
+        {themes && themes.enriched_reviews > 0 && (
+          <View style={styles.themesCard}>
+            <Text style={styles.themesHeading}>What guests are talking about</Text>
+            <Text style={styles.themesSub}>
+              From {themes.enriched_reviews} of {themes.total_reviews} reviews
+            </Text>
+
+            {themes.top_complaints && themes.top_complaints.length > 0 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.themesGroup}>Top complaints</Text>
+                <View style={styles.tagRow}>
+                  {themes.top_complaints.map((c) => (
+                    <View key={c.label} style={[styles.tag, styles.tagRed]}>
+                      <Text style={styles.tagLabel}>{c.label}</Text>
+                      <Text style={styles.tagCount}>×{c.count}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {themes.top_praise && themes.top_praise.length > 0 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.themesGroup}>Top praise</Text>
+                <View style={styles.tagRow}>
+                  {themes.top_praise.map((p) => (
+                    <View key={p.label} style={[styles.tag, styles.tagGreen]}>
+                      <Text style={styles.tagLabel}>{p.label}</Text>
+                      <Text style={styles.tagCount}>×{p.count}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {themes.top_themes && themes.top_themes.length > 0 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.themesGroup}>Themes</Text>
+                <View style={styles.tagRow}>
+                  {themes.top_themes.map((t) => (
+                    <View key={t.label} style={[styles.tag, styles.tagBlue]}>
+                      <Text style={styles.tagLabel}>{t.label}</Text>
+                      <Text style={styles.tagCount}>×{t.count}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -156,6 +236,17 @@ const styles = StyleSheet.create({
   addBtn:        { backgroundColor: C.restaurant.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   addBtnText:    { color: '#fff', fontWeight: '700', fontSize: 14 },
   summaryCard:   { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: C.gray[100] },
+  themesCard:    { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: C.gray[100] },
+  themesHeading: { fontSize: 14, fontWeight: '700', color: C.gray[900] },
+  themesSub:     { fontSize: 12, color: C.gray[500], marginTop: 2 },
+  themesGroup:   { fontSize: 11, fontWeight: '700', color: C.gray[600], textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 },
+  tagRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag:           { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  tagRed:        { backgroundColor: '#fee2e2' },
+  tagGreen:      { backgroundColor: '#dcfce7' },
+  tagBlue:       { backgroundColor: '#dbeafe' },
+  tagLabel:      { fontSize: 12, fontWeight: '600', color: C.gray[800] },
+  tagCount:      { fontSize: 11, fontWeight: '700', color: C.gray[500] },
   summaryRow:    { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 },
   summaryItem:   { alignItems: 'center' },
   summaryVal:    { fontSize: 22, fontWeight: '800', color: C.gray[900] },

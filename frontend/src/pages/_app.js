@@ -6,6 +6,7 @@ import ConsumerLayout from "../components/ConsumerLayout";
 import DinerLayout from "../components/DinerLayout";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { getAccessToken } from "../services/api";
 import "../styles/globals.css";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup"];
@@ -31,14 +32,14 @@ function AppContent({ Component, pageProps }) {
 
   useEffect(() => {
     if (loading) return;
-    // Guard: treat a fresh localStorage token as "authenticated" even if React
-    // state hasn't propagated yet (router.push completes before setUser renders).
-    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
+    // Guard: a freshly-set in-memory access token means we're authenticated
+    // even before setUser's render commits (router.push fires synchronously
+    // after setAccessToken+setUser).
+    const hasToken = !!getAccessToken();
     if (!user && !hasToken && !isPublic && !isOnboarding) {
       router.replace("/login");
       return;
     }
-    // Wait for React state to catch up when token exists but user not yet set
     if (!user && hasToken) return;
     // Staff accounts skip onboarding — always go to staff portal
     if (user && user.account_type === "staff") {

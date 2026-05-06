@@ -1,104 +1,81 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { api } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
-const PLATFORMS = [
-  {
-    id: "spotify",
-    name: "Spotify",
-    icon: "🎧",
-    color: "bg-green-500",
-    description: "Get instant playlist generation based on your mood and food pairing.",
-    connectNote: "Redirect to Spotify OAuth — requires Spotify Developer app credentials.",
-  },
-  {
-    id: "amazon_music",
-    name: "Amazon Music",
-    icon: "🎵",
-    color: "bg-blue-500",
-    description: "Play curated stations matched to your dining vibe on Amazon Music.",
-    connectNote: "Redirect to Amazon OAuth — requires Amazon Developer app credentials.",
-  },
-  {
-    id: "alexa",
-    name: "Amazon Alexa",
-    icon: "🔵",
-    color: "bg-blue-400",
-    description: "Control your dining music hands-free with voice commands via Alexa.",
-    connectNote: "Links your Alexa account for voice-activated music during meals.",
-  },
-  {
-    id: "instagram",
-    name: "Instagram",
-    icon: "📷",
-    color: "bg-pink-500",
-    description: "Share your food & wine pairings directly to your Instagram stories.",
-    connectNote: "Connect your Instagram to share pairings with followers.",
-  },
-  {
-    id: "tiktok",
-    name: "TikTok",
-    icon: "🎬",
-    color: "bg-gray-900",
-    description: "Post your wine pairing discoveries and music moods to TikTok.",
-    connectNote: "Connect TikTok to share your food journey.",
-  },
-];
+// Spotify is the only platform with a real OAuth integration. The previous
+// stubs (Amazon Music, Alexa, Instagram, TikTok) were removed because none
+// has a viable public OAuth path without enterprise approval — keeping them
+// as labels-only was actively misleading users.
 
 export default function SocialConnect() {
+  const router = useRouter();
   const [connections, setConnections] = useState({});
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(null);
-  const [usernameInput, setUsernameInput] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [banner, setBanner] = useState(null);
+  const [spotifyBusy, setSpotifyBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const reloadConnections = () =>
+    api.getConnections().then((data) => {
+      const map = {};
+      data.forEach((c) => { map[c.platform] = c; });
+      setConnections(map);
+    });
 
   useEffect(() => {
-    api.getConnections()
-      .then((data) => {
-        const map = {};
-        data.forEach((c) => { map[c.platform] = c; });
-        setConnections(map);
-      })
-      .finally(() => setLoading(false));
+    reloadConnections().finally(() => setLoading(false));
   }, []);
 
-  const handleConnect = async (platform) => {
-    setEditing(platform);
-    setUsernameInput(connections[platform]?.username || "");
-  };
+  // Surface the Spotify OAuth result. Backend redirects back here with
+  // ?spotify=connected (or ?spotify=error&reason=...) after the round-trip.
+  useEffect(() => {
+    if (!router.isReady) return;
+    const { spotify, reason } = router.query;
+    if (!spotify) return;
 
-  const handleSave = async (platform) => {
-    setSaving(true);
-    setSaveError(null);
+    if (spotify === "connected") {
+      setBanner({ kind: "success", text: "✓ Spotify connected." });
+      reloadConnections();
+    } else if (spotify === "error") {
+      const msg =
+        reason === "access_denied" ? "You declined to grant Spotify access."
+        : reason === "bad_state"   ? "Authorization session expired — please try again."
+        : reason === "token_exchange_failed" ? "Spotify rejected the authorization. Please retry."
+        : "Spotify connection failed. Please try again.";
+      setBanner({ kind: "error", text: msg });
+    }
+    router.replace("/consumer/social", undefined, { shallow: true });
+  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleConnectSpotify = async () => {
+    setError(null);
+    setSpotifyBusy(true);
     try {
-      const updated = await api.updateConnection(platform, {
-        platform,
-        connected: true,
-        username: usernameInput || null,
-      });
-      setConnections((prev) => ({ ...prev, [platform]: updated }));
-      setEditing(null);
+      const { authorize_url } = await api.startSpotifyAuth();
+      window.location.href = authorize_url;
     } catch (err) {
-      setSaveError(err.message || "Failed to save connection.");
-    } finally {
-      setSaving(false);
+      setSpotifyBusy(false);
+      if ((err.message || "").includes("not configured")) {
+        setError("Spotify integration is not configured on this server. Ask the admin to set SPOTIFY_CLIENT_ID/SECRET.");
+      } else {
+        setError(err.message || "Failed to start Spotify authorization.");
+      }
     }
   };
 
-  const handleDisconnect = (platform) => {
+  const handleDisconnectSpotify = () => {
     setConfirmDialog({
-      message: `Disconnect ${platform}?`,
+      message: "Disconnect your Spotify account?",
       confirmLabel: "Disconnect",
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
-          const updated = await api.updateConnection(platform, { platform, connected: false, username: null });
-          setConnections((prev) => ({ ...prev, [platform]: updated }));
+          await api.disconnectSpotify();
+          await reloadConnections();
         } catch (err) {
-          setSaveError(err.message || "Failed to disconnect.");
-          setEditing(platform);
+          setError(err.message || "Failed to disconnect.");
         }
       },
     });
@@ -106,121 +83,111 @@ export default function SocialConnect() {
 
   if (loading) return <div className="text-gray-400 text-sm p-8">Loading connections...</div>;
 
-  const connectedCount = Object.values(connections).filter((c) => c.connected).length;
+  const conn = connections.spotify;
+  const isConnected = conn?.connected;
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">🔗 Connect Your Services</h1>
-        <p className="text-gray-400 mt-1">Link music and social platforms for the full SavoryMind experience</p>
+        <h1 className="text-2xl font-bold text-gray-900">🔗 Connect Your Music</h1>
+        <p className="text-gray-400 mt-1">Link Spotify to play real tracks matched to your mood and food.</p>
       </div>
 
-      <div className="mb-6 flex items-center gap-3">
-        <div className="bg-consumer-50 border border-consumer-200 rounded-xl px-4 py-2 flex items-center gap-2">
-          <span className="text-consumer-600 font-bold text-lg">{connectedCount}</span>
-          <span className="text-sm text-consumer-700">of {PLATFORMS.length} services connected</span>
+      {banner && (
+        <div className={`mb-4 p-3 rounded-xl text-sm border ${
+          banner.kind === "success"
+            ? "bg-green-50 text-green-700 border-green-200"
+            : "bg-red-50 text-red-700 border-red-200"
+        }`}>
+          {banner.text}
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {PLATFORMS.map((p) => {
-          const conn = connections[p.id];
-          const isConnected = conn?.connected;
-          const isEditing = editing === p.id;
-
-          return (
-            <div key={p.id} className={`bg-white rounded-2xl p-6 shadow-sm border ${isConnected ? "border-consumer-200" : "border-gray-200"} transition-colors`}>
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 ${p.color} rounded-2xl flex items-center justify-center text-2xl flex-shrink-0`}>
-                  {p.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-semibold text-gray-900">{p.name}</h3>
-                    {isConnected && (
-                      <span className="text-xs bg-consumer-100 text-consumer-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
-                        ✓ Connected
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">{p.description}</p>
-
-                  {isConnected && conn.username && (
-                    <p className="text-xs text-consumer-600 mt-2 font-medium">@{conn.username}</p>
-                  )}
-
-                  {isEditing ? (
-                    <div className="mt-3 space-y-2">
-                      <input
-                        value={usernameInput}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder={`Your ${p.name} username (optional)`}
-                        className="w-full border border-consumer-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
-                      />
-                      <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                        <strong>Note:</strong> {p.connectNote}
-                      </div>
-                      {saveError && editing === p.id && (
-                        <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                          {saveError}
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSave(p.id)}
-                          disabled={saving}
-                          className="text-xs bg-consumer-600 text-white px-4 py-1.5 rounded-lg hover:bg-consumer-700 disabled:opacity-60"
-                        >
-                          {saving ? "Saving..." : "Mark as Connected"}
-                        </button>
-                        <button
-                          onClick={() => { setEditing(null); setSaveError(null); }}
-                          className="text-xs bg-gray-100 text-gray-600 px-4 py-1.5 rounded-lg hover:bg-gray-200"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex gap-2">
-                      {isConnected ? (
-                        <>
-                          <button
-                            onClick={() => handleConnect(p.id)}
-                            className="text-xs bg-consumer-50 text-consumer-700 border border-consumer-200 px-3 py-1.5 rounded-lg hover:bg-consumer-100"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDisconnect(p.id)}
-                            className="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100"
-                          >
-                            Disconnect
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => handleConnect(p.id)}
-                          className="text-xs bg-consumer-600 text-white px-4 py-1.5 rounded-lg hover:bg-consumer-700"
-                        >
-                          Connect {p.name}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 max-w-2xl">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+            🎧
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-gray-900">Spotify</h3>
+              {isConnected && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                  ✓ Connected
+                </span>
+              )}
             </div>
-          );
-        })}
-      </div>
+            <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+              Real OAuth: your password never touches our servers. Revoke any time at{" "}
+              <a href="https://www.spotify.com/account/apps/" target="_blank" rel="noreferrer" className="underline">spotify.com/account/apps</a>.
+            </p>
 
-      <div className="mt-8 bg-consumer-50 border border-consumer-200 rounded-2xl p-5 text-sm text-consumer-800">
-        <p className="font-semibold mb-1">🔒 Your privacy is protected</p>
-        <p className="text-consumer-600 leading-relaxed">
-          SavoryMind stores only your display name and username per service. In a production deployment,
-          actual OAuth tokens are encrypted and never shared. Music playback links open in the respective apps.
-        </p>
+            {isConnected && conn.username && (
+              <p className="text-sm text-green-700 mt-2 font-medium">
+                Connected as {conn.username}
+              </p>
+            )}
+
+            {/* Reconnect nudge — when a connection predates the
+                user-top-read scope upgrade, the recommendation engine
+                gets no listening signal from this user. The Spotify
+                connect / disconnect / search calls all still work
+                with the older scope, so we don't force a reconnect;
+                we just surface the upgrade benefit. */}
+            {isConnected && conn.scopes !== undefined && conn.scopes !== null
+                && !conn.scopes.split(/\s+/).includes('user-top-read') && (
+              <div className="mt-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                <span className="font-semibold">Reconnect for richer recommendations.</span>{" "}
+                Granting Spotify's "top tracks" permission lets us tailor wine and
+                food picks to what you actually listen to.
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {isConnected ? (
+                <>
+                  {conn.profile_url && (
+                    <a
+                      href={conn.profile_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100"
+                    >
+                      View profile ↗
+                    </a>
+                  )}
+                  <button
+                    onClick={handleConnectSpotify}
+                    disabled={spotifyBusy}
+                    className="text-xs bg-consumer-50 text-consumer-700 border border-consumer-200 px-3 py-1.5 rounded-lg hover:bg-consumer-100 disabled:opacity-60"
+                  >
+                    Reconnect
+                  </button>
+                  <button
+                    onClick={handleDisconnectSpotify}
+                    className="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100"
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleConnectSpotify}
+                  disabled={spotifyBusy}
+                  className="text-xs bg-green-500 text-white px-4 py-1.5 rounded-lg hover:bg-green-600 disabled:opacity-60 font-medium"
+                >
+                  {spotifyBusy ? "Redirecting…" : "Connect Spotify"}
+                </button>
+              )}
+            </div>
+
+            {error && (
+              <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {confirmDialog && (

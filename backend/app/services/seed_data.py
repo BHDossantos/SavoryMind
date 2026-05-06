@@ -142,10 +142,9 @@ def seed_consumer_data(db: Session, user_id: int) -> None:
         recs = build_music_recommendation(mood, food_type, occasion)
         db.add(MusicMood(user_id=user_id, mood=mood, food_type=food_type, occasion=occasion, recommendations=json.dumps(recs)))
 
-    # Seed social connections (all disconnected)
-    platforms = ["spotify", "amazon_music", "alexa", "instagram", "tiktok"]
-    for platform in platforms:
-        db.add(SocialConnection(user_id=user_id, platform=platform, connected=False))
+    # Seed social connections (Spotify only — the other platforms had no
+    # viable public OAuth path so they were removed in commit-removing-demo).
+    db.add(SocialConnection(user_id=user_id, platform="spotify", connected=False))
 
     db.commit()
 

@@ -1,27 +1,5 @@
-"""
-Culinary assistant — calls Claude Opus 4.7 to answer arbitrary cooking questions.
-
-Returns the same {"title": str, "answer": str} contract the route already expects,
-so /api/consumer/assistant doesn't need to change.
-
-Requires ANTHROPIC_API_KEY in the environment. Without it, returns a graceful
-"setup needed" response instead of crashing the request.
-"""
-import json
-import logging
-import os
-
-logger = logging.getLogger(__name__)
-
-_client = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        from anthropic import Anthropic
-        _client = Anthropic()
-    return _client
+"""Culinary assistant — calls Claude Opus 4.7 to answer cooking questions."""
+from . import claude_client
 
 
 _SYSTEM_PROMPT = """You are SavoryMind's culinary assistant — a warm, knowledgeable cook helping a home cook in the middle of preparing food.
@@ -54,47 +32,19 @@ _RESPONSE_SCHEMA = {
 
 
 def answer(question: str) -> dict:
-    """Ask Claude a culinary question. Returns {"title": str, "answer": str}."""
-    if not os.getenv("ANTHROPIC_API_KEY"):
+    """Ask Claude a culinary question. Returns {"title": str, "answer": str}.
+    Falls back to a graceful "not configured" / "try again" message rather
+    than 500ing the request."""
+    if not claude_client.is_configured():
         return {
             "title": "Assistant not configured",
             "answer": "The culinary assistant isn't set up yet. The site administrator needs to add an ANTHROPIC_API_KEY.",
         }
 
-    try:
-        client = _get_client()
-        response = client.messages.create(
-            model="claude-opus-4-7",
-            max_tokens=2048,
-            system=[
-                {
-                    "type": "text",
-                    "text": _SYSTEM_PROMPT,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
-            messages=[{"role": "user", "content": question}],
-            output_config={
-                "format": {"type": "json_schema", "schema": _RESPONSE_SCHEMA}
-            },
-        )
-
-        if response.stop_reason == "refusal":
-            return {
-                "title": "Can't help with that",
-                "answer": "I can't answer that one — try a different cooking question.",
-            }
-
-        text = next((b.text for b in response.content if b.type == "text"), "")
-        if not text:
-            raise ValueError("empty response from model")
-
-        data = json.loads(text)
-        return {"title": str(data["title"]), "answer": str(data["answer"])}
-
-    except Exception:
-        logger.exception("assistant_service.answer failed")
+    result = claude_client.call_json(_SYSTEM_PROMPT, question, _RESPONSE_SCHEMA)
+    if not result:
         return {
             "title": "Try again",
             "answer": "The assistant hit a temporary issue. Please try once more in a moment.",
         }
+    return {"title": str(result["title"]), "answer": str(result["answer"])}

@@ -27,13 +27,25 @@ class Settings(BaseSettings):
     app_name: str = "SavoryMind API"
     database_url: str = "sqlite:///./savorymind.db"
     cors_origins: list[str] = _default_cors_origins()
-    # Allow any Cloud Run revision URL (e.g. https://savorymind-frontend-abc123-ew.a.run.app)
-    # so the app keeps working before custom domains are wired up.
-    cors_origin_regex: str = r"https://[a-z0-9-]+\.a\.run\.app$"
+    # Cloud Run revision URLs for *this project's* frontend services only.
+    # The previous regex (https://[a-z0-9-]+\.a\.run\.app$) accepted any Cloud
+    # Run URL across all of GCP, which is far too broad — anyone with a Cloud
+    # Run service could hit our API with credentials. This pattern requires
+    # the savorymind- prefix on the service name.
+    cors_origin_regex: str = r"https://savorymind-[a-z0-9-]+\.a\.run\.app$"
     secret_key: str = "savorymind-super-secret-change-in-production-32chars"
     algorithm: str = "HS256"
-    access_token_expire_days: int = 30
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
     social_login_secret: str = "dev-social-secret"
+
+    # Refresh-token cookie. Defaults are safe for production; overridden by
+    # env vars for local dev (no HTTPS, no shared parent domain).
+    cookie_name: str = "sm_refresh"
+    cookie_secure: bool = True
+    cookie_samesite: str = "lax"  # "strict" would block the OAuth round-trip from /api/auth/...
+    cookie_domain: str = ""        # empty = host-only; prod sets ".savorymind.net"
+    cookie_path: str = "/"
 
     # Email (Resend). Empty string disables sends — useful in dev.
     resend_api_key: str = ""
@@ -42,6 +54,32 @@ class Settings(BaseSettings):
     # Error tracking (Sentry). Empty string disables Sentry entirely.
     sentry_dsn: str = ""
     sentry_environment: str = "development"
+
+    # Spotify OAuth (real provider integration). Empty CLIENT_ID disables
+    # the Spotify connect feature — endpoints respond with 503 so the UI can
+    # gracefully fall back to the stub.
+    # Register an app at developer.spotify.com → set the redirect URI to
+    # SPOTIFY_REDIRECT_URI in the dashboard and provide both halves below.
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+    spotify_redirect_uri: str = "http://localhost:8000/api/oauth/spotify/callback"
+    # Where to send the user after Spotify redirects back to us. Path is
+    # appended; defaults to the social-connect page.
+    frontend_url: str = "http://localhost:3000"
+
+    # Fernet key (32-byte url-safe base64) used to encrypt OAuth tokens at
+    # rest in the social_connections table. The default below is for local
+    # dev only — main.py refuses to start in production unless this is
+    # overridden by the TOKEN_ENCRYPTION_KEY env var. Generate a new prod
+    # key with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+    token_encryption_key: str = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
+
+    # Google OAuth — Client ID of the Google OAuth app that mobile/web uses.
+    # Required as the `aud` claim on Google-issued ID tokens; without it the
+    # /api/auth/google endpoint refuses to verify (returns 503). Set on the
+    # mobile/web side via EXPO_PUBLIC_GOOGLE_CLIENT_ID / GOOGLE_CLIENT_ID and
+    # registered at console.cloud.google.com → APIs & Services → Credentials.
+    google_client_id: str = ""
 
     class Config:
         env_file = ".env"
