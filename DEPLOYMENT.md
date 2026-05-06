@@ -297,6 +297,30 @@ from the main merge so issues are isolated.
 light up automatically as soon as PR #18 merges. No extra config needed beyond
 ensuring the key still has quota.
 
+#### Backfill themes on existing reviews (optional, one-off)
+
+Theme extraction only runs at review-create time, so reviews that landed before
+PR #18 have null `themes`/`complaints`/`praise`/`tone` columns and the new
+themes panel renders empty for those restaurants. To enrich them, run the
+backfill script against the production DB (via Cloud SQL Auth Proxy or
+`gcloud run jobs execute` against a one-shot job using the same image):
+
+```sh
+# Dry-run first to see how many rows would be touched and what Claude returns.
+python -m scripts.backfill_themes --dry-run --limit 10
+
+# Then enrich a single restaurant to validate end-to-end before the full sweep.
+python -m scripts.backfill_themes --user-id <restaurant_user_id> --limit 50
+
+# Finally, the full backfill. Idempotent + resumable — safe to re-run.
+python -m scripts.backfill_themes
+```
+
+The script processes one row per commit, so a network blip / rate-limit just
+leaves the unprocessed tail with `themes IS NULL`; re-running picks up where
+it stopped. Existing enriched rows are filtered out by the WHERE clause and
+never overwritten.
+
 ---
 
 ## 7. Known caveats — refresher
@@ -308,8 +332,8 @@ These are documented in CHANGELOG.md but worth surfacing here:
   work if anything breaks.
 - **Themes panel hides when no reviews are enriched yet** — restaurants on the new
   deploy see an empty panel only if `ANTHROPIC_API_KEY` is unset OR no reviews
-  exist. Not a bug, by design. Backfilling old reviews to populate the panel is a
-  separate one-off job (not in PR #18).
+  exist OR all existing reviews predate PR #18 (null theme columns). The
+  backfill script in §6 fixes the third case in a single run.
 - **JTI revocation table grows unbounded over a long enough horizon** — pruned
   opportunistically on every refresh. Bounded by active-user × logouts/30d at current
   scale; switch to a cron when you cross 100k DAU.
