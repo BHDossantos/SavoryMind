@@ -275,8 +275,24 @@ export default function SentimentPage() {
       )}
 
       {/* What guests are talking about — Claude-derived theme aggregation
-          across reviews. Hidden when no reviews have been enriched yet
-          (empty backend response or restaurant pre-dates ANTHROPIC_API_KEY). */}
+          across reviews. Three states:
+          - no reviews at all → hide entirely (sentiment chart already covers it)
+          - reviews exist but none enriched → empty state pointing at the
+            backfill / API key (covers Claude-less deploys + pre-PR-18 reviews)
+          - enriched reviews exist → render the populated panel. */}
+      {themes && themes.total_reviews > 0 && themes.enriched_reviews === 0 && (
+        <div className="card mb-6" data-testid="themes-empty">
+          <h2 className="text-base font-semibold mb-1">What guests are talking about</h2>
+          <p className="text-sm text-gray-600">
+            None of your {themes.total_reviews} reviews have been analysed yet.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            New reviews are analysed automatically. To enrich existing reviews,
+            run <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">python -m scripts.backfill_themes</code>{" "}
+            (requires <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">ANTHROPIC_API_KEY</code>).
+          </p>
+        </div>
+      )}
       {themes && themes.enriched_reviews > 0 && (
         <div className="card mb-6">
           <div className="flex items-baseline justify-between mb-4">

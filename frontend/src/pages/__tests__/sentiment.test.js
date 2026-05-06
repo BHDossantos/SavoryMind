@@ -93,7 +93,10 @@ describe('Sentiment page — themes panel', () => {
     expect(screen.getByText(/From 7 of 10 reviews/i)).toBeInTheDocument();
   });
 
-  test('hides the panel when nothing has been enriched yet', async () => {
+  test('renders empty state when reviews exist but none enriched', async () => {
+    // Reviews are present (so the user expects something here) but Claude
+    // hasn't enriched any yet — Claude-less deploy or pre-PR-18 backlog.
+    // The panel must explain why instead of silently disappearing.
     api.getReviewThemes.mockResolvedValue({
       total_reviews: 10,
       enriched_reviews: 0,
@@ -104,11 +107,32 @@ describe('Sentiment page — themes panel', () => {
     });
 
     render(<SentimentPage />);
-    // Wait for the page to finish its initial fetch round so we know
-    // any conditional render decisions have settled.
+
+    expect(await screen.findByTestId('themes-empty')).toBeInTheDocument();
+    expect(screen.getByText(/None of your 10 reviews have been analysed yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/backfill_themes/)).toBeInTheDocument();
+    // Populated-state heading should not appear (no enriched data).
+    expect(screen.queryByText(/From .* of .* reviews/i)).not.toBeInTheDocument();
+  });
+
+  test('hides the panel when there are no reviews at all', async () => {
+    // Brand-new account, zero reviews. The numeric summary card already
+    // shows "Total Reviews: 0" — a second empty card here would be noise.
+    api.getReviewThemes.mockResolvedValue({
+      total_reviews: 0,
+      enriched_reviews: 0,
+      top_complaints: [],
+      top_praise: [],
+      top_themes: [],
+      tone_breakdown: {},
+    });
+    api.getSentimentSummary.mockResolvedValue(summary({ total_reviews: 0 }));
+
+    render(<SentimentPage />);
     await waitFor(() => expect(api.getSentimentSummary).toHaveBeenCalled());
 
     expect(screen.queryByText('What guests are talking about')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('themes-empty')).not.toBeInTheDocument();
   });
 
   test('hides the panel when /api/reviews/themes 4xxs (key unset / route 404)', async () => {

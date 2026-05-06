@@ -99,11 +99,26 @@ export default function SentimentScreen() {
           </View>
         )}
 
-        {/* Theme panel — only render when at least one review has been
-            enriched (otherwise it's a 0-count distraction). The numeric
-            sentiment summary above is what restaurants see day-to-day;
-            this panel is the actionable layer ("12 reviews mention
-            'wait time'"). */}
+        {/* Theme panel — three states:
+            - no reviews → hide (numeric summary above already covers it)
+            - reviews exist but none enriched → empty state explaining why
+            - enriched reviews exist → render the populated panel.
+            Empty state matters because a Claude-less deploy or pre-PR-18
+            data otherwise leaves users staring at a missing panel with no
+            explanation. */}
+        {themes && themes.total_reviews > 0 && themes.enriched_reviews === 0 && (
+          <View style={styles.themesCard} testID="themes-empty">
+            <Text style={styles.themesHeading}>What guests are talking about</Text>
+            <Text style={[styles.themesSub, { marginTop: 6 }]}>
+              None of your {themes.total_reviews} reviews have been analysed yet.
+            </Text>
+            <Text style={[styles.themesSub, { marginTop: 8, color: C.gray[400] }]}>
+              New reviews are analysed automatically. Existing reviews can be
+              enriched by running the backfill script (requires ANTHROPIC_API_KEY).
+            </Text>
+          </View>
+        )}
+
         {themes && themes.enriched_reviews > 0 && (
           <View style={styles.themesCard}>
             <Text style={styles.themesHeading}>What guests are talking about</Text>
