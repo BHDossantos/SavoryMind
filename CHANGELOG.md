@@ -4,7 +4,7 @@ Project-level changelog. Reverse-chronological. New entries go at the top.
 
 ## Unreleased — PR #18
 
-A 37-commit consolidation that started as three security audit fixes and grew into
+A 38-commit consolidation that started as three security audit fixes and grew into
 a full security + AI + multi-platform overhaul + mobile/web parity sweep + native
 Google sign-in. Branch `claude/fix-screenshot-api-error-8JNoK`. **Squash on merge**
 is the right strategy — the per-commit history is useful for bisecting if something
@@ -267,7 +267,7 @@ Three additive migrations, all safe-to-rerun:
 
 ### Tests
 
-**161 automated tests** across three layers (79 backend / 32 web / 50 mobile). Full
+**165 automated tests** across three layers (79 backend / 33 web / 53 mobile). Full
 path-coverage matrix on the AI/auth machinery:
 
 |                         | Claude on (key set) | Claude off (key unset) | Claude fails (network/refusal) |
@@ -311,10 +311,9 @@ Web screen coverage matrix:
   bumps were validated mechanically against Expo's published lockstep manifest; runtime
   regressions on first device run are possible (Reanimated 3→4 worklet runtime move,
   RN 0.79→0.83 deprecated style props, vector-icons 14→15).
-- **The new themes panel doesn't show a "0 enriched yet" empty state** — it just hides.
-  Users on a deploy without `ANTHROPIC_API_KEY` see no panel and no explanation. Could be
-  surfaced as a follow-up. (Pre-PR-18 reviews with null theme columns are handled by the
-  backfill script — see DEPLOYMENT.md §6.)
+- **Themes panel "0 enriched yet" empty state** — the panel now renders an explanatory
+  empty state when reviews exist but none are enriched (Claude-less deploy or pre-PR-18
+  backlog), pointing at `scripts/backfill_themes.py`. Closes the prior follow-up.
 - **JTI revocation table is unbounded over a long enough horizon**. Pruned opportunistically
   on every refresh (delete-where-expired). At ≤30 day refresh-token TTL the table stays
   bounded by active-user × logouts/30d, which is fine for current scale but should switch
