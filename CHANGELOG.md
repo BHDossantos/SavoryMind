@@ -4,7 +4,7 @@ Project-level changelog. Reverse-chronological. New entries go at the top.
 
 ## Unreleased — PR #18
 
-A 33-commit consolidation that started as three security audit fixes and grew into
+A 37-commit consolidation that started as three security audit fixes and grew into
 a full security + AI + multi-platform overhaul + mobile/web parity sweep + native
 Google sign-in. Branch `claude/fix-screenshot-api-error-8JNoK`. **Squash on merge**
 is the right strategy — the per-commit history is useful for bisecting if something
@@ -235,9 +235,39 @@ Three additive migrations, all safe-to-rerun:
   - `.github/workflows/mobile-ci.yml` — mobile Jest (50 cases).
   - All three jobs run on every push to any branch + every PR to main.
 
+### Ops / observability
+
+- **Sentry user + JTI context**. `app/core/security.get_current_user` calls
+  `sentry_sdk.set_user({"id": ..., "account_type": ...})` on every authenticated
+  request, and `auth_service.refresh_session` tags the active refresh JTI on the
+  Sentry scope. Errors in production now carry the user_id and refresh-token
+  identity automatically — turns "500 in /api/consumer/recommendations" into
+  "500 in /api/consumer/recommendations for user 4711, jti=ab12…", which is the
+  difference between fixable and not.
+- **`scripts/preflight.py`** — pre-merge gate. Cross-checks every `secrets.X`
+  reference in `deploy-backend.yml` against the repo's actual GitHub Actions
+  secrets via `gh secret list`, flags missing required ones, warns on optional
+  ones, and verifies the env-var plumbing (workflow `env:` block ↔ `gcloud run
+  deploy --set-env-vars`) actually carries each secret all the way to the
+  container. `--strict` exits non-zero on warnings for CI use.
+- **`GET /health/deep`** — authenticated deploy-time diagnostic. Reports
+  per-integration state (`enabled` / `dormant` / `misconfigured`) so a
+  half-configured Spotify pair (CLIENT_ID set, CLIENT_SECRET unset) is
+  distinguishable from "feature off on purpose". Returns the cookie+token
+  policy snapshot for env-var plumbing verification. Never returns secret
+  VALUES — only flags. Boolean / numeric / state strings only. Existing
+  `/health` stays anonymous and lightweight; `/health/deep` is the
+  bearer-token version for runbook use.
+- **`backend/scripts/backfill_themes.py`** — retroactive theme enrichment for
+  reviews that pre-date PR #18. Walks `Review.themes IS NULL`, calls
+  `extract_themes` on the comment, writes the JSON-encoded result back. Per-row
+  commit so a network blip just leaves the unprocessed tail null; re-runs pick
+  up where it stopped. `--dry-run` / `--limit N` / `--user-id N` flags.
+  Idempotent and safe against the production DB.
+
 ### Tests
 
-**150 automated tests** across three layers (68 backend / 32 web / 50 mobile). Full
+**161 automated tests** across three layers (79 backend / 32 web / 50 mobile). Full
 path-coverage matrix on the AI/auth machinery:
 
 |                         | Claude on (key set) | Claude off (key unset) | Claude fails (network/refusal) |
@@ -283,7 +313,8 @@ Web screen coverage matrix:
   RN 0.79→0.83 deprecated style props, vector-icons 14→15).
 - **The new themes panel doesn't show a "0 enriched yet" empty state** — it just hides.
   Users on a deploy without `ANTHROPIC_API_KEY` see no panel and no explanation. Could be
-  surfaced as a follow-up.
+  surfaced as a follow-up. (Pre-PR-18 reviews with null theme columns are handled by the
+  backfill script — see DEPLOYMENT.md §6.)
 - **JTI revocation table is unbounded over a long enough horizon**. Pruned opportunistically
   on every refresh (delete-where-expired). At ≤30 day refresh-token TTL the table stays
   bounded by active-user × logouts/30d, which is fine for current scale but should switch
