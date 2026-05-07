@@ -1,0 +1,25 @@
+{
+  "mode": "yolo",
+  "granularity": "coarse",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "balanced",
+  "workflow": {
+    "research": false,
+    "plan_check": true,
+    "verifier": false,
+    "nyquist_validation": false,
+    "auto_advance": true,
+    "_auto_chain_active": false
+  },
+  "planning": {
+    "branch_template": "phase-{N}-{slug}",
+    "sub_repos": []
+  },
+  "_meta": {
+    "initialized_at": "2026-05-07",
+    "initialized_via": "/gsd-new-project (post PR-#18 merge)",
+    "brownfield": true,
+    "shipped_milestone": "PR-#18 security + AI + multi-platform overhaul"
+  }
+}
