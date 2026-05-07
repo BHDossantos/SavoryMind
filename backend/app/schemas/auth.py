@@ -161,6 +161,22 @@ class ProfileUpdate(BaseModel):
     serves_beer:         Optional[bool]  = None
     onboarding_completed: Optional[bool] = None
 
+    # IANA timezone string for restaurant-local scheduling (inventory digest etc.)
+    timezone: Optional[str] = None
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        # Validate against the IANA TZ database. zoneinfo raises if invalid.
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+        try:
+            ZoneInfo(v)
+        except (ZoneInfoNotFoundError, Exception):
+            raise ValueError(f"timezone must be a valid IANA TZ name (got {v!r})")
+        return v
+
     @field_validator("account_type")
     @classmethod
     def validate_account_type(cls, v: Optional[str]) -> Optional[str]:

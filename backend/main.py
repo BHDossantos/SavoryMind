@@ -34,7 +34,7 @@ from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # n
 from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
-from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth, inventory
 
 
 def _run_alembic_migrations():
@@ -119,6 +119,7 @@ app.include_router(staff_portal.router, prefix="/api")
 app.include_router(discover.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 app.include_router(oauth.router, prefix="/api")
+app.include_router(inventory.router, prefix="/api")
 
 
 @app.get("/")
