@@ -2,7 +2,99 @@
 
 Project-level changelog. Reverse-chronological. New entries go at the top.
 
-## Unreleased — PR #18
+## Unreleased — Phases 1 & 2 + App Store readiness
+
+Three independent PRs that together close out the post-PR-#18 milestone (`/gsd-new-project`-bootstrapped roadmap with Phase 1 = inventory tracking, Phase 2 = mobile consumer parity backport) and unblock first-ever App Store / Play Store submission.
+
+Branches: `feat/phase-1-inventory` (PR #20), `feat/app-store-readiness` (PR #21), `feat/phase-2-mobile-consumer-parity` (PR #22). All three squash-on-merge. They touch different files; merge order doesn't matter.
+
+### Phase 1 — Restaurant inventory tracking (PR #20, +30 tests)
+
+- New SQLAlchemy models `InventoryItem` + `InventoryAdjustment` (Alembic migration `8c1f5b3e2a47`). Append-only ledger; `current_quantity` is computed from the ledger sum at read time, never stored — makes the table a real audit trail rather than a state cache.
+- `users.timezone` column (IANA name, default `'UTC'`) so the weekly digest can fire Monday 8am restaurant-local.
+- 6 endpoints under `/api/inventory/*` (list / create / patch / archive / adjust / categorize) — all rate-limited via slowapi, restaurant-only via `require_restaurant` gate.
+- Tenancy isolation enforced at the service layer; cross-tenant lookups return 404 (not 403) to avoid leaking item existence (THREAT-MODEL T1).
+- No PATCH/DELETE on adjustments — to "fix" a bad adjustment, log a `count_correction` row (T2).
+- Soft-delete via `archived_at` sentinel; archived items hidden from list but historical adjustments stay queryable.
+- Claude auto-categorize endpoint (`POST /api/inventory/categorize`) — Haiku model with rules-based fallback to `food/0.0` when Anthropic key unset OR Claude returns out-of-enum garbage (T5 prompt-injection mitigation).
+- Weekly digest job: hourly Cloud Scheduler trigger + per-restaurant timezone filter selects restaurants currently at Mon 8am local. Idempotent within an ISO week — re-runs `UPDATE` the existing `Notification` row rather than inserting duplicates (T6 spam mitigation).
+- New `inventory_digest_service` + `resend_client` (mirrors `claude_client` shape — no-op when `RESEND_API_KEY` unset, sanitized exception logs).
+- New `/internal/jobs/inventory-digest` endpoint authenticated via Google OIDC token (verified issuer / audience / scheduler service-account email); refuses to run when env unset (T3 mitigation).
+- Web inventory page (`frontend/src/pages/restaurant/inventory.js`) — Tailwind table with category filter pills, low-stock-first sort, add-item modal with categorize-on-blur, adjust modal, soft-archive flow.
+- Mobile inventory screen (`mobile/app/(restaurant)/inventory.js`) with counting-optimized bottom sheet: large +/- and case-pack buttons (case size derives from `unit` via `mobile/utils/casePacks.js`), expo-haptics on tap, live delta projection ("4 → 16"). Designed for cold fingers in a walk-in cooler.
+- Nav entries on both web (Layout.js between Food Waste and Kitchen Times) and mobile (`(restaurant)/_layout.js` hidden tab + entry on More screen).
+- Tests: +18 backend (auth scoping, tenancy, ledger immutability, current_quantity derivation, categorize fallback) + +12 backend (digest behavior, OIDC auth gate, RESEND conditional) + +5 web + +5 mobile.
+- Total: +30 tests; suite goes 79 → 109 backend, 33 → 38 web, 53 → 58 mobile.
+
+**Operator-side actions post-merge** (in `SUBMISSION-CHECKLIST.md` and PR #20 body):
+1. Create scheduler service account + IAM grant
+2. Set `SCHEDULER_SERVICE_ACCOUNT` + `SCHEDULER_AUDIENCE` env vars on backend Cloud Run
+3. Create the Cloud Scheduler job (hourly Mon UTC, OIDC token to `/internal/jobs/inventory-digest`)
+4. Trigger once via `gcloud scheduler jobs run` to verify
+
+### Phase 2 — Mobile consumer parity backport (PR #22, +16 tests)
+
+Closes the 3 mobile parity gaps the post-PR-#18 audit surfaced. PAR-03 ("beverages broken") was the most interesting — existing `pairings.js` had Wine/Beer/Spirits tabs but read STALE field names (`wine_recommendation`, `beer_style`, `spirit_recommendation`) that don't exist in the current backend response shape. Beer + spirits were silently empty even when the backend returned data — worse failure mode than "missing entirely" because there was no error or empty state.
+
+- **PAR-01:** new `mobile/app/(consumer)/order.js` — 4-step delivery wizard (Craving → Dish → Restaurant → Order). Mock fulfillment matches web behavior; real ordering integration is a separate phase.
+- **PAR-02:** new `mobile/app/(consumer)/guided-cooking.js` — step-by-step recipe walkthrough with per-step timer (1/2/3/5/10/15 min presets, Pause/Resume/Reset, color shifts at 10s warning), inline Culinary Assistant (collapses to "Something went wrong?" CTA, expands to free-text `askAssistant` query), done-state memory modal that captures rating + notes + change-next-time and writes to the food journal via `createMemory`.
+- **PAR-03:** rewrote `mobile/app/(consumer)/pairings.js` to consume the actual backend response shapes — `recommendations: [...]` for wine via `createWinePairing`, `pairings: [...]` for beer + spirits via `getBeerPairing` / `getSpiritsPairing`. Confidence bars with 3-tier color (green ≥80%, amber ≥60%, gray below). Top match (index 0) gets a highlighted border. Wine endpoint correctly sends `dish_name` (was sending `dish` which the backend ignored → silent failure).
+- Recipe detail modal gets a "👨‍🍳 Start guided cooking" button that pushes to the new screen with `?id=<recipe_id>`.
+- Dashboard QUICK grid gets a `🛵 Order` tile (now 7 entries instead of 6).
+- 3 hidden-tab entries added in `(consumer)/_layout.js` (`order`, `guided-cooking` are reachable via `router.push` from dashboard / recipes).
+- Tests: +6 pairings (wine/beer/spirits API shapes, top-match highlighting, empty-input no-call), +6 order (initial render, craving-fetch, dish-fetch, full happy-path through 4 steps to success), +5 guided-cooking (recipe load, step traversal, memory modal save, inline assistant, recipe-not-found).
+- Total: +16 mobile tests; mobile suite goes 53 → 69.
+
+### App Store readiness (PR #21, +9 tests)
+
+Closes the two highest-priority blockers for first iOS submission:
+
+- **Sign in with Apple** — App Store Review Guideline 4.8 requires this when offering Google sign-in (which we do). Without it every iOS submission gets rejected. Implementation mirrors `google_oauth.py`:
+  - `apple_oauth.py` — verifies Apple-issued ID tokens against Apple's JWKS (`https://appleid.apple.com/auth/keys`), validates issuer + audience (= `apple_bundle_id` env var, `net.savorymind.app`) + expiration. Apple's email_verified can be string or bool — normalized. Apple's "Hide my email" forwarding addresses (`xxx@privaterelay.appleid.com`) accepted as real verified emails.
+  - `POST /api/auth/apple` — accepts `{id_token, name?, email?}`. Critical: id_token NEVER includes `name` (and may omit `email` if user revoked email sharing) — those come from the mobile client's `response.fullName` / `response.email` on FIRST sign-in only. Backend persists them on the new user row; subsequent sign-ins return only `sub` and the backend uses existing user data unchanged. Apple's privacy design.
+  - `apple_bundle_id` env var added to settings; defaults to `""` (returns 503 cleanly when unset, same dormant pattern as Google).
+  - Mobile: `expo-apple-authentication ~55.0.7` added to package.json + plugin entry + `ios.usesAppleSignIn: true` in `app.json`. `appleLogin({idToken, name, email})` added to `services/api.js`. `loginApple` added to `AuthContext`. The login screen's existing Apple tile (was routing to WebBrowser fallback) now triggers `signInAsync` on iOS; `ERR_CANCELED` is silent dismissal.
+- **Privacy Policy + Terms of Service** — both stores require publicly hostable URLs at submission time. New pages at `frontend/src/pages/legal/privacy.js` and `/legal/terms.js`. Honest disclosure of data collection (account / auth / connected Spotify / user content / Sentry), third-party sharing (Anthropic / Spotify / Google / Apple / Resend / Sentry / GCP), retention, user rights (GDPR + CCPA). Email contact `privacy@savorymind.net` for data requests; `hello@savorymind.net` for terms questions.
+- Tests: +7 backend (Apple endpoint: 503 unconfigured / 400 missing token / 401 invalid token / first sign-in with body name+email / subsequent sign-in / email omitted entirely / links to existing email account) + +2 mobile (Apple tile triggers signInAsync + forwards token correctly; user cancellation is silent).
+- Total: +9 tests; backend goes 79 → 86, mobile 53 → 55. Web tests unchanged (legal pages are pure markup).
+
+**Operator-side actions post-merge** (in `SUBMISSION-CHECKLIST.md` and PR #21 body):
+1. Apple Developer Program enrollment ($99/year)
+2. Bundle ID + Sign in with Apple capability at developer.apple.com
+3. Set `APPLE_BUNDLE_ID = "net.savorymind.app"` in GitHub Actions secrets + add to deploy workflow `--set-env-vars`
+4. Verify privacy policy reachable at `savorymind.net/legal/privacy` after frontend deploy
+5. App icon (1024×1024) + adaptive icon for Android — replace the placeholder
+6. Demo accounts for App Review (`appreview-consumer` + `appreview-restaurant`)
+
+### Documentation
+
+- `SUBMISSION-METADATA.md` (root) — copy-paste-ready strings for every App Store Connect + Play Console field (description, keywords, what's-new, privacy nutrition labels, data safety form, screenshot lineup with captions). Cross-referenced against the privacy policy so disclosures stay truthful.
+- `SUBMISSION-CHECKLIST.md` (root) — single source of truth for every operator-side action across PRs #20 / #21 / #22 plus the App Store / Play Store submission flow itself. Replaces "go grep across 3 PR bodies + DEPLOYMENT.md."
+- This CHANGELOG entry.
+
+### Known caveats
+
+- **No real-device mobile testing** in the dev sandbox. All 3 mobile-touching PRs need a phone in your hands. Reanimated 3→4 worklet behavior + expo-haptics + the new bottom-sheet UX all need real-touch validation.
+- **PR #21 had a CI flake** on first push — `expo-apple-authentication` was pinned `~8.0.7` (wrong version line; SDK 55-compatible is `~55.0.7`) AND the lockfile wasn't regenerated. Fix `bbcb3ec` corrects both. Future Expo dep additions: always run `npm install` to regenerate the lockfile or CI's `npm ci --ignore-scripts` will fail before tests run.
+- **Reports CSV export** mentioned in PLAN-3 was deferred — current `reports.py` returns structured JSON, not CSV. A bulk inventory export is a separate phase; data already accessible via `/api/inventory`.
+- **Apple Sign-In on Android** not wired — currently falls through to WebBrowser fallback. Apple sign-in via JS on Android adds setup complexity for limited value (Android users typically use Google or email/password). Punt until usage data shows it matters.
+
+### Test totals
+
+| Suite | Pre-Phase-1-2 | Post-Phase-1-2 | Delta |
+|---|---|---|---|
+| Backend pytest | 79 | 116 (109 + 7 Apple) | +37 |
+| Frontend Jest | 33 | 38 | +5 |
+| Mobile Jest | 53 | 76 (58 + 2 Apple + 16 parity) | +23 |
+| **Total** | **165** | **230** | **+65** |
+
+(Numbers will vary slightly depending on merge order; assuming all three PRs merge cleanly the final test count is 230.)
+
+---
+
+## Released — PR #18 (merged as `70ace80` on 2026-05-07)
+
+A 38-commit consolidation that started as three security audit fixes and grew into
 
 A 38-commit consolidation that started as three security audit fixes and grew into
 a full security + AI + multi-platform overhaul + mobile/web parity sweep + native
