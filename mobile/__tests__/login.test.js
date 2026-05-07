@@ -28,8 +28,19 @@ jest.mock('expo-auth-session/providers/google', () => ({
   useAuthRequest: () => [{}, null, jest.fn().mockResolvedValue({ type: 'cancel' })],
 }));
 
+const mockAppleSignIn = jest.fn();
+// virtual:true so jest doesn't try to resolve the real module path —
+// expo-apple-authentication is in package.json but not always installed
+// in the CI sandbox before `npm install` runs. The login screen imports
+// it eagerly so we have to stub it for the test even when not installed.
+jest.mock('expo-apple-authentication', () => ({
+  signInAsync: (...args) => mockAppleSignIn(...args),
+  AppleAuthenticationScope: { FULL_NAME: 'name', EMAIL: 'email' },
+}), { virtual: true });
+
+const mockLoginApple = jest.fn();
 jest.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ login: mockLogin, loginGoogle: jest.fn() }),
+  useAuth: () => ({ login: mockLogin, loginGoogle: jest.fn(), loginApple: mockLoginApple }),
 }));
 
 const WebBrowser = require('expo-web-browser');
@@ -40,6 +51,8 @@ beforeEach(() => {
   mockPush.mockReset();
   mockBack.mockReset();
   mockLogin.mockReset();
+  mockAppleSignIn.mockReset();
+  mockLoginApple.mockReset();
   WebBrowser.openBrowserAsync.mockClear();
 });
 
@@ -77,6 +90,80 @@ describe('Login screen', () => {
     await act(async () => { fireEvent.press(getByText('Sign In')); });
 
     await waitFor(() => expect(getByText('Incorrect email or password.')).toBeTruthy());
+  });
+
+  test('Apple tile on iOS calls signInAsync and forwards identityToken to loginApple', async () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'ios';
+
+    mockAppleSignIn.mockResolvedValue({
+      identityToken: 'apple-id-token-xyz',
+      fullName: { givenName: 'Alice', familyName: 'Example' },
+      email: 'alice@privaterelay.appleid.com',
+    });
+    mockLoginApple.mockResolvedValue({ id: 1, email: 'alice@privaterelay.appleid.com' });
+
+    try {
+      const { UNSAFE_getAllByType } = render(<LoginScreen />);
+      const { TouchableOpacity } = require('react-native');
+      const tiles = UNSAFE_getAllByType(TouchableOpacity);
+
+      // Press tiles in order; the Apple one will trigger mockAppleSignIn.
+      // SOCIAL_PROVIDERS order: google, github, azure-ad, apple, facebook, ...
+      // Apple is index 3 inside the social row, but the row also includes
+      // back-button and other UI buttons before it. Iterate until apple fires.
+      let appleHit = false;
+      for (const tile of tiles) {
+        mockAppleSignIn.mockClear();
+        await act(async () => {
+          try { fireEvent.press(tile); } catch {}
+        });
+        if (mockAppleSignIn.mock.calls.length > 0) {
+          appleHit = true;
+          break;
+        }
+      }
+
+      expect(appleHit).toBe(true);
+      await waitFor(() => expect(mockLoginApple).toHaveBeenCalledWith({
+        idToken: 'apple-id-token-xyz',
+        name:    'Alice Example',
+        email:   'alice@privaterelay.appleid.com',
+      }));
+    } finally {
+      Platform.OS = originalOS;
+    }
+  });
+
+  test('Apple sign-in user-cancellation does not surface an error', async () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'ios';
+
+    const cancelErr = new Error('User cancelled');
+    cancelErr.code = 'ERR_CANCELED';
+    mockAppleSignIn.mockRejectedValue(cancelErr);
+
+    try {
+      const { UNSAFE_getAllByType, queryByText } = render(<LoginScreen />);
+      const { TouchableOpacity } = require('react-native');
+      const tiles = UNSAFE_getAllByType(TouchableOpacity);
+
+      for (const tile of tiles) {
+        mockAppleSignIn.mockClear();
+        await act(async () => {
+          try { fireEvent.press(tile); } catch {}
+        });
+        if (mockAppleSignIn.mock.calls.length > 0) break;
+      }
+
+      // Cancel = no error banner, no loginApple call
+      expect(mockLoginApple).not.toHaveBeenCalled();
+      expect(queryByText(/Apple sign-in failed/i)).toBeNull();
+    } finally {
+      Platform.OS = originalOS;
+    }
   });
 
   test('social provider tap opens the web app via WebBrowser', async () => {

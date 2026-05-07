@@ -81,6 +81,13 @@ class Settings(BaseSettings):
     # registered at console.cloud.google.com → APIs & Services → Credentials.
     google_client_id: str = ""
 
+    # Apple Sign in — bundle identifier of the iOS app (e.g. "net.savorymind.app").
+    # Used as the audience claim in Apple's ID token. Must match the
+    # bundleIdentifier in mobile/app.json. App Store review rejects any app
+    # offering Google sign-in unless Apple sign-in is also offered, so this
+    # is required for iOS distribution. Web doesn't use Apple sign-in.
+    apple_bundle_id: str = ""
+
     class Config:
         env_file = ".env"
 

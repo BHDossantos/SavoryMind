@@ -163,6 +163,77 @@ def google_login(
     return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
+@router.post("/apple", response_model=TokenResponse, status_code=200)
+@limiter.limit("10/minute")
+def apple_login(
+    request: Request,
+    response: Response,
+    body: dict,
+    db: Session = Depends(get_db),
+    x_client_type: Optional[str] = Header(default=None),
+):
+    """Native Sign in with Apple via verified ID token.
+
+    iOS only — required by Apple App Store Review Guideline 4.8 since
+    we offer Google sign-in. Web doesn't use this path.
+
+    Expected body:
+      {
+        "id_token": "<Apple ID token>",
+        "name":     "<full name from response.fullName, optional>",
+        "email":    "<email from response.email, optional>"
+      }
+
+    name and email are passed explicitly because Apple ONLY includes
+    them in the response payload (not in the id_token claims) and ONLY
+    on the very first sign-in. Subsequent sign-ins return a token with
+    sub claim only — backend then uses the existing user row's name.
+
+    This is Apple's design — a privacy choice. The user is shown
+    "AppName wants your name and email" once, and after that only
+    a stable `sub` flows. The backend MUST persist name/email on first
+    sign-in or it'll never have them.
+    """
+    from ...services import apple_oauth
+    if not apple_oauth.is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Apple sign-in is not configured on this server.",
+        )
+
+    id_token = (body or {}).get("id_token")
+    if not isinstance(id_token, str) or not id_token:
+        raise HTTPException(status_code=400, detail="`id_token` is required.")
+
+    try:
+        claims = apple_oauth.verify_id_token(id_token)
+    except apple_oauth.AppleAuthError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    # Apple's id_token may contain email if the user shared it with the
+    # app on first sign-in, OR it may be omitted entirely if they
+    # revoked email sharing. Body-supplied email wins (it's what Apple
+    # gave us in the auth response on first sign-in), with token-claim
+    # email as fallback.
+    body_email = str((body or {}).get("email") or "").strip()
+    body_name  = str((body or {}).get("name") or "").strip()
+    claim_email = str(claims.get("email") or "").strip()
+    email = body_email or claim_email
+    # Apple-private-relay emails (xxxxx@privaterelay.appleid.com) are
+    # real, deliverable, and Apple-verified. Treat them like any other.
+
+    access, refresh, user = auth_service.social_login(
+        db,
+        provider="apple",
+        provider_id=str(claims["sub"]),
+        email=email,
+        name=body_name,
+        avatar_url="",  # Apple doesn't provide avatar
+    )
+    _set_refresh_cookie(response, refresh)
+    return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
+
+
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit("60/minute")
 def refresh(

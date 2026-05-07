@@ -143,6 +143,23 @@ export const api = {
     await _saveTokensFrom(result);
     return result;
   },
+  // Native Sign in with Apple (iOS only). Caller hands over the
+  // identityToken from expo-apple-authentication's signInAsync result,
+  // plus name + email from the same result on FIRST sign-in only — Apple
+  // omits these from the token itself by design (see backend
+  // services/apple_oauth.py for the full quirk explanation).
+  appleLogin: async ({ idToken, name, email }) => {
+    const result = await request('/api/auth/apple', {
+      method: 'POST',
+      body: JSON.stringify({
+        id_token: idToken,
+        name:     name || null,
+        email:    email || null,
+      }),
+    });
+    await _saveTokensFrom(result);
+    return result;
+  },
   // Server-side revoke (jti blacklist) plus local clear. If the network
   // call fails we still wipe local creds so the user isn't stuck logged
   // in client-side.
