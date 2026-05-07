@@ -14,6 +14,7 @@ const QUICK = [
   { icon: '🥫', label: 'Pantry',     route: '/(consumer)/pantry' },
   { icon: '📓', label: 'Journal',    route: '/(consumer)/journal' },
   { icon: '🔗', label: 'Connect',    route: '/(consumer)/social' },
+  { icon: '🛵', label: 'Order',      route: '/(consumer)/order' },
 ];
 
 export default function ConsumerDashboard() {
