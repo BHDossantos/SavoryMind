@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 
@@ -7,6 +8,7 @@ const MOODS    = ['Happy', 'Cozy', 'Adventurous', 'Romantic', 'Quick'];
 const CUISINES = ['Italian', 'Japanese', 'Mexican', 'French', 'Indian', 'American'];
 
 export default function RecipesScreen() {
+  const router = useRouter();
   const [recipes, setRecipes]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [keywords, setKeywords]       = useState('');
@@ -152,6 +154,16 @@ export default function RecipesScreen() {
                   ))}
                 </>
               )}
+              {selected?.id != null && (
+                <TouchableOpacity
+                  testID="start-guided-cooking"
+                  onPress={() => { router.push({ pathname: '/(consumer)/guided-cooking', params: { id: selected.id } }); setSelected(null); }}
+                  style={styles.startCookingBtn}
+                >
+                  <Text style={styles.startCookingBtnText}>👨‍🍳 Start guided cooking</Text>
+                </TouchableOpacity>
+              )}
+
               {selected?.instructions?.length > 0 && (
                 <>
                   <Text style={styles.sectionHead}>Instructions</Text>
@@ -211,6 +223,8 @@ const styles = StyleSheet.create({
   modalMeta:    { fontSize: 13, color: C.gray[500], marginBottom: 8, marginTop: 16 },
   modalDesc:    { fontSize: 14, color: C.gray[600], lineHeight: 21, marginBottom: 16 },
   metaRow:      { flexDirection: 'row', backgroundColor: C.consumer.light, borderRadius: 14, padding: 16, marginBottom: 20 },
+  startCookingBtn: { backgroundColor: C.consumer.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginBottom: 16 },
+  startCookingBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   sectionHead:  { fontSize: 16, fontWeight: '800', color: C.gray[900], marginBottom: 10, marginTop: 8 },
   ingredient:   { fontSize: 14, color: C.gray[700], marginBottom: 5, lineHeight: 20 },
   step:         { flexDirection: 'row', gap: 12, marginBottom: 12 },

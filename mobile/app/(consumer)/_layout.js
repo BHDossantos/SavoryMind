@@ -22,10 +22,12 @@ export default function ConsumerLayout() {
       {/* Hidden from the tab bar (href: null) but reachable via router.push
           from the dashboard. The tab bar already has 6 entries; a 7th
           would crowd the layout. */}
-      <Tabs.Screen name="assistant" options={{ href: null }} />
-      <Tabs.Screen name="social"    options={{ href: null }} />
-      <Tabs.Screen name="pantry"    options={{ href: null }} />
-      <Tabs.Screen name="journal"   options={{ href: null }} />
+      <Tabs.Screen name="assistant"      options={{ href: null }} />
+      <Tabs.Screen name="social"         options={{ href: null }} />
+      <Tabs.Screen name="pantry"         options={{ href: null }} />
+      <Tabs.Screen name="journal"        options={{ href: null }} />
+      <Tabs.Screen name="order"          options={{ href: null }} />
+      <Tabs.Screen name="guided-cooking" options={{ href: null }} />
     </Tabs>
   );
 }
