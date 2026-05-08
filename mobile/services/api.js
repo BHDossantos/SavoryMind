@@ -346,4 +346,18 @@ export const api = {
 
   // Restaurant — diner reviews from customers
   getDinerReviews: () => request('/api/restaurant/diner-reviews'),
+
+  // Restaurant — Inventory tracking
+  getInventory: (category) =>
+    request(`/api/inventory${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+  createInventoryItem: (data) =>
+    request('/api/inventory', { method: 'POST', body: JSON.stringify(data) }),
+  updateInventoryItem: (id, patch) =>
+    request(`/api/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  archiveInventoryItem: (id) =>
+    request(`/api/inventory/${id}`, { method: 'DELETE' }),
+  adjustInventoryItem: (id, data) =>
+    request(`/api/inventory/${id}/adjust`, { method: 'POST', body: JSON.stringify(data) }),
+  categorizeInventoryItem: (name) =>
+    request('/api/inventory/categorize', { method: 'POST', body: JSON.stringify({ name }) }),
 };

@@ -12,6 +12,7 @@ const FEATURES = [
   { icon: '🚀', title: 'Trends',         sub: 'Menu trends & rising stars',   screen: 'trends' },
   { icon: '💌', title: 'Marketing',      sub: 'Guest acquisition & loyalty',  screen: 'marketing' },
   { icon: '🗑️', title: 'Food Waste',     sub: 'Waste log & cost tracking',   screen: 'waste' },
+  { icon: '📦', title: 'Inventory',      sub: 'Stock + weekly low-stock digest', screen: 'inventory' },
   { icon: '⏱️', title: 'Kitchen Times',  sub: 'Prep & cook time tracking',   screen: 'kitchen' },
   { icon: '🕐', title: 'Staff Time',     sub: 'Shift hours & overtime',       screen: 'stafftime' },
   { icon: '🎓', title: 'Staff Training', sub: 'Performance-based coaching',   screen: 'training' },

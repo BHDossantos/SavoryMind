@@ -19,6 +19,7 @@ export default function RestaurantLayout() {
       <Tabs.Screen name="more"            options={{ title: 'More',         tabBarIcon: ({ color }) => <TabIcon icon="⋯" color={color} /> }} />
       {/* Hidden from the tab bar — reachable from the More screen. */}
       <Tabs.Screen name="employees"       options={{ href: null }} />
+      <Tabs.Screen name="inventory"       options={{ href: null }} />
     </Tabs>
   );
 }

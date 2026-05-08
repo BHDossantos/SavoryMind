@@ -78,5 +78,10 @@ class User(Base):
     # Onboarding gate
     onboarding_completed = Column(Boolean, default=False)
 
+    # IANA timezone string for restaurant-local scheduling (e.g. inventory
+    # weekly digest fires Monday 8am restaurant-local). Defaults to UTC so
+    # legacy rows don't break.
+    timezone = Column(String(64), nullable=False, server_default="UTC", default="UTC")
+
     # Staff account linkage — only set when account_type == "staff"
     employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)
