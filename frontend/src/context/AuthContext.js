@@ -131,6 +131,13 @@ export function AuthProvider({ children }) {
     setAccessToken(null);
     setUser(null);
     try { localStorage.removeItem(USER_CACHE_KEY); } catch {}
+    // Reset PostHog distinct_id so the next user on this device doesn't
+    // inherit the previous one's analytics session. No-op when analytics
+    // unconfigured.
+    try {
+      const { reset } = await import("../lib/analytics");
+      await reset();
+    } catch {}
     router.push("/login");
   }, [router]);
 

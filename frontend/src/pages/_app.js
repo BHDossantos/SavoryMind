@@ -7,6 +7,7 @@ import DinerLayout from "../components/DinerLayout";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { getAccessToken } from "../services/api";
+import { trackPageview, identify } from "../lib/analytics";
 import "../styles/globals.css";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup"];
@@ -29,6 +30,28 @@ function AppContent({ Component, pageProps }) {
   const isConsumerRoute = router.pathname.startsWith("/consumer");
   const isDinerRoute = router.pathname.startsWith("/diner");
   const isRestaurantRoute = !isConsumerRoute && !isDinerRoute && !isPublic && !isOnboarding;
+
+  // PostHog page_view + identify. Both no-op when NEXT_PUBLIC_POSTHOG_KEY
+  // is unset. We capture page_view on routeChangeComplete (post-replace)
+  // so the path matches what the user actually sees.
+  useEffect(() => {
+    const handleRouteChange = (url) => trackPageview(url);
+    router.events.on("routeChangeComplete", handleRouteChange);
+    // Initial pageview
+    trackPageview(router.asPath);
+    return () => router.events.off("routeChangeComplete", handleRouteChange);
+  }, [router]);
+
+  // Sync user identity to PostHog whenever auth state changes. Safe
+  // properties only — never email/name (those stay in the backend
+  // identify() call which has the same privacy-safe traits).
+  useEffect(() => {
+    if (user) {
+      identify(user.id, {
+        account_type: user.account_type,
+      });
+    }
+  }, [user?.id, user?.account_type]);
 
   useEffect(() => {
     if (loading) return;

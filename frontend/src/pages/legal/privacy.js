@@ -66,6 +66,10 @@ export default function PrivacyPolicy() {
                 <li>When the app encounters an error, we log it via Sentry along with your user ID
                   and the API request that triggered it. We do not log your password, payment details,
                   or the full content of your Spotify tokens.</li>
+                <li>We capture product-usage events via PostHog (e.g. when you sign up, log in, view
+                  a recommendation, submit a review). Events are keyed on your user ID. Properties
+                  are limited to safe metadata — account type, recommendation count, rating bucket
+                  — never the content of what you wrote, your email, name, or any tokens.</li>
               </ul>
 
               <p className="mt-4">
@@ -115,6 +119,12 @@ export default function PrivacyPolicy() {
                   digest). Receives only the email address and the email body.</li>
                 <li><strong>Sentry</strong> — receives crash and error reports including your user ID
                   and the failing request URL. Bound by Sentry's data processing agreement.</li>
+                <li><strong>PostHog</strong> — receives product-analytics events keyed on your user ID
+                  (e.g. signup_completed, login_completed, recommendation_served, review_submitted).
+                  We never send PostHog passwords, tokens, raw email/name, review text, or any
+                  free-text user content — only event names and a small set of safe properties
+                  (account_type, rating bucket, recommendations_count). Used to understand product
+                  usage so we can fix what's broken and build what you actually use.</li>
                 <li><strong>Google Cloud Platform</strong> — hosts the backend (Cloud Run) and database
                   (Cloud SQL Postgres). Cloud SQL is encrypted at rest by Google.</li>
               </ul>
@@ -131,6 +141,7 @@ export default function PrivacyPolicy() {
                 <li>Refresh tokens: 30 days from last use, then automatically expired.</li>
                 <li>Revoked-token records: pruned after their natural expiry to keep the table bounded.</li>
                 <li>Sentry error logs: 90 days, then automatically purged.</li>
+                <li>PostHog product-usage events: 365 days (PostHog default), then automatically purged.</li>
                 <li>Backups: up to 30 days for disaster recovery.</li>
               </ul>
             </section>
