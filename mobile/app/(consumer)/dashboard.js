@@ -75,9 +75,10 @@ export default function ConsumerDashboard() {
         ))}
       </View>
 
-      {/* Featured: Culinary Assistant — the one feature backed by a real
-          LLM (Claude Opus 4.7), so it earns visual weight over the
-          rule-based pairing/music tiles above. */}
+      {/* Featured: Flavor — SavoryMind's unified AI voice, backed by
+          Claude Opus 4.7. Earns visual weight over the rule-based
+          pairing/music tiles above because Flavor is the product's
+          personality, not just a feature tile. */}
       <TouchableOpacity
         style={styles.assistantCard}
         onPress={() => router.push('/(consumer)/assistant')}
@@ -85,7 +86,7 @@ export default function ConsumerDashboard() {
       >
         <Text style={styles.assistantEmoji}>👨‍🍳</Text>
         <View style={{ flex: 1 }}>
-          <Text style={styles.assistantTitle}>Ask the Culinary Assistant</Text>
+          <Text style={styles.assistantTitle}>Ask Flavor</Text>
           <Text style={styles.assistantSub}>Real-time help with recipes, fixes, pairings, and substitutions.</Text>
         </View>
         <Text style={styles.assistantArrow}>→</Text>

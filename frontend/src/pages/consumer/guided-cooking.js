@@ -207,7 +207,7 @@ function InlineHelp() {
   return (
     <div className="mt-2 bg-amber-50 border border-amber-200 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-bold text-amber-900">👨‍🍳 Culinary Assistant</p>
+        <p className="text-sm font-bold text-amber-900">👨‍🍳 Flavor</p>
         <button onClick={() => { setOpen(false); setQuery(""); setResult(null); }}
           className="text-amber-500 hover:text-amber-700 text-lg">✕</button>
       </div>

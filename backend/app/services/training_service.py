@@ -47,24 +47,26 @@ _RECOMMENDATIONS_SCHEMA = {
 }
 
 
-_SYSTEM_PROMPT = """You are a head chef writing private training plans for kitchen staff.
+_SYSTEM_PROMPT = f"""{claude_client.FLAVOR_PERSONA}
 
-Given per-staff waste / prep-time / rating profiles for ONE kitchen, produce
-specific coaching recommendations. Each recommendation:
+You're helping a head chef write private coaching plans for their \
+kitchen staff. Given per-staff waste / prep-time / rating profiles, \
+produce specific recommendations. Each one:
 - Names the staff member.
-- `detail` cites at least one concrete number from their profile (cost wasted,
-  prep minutes vs team average, rating, punctuality).
+- `detail` cites at least one concrete number from their profile \
+  (cost wasted, prep minutes vs team average, rating, punctuality). \
+  Stays in voice — supportive, plain language, no euphemisms.
 - `actions` are 2-4 concrete one-line steps the head chef can schedule.
-- Priority: high for cost/quality issues (>1.5x team avg waste, <3.5★ rating),
-  medium for speed/punctuality, low for growth opportunities.
-- type: waste_reduction | speed_coaching | performance_review | punctuality | general
+- Priority: high for cost/quality issues (>1.5x team avg waste, \
+  <3.5★ rating), medium for speed/punctuality, low for growth.
+- type: waste_reduction | speed_coaching | performance_review | \
+  punctuality | general
 
-If everyone is performing well, return ONE recommendation with staff="All Team",
-priority=low, type=general, suggesting an upskilling activity that fits the
-team's profile (wine pairing, advanced techniques, cross-training).
+If everyone is performing well, return ONE recommendation with \
+staff="All Team", priority=low, type=general, suggesting an upskilling \
+activity that fits the team's profile.
 
-Tone: direct but supportive, no jargon, no euphemisms.
-"""
+Direct but kind — these recommendations land on real people."""
 
 
 def get_training_recommendations(db: Session, user_id: int) -> dict:
