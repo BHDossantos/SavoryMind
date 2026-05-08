@@ -50,7 +50,15 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   premium. ~50 new dictionary keys (mybook / chat / group / myplans /
   profile / premium / common.*) added in EN + IT.
 
-## Phase 9 · Open
+## Phase 9 · Operations automation [shipped — `7c5ed6c`]
+
+- `7c5ed6c` — task **`t-cloud-scheduler-job`** shipped: cloudbuild now
+  provisions a Cloud Scheduler job `nocturna-reminders` running
+  `*/15 * * * *` Europe/Rome against the deployed API. Idempotent
+  describe-or-update pattern. No-op when `_CRON_TOKEN` is unset (so
+  PR-trigger builds without the secret keep working).
+
+## Phase 10 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and
@@ -204,31 +212,9 @@ update `STATE.md`.
   </done>
 </task>
 
-<task id="t-cloud-scheduler-job" type="auto">
-  <name>Provision Cloud Scheduler job for reminders in cloudbuild</name>
-  <files>
-    cloudbuild.nocturna.yaml
-  </files>
-  <action>
-    Add a step at the end of cloudbuild.nocturna.yaml that idempotently
-    creates a Cloud Scheduler job named nocturna-reminders running every
-    15 minutes, hitting the deployed API URL with X-Cron-Token. Use
-    `gcloud scheduler jobs describe ... || gcloud scheduler jobs create ...`
-    so re-runs don't fail.
-  </action>
-  <verify>
-    Build runs to completion (validate yaml structure). Manual: trigger a
-    deploy with _CRON_TOKEN set, confirm the scheduler job appears in
-    Console.
-  </verify>
-  <done>
-    Reminders run automatically on every deploy without a manual gcloud
-    step.
-  </done>
-</task>
 ```
 
-## Phase 9 · Beyond MVP (sketches, not yet specced)
+## Phase 11 · Beyond MVP (sketches, not yet specced)
 
 - Real-time booking status push (WebSocket / Server-Sent Events) so the
   status board updates without manual refresh.

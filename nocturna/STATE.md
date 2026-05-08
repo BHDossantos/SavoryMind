@@ -9,13 +9,13 @@
 
 ## Last shipped
 
-- **Commit:** `a322acf`
-- **Title:** feat(nocturna): GSD t-i18n-complete — IT translations for remaining client surfaces
-- **Phase:** 8 · GSD bootstrap + i18n completion
+- **Commit:** `7c5ed6c`
+- **Title:** feat(deploy): GSD t-cloud-scheduler-job — auto-provision reminder Scheduler
+- **Phase:** 9 · Operations automation
 
 ## In flight
 
-None. Working tree clean. Spec-file SHA bookkeeping pending in this very commit.
+None. Working tree clean.
 
 ## Local environment health
 
@@ -29,11 +29,17 @@ None. Working tree clean. Spec-file SHA bookkeeping pending in this very commit.
 ## Production health
 
 Untested in production. Cloud Build config (`cloudbuild.nocturna.yaml`)
-parses cleanly but no deploy verified yet. Verify with:
+now has 10 steps and parses cleanly. The new `provision-scheduler` step
+auto-creates the reminder Cloud Scheduler job when `_CRON_TOKEN` is set.
+Verify a deploy with:
 
 ```bash
 gcloud builds submit --config=cloudbuild.nocturna.yaml \
-  --substitutions=_REGION=europe-west1,_SECRET_KEY=$(openssl rand -hex 32),_APP_BASE_URL=https://placeholder.example
+  --substitutions=\
+_REGION=europe-west1,\
+_SECRET_KEY=$(openssl rand -hex 32),\
+_CRON_TOKEN=$(openssl rand -hex 24),\
+_APP_BASE_URL=https://placeholder.example
 ```
 
 ## Open questions / known issues
@@ -50,7 +56,7 @@ gcloud builds submit --config=cloudbuild.nocturna.yaml \
 
 ## Available task IDs
 
-From `ROADMAP.md` Phase 9:
+From `ROADMAP.md` Phase 10:
 
 - `t-photo-upload` — admin photo upload (Cloud Storage)
 - `t-email-verify` — verification on signup
@@ -59,7 +65,6 @@ From `ROADMAP.md` Phase 9:
 - `t-rate-limit-redis` — distributed rate limiter
 - `t-real-photos` — curate real photos for the 60 Rome venues (needs
   human curation pass)
-- `t-cloud-scheduler-job` — provision reminder Scheduler in cloudbuild
 
 ## How to update this file
 
