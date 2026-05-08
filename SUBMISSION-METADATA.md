@@ -86,43 +86,45 @@ https://savorymind.net/legal/terms
 ### Promotional text (170 chars, can be updated without app review)
 
 ```
-Now with native Apple Sign-In and a weekly inventory digest for restaurants. Smarter wine pairings using your Spotify listening habits.
+Now with Sign in with Apple and a weekly inventory digest for restaurants. Wine pairings that actually listen — your Spotify rotation shapes the recommendations.
 ```
 
 ### Description (4000 chars max)
 
 ```
-SavoryMind is the AI-powered food intelligence platform built for both sides of the table — the home cook trying to figure out what's for dinner, and the restaurant operator trying to figure out what's actually working.
+Hey 👋 — SavoryMind is the food intelligence platform that works for both sides of the table. The home cook trying to figure out what's for dinner. The restaurant operator trying to figure out what's actually working. Same app, different superpowers.
 
-FOR HOME COOKS
-• Wine, beer, and spirits pairings matched to whatever you're eating tonight, with confidence scores so you know how strong the recommendation is.
-• Music Mood — connect Spotify and we use your listening signal to recommend dishes that fit the energy you're already in.
-• Pantry tracking — log what you have, see what you need, get recipes that actually use what's in your fridge.
-• Guided cooking — step-by-step recipe walkthroughs with built-in timers and an AI assistant that helps when something goes wrong mid-cook ("the sauce is breaking, what now?").
-• Food journal — save the dishes worth remembering and track what you'd change next time.
-• Food delivery shortcut — pick a craving, get matched to dishes, see who delivers them best near you.
+IF YOU'RE COOKING TONIGHT
+• Wine, beer, and spirits pairings matched to whatever you're eating — with confidence scores so you know how strong the pick is.
+• Music Mood — connect Spotify and we use what you're already listening to as a signal for what you might want to eat. The Bad Bunny rotation pairs well with Spanish reds. Promise.
+• Pantry tracking — log what you have, find recipes that actually use it, stop the "oh I forgot we had that" cycle.
+• Guided cooking — step-by-step recipe walkthroughs with built-in timers. Sauce starts breaking? Tap the help button mid-cook and the AI assistant tells you what to do, in real time.
+• Food journal — save the dishes worth remembering. Rate them. Note what you'd change. Build your own personal cookbook.
+• Order shortcut — pick a craving, get matched to dishes, see who delivers them best near you.
 
-FOR RESTAURANT OPERATORS
-• Sentiment analysis on every review with AI-extracted themes — see what guests actually complain about and praise about, not just an average rating.
-• Inventory tracking — per-SKU stock with append-only adjustment ledger, weekly low-stock digest emailed to your inbox every Monday morning.
-• Sales predictions, marketing insights, training plans, menu trend analysis — all powered by Anthropic's Claude AI, all with sane fallbacks when AI isn't reachable.
+IF YOU RUN A RESTAURANT
+• Sentiment analysis on every review with AI-extracted themes. See what guests actually complain about and what they actually praise — not just an average rating that hides everything important.
+• Inventory tracking with a weekly low-stock email digest, fired Monday 8am restaurant-local. Counting-optimized UI for the walk-in (because no one wants to type quantities with cold fingers). Append-only audit trail that survives staff turnover.
+• Sales predictions, marketing insights, training plans, menu trend analysis — all powered by Claude AI, all with sane fallbacks when AI isn't reachable.
 • Bookings, CRM, staff management, food waste tracking, kitchen and staff time logging.
-• Reports and CSV export for everything that matters.
+• Reports + CSV export for everything that matters.
 
-FOR DINERS
-• Discover restaurants that match what you're actually craving.
-• Book directly through the app, track visit history, leave reviews that other diners and the restaurant both see.
+IF YOU'RE A DINER
+• Discover restaurants that match what you're actually craving, not what's promoted.
+• Book directly through the app, track your visit history, leave reviews that the restaurant and other diners both see.
 
-PRIVACY-FIRST DESIGN
-• Sign in with Apple, Google, or email/password — your choice.
-• OAuth tokens encrypted at rest with industry-standard cryptography.
-• AI processing through Anthropic's API; your data is never used to train AI models.
-• Full data export and deletion on request.
+PRIVACY THAT'S ACTUALLY PRIVATE
+• Sign in with Apple, Google, or email — pick whatever's least friction.
+• OAuth tokens are encrypted at rest with industry-standard cryptography. Database compromise doesn't yield plaintext tokens.
+• AI processing happens through Anthropic's API; your data is never used to train AI models. We have it in writing.
+• Full data export and deletion on request, no questions asked.
 
-Read our privacy policy at savorymind.net/legal/privacy.
+Read the full privacy policy at savorymind.net/legal/privacy.
+
+Got feedback or hit a bug? Email hello@savorymind.net — real humans behind every reply.
 ```
 
-(Currently ~2500 chars — leaves room to add more if needed.)
+(~2500 chars — leaves room to add more if needed.)
 
 ### Keywords (100 chars total, comma-separated, no spaces after commas)
 
@@ -135,16 +137,17 @@ restaurant,inventory,wine,pairing,recipes,cooking,AI,sentiment,reviews,menu,book
 ### What's New in This Version (4000 chars)
 
 ```
-First release on the App Store. SavoryMind has been live on the web for some time; this brings the full mobile experience to your phone:
+First time on the App Store 🍝
 
-• Native iOS app with Sign in with Apple, Google sign-in, and email/password.
-• Restaurant inventory tracking with weekly low-stock email digest.
-• Spotify integration for music-aware wine and dish recommendations.
-• AI-powered sentiment analysis, recipe recommendations, and culinary assistant.
-• Counting-optimized inventory adjustment UX for in-the-walk-in stocktakes.
+SavoryMind has been live on the web for a while; we're bringing the full mobile experience to your phone:
+
+• Sign in with Apple, Google, or email — pick whatever's least friction.
+• Restaurant inventory tracking with a weekly low-stock email digest, counting-optimized for the walk-in.
+• Spotify integration that actually uses your listening signal for wine + dish recommendations.
+• Claude-powered sentiment themes, recipe suggestions, marketing insights, training plans, and a culinary assistant for when something goes wrong mid-cook.
 • Three-role experience — consumer, restaurant operator, and diner all from one app.
 
-We're rolling out updates frequently. Tell us what's missing at hello@savorymind.net.
+We're shipping fast. Tell us what's missing at hello@savorymind.net — real humans, real replies.
 ```
 
 ### Privacy nutrition labels (App Store Connect — Privacy section)
