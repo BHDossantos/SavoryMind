@@ -83,5 +83,11 @@ class User(Base):
     # legacy rows don't break.
     timezone = Column(String(64), nullable=False, server_default="UTC", default="UTC")
 
+    # i18n preference. ISO 639-1 lowercase. Frontend reads on hydration to
+    # set its locale; backend reads on AI-driven endpoints so Flavor /
+    # recommendations / etc. respond in the user's language. v1 supported
+    # set: en, es, it. Validated at the schema layer.
+    language = Column(String(10), nullable=False, server_default="en", default="en")
+
     # Staff account linkage — only set when account_type == "staff"
     employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)
