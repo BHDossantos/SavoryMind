@@ -165,8 +165,10 @@ export function calculateScore(
     clamp(100 - risks.reduce((s, r) => s + deductions[r.severity], 0)),
   );
 
-  const location = Math.round(clamp(safe(d.locationQuality) * 10 || 50));
-  const growth = Math.round(clamp(safe(d.growthPotential) * 10 || 50));
+  const locationQ = d.locationQuality ?? 5;
+  const growthQ = d.growthPotential ?? 5;
+  const location = Math.round(clamp(locationQ * 10));
+  const growth = Math.round(clamp(growthQ * 10));
 
   // Price fairness: how close is asking price to fair value.
   const fair = offer.fairValue;
