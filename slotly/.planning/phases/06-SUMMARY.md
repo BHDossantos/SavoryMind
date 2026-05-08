@@ -34,9 +34,19 @@ No new technical decisions — meta-phase.
 
 - ✅ Q-04 — installed `npx get-shit-done-cc@latest --claude --local` (v1.38.5). Dropped 85 commands, 33 agents, 11 hooks, and the framework's `.claude/get-shit-done/` data dir (~4 MB total). `.planning/config.json` reconciled to the official schema (`mode`, `granularity`, nested `workflow` / `planning` / `parallelization` / `gates` / `safety` / `hooks` / `agent_skills`).
 
-## New open question (Q-05)
+## Q-05 resolution — CLAUDE.md + codebase docs
 
-GSD wants a project-root `CLAUDE.md` with marker-bounded sections sourced from `PROJECT.md` plus `STACK.md`, `CONVENTIONS.md`, `ARCHITECTURE.md` (the latter three don't exist). The framework's intended generator is `gsd-tools generate-claude-md` from `@gsd-build/sdk`, which the local installer skipped (`Skipping SDK check for local install — install @gsd-build/sdk globally if you need /gsd-* CLI support.`). Decision deferred — the user can either install the SDK globally (`npm i -g @gsd-build/sdk`) and run `gsd-tools generate-claude-md`, or we hand-write a minimal `CLAUDE.md` next phase.
+Tried `npm i -g @gsd-build/sdk` (got `gsd-sdk` v0.1.0 — that binary only does plan execution: `run`, `auto`, `init`). The `gsd-tools` binary that runs `docs-init` is bundled with the local install (`.claude/get-shit-done/bin/gsd-tools.cjs`); its available subcommands are `state`, `resolve-model`, `find-phase`, `commit`, `verify-summary`, `verify`, `frontmatter`, `template`, `generate-slug`, `current-timestamp`, `list-todos`, `verify-path-exists`, `config-ensure-section`, `config-new-project`, `init`, `workstream`, `docs-init`. There is no `generate-claude-md` subcommand — the README's reference to it is from a doc that was either renamed or only fires inside `/gsd-` slash-command workflows where the Claude agent does the generation.
+
+Hand-wrote the artifacts the framework expects:
+- `.planning/codebase/STACK.md` — runtime, deps, build/run commands
+- `.planning/codebase/ARCHITECTURE.md` — backend / frontend layout, key flows, trust boundaries
+- `.planning/codebase/CONVENTIONS.md` — code style, auth patterns, stub-mode rule, git, testing-debt note
+- `CLAUDE.md` at the project root with all 7 GSD marker-bounded sections (project / stack / conventions / architecture / skills / workflow-enforcement / profile)
+
+The three codebase docs carry the `<!-- generated-by: gsd-doc-writer -->` provenance marker so a future `gsd-codebase-mapper` run can replace them cleanly.
+
+While running `docs-init` to verify, also caught + removed `gates` and `safety` keys from `.planning/config.json` — they're in the framework's starter template but rejected by this version's schema validator. Reconciled to the official `VALID_CONFIG_KEYS` set in `bin/lib/config-schema.cjs`.
 
 ## Verified
 
