@@ -49,14 +49,22 @@ pending the next discuss step.
   - 03 Graceful fallback when `ANTHROPIC_API_KEY` is unset
 - **Delivers:** R16, R17, R18
 
-## Phase 5 — TBD (awaiting discuss)
+## Phase 5 — Tested scoring engine ✅
 
-Pending `/gsd-discuss-phase 5`. Candidates, ordered by current best guess:
+- **Status:** Shipped
+- **Goal:** Lock deterministic logic behind unit tests before any rewrite.
+- **Plans:**
+  - 5-1 Vitest scaffolding + scoring engine tests + golden fixtures (caught and fixed an explicit-0 qualitative-score bug)
+  - 5-2 CSV + LOI tests (header schema lock, escaping, conditional sections)
+  - 5-3 GitHub Actions workflow on `claude/dealflow-**` + PRs, path-filtered to `dealflow/**`
+- **Delivers:** R26
+- **Tests:** 28 passing across 3 files (~600ms)
 
-- **5A. Real backend (Postgres + auth)** — unblocks R19 and indirectly R20, R23, R24. Largest scope.
-- **5B. Batch AI analysis** — R20. Small, ships in a day, big perceived value for portfolios.
-- **5C. Tested scoring engine** — R26. Defensive; should land before any major refactor.
-- **5D. PDF LOI export** — R22. Mid-scope; user-visible win.
-- **5E. Marketplace scraping** — R21. Highest compliance + maintenance risk.
+## Phase 6 — TBD (awaiting discuss)
 
-User picks one (or sequences a few) at the discuss step.
+Pending `/gsd-discuss-phase 6`. Remaining candidates from the original list:
+
+- **6A. Batch AI analysis** — R20. Small, ships in a day, big perceived value for portfolios.
+- **6B. Real backend (Postgres + auth)** — R19. Largest scope; unblocks R23, R24.
+- **6C. PDF LOI export** — R22. Mid-scope; user-visible win.
+- **6D. Marketplace scraping** — R21. Highest compliance + maintenance risk.

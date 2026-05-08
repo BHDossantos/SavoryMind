@@ -3,10 +3,11 @@
 ## Current position
 
 - **Branch:** `claude/dealflow-ai-setup-WTRdF`
-- **Last commit:** `6d4fc7b` (Phase 4 — AI deal analysis via Claude Opus 4.7)
-- **Phases done:** 1, 2, 3, 4
+- **Phases done:** 1, 2, 3, 4, 5
 - **Build:** ✅ `npm run build` clean, 8 routes
-- **Next gate:** `/gsd-discuss-phase 5` — awaiting user pick from ROADMAP §Phase 5 candidates.
+- **Tests:** ✅ 28 passing across 3 files via `npm test` (Vitest)
+- **CI:** GitHub Actions workflow added; first run on next push
+- **Next gate:** `/gsd-discuss-phase 6` — awaiting user pick from ROADMAP §Phase 6 candidates.
 
 ## Key decisions
 
@@ -17,6 +18,8 @@
 - **D5.** EUR formatting and EU-conservative industry multiples in `lib/multiples.ts`. Multi-region is a v2 (R25).
 - **D6.** Attachments stored base64 in localStorage with 2 MB / file and 5 MB total guards. Trades simplicity for quota constraints; will move to S3-equivalent in v2.
 - **D7.** All planning artifacts live under `dealflow/.planning/` (NOT root `.planning/` — that belongs to SavoryMind).
+- **D8.** Test framework is **Vitest** with manual `@/*` alias resolution in `vitest.config.ts`. Originally used `vite-tsconfig-paths` but it's ESM-only and the CJS config loader rejected it; manual alias is one fewer dep with the same behavior.
+- **D9.** Tests cover only deterministic logic (`scoring`, `csv`, `loi`). UI components and the AI route stay covered by manual UAT until v2.
 
 ## Open blockers
 
@@ -26,8 +29,8 @@ None.
 
 - **localStorage quota** (~5–10 MB browser-dependent) limits attachments. Mitigated by per-file/total guards. Real-world breaks will be visible to the user and reversible.
 - **`ANTHROPIC_API_KEY` not set** → `/api/ai-analysis` returns 503 with a clear message. Documented in `.env.example`. Acceptable for v1.
-- **No automated tests yet.** Scoring engine (`lib/scoring.ts`) is the highest-value test target — must be covered before any backend rewrite (R26).
-- **AI feature unverified end-to-end in a browser.** The build passes and the route compiles, but I have not run the dev server with a real `ANTHROPIC_API_KEY` and clicked through. Pre-Phase-5 verify item.
+- **AI feature unverified end-to-end in a browser.** The build passes and the route compiles, but I have not run the dev server with a real `ANTHROPIC_API_KEY` and clicked through. Open UAT item.
+- **CI workflow not yet observed running green.** First trigger lands with the Phase 5 commit; verify in the Actions tab after push.
 
 ## Threads / follow-ups
 
