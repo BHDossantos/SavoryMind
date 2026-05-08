@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, tokenStore, setUnauthenticatedHandler } from '../services/api';
+import { identify, reset as resetAnalytics } from '../services/analytics';
 
 const AuthContext = createContext(null);
 
@@ -28,6 +29,15 @@ export function AuthProvider({ children }) {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Sync identity to PostHog whenever the active user changes. Privacy-
+  // safe traits only — never email/name (those stay on the backend's
+  // identify() call). No-op when EXPO_PUBLIC_POSTHOG_KEY is unset.
+  useEffect(() => {
+    if (user?.id) {
+      identify(user.id, { account_type: user.account_type });
+    }
+  }, [user?.id, user?.account_type]);
 
   const login = async (email, password) => {
     // api.login() saves both access + refresh tokens into SecureStore
@@ -77,6 +87,10 @@ export function AuthProvider({ children }) {
     // token still in storage when api.logout() reads it.
     await api.logout();
     setUser(null);
+    // Reset analytics distinct_id so a shared-device handoff doesn't
+    // attribute the next user's events to the previous session. No-op
+    // when EXPO_PUBLIC_POSTHOG_KEY is unset.
+    try { await resetAnalytics(); } catch {}
   };
 
   const updateUser = (updates) => {

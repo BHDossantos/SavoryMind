@@ -6,7 +6,7 @@ from ...core.config import settings
 from ...core.rate_limit import limiter
 from ...core.security import get_current_user
 from ...schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse, ProfileUpdate, SocialLoginRequest, AppleLoginRequest
-from ...services import auth_service
+from ...services import auth_service, posthog_client
 from ...models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -67,6 +67,16 @@ def register(
 ):
     access, refresh, user = auth_service.register(db, data)
     _set_refresh_cookie(response, refresh)
+    # Identify the new user + capture the signup event. Both no-op when
+    # POSTHOG_API_KEY is unset. Privacy-safe traits only — no email/name.
+    posthog_client.identify(user.id, {
+        "account_type": user.account_type,
+        "client_type":  "mobile" if _is_mobile_client(x_client_type) else "web",
+    })
+    posthog_client.capture(user.id, "signup_completed", {
+        "account_type": user.account_type,
+        "method":       "email_password",
+    })
     return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
@@ -81,6 +91,11 @@ def login(
 ):
     access, refresh, user = auth_service.login(db, data)
     _set_refresh_cookie(response, refresh)
+    posthog_client.capture(user.id, "login_completed", {
+        "account_type": user.account_type,
+        "method":       "email_password",
+        "client_type":  "mobile" if _is_mobile_client(x_client_type) else "web",
+    })
     return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
@@ -160,6 +175,11 @@ def google_login(
         avatar_url=str(claims.get("picture") or ""),
     )
     _set_refresh_cookie(response, refresh)
+    posthog_client.capture(user.id, "login_completed", {
+        "account_type": user.account_type,
+        "method":       "google",
+        "client_type":  "mobile" if _is_mobile_client(x_client_type) else "web",
+    })
     return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 
@@ -235,6 +255,11 @@ def apple_login(
         avatar_url="",  # Apple doesn't provide avatar
     )
     _set_refresh_cookie(response, refresh)
+    posthog_client.capture(user.id, "login_completed", {
+        "account_type": user.account_type,
+        "method":       "apple",
+        "client_type":  "mobile" if _is_mobile_client(x_client_type) else "web",
+    })
     return _build_token_response(access, refresh, user, _is_mobile_client(x_client_type))
 
 

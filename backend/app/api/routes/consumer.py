@@ -14,7 +14,7 @@ from ...schemas.consumer import (
     PantryItemCreate, PantryItemResponse,
     MealMemoryCreate, MealMemoryResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service, posthog_client
 from ...insights.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -180,7 +180,15 @@ def log_behavior(
 def get_recommendations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
     _log(db, current_user.id, "view_recommendations")
-    return build_consumer_recommendations(db, current_user)
+    recs = build_consumer_recommendations(db, current_user)
+    # Funnel signal: how many users actually see recommendations + how
+    # many recommendations the engine returned. If this drops vs DAU,
+    # something's wrong with the engine fallback path.
+    posthog_client.capture(current_user.id, "recommendation_served", {
+        "surface":          "consumer",
+        "recommendations_count": len(recs) if isinstance(recs, list) else 0,
+    })
+    return recs
 
 
 # ── Beverages ─────────────────────────────────────────────────────────────────
