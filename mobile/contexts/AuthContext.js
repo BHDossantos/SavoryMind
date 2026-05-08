@@ -55,6 +55,18 @@ export function AuthProvider({ children }) {
     return result.user;
   };
 
+  // Native Sign in with Apple (iOS only). Required by App Store Review
+  // Guideline 4.8 because we offer Google sign-in. The login screen
+  // calls expo-apple-authentication's signInAsync() and passes the
+  // identity token + name + email here. Backend api.appleLogin verifies
+  // the token via Apple's JWKS, mints a SavoryMind session, and the
+  // returned user gets synced into context — same shape as Google.
+  const loginApple = async ({ idToken, name, email }) => {
+    const result = await api.appleLogin({ idToken, name, email });
+    setUser(result.user);
+    return result.user;
+  };
+
   // socialLogin / loginSocial were removed — see comment in services/api.js
   // for the migration plan (expo-auth-session + a backend bridge route,
   // not yet wired up).
@@ -72,7 +84,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginGoogle, logout, setUser, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginGoogle, loginApple, logout, setUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

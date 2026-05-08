@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuth from 'expo-apple-authentication';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../constants/colors';
 
@@ -34,7 +35,7 @@ const SOCIAL_PROVIDERS = [
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, loginGoogle } = useAuth();
+  const { login, loginGoogle, loginApple } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -94,6 +95,51 @@ export default function LoginScreen() {
       } catch (e) {
         // Fall through to WebBrowser fallback if the native sheet
         // can't be presented (e.g. simulator without Google services).
+      }
+    }
+
+    // Native Sign in with Apple — iOS only. Required by App Store
+    // Guideline 4.8 because we offer Google. On Android (and on iOS
+    // when somehow unavailable) this falls through to the WebBrowser
+    // path, which currently 404s gracefully on the web app — but we
+    // never expect Apple sign-in to be invoked from non-iOS devices
+    // because the tile shouldn't appear there (handled in the SOCIAL_PROVIDERS
+    // filter below).
+    if (p.id === 'apple' && Platform.OS === 'ios') {
+      try {
+        const credential = await AppleAuth.signInAsync({
+          requestedScopes: [
+            AppleAuth.AppleAuthenticationScope.FULL_NAME,
+            AppleAuth.AppleAuthenticationScope.EMAIL,
+          ],
+        });
+        if (!credential.identityToken) {
+          setError("Apple sign-in didn't return an identity token. Try again.");
+          setSocialLoading(null);
+          return;
+        }
+        // fullName is null after the very first sign-in (Apple's design).
+        // Always include whatever the SDK gave us; backend uses the
+        // existing user row's name on subsequent sign-ins.
+        const name = [credential.fullName?.givenName, credential.fullName?.familyName]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+        await loginApple({
+          idToken: credential.identityToken,
+          name:    name || null,
+          email:   credential.email || null,
+        });
+        return;
+      } catch (e) {
+        // ERR_CANCELED is the user dismissing the sheet — silent.
+        if (e?.code === 'ERR_CANCELED' || e?.code === 'ERR_REQUEST_CANCELED') {
+          setSocialLoading(null);
+          return;
+        }
+        setError(e?.message || 'Apple sign-in failed. Please try again.');
+        setSocialLoading(null);
+        return;
       }
     }
 

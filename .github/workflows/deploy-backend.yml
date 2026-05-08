@@ -78,6 +78,12 @@ jobs:
           # unset and the endpoint returns 503; mobile/web fall back to
           # email-password / NextAuth bridge respectively.
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          # Apple bundle identifier (audience claim for Sign in with Apple).
+          # Must match mobile/app.json's ios.bundleIdentifier exactly. Leave
+          # unset and /api/auth/apple returns 503 — mobile falls back to
+          # WebBrowser. App Store Review Guideline 4.8 requires this to be
+          # set before iOS submission since we offer Google sign-in.
+          APPLE_BUNDLE_ID: ${{ secrets.APPLE_BUNDLE_ID }}
         run: |
           DB_URL="postgresql://postgres:${DB_PASSWORD}@/savorymind?host=/cloudsql/savorymind:europe-west1:savorymind-db"
           gcloud run deploy savorymind-api \
@@ -90,7 +96,7 @@ jobs:
             --min-instances 1 \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|APPLE_BUNDLE_ID=${APPLE_BUNDLE_ID}"
 
       - name: Map api.savorymind.net to backend
         run: |
