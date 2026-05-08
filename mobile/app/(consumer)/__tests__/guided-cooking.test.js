@@ -98,6 +98,23 @@ describe('Guided Cooking screen', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(consumer)/journal'));
   });
 
+  test('memory modal save failure surfaces an inline error', async () => {
+    api.getRecipe.mockResolvedValue(FAKE_RECIPE);
+    api.createMemory.mockRejectedValue(new Error('Network is offline.'));
+
+    const { findByTestId } = render(<GuidedCookingScreen />);
+    await waitFor(() => expect(api.getRecipe).toHaveBeenCalled());
+    fireEvent.press(await findByTestId('step-next'));
+    fireEvent.press(await findByTestId('step-next'));
+    fireEvent.press(await findByTestId('step-next'));
+    fireEvent.press(await findByTestId('open-memory-modal'));
+    fireEvent.press(await findByTestId('save-memory'));
+
+    // Inline error appears; modal stays mounted (no navigation away)
+    expect(await findByTestId('memory-save-error')).toBeDefined();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
   test('inline assistant calls askAssistant with the typed query', async () => {
     api.getRecipe.mockResolvedValue(FAKE_RECIPE);
     api.askAssistant.mockResolvedValue({ title: 'Try this', answer: 'Lower the heat.' });

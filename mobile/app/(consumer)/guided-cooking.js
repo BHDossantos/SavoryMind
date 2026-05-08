@@ -156,8 +156,11 @@ function MemoryModal({ recipe, onSave, onSkip }) {
   const [change, setChange]   = useState('');
   const [saving, setSaving]   = useState(false);
 
+  const [error, setError] = useState(null);
+
   const save = async () => {
     setSaving(true);
+    setError(null);
     try {
       await api.createMemory({
         dish_name: recipe.title,
@@ -169,7 +172,12 @@ function MemoryModal({ recipe, onSave, onSkip }) {
         recipe_id: recipe.id || null,
       });
       onSave();
-    } catch {
+    } catch (e) {
+      // Surface the failure inline. Without this the modal would just
+      // re-enable the Save button silently — user thinks the memory
+      // was lost or that nothing happened. Inline error keeps the form
+      // open with their notes intact so they can retry.
+      setError(e?.message || "Couldn't save the memory. Try again in a moment.");
       setSaving(false);
     }
   };
@@ -213,6 +221,10 @@ function MemoryModal({ recipe, onSave, onSkip }) {
             multiline
           />
 
+          {error && (
+            <Text testID="memory-save-error" style={styles.modalError}>{error}</Text>
+          )}
+
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity onPress={onSkip} style={[styles.modalSecondaryBtn, { flex: 1 }]}>
               <Text style={styles.modalSecondaryBtnText}>Skip</Text>
@@ -239,11 +251,27 @@ export default function GuidedCookingScreen() {
 
   useEffect(() => {
     if (!id) { setLoading(false); return; }
+    // cancelled flag prevents a stale getRecipe response from
+    // overwriting a newer recipe if the user navigates id1 → id2 fast
+    // enough that the first fetch hasn't returned yet. Without it,
+    // racing fetches resolve in arbitrary order and the user can
+    // briefly see the wrong recipe's ingredients/steps.
+    let cancelled = false;
+    setLoading(true);
+    setRecipe(null);
+    setCurrentStep(0);
+    setDone(false);
     (async () => {
-      try { setRecipe(await api.getRecipe(Number(id))); }
-      catch {}
-      finally { setLoading(false); }
+      try {
+        const r = await api.getRecipe(Number(id));
+        if (!cancelled) setRecipe(r);
+      } catch {
+        if (!cancelled) setRecipe(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, [id]);
 
   if (loading) {
@@ -419,6 +447,7 @@ const styles = StyleSheet.create({
   modalSub:         { fontSize: 13, color: C.gray[500], marginTop: 2 },
   modalLabel:       { fontSize: 11, fontWeight: '800', color: C.gray[700], marginBottom: 6 },
   modalInput:       { borderWidth: 1, borderColor: C.gray[200], borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: C.gray[900], marginBottom: 12 },
+  modalError:       { color: C.red, fontSize: 12, marginBottom: 12, lineHeight: 16 },
   modalPrimaryBtn:  { backgroundColor: C.consumer.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
   modalPrimaryBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
   modalSecondaryBtn:{ borderWidth: 1, borderColor: C.gray[200], paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
