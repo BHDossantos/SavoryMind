@@ -29,6 +29,20 @@ class SocialLoginRequest(BaseModel):
         return _validate_https_url(v)
 
 
+class AppleLoginRequest(BaseModel):
+    """Body shape for POST /api/auth/apple. Apple's id_token never includes
+    name (and may omit email if the user revoked email sharing on first
+    sign-in), so name + email are passed by the mobile client from
+    response.fullName / response.email — those values only arrive on the
+    very first sign-in. Subsequent sign-ins legitimately send only id_token.
+    """
+    id_token: str = Field(min_length=1)
+    name:     Optional[str] = Field(default=None, max_length=200)
+    email:    Optional[str] = Field(default=None, max_length=254)
+
+    model_config = {"extra": "forbid"}
+
+
 class UserRegister(BaseModel):
     email:        str = Field(min_length=5, max_length=150)
     password:     str = Field(min_length=6, max_length=100)

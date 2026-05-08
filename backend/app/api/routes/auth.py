@@ -5,7 +5,7 @@ from ...core.database import get_db
 from ...core.config import settings
 from ...core.rate_limit import limiter
 from ...core.security import get_current_user
-from ...schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse, ProfileUpdate, SocialLoginRequest
+from ...schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse, ProfileUpdate, SocialLoginRequest, AppleLoginRequest
 from ...services import auth_service
 from ...models.user import User
 
@@ -168,7 +168,7 @@ def google_login(
 def apple_login(
     request: Request,
     response: Response,
-    body: dict,
+    body: AppleLoginRequest,
     db: Session = Depends(get_db),
     x_client_type: Optional[str] = Header(default=None),
 ):
@@ -177,22 +177,13 @@ def apple_login(
     iOS only — required by Apple App Store Review Guideline 4.8 since
     we offer Google sign-in. Web doesn't use this path.
 
-    Expected body:
-      {
-        "id_token": "<Apple ID token>",
-        "name":     "<full name from response.fullName, optional>",
-        "email":    "<email from response.email, optional>"
-      }
-
-    name and email are passed explicitly because Apple ONLY includes
-    them in the response payload (not in the id_token claims) and ONLY
-    on the very first sign-in. Subsequent sign-ins return a token with
-    sub claim only — backend then uses the existing user row's name.
-
-    This is Apple's design — a privacy choice. The user is shown
-    "AppName wants your name and email" once, and after that only
-    a stable `sub` flows. The backend MUST persist name/email on first
-    sign-in or it'll never have them.
+    Body validated by `AppleLoginRequest`. Apple ONLY includes name +
+    email in the response payload (not in the id_token claims) and
+    ONLY on the very first sign-in. Subsequent sign-ins legitimately
+    send only id_token — backend then uses the existing user row's
+    data. The mobile client is responsible for capturing name + email
+    from `response.fullName` / `response.email` on first auth and
+    passing them here, because Apple shows the prompt exactly once.
     """
     from ...services import apple_oauth
     if not apple_oauth.is_configured():
@@ -201,12 +192,8 @@ def apple_login(
             detail="Apple sign-in is not configured on this server.",
         )
 
-    id_token = (body or {}).get("id_token")
-    if not isinstance(id_token, str) or not id_token:
-        raise HTTPException(status_code=400, detail="`id_token` is required.")
-
     try:
-        claims = apple_oauth.verify_id_token(id_token)
+        claims = apple_oauth.verify_id_token(body.id_token)
     except apple_oauth.AppleAuthError as e:
         raise HTTPException(status_code=401, detail=str(e))
 
@@ -214,13 +201,30 @@ def apple_login(
     # app on first sign-in, OR it may be omitted entirely if they
     # revoked email sharing. Body-supplied email wins (it's what Apple
     # gave us in the auth response on first sign-in), with token-claim
-    # email as fallback.
-    body_email = str((body or {}).get("email") or "").strip()
-    body_name  = str((body or {}).get("name") or "").strip()
+    # email as fallback. Apple-private-relay emails
+    # (xxxxx@privaterelay.appleid.com) are real, deliverable, and
+    # Apple-verified — treat them like any other.
+    body_email  = (body.email or "").strip()
+    body_name   = (body.name or "").strip()
     claim_email = str(claims.get("email") or "").strip()
     email = body_email or claim_email
-    # Apple-private-relay emails (xxxxx@privaterelay.appleid.com) are
-    # real, deliverable, and Apple-verified. Treat them like any other.
+
+    # Defense-in-depth: mirror google_oauth's behavior — if the token's
+    # email_verified flag is false, treat as no-email rather than letting
+    # an unverified address get linked to an existing SavoryMind account
+    # of the same address. Apple normally verifies all addresses at
+    # account creation, so this branch should be rare; when it does fire,
+    # social_login mints a placeholder apple_<sub>@social user.
+    raw_verified = claims.get("email_verified")
+    is_verified = (
+        raw_verified is True
+        or (isinstance(raw_verified, str) and raw_verified.lower() == "true")
+        or raw_verified is None  # Apple sometimes omits the claim entirely
+    )
+    if not is_verified and email == claim_email:
+        # Token said unverified AND we're using the token's email. Drop
+        # it so social_login mints a placeholder rather than linking.
+        email = ""
 
     access, refresh, user = auth_service.social_login(
         db,

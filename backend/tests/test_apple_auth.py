@@ -17,10 +17,14 @@ def test_apple_login_returns_503_when_unconfigured(client, monkeypatch):
     assert r.status_code == 503
 
 
-def test_apple_login_400_on_missing_token(client, monkeypatch):
+def test_apple_login_422_on_missing_token(client, monkeypatch):
+    """Missing required `id_token` field is now a Pydantic validation
+    error (422) rather than a hand-rolled 400. Either response code is
+    correct as a "client sent bad input" signal — we lock 422 because
+    that's what FastAPI emits on schema-validation failures."""
     monkeypatch.setattr("app.core.config.settings.apple_bundle_id", "net.savorymind.app")
     r = client.post("/api/auth/apple", json={})
-    assert r.status_code == 400
+    assert r.status_code == 422
 
 
 def test_apple_login_401_on_invalid_token(client, monkeypatch):
@@ -119,6 +123,50 @@ def test_apple_login_handles_email_omitted_entirely(client, monkeypatch):
     body = r.json()
     # Placeholder email — pattern matches social_login's no-email branch
     assert "@social" in body["user"]["email"]
+
+
+def test_apple_login_unverified_token_email_falls_back_to_no_email(client, db_session, monkeypatch):
+    """Defense-in-depth: if the id_token's email_verified flag is false
+    AND we'd be using that token's email (no body-supplied email), drop
+    the email so we don't accidentally link to an existing account that
+    happens to use the same address. Mirrors google_oauth's behavior."""
+    monkeypatch.setattr("app.core.config.settings.apple_bundle_id", "net.savorymind.app")
+    # Pre-existing account at this address
+    register_user(client, email="taken@example.com")
+
+    # Token says email_verified=False — the verifier accepts the token
+    # itself, but the route layer should refuse to use the email
+    fake_claims = {
+        "sub":  "shadowy.user.999",
+        "iss":  "https://appleid.apple.com",
+        "aud":  "net.savorymind.app",
+        "exp":  9999999999,
+        "email": "taken@example.com",
+        "email_verified": False,
+    }
+    with patch("app.services.apple_oauth.verify_id_token", return_value=fake_claims):
+        r = client.post("/api/auth/apple", json={"id_token": "tok"})
+
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # Brand-new account with placeholder email — NOT linked to the
+    # existing taken@example.com user
+    assert body["user"]["email"] != "taken@example.com"
+    assert "@social" in body["user"]["email"]
+
+
+def test_apple_login_rejects_extra_fields_in_body(client, monkeypatch):
+    """Pydantic schema has extra=forbid — body with unexpected fields
+    fails validation rather than being silently accepted. Prevents
+    payload-mass-assignment-style mistakes if a future caller decides
+    to send {provider, email, ...} like the old SOCIAL_LOGIN flow."""
+    monkeypatch.setattr("app.core.config.settings.apple_bundle_id", "net.savorymind.app")
+    r = client.post("/api/auth/apple", json={
+        "id_token": "tok",
+        "name": "Anyone",
+        "provider": "google",  # not allowed
+    })
+    assert r.status_code == 422
 
 
 def test_apple_login_links_to_existing_email_account(client, monkeypatch):
