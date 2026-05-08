@@ -187,6 +187,53 @@ steps:
           --set-env-vars "NEXT_PUBLIC_API_URL=$API_URL,NEXT_PUBLIC_MAPBOX_TOKEN=$_MAPBOX_TOKEN,NEXT_PUBLIC_POSTHOG_KEY=$_POSTHOG_KEY,NEXT_PUBLIC_POSTHOG_HOST=$_POSTHOG_HOST,NEXT_PUBLIC_SITE_URL=${_SITE_URL:-$_APP_BASE_URL}"
     waitFor: ["push-web"]
 
+  # ── Cloud Scheduler: 15-min reminder cron (skipped when _CRON_TOKEN unset) ───
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: provision-scheduler
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -z "$_CRON_TOKEN" ]; then
+          echo "⏭  _CRON_TOKEN unset — skipping Cloud Scheduler provisioning."
+          echo "   Booking reminders will only fire when triggered manually."
+          exit 0
+        fi
+
+        API_URL=$(cat /workspace/nocturna_api_url.txt)
+        JOB="nocturna-reminders"
+        URI="$API_URL/api/cron/reminders"
+        TZ="Europe/Rome"
+        SCHEDULE="*/15 * * * *"
+
+        gcloud services enable cloudscheduler.googleapis.com >/dev/null
+
+        if gcloud scheduler jobs describe "$JOB" --location="$_REGION" >/dev/null 2>&1; then
+          echo "🔄 Scheduler job '$JOB' exists — updating."
+          gcloud scheduler jobs update http "$JOB" \
+            --location="$_REGION" \
+            --schedule="$SCHEDULE" \
+            --time-zone="$TZ" \
+            --uri="$URI" \
+            --http-method=POST \
+            --update-headers="X-Cron-Token=$_CRON_TOKEN,Content-Type=application/json" \
+            --message-body='{}' \
+            --attempt-deadline=60s
+        else
+          echo "🆕 Creating Scheduler job '$JOB' → $URI"
+          gcloud scheduler jobs create http "$JOB" \
+            --location="$_REGION" \
+            --schedule="$SCHEDULE" \
+            --time-zone="$TZ" \
+            --uri="$URI" \
+            --http-method=POST \
+            --headers="X-Cron-Token=$_CRON_TOKEN,Content-Type=application/json" \
+            --message-body='{}' \
+            --attempt-deadline=60s
+        fi
+        echo "✅ Reminders will run $SCHEDULE in $TZ → $URI"
+    waitFor: ["deploy-api"]
+
   # ── Print final URLs ─────────────────────────────────────────────────
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: summary
@@ -207,8 +254,12 @@ steps:
         echo "  · Update _APP_BASE_URL to $WEB_URL and redeploy if not set"
         echo "  · Register the webhook URL in Stripe and copy whsec_*"
         echo "    into _STRIPE_WEBHOOK_SECRET, then redeploy"
+        if [ -z "$_CRON_TOKEN" ]; then
+          echo "  · Set _CRON_TOKEN (openssl rand -hex 24) to auto-provision"
+          echo "    the 15-min reminder Scheduler job"
+        fi
         echo "═══════════════════════════════════════════════════════════"
-    waitFor: ["deploy-web"]
+    waitFor: ["deploy-web", "provision-scheduler"]
 
 images:
   - gcr.io/$PROJECT_ID/nocturna-api

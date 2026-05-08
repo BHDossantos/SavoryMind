@@ -92,24 +92,42 @@ starting in the next 60 minutes (`window_min` defaults to 30) and sends a
 templated SMS + email + push if not already reminded. Idempotent — `reminder_sent_at`
 is stamped on each Booking.
 
-Authenticate either with the bootstrap admin JWT or with a shared secret in
-the `X-Cron-Token` header (set `_CRON_TOKEN` and pass it to Cloud Run via
-`NOCTURNA_CRON_TOKEN`).
+Authenticate with the bootstrap admin JWT, or with a shared secret in the
+`X-Cron-Token` header. The backend reads the secret from
+`NOCTURNA_CRON_TOKEN`; the same value is passed to the build via the
+`_CRON_TOKEN` substitution.
+
+### Auto-provisioned (recommended)
+
+Set `_CRON_TOKEN` on your Cloud Build trigger and the build will
+**create or update** a Cloud Scheduler job named `nocturna-reminders`
+running every 15 minutes in `Europe/Rome` against the deployed API URL.
+Re-deploys are safe — the job is updated in place.
 
 ```bash
-# Generate a cron token
-CRON_TOKEN=$(openssl rand -hex 24)
+gcloud builds submit --config=cloudbuild.nocturna.yaml \
+  --substitutions=\
+_REGION=europe-west1,\
+_SECRET_KEY=$(openssl rand -hex 32),\
+_CRON_TOKEN=$(openssl rand -hex 24),\
+_APP_BASE_URL=https://nocturna-web-….run.app
+```
 
-# Inject into the backend env (re-run cloudbuild with this set, or use
-# `gcloud run services update nocturna-api --update-env-vars=NOCTURNA_CRON_TOKEN=$CRON_TOKEN`)
+The build step is a no-op when `_CRON_TOKEN` is unset (so PR-trigger
+builds without the secret keep working).
 
-# Schedule a 15-minute job
+### Manual (fallback)
+
+If you'd rather provision the job by hand:
+
+```bash
 gcloud scheduler jobs create http nocturna-reminders \
   --schedule="*/15 * * * *" \
   --location=$REGION \
   --uri="https://nocturna-api-….run.app/api/cron/reminders" \
   --http-method=POST \
-  --headers="X-Cron-Token=$CRON_TOKEN" \
+  --headers="X-Cron-Token=$CRON_TOKEN,Content-Type=application/json" \
+  --message-body='{}' \
   --time-zone="Europe/Rome"
 ```
 
