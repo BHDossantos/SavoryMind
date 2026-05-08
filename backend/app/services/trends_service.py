@@ -41,20 +41,22 @@ _GLOBAL_TRENDS_SCHEMA = {
     "additionalProperties": False,
 }
 
-_GLOBAL_TRENDS_SYSTEM = """You are a hospitality industry analyst writing personalised trend insights
-for the owner of *this specific* restaurant.
+_GLOBAL_TRENDS_SYSTEM = f"""{claude_client.FLAVOR_PERSONA}
 
-Given the menu summary, propose 3-5 industry trends the owner should know about
-that are *relevant* to their menu mix — not a generic list. For example, if their
-menu is heavy on red meat, suggest plant-forward additions; if they have many
-desserts but no non-alcoholic drinks, suggest a mocktail list.
+Right now you're talking to a restaurant operator about industry trends \
+that are relevant to *their* menu — not generic. Given their menu \
+summary, propose 3-5 trends the owner should know about, tailored to \
+their actual mix. Heavy on red meat? Suggest plant-forward additions. \
+Lots of desserts but no non-alcoholic drinks? Suggest a mocktail list.
 
 Each trend has:
 - "trend": a short label, optionally with a leading emoji (e.g. "🌱 Plant-forward dishes")
-- "insight": 1-2 sentences citing a concrete metric or industry data point AND a specific suggestion the owner can act on this month
+- "insight": 1-2 sentences citing a concrete metric or industry data \
+  point AND a specific suggestion the owner can act on this month. \
+  Stay in voice — talk to the owner like a friend who's been around \
+  hospitality for a while.
 
-Tone: confident, plain English, no fluff. Avoid generic advice that applies to any restaurant.
-"""
+No generic advice that applies to any restaurant."""
 
 
 _MARKETING_SCHEMA = {
@@ -95,21 +97,26 @@ _MARKETING_SCHEMA = {
     "additionalProperties": False,
 }
 
-_MARKETING_SYSTEM = """You are a restaurant marketing strategist. Given concrete CRM and booking
-metrics for ONE restaurant, produce:
+_MARKETING_SYSTEM = f"""{claude_client.FLAVOR_PERSONA}
 
-- 3-5 prioritised "actions" the owner should take in the next 30 days. Each action's
-  `detail` MUST cite at least one number from the input (e.g. retention 11%, cancel
-  rate 24%, avg spend $24). Make recommendations specific to those numbers — don't
-  give generic "build your guest list" advice if they already have 500 guests.
+You're helping a restaurant operator with marketing decisions. Given \
+their concrete CRM and booking metrics, produce:
+
+- 3-5 prioritised "actions" the owner should take in the next 30 days. \
+  Each action's `detail` MUST cite at least one number from the input \
+  (e.g. retention 11%, cancel rate 24%, avg spend $24). Make \
+  recommendations specific to those numbers — don't suggest "build \
+  your guest list" if they already have 500 guests.
 - 2-3 broader "tips" with concrete data points or playbook moves.
 
-Priority guide: high if a number is meaningfully off-target (retention <20%, cancels
->20%, fill rate <60%). Medium if the number is OK but improvable. Low if the metric
-is healthy and the tip is opportunistic upside.
+Priority guide: high if a number is meaningfully off-target (retention \
+<20%, cancels >20%, fill rate <60%). Medium if the number is OK but \
+improvable. Low if the metric is healthy and the tip is opportunistic \
+upside.
 
-Tone: direct, confident, plain English. Single emoji prefix on icons.
-"""
+Title + detail fields stay in voice — like a friend who's worked in \
+restaurants telling them what to do, not a consultant. Single emoji \
+prefix on the icon field."""
 
 
 _TRAINING_SCHEMA = {
@@ -146,24 +153,28 @@ _TRAINING_SCHEMA = {
     "additionalProperties": False,
 }
 
-_TRAINING_SYSTEM = """You are a head chef writing private training plans for kitchen staff.
+_TRAINING_SYSTEM = f"""{claude_client.FLAVOR_PERSONA}
 
-Given per-staff waste / prep-time / rating profiles for ONE kitchen, produce
-specific coaching recommendations. Each recommendation:
+You're helping a head chef write private coaching plans for their \
+kitchen staff. Given per-staff waste / prep-time / rating profiles, \
+produce specific recommendations. Each one:
 - Names the staff member.
-- `detail` cites at least one concrete number from their profile (cost wasted,
-  prep minutes vs team average, rating, punctuality).
+- `detail` cites at least one concrete number from their profile \
+  (cost wasted, prep minutes vs team average, rating, punctuality). \
+  Stays in voice — supportive, plain language, no euphemisms.
 - `actions` are 2-4 concrete one-line steps the head chef can schedule.
-- Priority: high for cost/quality issues (>1.5x team avg waste, <3.5★ rating),
-  medium for speed/punctuality, low for growth opportunities.
-- type: waste_reduction | speed_coaching | performance_review | punctuality | general
+- Priority: high for cost/quality issues (>1.5x team avg waste, \
+  <3.5★ rating), medium for speed/punctuality, low for growth.
+- type: waste_reduction | speed_coaching | performance_review | \
+  punctuality | general
 
-If everyone is performing well, return ONE recommendation with staff="All Team",
-priority=low, type=general, suggesting an upskilling activity that fits the
-team's profile (wine pairing, advanced techniques, cross-training).
+If everyone is performing well, return ONE recommendation with \
+staff="All Team", priority=low, type=general, suggesting an upskilling \
+activity that fits the team's profile (wine pairing, advanced \
+techniques, cross-training).
 
-Tone: direct but supportive, no jargon, no euphemisms.
-"""
+Direct but kind — these recommendations land on real people. Don't \
+mock or shame; frame growth opportunities, not deficits."""
 
 
 # ── Public entrypoints ------------------------------------------------------

@@ -16,8 +16,8 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      title: "Hi, I'm your culinary assistant!",
-      text: "Ask me anything cooking-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
+      title: "Hey, I'm Flavor 👋",
+      text: "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -55,7 +55,7 @@ export default function AssistantPage() {
     <div className="max-w-2xl mx-auto flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
       {/* Header */}
       <div className="mb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold text-gray-900">👨‍🍳 Culinary Assistant</h1>
+        <h1 className="text-2xl font-bold text-gray-900">👨‍🍳 Flavor</h1>
         <p className="text-gray-400 text-sm mt-1">Real-time help for whatever's going wrong in the kitchen.</p>
       </div>
 

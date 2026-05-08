@@ -19,8 +19,8 @@ const SUGGESTIONS = [
 
 const GREETING = {
   role: 'assistant',
-  title: "Hi, I'm your culinary assistant!",
-  text: "Ask me anything cooking-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
+  title: "Hey, I'm Flavor 👋",
+  text: "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
 };
 
 export default function AssistantScreen() {
@@ -93,7 +93,7 @@ export default function AssistantScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <Text style={styles.backBtn}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>👨‍🍳 Culinary Assistant</Text>
+        <Text style={styles.title}>👨‍🍳 Flavor</Text>
         <Text style={styles.sub}>Real-time help for whatever's going wrong in the kitchen.</Text>
       </View>
 

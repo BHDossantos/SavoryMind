@@ -32,7 +32,7 @@ beforeEach(() => {
 describe('Assistant screen', () => {
   test('renders the welcome message and suggestion chips on mount', () => {
     const { getByText } = render(<AssistantScreen />);
-    expect(getByText("Hi, I'm your culinary assistant!")).toBeTruthy();
+    expect(getByText("Hey, I'm Flavor 👋")).toBeTruthy();
     expect(getByText('Substitute for buttermilk?')).toBeTruthy();
   });
 
