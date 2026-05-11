@@ -10,7 +10,20 @@ import { getAccessToken } from "../services/api";
 import { trackPageview, identify } from "../lib/analytics";
 import "../styles/globals.css";
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup"];
+// Routes that must render without auth. Marketing surfaces, plus the
+// legal + support pages every store submission requires to be publicly
+// accessible (App Store / Play Store reject submissions whose privacy
+// policy URL hides behind a login wall — and our own privacy policy
+// declares these pages public, so the auth wrapper would be lying
+// otherwise).
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/signup",
+  "/legal/privacy",
+  "/legal/terms",
+  "/support",
+];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 
 function homePath(user) {
@@ -80,7 +93,13 @@ function AppContent({ Component, pageProps }) {
       router.replace("/onboarding");
       return;
     }
-    if (user && isPublic && router.pathname !== "/") {
+    // Logged-in users get bounced away from /login + /signup (no point
+    // re-authenticating). But /legal/* and /support stay accessible —
+    // logged-in users should still be able to read the privacy policy
+    // or contact support without being booted to their dashboard.
+    if (user && isPublic && router.pathname !== "/"
+        && !router.pathname.startsWith("/legal")
+        && router.pathname !== "/support") {
       router.replace(homePath(user));
       return;
     }
