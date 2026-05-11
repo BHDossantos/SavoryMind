@@ -22,6 +22,7 @@ const PUBLIC_ROUTES = [
   "/signup",
   "/legal/privacy",
   "/legal/terms",
+  "/legal/account-deletion",
   "/support",
 ];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
