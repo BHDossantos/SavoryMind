@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { C } from '../../constants/colors';
 
 export default function ConsumerLayout() {
+  const { t } = useTranslation();
   return (
     <Tabs
       screenOptions={{
@@ -13,12 +15,12 @@ export default function ConsumerLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
-      <Tabs.Screen name="dashboard" options={{ title: 'Home',     tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }} />
-      <Tabs.Screen name="recipes"   options={{ title: 'Recipes',  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👨‍🍳</Text> }} />
-      <Tabs.Screen name="planner"   options={{ title: 'Planner',  tabBarIcon: () => <Text style={{ fontSize: 20 }}>📅</Text> }} />
-      <Tabs.Screen name="pairings"  options={{ title: 'Pairings', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🍷</Text> }} />
-      <Tabs.Screen name="music"     options={{ title: 'Music',    tabBarIcon: () => <Text style={{ fontSize: 20 }}>🎵</Text> }} />
-      <Tabs.Screen name="profile"   options={{ title: 'Profile',  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />
+      <Tabs.Screen name="dashboard" options={{ title: t('nav.home'),     tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }} />
+      <Tabs.Screen name="recipes"   options={{ title: t('nav.recipes'),  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👨‍🍳</Text> }} />
+      <Tabs.Screen name="planner"   options={{ title: t('nav.planner'),  tabBarIcon: () => <Text style={{ fontSize: 20 }}>📅</Text> }} />
+      <Tabs.Screen name="pairings"  options={{ title: t('nav.pairings'), tabBarIcon: () => <Text style={{ fontSize: 20 }}>🍷</Text> }} />
+      <Tabs.Screen name="music"     options={{ title: t('nav.music'),    tabBarIcon: () => <Text style={{ fontSize: 20 }}>🎵</Text> }} />
+      <Tabs.Screen name="profile"   options={{ title: t('nav.profile'),  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />
       {/* Hidden from the tab bar (href: null) but reachable via router.push
           from the dashboard. The tab bar already has 6 entries; a 7th
           would crowd the layout. */}

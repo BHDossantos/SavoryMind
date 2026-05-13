@@ -1,37 +1,41 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
-
-const FEATURES = [
-  { icon: '📅', title: 'Bookings',       sub: 'Manage reservations',          screen: 'bookings' },
-  { icon: '👥', title: 'CRM',            sub: 'Customer loyalty & history',   screen: 'crm' },
-  { icon: '🧑‍🍳', title: 'Staff',        sub: 'Time-clock & shifts',         screen: 'staff' },
-  { icon: '👥', title: 'Employees',      sub: 'Staff portal accounts',        screen: 'employees' },
-  { icon: '🔮', title: 'Forecast',       sub: '4-hour sales forecast',        screen: 'predictions' },
-  { icon: '🚀', title: 'Trends',         sub: 'Menu trends & rising stars',   screen: 'trends' },
-  { icon: '💌', title: 'Marketing',      sub: 'Guest acquisition & loyalty',  screen: 'marketing' },
-  { icon: '🗑️', title: 'Food Waste',     sub: 'Waste log & cost tracking',   screen: 'waste' },
-  { icon: '📦', title: 'Inventory',      sub: 'Stock + weekly low-stock digest', screen: 'inventory' },
-  { icon: '⏱️', title: 'Kitchen Times',  sub: 'Prep & cook time tracking',   screen: 'kitchen' },
-  { icon: '🕐', title: 'Staff Time',     sub: 'Shift hours & overtime',       screen: 'stafftime' },
-  { icon: '🎓', title: 'Staff Training', sub: 'Performance-based coaching',   screen: 'training' },
-  { icon: '📋', title: 'Reports',        sub: 'Analytics & export',           screen: 'reports' },
-];
 
 export default function MoreScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
+
+  // Features list. Derived per-render so labels re-translate on
+  // language switch; icon + screen route stay static.
+  const FEATURES = [
+    { icon: '📅', title: t('restaurantFeatures.bookings'),      sub: t('restaurantFeatures.bookingsSub'),      screen: 'bookings' },
+    { icon: '👥', title: t('restaurantFeatures.crm'),            sub: t('restaurantFeatures.crmSub'),           screen: 'crm' },
+    { icon: '🧑‍🍳', title: t('restaurantFeatures.staff'),      sub: t('restaurantFeatures.staffSub'),         screen: 'staff' },
+    { icon: '👥', title: t('restaurantFeatures.employees'),      sub: t('restaurantFeatures.employeesSub'),     screen: 'employees' },
+    { icon: '🔮', title: t('restaurantFeatures.forecast'),       sub: t('restaurantFeatures.forecastSub'),      screen: 'predictions' },
+    { icon: '🚀', title: t('restaurantFeatures.trends'),         sub: t('restaurantFeatures.trendsSub'),        screen: 'trends' },
+    { icon: '💌', title: t('restaurantFeatures.marketing'),      sub: t('restaurantFeatures.marketingSub'),     screen: 'marketing' },
+    { icon: '🗑️', title: t('restaurantFeatures.foodWaste'),     sub: t('restaurantFeatures.foodWasteSub'),    screen: 'waste' },
+    { icon: '📦', title: t('restaurantFeatures.inventory'),      sub: t('restaurantFeatures.inventorySub'),     screen: 'inventory' },
+    { icon: '⏱️', title: t('restaurantFeatures.kitchenTimes'),  sub: t('restaurantFeatures.kitchenTimesSub'), screen: 'kitchen' },
+    { icon: '🕐', title: t('restaurantFeatures.staffTime'),      sub: t('restaurantFeatures.staffTimeSub'),     screen: 'stafftime' },
+    { icon: '🎓', title: t('restaurantFeatures.staffTraining'),  sub: t('restaurantFeatures.staffTrainingSub'), screen: 'training' },
+    { icon: '📋', title: t('restaurantFeatures.reports'),        sub: t('restaurantFeatures.reportsSub'),       screen: 'reports' },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>More Features</Text>
-          <Text style={styles.sub}>{user?.display_name || 'Restaurant'}</Text>
+          <Text style={styles.title}>{t('restaurantFeatures.moreTitle')}</Text>
+          <Text style={styles.sub}>{user?.display_name || t('common.restaurant')}</Text>
         </View>
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Sign out</Text>
+          <Text style={styles.logoutText}>{t('profile.signOut')}</Text>
         </TouchableOpacity>
       </View>
 

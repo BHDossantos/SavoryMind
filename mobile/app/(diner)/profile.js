@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
@@ -15,6 +16,7 @@ const REC_ICON = {
 
 export default function DinerProfile() {
   const { user, logout }       = useAuth();
+  const { t } = useTranslation();
   const [summary, setSummary]   = useState(null);
   const [visits, setVisits]     = useState([]);
   const [recs, setRecs]         = useState([]);
@@ -47,8 +49,8 @@ export default function DinerProfile() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>My Profile</Text>
-        <TouchableOpacity onPress={logout}><Text style={styles.logout}>Sign out</Text></TouchableOpacity>
+        <Text style={styles.title}>{t('dinerProfile.title')}</Text>
+        <TouchableOpacity onPress={logout}><Text style={styles.logout}>{t('profile.signOut')}</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -62,15 +64,17 @@ export default function DinerProfile() {
 
         {summary && (
           <View style={styles.statsCard}>
-            <Text style={styles.sectionTitle}>Your Dining Stats</Text>
+            <Text style={styles.sectionTitle}>{t('dinerProfile.stats')}</Text>
             <View style={styles.statsRow}>
-              <StatItem label="Total Visits"  value={summary.total_visits ?? 0} />
-              <StatItem label="Avg Rating"    value={(summary.avg_rating ?? 0).toFixed(1)} />
-              <StatItem label="Return Rate"   value={`${Math.round((summary.return_rate ?? 0) * 100)}%`} />
+              <StatItem label={t('dashboard.totalVisits')} value={summary.total_visits ?? 0} />
+              <StatItem label={t('dashboard.avgRating')}   value={(summary.avg_rating ?? 0).toFixed(1)} />
+              <StatItem label={t('dashboard.returnRate')}  value={`${Math.round((summary.return_rate ?? 0) * 100)}%`} />
             </View>
             {summary.upcoming_bookings > 0 && (
               <Text style={styles.bookingNote}>
-                📅 {summary.upcoming_bookings} upcoming {summary.upcoming_bookings === 1 ? 'booking' : 'bookings'}
+                {summary.upcoming_bookings === 1
+                  ? t('dinerProfile.upcomingOne')
+                  : t('dinerProfile.upcomingMany', { count: summary.upcoming_bookings })}
               </Text>
             )}
           </View>
@@ -78,7 +82,7 @@ export default function DinerProfile() {
 
         {recs.length > 0 && (
           <View style={styles.recsCard}>
-            <Text style={styles.sectionTitle}>Suggestions for You</Text>
+            <Text style={styles.sectionTitle}>{t('dinerProfile.suggestions')}</Text>
             {recs.map((r, i) => (
               <View key={i} style={styles.recRow}>
                 <Text style={styles.recIcon}>{REC_ICON[r.type] || REC_ICON.default}</Text>
@@ -93,13 +97,17 @@ export default function DinerProfile() {
 
         {sorted.length > 0 && (
           <View style={styles.topCard}>
-            <Text style={styles.sectionTitle}>Your Favourite Places</Text>
+            <Text style={styles.sectionTitle}>{t('dinerProfile.favouritePlaces')}</Text>
             {sorted.map((r, i) => (
               <View key={r.name} style={styles.favRow}>
                 <Text style={styles.favRank}>{i + 1}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.favName}>{r.name}</Text>
-                  <Text style={styles.favMeta}>{r.count} {r.count === 1 ? 'visit' : 'visits'} · ⭐ {r.avg.toFixed(1)} avg</Text>
+                  <Text style={styles.favMeta}>
+                    {r.count === 1 ? t('dinerProfile.visitOne') : t('dinerProfile.visitMany', { count: r.count })}
+                    {' · '}
+                    {t('dinerProfile.avgRatingShort', { value: r.avg.toFixed(1) })}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -108,7 +116,7 @@ export default function DinerProfile() {
 
         <View style={styles.tipCard}>
           <Text style={styles.tipIcon}>💡</Text>
-          <Text style={styles.tipText}>The more you log, the better your dining profile becomes — bookmark your favourites and build a history worth sharing.</Text>
+          <Text style={styles.tipText}>{t('dinerProfile.tip')}</Text>
         </View>
       </ScrollView>
     </View>

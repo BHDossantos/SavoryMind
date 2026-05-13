@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -10,6 +11,7 @@ import { useFocusEffect } from 'expo-router';
 
 export default function DinerDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [summary, setSummary] = useState(null);
   const [visits, setVisits] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -27,31 +29,37 @@ export default function DinerDashboard() {
 
   useFocusEffect(useCallback(() => { load(); }, []));
 
-  if (loading) return <LoadingSpinner message="Loading..." color={C.diner.primary} />;
+  if (loading) return <LoadingSpinner message={t('dashboard.loading')} color={C.diner.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={load} />;
+
+  const firstName = user?.display_name?.split(' ')[0];
 
   return (
     <SafeScreen onRefresh={load}>
-      <Text style={styles.greeting}>Hey, {user?.display_name?.split(' ')[0] || 'there'} 👋</Text>
-      <Text style={styles.sub}>Your dining story continues</Text>
+      <Text style={styles.greeting}>
+        {firstName ? t('dashboard.greeting', { name: firstName }) : t('dashboard.greetingFallback')}
+      </Text>
+      <Text style={styles.sub}>{t('dashboard.dinerSubtitle')}</Text>
 
       {summary && (
         <View style={styles.statsRow}>
-          <StatBox icon="🍽️" label="Total Visits" value={summary.total_visits ?? 0} color={C.diner.primary} />
-          <StatBox icon="⭐" label="Avg Rating" value={(summary.avg_rating ?? 0).toFixed(1)} color={C.amber} />
-          <StatBox icon="🔁" label="Return Rate" value={`${Math.round((summary.return_rate ?? 0) * 100)}%`} color={C.green} />
+          <StatBox icon="🍽️" label={t('dashboard.totalVisits')} value={summary.total_visits ?? 0} color={C.diner.primary} />
+          <StatBox icon="⭐" label={t('dashboard.avgRating')} value={(summary.avg_rating ?? 0).toFixed(1)} color={C.amber} />
+          <StatBox icon="🔁" label={t('dashboard.returnRate')} value={`${Math.round((summary.return_rate ?? 0) * 100)}%`} color={C.green} />
         </View>
       )}
 
       {bookings.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Upcoming Bookings</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.upcomingBookings')}</Text>
           {bookings.map((b) => (
             <View key={b.id} style={styles.card}>
               <Text style={styles.cardIcon}>📅</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{b.restaurant_name || 'Restaurant'}</Text>
-                <Text style={styles.cardSub}>{b.date} at {b.time} · {b.party_size} guests</Text>
+                <Text style={styles.cardTitle}>{b.restaurant_name || t('common.restaurant')}</Text>
+                <Text style={styles.cardSub}>
+                  {b.date} · {b.time} · {b.party_size === 1 ? t('dashboard.guestsOne') : t('dashboard.guests', { count: b.party_size })}
+                </Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: b.status === 'confirmed' ? '#dcfce7' : '#fef3c7' }]}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: b.status === 'confirmed' ? '#16a34a' : '#d97706' }}>{b.status}</Text>
@@ -63,12 +71,12 @@ export default function DinerDashboard() {
 
       {visits.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Recent Visits</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.recentVisits')}</Text>
           {visits.map((v) => (
             <View key={v.id} style={styles.card}>
               <Text style={styles.cardIcon}>🍽️</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{v.restaurant_name || 'Restaurant'}</Text>
+                <Text style={styles.cardTitle}>{v.restaurant_name || t('common.restaurant')}</Text>
                 <Text style={styles.cardSub}>{'⭐'.repeat(Math.round(v.overall_rating || 0))} · {v.visit_date}</Text>
               </View>
             </View>
@@ -79,8 +87,8 @@ export default function DinerDashboard() {
       {bookings.length === 0 && visits.length === 0 && (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>🍽️</Text>
-          <Text style={styles.emptyText}>Your dining story starts here.</Text>
-          <Text style={styles.emptySub}>Book your first table or log a visit to get started.</Text>
+          <Text style={styles.emptyText}>{t('dashboard.emptyDining')}</Text>
+          <Text style={styles.emptySub}>{t('dashboard.emptyDiningSub')}</Text>
         </View>
       )}
     </SafeScreen>
