@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -22,6 +23,7 @@ function MetricRow({ label, value, accent }) {
 }
 
 export default function ReportsScreen() {
+  const { t } = useTranslation();
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -59,7 +61,7 @@ export default function ReportsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Reports</Text>
+        <Text style={styles.title}>{t('screens.reports.title')}</Text>
         <TouchableOpacity style={styles.exportBtn} onPress={handleExport}>
           <Text style={styles.exportText}>↑ Export</Text>
         </TouchableOpacity>

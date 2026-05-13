@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
 import { api } from '../../services/api';
@@ -54,6 +55,7 @@ function Steps({ current }) {
 
 export default function OrderScreen() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [step, setStep]                   = useState(0);
   const [craving, setCraving]             = useState(null);
   const [budget, setBudget]               = useState('');
@@ -135,7 +137,7 @@ export default function OrderScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>🛵 Order</Text>
+        <Text style={styles.title}>{t('screens.order.title')}</Text>
         <Text style={styles.subtitle}>What are you feeling, {firstName}?</Text>
       </View>
 

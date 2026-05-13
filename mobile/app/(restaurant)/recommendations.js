@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -16,6 +17,7 @@ const TYPE_CONFIG = {
 const PRIORITY_COLOR = { high: C.red, medium: C.amber, low: C.green };
 
 export default function RecommendationsScreen() {
+  const { t } = useTranslation();
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,7 +42,7 @@ export default function RecommendationsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Insights</Text>
+        <Text style={styles.title}>{t('screens.recommendations.title')}</Text>
         {totalGain > 0 && <Text style={styles.gain}>+${totalGain.toLocaleString()}/mo potential</Text>}
       </View>
 

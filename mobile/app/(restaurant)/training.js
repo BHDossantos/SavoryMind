@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -21,6 +22,7 @@ const TYPE_LABELS = {
 };
 
 export default function TrainingScreen() {
+  const { t } = useTranslation();
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -44,7 +46,7 @@ export default function TrainingScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Staff Training</Text>
+          <Text style={styles.title}>{t('screens.training.title')}</Text>
           <Text style={styles.sub}>{recs.length} recommendations · {data?.high_priority ?? 0} high priority</Text>
         </View>
         <TouchableOpacity onPress={load} style={styles.refreshBtn}>

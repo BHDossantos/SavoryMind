@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
@@ -27,6 +28,7 @@ function RatingBar({ value, max = 5 }) {
 }
 
 export default function StaffScreen() {
+  const { t } = useTranslation();
   const [staff, setStaff]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
@@ -66,7 +68,7 @@ export default function StaffScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Staff</Text>
+          <Text style={styles.title}>{t('screens.staff.title')}</Text>
           <Text style={styles.sub}>{staff.length} members · avg rating {avgRating}</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>

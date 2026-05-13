@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,6 +26,7 @@ function elapsed(clockIn) {
 }
 
 export default function StaffPortal() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [status, setStatus] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -98,7 +100,7 @@ export default function StaffPortal() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Staff Portal</Text>
+          <Text style={styles.headerTitle}>{t('screens.staffPortal.title')}</Text>
           <Text style={styles.headerSub}>{user?.display_name}</Text>
         </View>
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>

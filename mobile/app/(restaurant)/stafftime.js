@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
@@ -17,6 +18,7 @@ function HoursBadge({ hours }) {
 }
 
 export default function StaffTimeScreen() {
+  const { t } = useTranslation();
   const [logs, setLogs]           = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
@@ -70,7 +72,7 @@ export default function StaffTimeScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Staff Time</Text>
+          <Text style={styles.title}>{t('screens.staffTime.title')}</Text>
           <Text style={styles.sub}>{logs.length} shifts · {totalHours.toFixed(1)}h total</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>

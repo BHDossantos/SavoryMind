@@ -314,5 +314,33 @@
     "tryAgain": "Riprova",
     "somethingWentWrong": "Qualcosa è andato storto.",
     "restaurant": "Ristorante"
+  },
+  "screens": {
+    "recipes": { "title": "Ricette", "subtitle": "Quello che hai cucinato + idee per la prossima volta", "empty": "Ancora niente — provane una." },
+    "pantry": { "title": "🥫 Dispensa", "subtitle": "Cosa c'è in frigo?", "empty": "Aggiungi ingredienti e ti suggeriamo dei piatti." },
+    "journal": { "title": "📓 Diario dei pasti", "subtitle": "Annota cosa cucini e cosa mangi", "empty": "La tua storia a tavola inizia qui." },
+    "social": { "title": "🔗 Collega la musica", "subtitle": "Accedi con Spotify per consigli personalizzati" },
+    "planner": { "title": "Pianificatore pasti", "subtitle": "Il tuo piano settimanale personalizzato", "todaysPick": "Il piatto di oggi — {{day}}" },
+    "music": { "title": "Musica per l'occasione", "subtitle": "La colonna sonora giusta per il momento" },
+    "order": { "title": "🛵 Ordina", "subtitle": "Ripeti i preferiti o prova qualcosa di nuovo" },
+    "guidedCooking": { "stepOf": "Passo {{current}} di {{total}}", "pause": "Pausa", "reset": "Reimposta", "askAnother": "Chiedi un'altra →", "howWasIt": "Com'è andata?", "saveToJournal": "Salva nel tuo diario dei pasti", "rating": "Il tuo voto", "howDidItGo": "Com'è andata? (opzionale)", "anythingChange": "Cosa cambieresti?", "skip": "Salta", "backToRecipes": "Torna alle ricette" },
+    "recommendations": { "title": "Insights", "empty": "Nessun suggerimento per questo filtro." },
+    "bookings": { "title": "Prenotazioni", "subtitle": "Gestisci le prenotazioni" },
+    "crm": { "title": "CRM", "subtitle": "Fidelizzazione e storico clienti" },
+    "employees": { "title": "👥 Dipendenti", "subtitle": "Account del portale dello staff" },
+    "marketing": { "title": "Marketing", "subtitle": "Acquisizione e fidelizzazione", "actionItems": "Azioni consigliate", "marketingTips": "Consigli di marketing" },
+    "inventory": { "title": "Magazzino", "subtitle": "Stock + riepilogo settimanale scorte basse" },
+    "kitchen": { "title": "Tempi cucina", "subtitle": "Tempi di preparazione e cottura" },
+    "predictions": { "title": "Previsione vendite", "subtitle": "Previsione vendite a 4 ore" },
+    "reports": { "title": "Report", "subtitle": "Analytics ed export" },
+    "staff": { "title": "Staff", "subtitle": "Timbratura e turni" },
+    "staffTime": { "title": "Ore staff", "subtitle": "Ore di turno e straordinari" },
+    "training": { "title": "Formazione", "subtitle": "Coaching basato sulla performance" },
+    "trends": { "title": "Avvisi di tendenza", "subtitle": "Trend del menù e piatti in crescita" },
+    "waste": { "title": "Sprechi", "subtitle": "Registro sprechi e costi" },
+    "book": { "title": "Prenota", "subtitle": "Prenota il prossimo tavolo" },
+    "history": { "title": "Cronologia visite", "subtitle": "I tuoi pasti passati" },
+    "restaurantNotFound": "Ristorante non trovato",
+    "staffPortal": { "title": "Portale staff", "subtitle": "Timbratura + il tuo turno" }
   }
 }

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert,
@@ -11,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 const ROLES = ['waiter', 'chef', 'sommelier', 'manager', 'host'];
 
 export default function EmployeesScreen() {
+  const { t } = useTranslation();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showForm, setShowForm]   = useState(false);
@@ -70,7 +72,7 @@ export default function EmployeesScreen() {
     <SafeScreen onRefresh={load}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>👥 Employees</Text>
+          <Text style={styles.title}>{t('screens.employees.title')}</Text>
           <Text style={styles.sub}>Staff accounts for the time-clock + portal</Text>
         </View>
         <TouchableOpacity onPress={() => setShowForm(!showForm)} style={styles.addBtn}>

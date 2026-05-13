@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   Modal, FlatList, Alert,
@@ -38,6 +39,7 @@ function categoryStyle(value) {
 
 
 export default function InventoryScreen() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ export default function InventoryScreen() {
   return (
     <SafeScreen>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Inventory</Text>
+        <Text style={styles.title}>{t('screens.inventory.title')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(true)}>
           <Text style={styles.addBtnText}>+ Add</Text>
         </TouchableOpacity>

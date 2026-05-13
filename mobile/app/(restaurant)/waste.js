@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
@@ -11,6 +12,7 @@ const REASONS = ['Over-portioned', 'Cooking error', 'Spoilage', 'Over-ordered', 
 const EMPTY = { item_name: '', quantity_kg: '', estimated_cost: '', reason: 'Spoilage', staff_name: '', notes: '' };
 
 export default function WasteScreen() {
+  const { t } = useTranslation();
   const [logs, setLogs]           = useState([]);
   const [summary, setSummary]     = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -57,7 +59,7 @@ export default function WasteScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Food Waste</Text>
+          <Text style={styles.title}>{t('screens.waste.title')}</Text>
           {summary && <Text style={styles.sub}>${summary.total_cost.toFixed(2)} total · {summary.total_kg.toFixed(1)} kg</Text>}
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet } from 'react-native';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -10,6 +11,7 @@ import { useFocusEffect } from 'expo-router';
 const PRIORITY_COLOR = { high: '#ef4444', medium: '#f59e0b', low: '#22c55e' };
 
 export default function Marketing() {
+  const { t } = useTranslation();
   const [data, setData]         = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -32,7 +34,7 @@ export default function Marketing() {
 
   return (
     <SafeScreen onRefresh={load} refreshing={refreshing}>
-      <Text style={s.title}>Marketing</Text>
+      <Text style={s.title}>{t('screens.marketing.title')}</Text>
       <Text style={s.subtitle}>Guest acquisition & retention</Text>
 
       {/* Overview metrics */}
