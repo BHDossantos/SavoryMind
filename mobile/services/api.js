@@ -179,6 +179,12 @@ export const api = {
   refresh: tryRefresh,
   getMe: () => request('/api/auth/me'),
 
+  // Auth-level profile patch (display_name, language, etc.). Distinct
+  // from updateProfile() further down — that one is the consumer-feature
+  // endpoint. PATCH /api/auth/profile is the auth-managed surface used
+  // for cross-feature preferences (language, account_type set-once, ...)
+  updateAuthProfile: (data) => request('/api/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+
   // Menu
   getDashboardStats: () => request('/api/menu/stats'),
   getMenuItems: (category) => request(`/api/menu${category && category !== 'All' ? `?category=${category}` : ''}`),

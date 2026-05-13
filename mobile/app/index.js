@@ -1,39 +1,44 @@
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { C } from '../constants/colors';
-
-const MODES = [
-  {
-    type: 'consumer',
-    icon: '🏠',
-    title: 'Food Lover',
-    tagline: 'The right wine. The right song. The right recipe.',
-    color: C.consumer.primary,
-    light: C.consumer.light,
-    border: C.consumer.border,
-  },
-  {
-    type: 'diner',
-    icon: '🍽️',
-    title: 'Food Explorer',
-    tagline: 'Remember every great meal. Book the next one.',
-    color: C.diner.primary,
-    light: C.diner.light,
-    border: C.diner.border,
-  },
-  {
-    type: 'restaurant',
-    icon: '🏪',
-    title: 'Restaurant Owner',
-    tagline: 'See your numbers clearly. Serve your guests better.',
-    color: C.restaurant.primary,
-    light: C.restaurant.light,
-    border: C.restaurant.border,
-  },
-];
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
+  // Modes are derived per-render so flipping the language picker
+  // re-translates them without a remount. Color/icon/border data
+  // stays static.
+  const MODES = [
+    {
+      type: 'consumer',
+      icon: '🏠',
+      title: t('welcome.foodLover'),
+      tagline: t('welcome.foodLoverTagline'),
+      color: C.consumer.primary,
+      light: C.consumer.light,
+      border: C.consumer.border,
+    },
+    {
+      type: 'diner',
+      icon: '🍽️',
+      title: t('welcome.foodExplorer'),
+      tagline: t('welcome.foodExplorerTagline'),
+      color: C.diner.primary,
+      light: C.diner.light,
+      border: C.diner.border,
+    },
+    {
+      type: 'restaurant',
+      icon: '🏪',
+      title: t('welcome.restaurantOwner'),
+      tagline: t('welcome.restaurantOwnerTagline'),
+      color: C.restaurant.primary,
+      light: C.restaurant.light,
+      border: C.restaurant.border,
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -41,10 +46,8 @@ export default function WelcomeScreen() {
         <View style={styles.header}>
           <Text style={styles.logo}>🧠</Text>
           <Text style={styles.brand}>SavoryMind</Text>
-          <Text style={styles.headline}>Every meal has a story.</Text>
-          <Text style={styles.sub}>
-            Yours starts here — whether you're in the kitchen,{'\n'}at the table, or behind the pass.
-          </Text>
+          <Text style={styles.headline}>{t('welcome.tagline')}</Text>
+          <Text style={styles.sub}>{t('welcome.subtitle')}</Text>
         </View>
 
         <View style={styles.cards}>
@@ -66,7 +69,10 @@ export default function WelcomeScreen() {
         </View>
 
         <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginLink}>
-          <Text style={styles.loginText}>Already have an account? <Text style={styles.loginBold}>Sign in</Text></Text>
+          <Text style={styles.loginText}>
+            {t('welcome.alreadyHaveAccount')}{' '}
+            <Text style={styles.loginBold}>{t('welcome.signIn')}</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

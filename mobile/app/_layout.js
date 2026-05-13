@@ -4,6 +4,10 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { C } from '../constants/colors';
+// Side-effect import: initialises i18next + registers locale bundles.
+// Importing here (rather than per-screen) guarantees t() works the
+// instant any screen renders.
+import { initI18n } from '../services/i18n';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -46,6 +50,14 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Pulls the SecureStore-stored language preference (if any) and
+    // swaps i18n's active locale over from the device default. Fire-
+    // and-forget; the device locale (picked synchronously in i18n.js)
+    // is a good-enough first paint while this resolves.
+    initI18n();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>

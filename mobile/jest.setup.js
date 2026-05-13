@@ -17,3 +17,9 @@ global.fetch = jest.fn(() =>
     text: () => Promise.resolve(''),
   })
 );
+
+// Boot i18next with the bundled English resources so screens rendered
+// in tests get translated strings instead of key fallbacks ("auth.email"
+// → "Email"). Side-effect import — the file initialises i18n at import
+// time. Mirrors what app/_layout.js triggers in production.
+require('./services/i18n');

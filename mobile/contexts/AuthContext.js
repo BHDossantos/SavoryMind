@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, tokenStore, setUnauthenticatedHandler } from '../services/api';
 import { identify, reset as resetAnalytics } from '../services/analytics';
+import { applyServerLanguage } from '../services/i18n';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,16 @@ export function AuthProvider({ children }) {
       identify(user.id, { account_type: user.account_type });
     }
   }, [user?.id, user?.account_type]);
+
+  // Honor the server-stored language preference. Runs every time
+  // user.language changes — covers fresh login, hydrate-from-token,
+  // and the Profile screen flipping the language picker. No-ops on
+  // logout (user becomes null).
+  useEffect(() => {
+    if (user?.language) {
+      applyServerLanguage(user.language);
+    }
+  }, [user?.language]);
 
   const login = async (email, password) => {
     // api.login() saves both access + refresh tokens into SecureStore
