@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -7,17 +8,14 @@ import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 import { useFocusEffect } from 'expo-router';
 
+// Canonical filter values stay as English-keyed strings — the backend
+// reads these. Display labels go through t() inside the component.
 const MOODS = ['', 'romantic', 'adventurous', 'relaxed', 'celebratory', 'group', 'healthy', 'cozy'];
-const MOOD_LABELS = {
-  '': 'Any Mood', romantic: '💑 Romantic', adventurous: '🌍 Adventurous',
-  relaxed: '😌 Relaxed', celebratory: '🎉 Celebrate', group: '👥 Group',
-  healthy: '🥗 Healthy', cozy: '🕯️ Cozy',
-};
 const BUDGETS = ['budget', 'mid', 'luxury'];
-const BUDGET_LABELS = { budget: '$ Budget', mid: '$$ Mid', luxury: '$$$ Luxury' };
 const PRICE_LABELS = { 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' };
 
 export default function Discover() {
+  const { t } = useTranslation();
   const [mood, setMood]       = useState('');
   const [cuisine, setCuisine] = useState('');
   const [budget, setBudget]   = useState('mid');
@@ -28,6 +26,22 @@ export default function Discover() {
   const [error, setError]     = useState(null);
   const [showPlan, setShowPlan] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const MOOD_LABELS = {
+    '':           t('discoverScreen.moodAny'),
+    romantic:     t('discoverScreen.moodRomantic'),
+    adventurous:  t('discoverScreen.moodAdventurous'),
+    relaxed:      t('discoverScreen.moodRelaxed'),
+    celebratory:  t('discoverScreen.moodCelebratory'),
+    group:        t('discoverScreen.moodGroup'),
+    healthy:      t('discoverScreen.moodHealthy'),
+    cozy:         t('discoverScreen.moodCozy'),
+  };
+  const BUDGET_LABELS = {
+    budget: t('discoverScreen.budgetBudget'),
+    mid:    t('discoverScreen.budgetMid'),
+    luxury: t('discoverScreen.budgetLuxury'),
+  };
 
   const maxPrice = { budget: 2, mid: 3, luxury: 4 }[budget] || 3;
 
@@ -58,11 +72,11 @@ export default function Discover() {
 
   return (
     <SafeScreen onRefresh={search} refreshing={refreshing}>
-      <Text style={s.title}>Discover</Text>
-      <Text style={s.subtitle}>Find your next great meal out</Text>
+      <Text style={s.title}>{t('discoverScreen.title')}</Text>
+      <Text style={s.subtitle}>{t('discoverScreen.subtitle')}</Text>
 
       {/* Mood filter */}
-      <Text style={s.filterLabel}>Mood</Text>
+      <Text style={s.filterLabel}>{t('discoverScreen.filterMood')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={s.filterContent}>
         {MOODS.map((m) => (
           <TouchableOpacity
@@ -76,7 +90,7 @@ export default function Discover() {
       </ScrollView>
 
       {/* Budget filter */}
-      <Text style={s.filterLabel}>Budget</Text>
+      <Text style={s.filterLabel}>{t('discoverScreen.filterBudget')}</Text>
       <View style={s.budgetRow}>
         {BUDGETS.map((b) => (
           <TouchableOpacity key={b} style={[s.budgetBtn, budget === b && s.budgetBtnActive]} onPress={() => setBudget(b)}>
@@ -88,7 +102,7 @@ export default function Discover() {
       {/* Cuisine input */}
       <TextInput
         style={s.input}
-        placeholder="Cuisine (optional)"
+        placeholder={t('discoverScreen.cuisinePlaceholder')}
         value={cuisine}
         onChangeText={setCuisine}
         placeholderTextColor={C.gray[400]}
@@ -97,10 +111,10 @@ export default function Discover() {
       {/* Actions */}
       <View style={s.btnRow}>
         <TouchableOpacity style={s.searchBtn} onPress={search} disabled={loading}>
-          <Text style={s.searchBtnText}>{loading ? 'Searching…' : '🔍 Search'}</Text>
+          <Text style={s.searchBtnText}>{loading ? t('discoverScreen.searching') : t('discoverScreen.search')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.planBtn} onPress={planExperience} disabled={planLoading}>
-          <Text style={s.planBtnText}>{planLoading ? '…' : '✨ Plan Night'}</Text>
+          <Text style={s.planBtnText}>{planLoading ? '…' : t('discoverScreen.planNight')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -122,7 +136,7 @@ export default function Discover() {
             <PlanPill icon="🍷" label={plan.drink} />
           </View>
           <TouchableOpacity style={s.closePlan} onPress={() => setShowPlan(false)}>
-            <Text style={s.closePlanText}>✕ Close</Text>
+            <Text style={s.closePlanText}>{t('discoverScreen.close')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -130,23 +144,23 @@ export default function Discover() {
       {/* Results */}
       {results.length > 0 && (
         <View>
-          <Text style={s.resultsHeader}>{results.length} places found</Text>
-          {results.map((r) => <RestaurantCard key={r.id} r={r} />)}
+          <Text style={s.resultsHeader}>{t('discoverScreen.placesFound', { count: results.length })}</Text>
+          {results.map((r) => <RestaurantCard key={r.id} r={r} t={t} />)}
         </View>
       )}
 
       {!loading && results.length === 0 && (
         <View style={s.emptyState}>
           <Text style={s.emptyIcon}>🍽️</Text>
-          <Text style={s.emptyText}>No restaurants match your filters</Text>
-          <Text style={s.emptyHint}>Try a different mood or budget</Text>
+          <Text style={s.emptyText}>{t('discoverScreen.emptyTitle')}</Text>
+          <Text style={s.emptyHint}>{t('discoverScreen.emptyHint')}</Text>
         </View>
       )}
     </SafeScreen>
   );
 }
 
-function RestaurantCard({ r }) {
+function RestaurantCard({ r, t }) {
   return (
     <View style={s.card}>
       <View style={s.cardHeader}>
@@ -161,9 +175,9 @@ function RestaurantCard({ r }) {
       </View>
       <Text style={s.cardDesc} numberOfLines={2}>{r.description}</Text>
       <View style={s.cardMeta}>
-        <Text style={s.cardMetaItem}>📍 {r.distance_km}km</Text>
-        {r.wait_minutes > 0 && <Text style={s.cardMetaItem}>⏱ {r.wait_minutes}min wait</Text>}
-        <Text style={[s.cardMetaItem, s.openNow]}>{r.open_now ? '🟢 Open' : '🔴 Closed'}</Text>
+        <Text style={s.cardMetaItem}>{t('discoverScreen.kmAway', { km: r.distance_km })}</Text>
+        {r.wait_minutes > 0 && <Text style={s.cardMetaItem}>{t('discoverScreen.minWait', { min: r.wait_minutes })}</Text>}
+        <Text style={[s.cardMetaItem, s.openNow]}>{r.open_now ? t('discoverScreen.open') : t('discoverScreen.closed')}</Text>
       </View>
       <Text style={s.standout}>⭐ {r.standout_dish}</Text>
       <View style={s.tagRow}>

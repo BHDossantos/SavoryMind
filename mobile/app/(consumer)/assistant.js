@@ -1,30 +1,38 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, FlatList, ActivityIndicator,
   ScrollView, SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 
-const SUGGESTIONS = [
-  "Quick weeknight dinner with chicken thighs",
-  "My sauce is breaking — how do I save it?",
-  "What wine goes with mushroom risotto?",
-  "Substitute for buttermilk?",
-  "How long to rest a ribeye?",
-  "Easy dessert using only pantry staples",
-];
-
-const GREETING = {
-  role: 'assistant',
-  title: "Hey, I'm Flavor 👋",
-  text: "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
-};
-
 export default function AssistantScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
+  // Greeting is the first message in the thread. Derived from the i18n
+  // bundle so it switches language alongside the rest of the UI; the
+  // existing message history (still in whatever language they came in)
+  // stays as-is — that's intentional, we don't retranslate user content
+  // or past replies after the fact.
+  const GREETING = useMemo(() => ({
+    role: 'assistant',
+    title: t('assistant.greetingTitle'),
+    text: t('assistant.greetingText'),
+  }), [t]);
+
+  const SUGGESTIONS = useMemo(() => [
+    t('assistant.suggestion1'),
+    t('assistant.suggestion2'),
+    t('assistant.suggestion3'),
+    t('assistant.suggestion4'),
+    t('assistant.suggestion5'),
+    t('assistant.suggestion6'),
+  ], [t]);
+
   const [messages, setMessages] = useState([GREETING]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,8 +56,8 @@ export default function AssistantScreen() {
     } catch (e) {
       setMessages((m) => [...m, {
         role: 'assistant',
-        title: 'Oops',
-        text: e.message || 'Something went wrong — try again.',
+        title: t('assistant.errorTitle'),
+        text: e.message || t('assistant.errorText'),
       }]);
     } finally {
       setLoading(false);
@@ -91,10 +99,10 @@ export default function AssistantScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.backBtn}>← Back</Text>
+          <Text style={styles.backBtn}>{t('auth.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>👨‍🍳 Flavor</Text>
-        <Text style={styles.sub}>Real-time help for whatever's going wrong in the kitchen.</Text>
+        <Text style={styles.title}>{t('assistant.title')}</Text>
+        <Text style={styles.sub}>{t('assistant.subtitle')}</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -138,7 +146,7 @@ export default function AssistantScreen() {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Ask anything — recipes, techniques, pairings, fixes..."
+            placeholder={t('assistant.inputPlaceholder')}
             placeholderTextColor={C.gray[400]}
             multiline
             maxLength={500}
@@ -149,7 +157,7 @@ export default function AssistantScreen() {
             onPress={() => send()}
             disabled={!input.trim() || loading}
           >
-            <Text style={styles.sendBtnText}>Send</Text>
+            <Text style={styles.sendBtnText}>{t('assistant.send')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
