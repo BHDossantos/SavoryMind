@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import { api } from "../../services/api";
 
 const SUGGESTIONS = [
@@ -51,6 +52,7 @@ function summariseToolCalls(calls) {
 }
 
 export default function AssistantPage() {
+  const router = useRouter();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -69,6 +71,22 @@ export default function AssistantPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-send the ?q= seed once on first mount — deep-link target for
+  // Cellar "Ask Flavor about this" cards. Guarded so back-nav doesn't
+  // re-trigger.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query.q;
+    const seed = typeof q === "string" ? q : Array.isArray(q) ? q[0] : null;
+    if (seed && !seededRef.current) {
+      seededRef.current = true;
+      // Clear the param from the URL so refresh doesn't replay.
+      router.replace("/consumer/assistant", undefined, { shallow: true });
+      setTimeout(() => send(seed), 0);
+    }
+  }, [router.isReady, router.query.q]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async (question) => {
     const q = (question || input).trim();

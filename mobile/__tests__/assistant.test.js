@@ -9,6 +9,7 @@ import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 const mockBack = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: mockBack, replace: jest.fn() }),
+  useLocalSearchParams: () => ({}),
 }));
 
 // Declare the mock fn inside the factory and re-grab it via require()

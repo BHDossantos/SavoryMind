@@ -1,10 +1,10 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, FlatList, ActivityIndicator,
   ScrollView, SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
@@ -12,6 +12,9 @@ import { C } from '../../constants/colors';
 export default function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  // ?q= seed param from deep links (Cellar "Ask Flavor about this" cards
+  // route here with the question pre-loaded). Auto-sent on mount.
+  const params = useLocalSearchParams();
 
   // Greeting is the first message in the thread. Derived from the i18n
   // bundle so it switches language alongside the rest of the UI; the
@@ -42,6 +45,18 @@ export default function AssistantScreen() {
   // a tool-using turn. Sent back on every subsequent request so Flavor
   // can answer follow-ups like "what about a white instead?".
   const historyRef = useRef([]);
+
+  // Auto-send the ?q= seed once on first mount. Guarded so navigating
+  // back/forth doesn't re-trigger.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    const seed = typeof params?.q === 'string' ? params.q : Array.isArray(params?.q) ? params.q[0] : null;
+    if (seed && !seededRef.current) {
+      seededRef.current = true;
+      // Defer to the next tick so the GREETING message renders first.
+      setTimeout(() => send(seed), 0);
+    }
+  }, [params?.q]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToEnd = useCallback(() => {
     // Slight delay so the new message has rendered first.

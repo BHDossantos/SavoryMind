@@ -298,6 +298,11 @@ export const api = {
     body: JSON.stringify(history && history.length ? { question, history } : { question }),
   }),
 
+  // Phase 8 — catalog browse endpoints. Returned as { count, wines | beers | spirits }.
+  getWineCatalog:    () => request('/api/consumer/catalog/wines'),
+  getBeerCatalog:    () => request('/api/consumer/catalog/beers'),
+  getSpiritsCatalog: () => request('/api/consumer/catalog/spirits'),
+
   // Diner
   getDinerSummary: () => request('/api/diner/summary'),
   getDinerBookings: () => request('/api/diner/bookings'),

@@ -199,6 +199,45 @@ def get_recommendations(db: Session = Depends(get_db), current_user: User = Depe
 
 # ── Beverages ─────────────────────────────────────────────────────────────────
 
+# ── Catalog browse endpoints (Phase 8) ────────────────────────────────────
+# Return the full catalog with optional client-side filterable fields.
+# Pairing endpoints below are dish→wines/beers/spirits; these are
+# inventory→list-with-filters for the new browse UI.
+
+@router.get("/catalog/wines")
+def catalog_wines(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Full wine catalog (grape varietals). Frontend filters
+    client-side for speed — the catalog is small enough that
+    server-side filtering would just add round-trips."""
+    _require_consumer(current_user)
+    from ..data import get_wines
+    catalog = get_wines()
+    # Return as a list with the slug attached so the UI can render
+    # consistent keys without reshaping.
+    return {
+        "count": len(catalog),
+        "wines": [{"slug": slug, **entry} for slug, entry in catalog.items()],
+    }
+
+
+@router.get("/catalog/beers")
+def catalog_beers(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Full beer catalog."""
+    _require_consumer(current_user)
+    from ..data import get_beers
+    catalog = get_beers()
+    return {"count": len(catalog), "beers": catalog}
+
+
+@router.get("/catalog/spirits")
+def catalog_spirits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Full spirits catalog."""
+    _require_consumer(current_user)
+    from ..data import get_spirits
+    catalog = get_spirits()
+    return {"count": len(catalog), "spirits": catalog}
+
+
 @router.get("/beverages/beer")
 def beer_pairing(dish: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)

@@ -18,6 +18,7 @@ const NAV = [
 
 const QUICK_LINKS = [
   { href: "/consumer/assistant", label: "Ask Flavor",      icon: "👨‍🍳" },
+  { href: "/consumer/cellar",    label: "Cellar",          icon: "🥂" },
   { href: "/consumer/pantry",    label: "My Pantry",       icon: "🧺" },
   { href: "/consumer/planner",   label: "Meal Planner",    icon: "📅" },
   { href: "/consumer/journal",   label: "Food Journal",    icon: "📔" },

@@ -34,6 +34,7 @@ export default function ConsumerLayout() {
       <Tabs.Screen name="journal"        options={{ href: null }} />
       <Tabs.Screen name="order"          options={{ href: null }} />
       <Tabs.Screen name="guided-cooking" options={{ href: null }} />
+      <Tabs.Screen name="cellar"         options={{ href: null }} />
     </Tabs>
   );
 }

@@ -295,6 +295,12 @@ export const api = {
     body: JSON.stringify(history && history.length ? { question, history } : { question }),
   }),
 
+  // Phase 8 — catalog browse endpoints. Catalog is small enough we
+  // fetch the whole thing once and let the page filter client-side.
+  getWineCatalog:    () => request("/api/consumer/catalog/wines"),
+  getBeerCatalog:    () => request("/api/consumer/catalog/beers"),
+  getSpiritsCatalog: () => request("/api/consumer/catalog/spirits"),
+
   // Restaurant — Trends & Marketing
   getMenuTrends: () => request("/api/restaurant/trends"),
   getMarketingInsights: () => request("/api/restaurant/marketing"),
