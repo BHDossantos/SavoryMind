@@ -21,7 +21,12 @@ router = APIRouter(prefix="/consumer", tags=["consumer"])
 
 
 def _require_consumer(user: User) -> User:
-    if user.account_type != "consumer":
+    # Food Lover (consumer) and Food Explorer (diner) were unified into
+    # a single shell — both are "food person" accounts with access to
+    # the full consumer feature set (recipes, pairings, pantry, journal,
+    # etc.). Restaurant + staff stay gated out because those features
+    # don't apply to operator accounts.
+    if user.account_type not in ("consumer", "diner"):
         raise HTTPException(status_code=403, detail="Consumer account required.")
     return user
 

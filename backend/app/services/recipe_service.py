@@ -401,22 +401,43 @@ def get_recipe_recommendations(
     ing_tokens = [t.strip().lower() for t in ingredients.split(",") if t.strip()] if ingredients else []
     scored     = []
 
+    # When ANY filter is specified, results must actually match —
+    # previously the 0.1 baseline score meant every non-matching recipe
+    # still appeared, so picking "Cozy" / "Italian" / etc. did nothing.
+    any_filter = bool(mood or cuisine or keywords or ing_tokens or max_time or difficulty)
+
     for recipe in RECIPES:
+        # Cuisine is a HARD filter when specified.
+        if cuisine and cuisine.lower() not in recipe["cuisine"].lower():
+            continue
+
+        # Mood is a HARD filter when specified.
+        if mood and mood.lower() not in [m.lower() for m in recipe["mood"]]:
+            continue
+
+        # Time filter (hard exclude if max_time specified).
+        if max_time and recipe["time_minutes"] > max_time:
+            continue
+
+        # Difficulty filter.
+        if difficulty and recipe.get("difficulty", "").lower() != difficulty.lower():
+            continue
+
         score = 0.0
 
-        # Keyword match against recipe keyword pattern
+        # Keyword match against recipe keyword pattern.
         if query and re.search(recipe["keywords"], query):
             score += 0.8
 
-        # Mood match
+        # Mood score boost (on top of the hard filter above).
         if mood and mood.lower() in [m.lower() for m in recipe["mood"]]:
             score += 0.5
 
-        # Cuisine match
+        # Cuisine score boost.
         if cuisine and cuisine.lower() in recipe["cuisine"].lower():
             score += 0.4
 
-        # Ingredients-on-hand match
+        # Ingredients-on-hand match.
         if ing_tokens:
             recipe_text = " ".join(recipe.get("ingredients", [])).lower()
             matched = sum(1 for t in ing_tokens if t in recipe_text)
@@ -424,16 +445,15 @@ def get_recipe_recommendations(
                 score += 0.6 * (matched / len(ing_tokens))
                 score += 0.3 * matched  # bonus per matched ingredient
 
-        # Time filter (hard exclude if max_time specified)
-        if max_time and recipe["time_minutes"] > max_time:
+        # When `keywords` is supplied as the ONLY filter (cravings,
+        # occasions), require an actual keyword hit. Otherwise the
+        # baseline 0.1 would once again let everything through.
+        if keywords and not re.search(recipe["keywords"], query):
             continue
 
-        # Difficulty filter
-        if difficulty and recipe.get("difficulty", "").lower() != difficulty.lower():
-            continue
+        if score == 0 and not any_filter:
+            score = 0.1  # only fall back to baseline for the unfiltered default list
 
-        if score == 0:
-            score = 0.1  # baseline so we always show something
         scored.append((score, recipe))
 
     scored.sort(key=lambda x: x[0], reverse=True)

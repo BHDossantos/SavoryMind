@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
@@ -59,6 +60,24 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-400 mt-1">Overview of your restaurant performance</p>
       </div>
+
+      {/* Flavor — same AI assistant the consumer side has. Useful to
+          restaurant operators for menu engineering questions, pairings
+          on the wine list, fixes for tough dishes. Backend endpoint
+          is open to any logged-in user. */}
+      <Link
+        href="/consumer/assistant"
+        className="group mb-8 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
+      >
+        <span className="text-4xl flex-shrink-0">👨‍🍳</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base">Ask Flavor</p>
+          <p className="text-xs text-white/80 mt-0.5 leading-relaxed">
+            Real-time help with menu engineering, pairings, kitchen fixes.
+          </p>
+        </div>
+        <span className="text-2xl flex-shrink-0 group-hover:translate-x-1 transition-transform">→</span>
+      </Link>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
