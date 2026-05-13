@@ -4,6 +4,7 @@ import {
   Modal, TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { C } from '../../constants/colors';
 import { api } from '../../services/api';
 
@@ -23,6 +24,7 @@ function fmtTime(s) {
 
 
 function StepTimer() {
+  const { t } = useTranslation();
   const [duration, setDuration] = useState(0);
   const [running, setRunning]   = useState(false);
   const [remaining, setRemaining] = useState(0);
@@ -48,7 +50,7 @@ function StepTimer() {
 
   return (
     <View style={styles.timerCard}>
-      <Text style={styles.timerLabel}>⏱️ Step Timer</Text>
+      <Text style={styles.timerLabel}>{t('screens.guidedCooking.stepTimer')}</Text>
       {running || done ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Text style={[
@@ -56,21 +58,21 @@ function StepTimer() {
             done && { color: '#16a34a' },
             !done && remaining <= 10 && { color: C.red },
           ]}>
-            {done ? 'Done! ✓' : fmtTime(remaining)}
+            {done ? t('screens.guidedCooking.doneTimer') : fmtTime(remaining)}
           </Text>
           <View style={{ flexDirection: 'row', gap: 6, marginLeft: 'auto' }}>
             {running && (
               <TouchableOpacity onPress={stop} style={styles.timerActionBtn}>
-                <Text style={styles.timerActionBtnText}>Pause</Text>
+                <Text style={styles.timerActionBtnText}>{t('screens.guidedCooking.pause')}</Text>
               </TouchableOpacity>
             )}
             {!running && remaining > 0 && (
               <TouchableOpacity onPress={() => setRunning(true)} style={[styles.timerActionBtn, styles.timerActionBtnPrimary]}>
-                <Text style={[styles.timerActionBtnText, { color: '#fff' }]}>Resume</Text>
+                <Text style={[styles.timerActionBtnText, { color: '#fff' }]}>{t('screens.guidedCooking.resume')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={reset} style={styles.timerActionBtn}>
-              <Text style={styles.timerActionBtnText}>Reset</Text>
+              <Text style={styles.timerActionBtnText}>{t('screens.guidedCooking.reset')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -78,7 +80,7 @@ function StepTimer() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {[1, 2, 3, 5, 10, 15].map((m) => (
             <TouchableOpacity key={m} onPress={() => start(m * 60)} style={styles.timerPreset} testID={`timer-${m}min`}>
-              <Text style={styles.timerPresetText}>{m} min</Text>
+              <Text style={styles.timerPresetText}>{t('screens.guidedCooking.minShort', { count: m })}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -89,6 +91,7 @@ function StepTimer() {
 
 
 function InlineAssistant() {
+  const { t } = useTranslation();
   const [open, setOpen]     = useState(false);
   const [query, setQuery]   = useState('');
   const [result, setResult] = useState(null);
@@ -101,7 +104,7 @@ function InlineAssistant() {
       const data = await api.askAssistant(query.trim());
       setResult(data);
     } catch {
-      setResult({ title: 'Error', answer: "Couldn't reach the assistant — try again." });
+      setResult({ title: t('common.somethingWentWrong'), answer: t('screens.guidedCooking.assistantError') });
     } finally {
       setAsking(false);
     }
@@ -110,7 +113,7 @@ function InlineAssistant() {
   if (!open) {
     return (
       <TouchableOpacity onPress={() => setOpen(true)} style={styles.helpToggle} testID="open-assistant">
-        <Text style={styles.helpToggleText}>🆘 Something went wrong? Ask for help</Text>
+        <Text style={styles.helpToggleText}>{t('screens.guidedCooking.needHelp')}</Text>
       </TouchableOpacity>
     );
   }
@@ -118,7 +121,7 @@ function InlineAssistant() {
   return (
     <View style={styles.assistantCard}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <Text style={styles.assistantHeader}>👨‍🍳 Culinary Assistant</Text>
+        <Text style={styles.assistantHeader}>{t('screens.guidedCooking.culinaryAssistant')}</Text>
         <TouchableOpacity onPress={() => { setOpen(false); setQuery(''); setResult(null); }}>
           <Text style={{ color: '#a16207', fontSize: 18 }}>✕</Text>
         </TouchableOpacity>
@@ -128,7 +131,7 @@ function InlineAssistant() {
           <Text style={styles.assistantResultTitle}>{result.title}</Text>
           <Text style={styles.assistantResultAnswer}>{result.answer}</Text>
           <TouchableOpacity onPress={() => { setQuery(''); setResult(null); }}>
-            <Text style={styles.assistantLink}>Ask another →</Text>
+            <Text style={styles.assistantLink}>{t('screens.guidedCooking.askAnother')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -136,12 +139,12 @@ function InlineAssistant() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="e.g. sauce is breaking, meat is tough…"
+            placeholder={t('screens.guidedCooking.assistantPlaceholder')}
             placeholderTextColor="#a16207"
             style={styles.assistantInput}
           />
           <TouchableOpacity onPress={ask} disabled={!query.trim() || asking} style={[styles.assistantAskBtn, (!query.trim() || asking) && { opacity: 0.5 }]}>
-            <Text style={styles.assistantAskBtnText}>{asking ? '…' : 'Ask'}</Text>
+            <Text style={styles.assistantAskBtnText}>{asking ? '…' : t('screens.guidedCooking.ask')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -151,6 +154,7 @@ function InlineAssistant() {
 
 
 function MemoryModal({ recipe, onSave, onSkip }) {
+  const { t } = useTranslation();
   const [rating, setRating]   = useState(5);
   const [notes, setNotes]     = useState('');
   const [change, setChange]   = useState('');
@@ -173,11 +177,10 @@ function MemoryModal({ recipe, onSave, onSkip }) {
       });
       onSave();
     } catch (e) {
-      // Surface the failure inline. Without this the modal would just
-      // re-enable the Save button silently — user thinks the memory
-      // was lost or that nothing happened. Inline error keeps the form
-      // open with their notes intact so they can retry.
-      setError(e?.message || "Couldn't save the memory. Try again in a moment.");
+      // Surface the failure inline so the user doesn't think the memory
+      // was silently lost. Inline error keeps the form open + notes
+      // intact so they can retry.
+      setError(e?.message || t('screens.guidedCooking.saveMemoryError'));
       setSaving(false);
     }
   };
@@ -188,11 +191,11 @@ function MemoryModal({ recipe, onSave, onSkip }) {
         <View style={styles.modalSheet}>
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <Text style={{ fontSize: 38 }}>{recipe.image_emoji || '🍽️'}</Text>
-            <Text style={styles.modalTitle}>How was it?</Text>
-            <Text style={styles.modalSub}>Save this to your food journal</Text>
+            <Text style={styles.modalTitle}>{t('screens.guidedCooking.howWasIt')}</Text>
+            <Text style={styles.modalSub}>{t('screens.guidedCooking.saveToJournal')}</Text>
           </View>
 
-          <Text style={styles.modalLabel}>Your rating</Text>
+          <Text style={styles.modalLabel}>{t('screens.guidedCooking.rating')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
             {[1, 2, 3, 4, 5].map((s) => (
               <TouchableOpacity key={s} onPress={() => setRating(s)} testID={`star-${s}`}>
@@ -201,21 +204,21 @@ function MemoryModal({ recipe, onSave, onSkip }) {
             ))}
           </View>
 
-          <Text style={styles.modalLabel}>How did it go? (optional)</Text>
+          <Text style={styles.modalLabel}>{t('screens.guidedCooking.howDidItGo')}</Text>
           <TextInput
             value={notes}
             onChangeText={setNotes}
-            placeholder="It was delicious! The sauce came together perfectly…"
+            placeholder={t('screens.guidedCooking.notesPlaceholder')}
             placeholderTextColor={C.gray[400]}
             style={[styles.modalInput, { minHeight: 50 }]}
             multiline
           />
 
-          <Text style={styles.modalLabel}>Anything you'd change?</Text>
+          <Text style={styles.modalLabel}>{t('screens.guidedCooking.anythingChange')}</Text>
           <TextInput
             value={change}
             onChangeText={setChange}
-            placeholder="Less salt, more garlic…"
+            placeholder={t('screens.guidedCooking.changePlaceholder')}
             placeholderTextColor={C.gray[400]}
             style={[styles.modalInput, { minHeight: 50, marginBottom: 16 }]}
             multiline
@@ -227,10 +230,10 @@ function MemoryModal({ recipe, onSave, onSkip }) {
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity onPress={onSkip} style={[styles.modalSecondaryBtn, { flex: 1 }]}>
-              <Text style={styles.modalSecondaryBtnText}>Skip</Text>
+              <Text style={styles.modalSecondaryBtnText}>{t('screens.guidedCooking.skip')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={save} disabled={saving} style={[styles.modalPrimaryBtn, { flex: 1 }, saving && { opacity: 0.5 }]} testID="save-memory">
-              <Text style={styles.modalPrimaryBtnText}>{saving ? 'Saving…' : 'Save Memory'}</Text>
+              <Text style={styles.modalPrimaryBtnText}>{saving ? t('screens.guidedCooking.saving') : t('screens.guidedCooking.saveMemory')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -242,6 +245,7 @@ function MemoryModal({ recipe, onSave, onSkip }) {
 
 export default function GuidedCookingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const [recipe, setRecipe]           = useState(null);
   const [loading, setLoading]         = useState(true);
@@ -286,9 +290,9 @@ export default function GuidedCookingScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 36, marginBottom: 8 }}>😕</Text>
-        <Text style={{ fontSize: 14, color: C.gray[500], marginBottom: 16 }}>Recipe not found.</Text>
+        <Text style={{ fontSize: 14, color: C.gray[500], marginBottom: 16 }}>{t('screens.guidedCooking.recipeNotFound')}</Text>
         <TouchableOpacity onPress={() => router.replace('/(consumer)/recipes')}>
-          <Text style={{ color: C.consumer.primary, fontWeight: '700' }}>← Back to Recipes</Text>
+          <Text style={{ color: C.consumer.primary, fontWeight: '700' }}>← {t('screens.guidedCooking.backToRecipes')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -303,16 +307,16 @@ export default function GuidedCookingScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 56, marginBottom: 12 }}>🎉</Text>
-        <Text style={{ fontSize: 22, fontWeight: '800', color: C.gray[900], marginBottom: 6 }}>You did it!</Text>
+        <Text style={{ fontSize: 22, fontWeight: '800', color: C.gray[900], marginBottom: 6 }}>{t('screens.guidedCooking.youDidIt')}</Text>
         <Text style={{ fontSize: 14, color: C.gray[500], marginBottom: 24, textAlign: 'center' }}>
-          {recipe.title} is ready. Enjoy your meal!
+          {t('screens.guidedCooking.recipeReady', { title: recipe.title })}
         </Text>
         <View style={{ width: '100%', maxWidth: 280, gap: 10 }}>
           <TouchableOpacity onPress={() => setShowMemory(true)} style={styles.donePrimaryBtn} testID="open-memory-modal">
-            <Text style={styles.donePrimaryBtnText}>📝 Save to my journal</Text>
+            <Text style={styles.donePrimaryBtnText}>{t('screens.guidedCooking.saveToJournalBtn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.replace('/(consumer)/recipes')} style={styles.doneSecondaryBtn}>
-            <Text style={styles.doneSecondaryBtnText}>Back to Recipes</Text>
+            <Text style={styles.doneSecondaryBtnText}>{t('screens.guidedCooking.backToRecipes')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -333,7 +337,7 @@ export default function GuidedCookingScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>{t('auth.back')}</Text>
         </TouchableOpacity>
         <Text style={styles.recipeTitle}>{recipe.image_emoji || '🍽️'} {recipe.title}</Text>
       </View>
@@ -346,7 +350,7 @@ export default function GuidedCookingScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {currentStep === 0 && ingredients.length > 0 && (
           <View style={styles.ingredientsCard} testID="ingredients-list">
-            <Text style={styles.ingredientsHeader}>🛒 Ingredients</Text>
+            <Text style={styles.ingredientsHeader}>{t('screens.guidedCooking.ingredients')}</Text>
             {ingredients.map((ing, i) => (
               <Text key={i} style={styles.ingredientLine}>• {typeof ing === 'string' ? ing : ing?.name}</Text>
             ))}
@@ -354,7 +358,7 @@ export default function GuidedCookingScreen() {
         )}
 
         <View style={styles.stepCard}>
-          <Text style={styles.stepNumber}>Step {currentStep + 1} of {totalSteps}</Text>
+          <Text style={styles.stepNumber}>{t('screens.guidedCooking.stepOf', { current: currentStep + 1, total: totalSteps })}</Text>
           <Text style={styles.stepInstruction}>{step?.instruction || step?.text || step}</Text>
           {step?.tip && (
             <View style={styles.stepTipBox}>
@@ -373,14 +377,14 @@ export default function GuidedCookingScreen() {
             style={[styles.navBtn, styles.navBtnSecondary, currentStep === 0 && { opacity: 0.4 }]}
             testID="step-back"
           >
-            <Text style={styles.navBtnSecondaryText}>← Previous</Text>
+            <Text style={styles.navBtnSecondaryText}>{t('screens.guidedCooking.previous')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => isLast ? setDone(true) : setCurrentStep((s) => s + 1)}
             style={[styles.navBtn, styles.navBtnPrimary]}
             testID="step-next"
           >
-            <Text style={styles.navBtnPrimaryText}>{isLast ? '🎉 Finish' : 'Next →'}</Text>
+            <Text style={styles.navBtnPrimaryText}>{isLast ? t('screens.guidedCooking.finish') : t('screens.guidedCooking.next')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
