@@ -7,27 +7,20 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  // Modes are derived per-render so flipping the language picker
-  // re-translates them without a remount. Color/icon/border data
-  // stays static.
+  // Two modes only: anyone who eats food (consumer — cook + dine
+  // unified) and restaurant operators. The Food Lover / Food Explorer
+  // split that used to exist forced users to pick one half of the app;
+  // the consumer shell now hosts both. Restaurant Owner stays separate
+  // because the mental model + permissions are different.
   const MODES = [
     {
       type: 'consumer',
-      icon: '🏠',
-      title: t('welcome.foodLover'),
-      tagline: t('welcome.foodLoverTagline'),
+      icon: '🍴',
+      title: t('welcome.foodPerson'),
+      tagline: t('welcome.foodPersonTagline'),
       color: C.consumer.primary,
       light: C.consumer.light,
       border: C.consumer.border,
-    },
-    {
-      type: 'diner',
-      icon: '🍽️',
-      title: t('welcome.foodExplorer'),
-      tagline: t('welcome.foodExplorerTagline'),
-      color: C.diner.primary,
-      light: C.diner.light,
-      border: C.diner.border,
     },
     {
       type: 'restaurant',

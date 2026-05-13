@@ -6,6 +6,8 @@
     "foodLoverTagline": "The right wine. The right song. The right recipe.",
     "foodExplorer": "Food Explorer",
     "foodExplorerTagline": "Remember every great meal. Book the next one.",
+    "foodPerson": "I love food",
+    "foodPersonTagline": "Cook at home + go out. Pairings, recipes, restaurants — all in one app.",
     "restaurantOwner": "Restaurant Owner",
     "restaurantOwnerTagline": "See your numbers clearly. Serve your guests better.",
     "alreadyHaveAccount": "Already have an account?",
@@ -314,6 +316,16 @@
     "tryAgain": "Try again",
     "somethingWentWrong": "Something went wrong.",
     "restaurant": "Restaurant"
+  },
+  "dine": {
+    "title": "Going out",
+    "subtitle": "Discover restaurants, book a table, track your visits",
+    "discoverTitle": "Discover restaurants",
+    "discoverSub": "Find your next great meal out — by mood, cuisine, or budget",
+    "bookTitle": "My bookings",
+    "bookSub": "Upcoming and past reservations",
+    "historyTitle": "Visit history",
+    "historySub": "Every meal you've logged"
   },
   "screens": {
     "recipes": { "title": "Recipes", "subtitle": "What you've cooked + ideas for next time", "empty": "Nothing here yet — give one a try." },

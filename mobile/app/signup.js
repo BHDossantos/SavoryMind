@@ -31,15 +31,22 @@ export default function SignupScreen() {
   const { register, loginGoogle } = useAuth();
   const { type: defaultType } = useLocalSearchParams();
 
-  // Account-type tiles. Derived per-render so the labels re-translate
-  // when the active language changes.
+  // Account-type tiles. Two options after the Food Lover / Food Explorer
+  // unification — consumer covers anyone who cooks at home OR eats out
+  // (or both); restaurant is for operators. Derived per-render so labels
+  // re-translate on language change. `diner` is still a valid backend
+  // account_type for legacy accounts, but new signups always pick
+  // consumer to land them on the unified shell.
   const TYPES = [
-    { value: 'consumer',   label: `🏠 ${t('welcome.foodLover')}`,        color: C.consumer.primary },
-    { value: 'diner',      label: `🍽️ ${t('welcome.foodExplorer')}`,    color: C.diner.primary },
+    { value: 'consumer',   label: `🍴 ${t('welcome.foodPerson')}`,       color: C.consumer.primary },
     { value: 'restaurant', label: `🏪 ${t('welcome.restaurantOwner')}`,  color: C.restaurant.primary },
   ];
+  // Normalise the URL ?type= param. Old links / shares might still
+  // carry ?type=diner — fold it into 'consumer' so users land in the
+  // unified shell instead of seeing a non-existent tile selected.
+  const normalisedType = defaultType === 'diner' ? 'consumer' : defaultType;
   const [form, setForm] = useState({
-    email: '', password: '', display_name: '', account_type: defaultType || 'consumer',
+    email: '', password: '', display_name: '', account_type: normalisedType || 'consumer',
   });
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);

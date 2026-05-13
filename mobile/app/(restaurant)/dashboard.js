@@ -77,6 +77,23 @@ export default function Dashboard() {
         ))}
       </View>
 
+      {/* Flavor — same AI assistant the consumer side uses. Restaurant
+          operators ask it about menu engineering, pairings on the wine
+          list, fixes for tough dishes. Routes into the (consumer)
+          assistant screen; backend opened up to all logged-in users. */}
+      <TouchableOpacity
+        style={flavorStyles.card}
+        onPress={() => router.push('/(consumer)/assistant')}
+        activeOpacity={0.85}
+      >
+        <Text style={flavorStyles.emoji}>👨‍🍳</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={flavorStyles.title}>{t('dashboard.askFlavor')}</Text>
+          <Text style={flavorStyles.sub}>{t('dashboard.askFlavorSub')}</Text>
+        </View>
+        <Text style={flavorStyles.arrow}>→</Text>
+      </TouchableOpacity>
+
       <Text style={styles.section}>{t('dashboard.last30Days')}</Text>
 
       <MetricCard label={t('dashboard.totalRevenue')}     value={`$${(stats.total_revenue || 0).toLocaleString()}`}   accent={C.restaurant.primary} />
@@ -101,4 +118,12 @@ const styles = StyleSheet.create({
   quickIcon:  { fontSize: 22, marginBottom: 4 },
   quickLabel: { fontSize: 10, fontWeight: '700', color: C.gray[600], textAlign: 'center' },
   section:    { fontSize: 13, fontWeight: '600', color: C.gray[500], marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+});
+
+const flavorStyles = StyleSheet.create({
+  card:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.restaurant.primary, borderRadius: 16, padding: 16, marginBottom: 24 },
+  emoji:   { fontSize: 32 },
+  title:   { fontSize: 15, fontWeight: '800', color: '#fff' },
+  sub:     { fontSize: 12, color: '#fff', opacity: 0.85, marginTop: 2, lineHeight: 16 },
+  arrow:   { fontSize: 20, color: '#fff', fontWeight: '700' },
 });

@@ -6,6 +6,8 @@
     "foodLoverTagline": "Il vino giusto. La canzone giusta. La ricetta giusta.",
     "foodExplorer": "Esploratore gastronomico",
     "foodExplorerTagline": "Ricorda ogni bel pasto. Prenota il prossimo.",
+    "foodPerson": "Amo il cibo",
+    "foodPersonTagline": "Cucina a casa + esci a mangiare. Abbinamenti, ricette, ristoranti — tutto in un'app.",
     "restaurantOwner": "Ristoratore",
     "restaurantOwnerTagline": "Numeri chiari. Servizio migliore.",
     "alreadyHaveAccount": "Hai già un account?",
@@ -314,6 +316,16 @@
     "tryAgain": "Riprova",
     "somethingWentWrong": "Qualcosa è andato storto.",
     "restaurant": "Ristorante"
+  },
+  "dine": {
+    "title": "Mangiare fuori",
+    "subtitle": "Scopri ristoranti, prenota un tavolo, tieni traccia delle tue visite",
+    "discoverTitle": "Scopri ristoranti",
+    "discoverSub": "Trova il tuo prossimo bel pasto fuori — per atmosfera, cucina o budget",
+    "bookTitle": "Le mie prenotazioni",
+    "bookSub": "Prenotazioni in arrivo e passate",
+    "historyTitle": "Cronologia visite",
+    "historySub": "Tutti i pasti che hai registrato"
   },
   "screens": {
     "recipes": { "title": "Ricette", "subtitle": "Quello che hai cucinato + idee per la prossima volta", "empty": "Ancora niente — provane una." },
