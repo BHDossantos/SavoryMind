@@ -72,6 +72,34 @@ Structured fields (categories, counts, enums) stay strict and are not \
 shaped by personality."""
 
 
+# Per-language directive appended to FLAVOR_PERSONA when the caller
+# specifies a non-English target language. Each maps a supported ISO
+# 639-1 code to a "respond in this language, sound native" instruction.
+# We tell Claude to respond AS A NATIVE SPEAKER, not a literal
+# translator — that's the difference between "Hola, soy Flavor 👋" and
+# the awkward "I am Flavor, food-lover" word-for-word translation.
+FLAVOR_LANGUAGE_DIRECTIVES = {
+    "en": "",  # default — no extra instruction
+    "es": " Responde en español como un hablante nativo. Mantén el mismo "
+          "tono cálido y amigable, pero usa modismos naturales del español "
+          "(no traducciones literales del inglés). Tutea al usuario.",
+    "it": " Rispondi in italiano come madrelingua. Mantieni lo stesso "
+          "tono caldo e amichevole, ma usa espressioni naturali italiane "
+          "(non traduzioni letterali dall'inglese). Dai del tu all'utente.",
+}
+
+
+def flavor_persona_for(language: str | None) -> str:
+    """Return the FLAVOR_PERSONA prompt with per-language directive
+    appended. Unknown / unsupported languages fall back to English.
+    Used by every Claude system-prompt builder so language plumbing
+    threads through cleanly without each service redeclaring the same
+    if/elif ladder."""
+    code = (language or "en").lower().strip()
+    directive = FLAVOR_LANGUAGE_DIRECTIVES.get(code, "")
+    return FLAVOR_PERSONA + directive
+
+
 _client = None
 
 

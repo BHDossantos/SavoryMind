@@ -113,6 +113,8 @@ class UserResponse(BaseModel):
     serves_cocktails:    Optional[bool] = None
     serves_beer:         Optional[bool] = None
     onboarding_completed: bool          = False
+    # i18n preference; default 'en' so legacy clients without the column still work.
+    language:            str             = "en"
 
     model_config = {"from_attributes": True}
 
@@ -177,6 +179,19 @@ class ProfileUpdate(BaseModel):
 
     # IANA timezone string for restaurant-local scheduling (inventory digest etc.)
     timezone: Optional[str] = None
+
+    # i18n preference. v1 supported codes: en, es, it.
+    language: Optional[str] = None
+
+    @field_validator("language")
+    @classmethod
+    def validate_language(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.lower().strip()
+        if v not in ("en", "es", "it"):
+            raise ValueError("language must be one of: en, es, it")
+        return v
 
     @field_validator("timezone")
     @classmethod
