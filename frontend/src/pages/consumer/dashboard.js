@@ -195,6 +195,33 @@ export default function ConsumerDashboard() {
         ))}
       </div>
 
+      {/* ── Going out — diner feature set surfaced inside the unified
+          consumer shell. Cards route into the (legacy) /diner/*
+          screens which still work for any logged-in user. */}
+      <div>
+        <h2 className="font-semibold text-gray-800 mb-3">Going out 🍽️</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Link href="/diner/discover"
+            className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-2xl p-4 hover:shadow-md transition-all group">
+            <span className="text-2xl">🔍</span>
+            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">Discover restaurants</p>
+            <p className="text-xs text-gray-500 mt-0.5">Mood, cuisine, budget</p>
+          </Link>
+          <Link href="/diner/book"
+            className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-2xl p-4 hover:shadow-md transition-all group">
+            <span className="text-2xl">📅</span>
+            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">My bookings</p>
+            <p className="text-xs text-gray-500 mt-0.5">Upcoming + past</p>
+          </Link>
+          <Link href="/diner/history"
+            className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-2xl p-4 hover:shadow-md transition-all group">
+            <span className="text-2xl">📖</span>
+            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">Visit history</p>
+            <p className="text-xs text-gray-500 mt-0.5">Every meal logged</p>
+          </Link>
+        </div>
+      </div>
+
       {/* ── Main grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

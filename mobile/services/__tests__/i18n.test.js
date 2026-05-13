@@ -18,7 +18,7 @@ describe('i18n service', () => {
   });
 
   test('exposes the supported set', () => {
-    expect(SUPPORTED_LANGUAGES).toEqual(['en', 'es', 'it']);
+    expect(SUPPORTED_LANGUAGES).toEqual(['en', 'es', 'it', 'pt']);
   });
 
   test('setLanguage switches active language', async () => {

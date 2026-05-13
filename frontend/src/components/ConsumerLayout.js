@@ -4,23 +4,29 @@ import { useRouter } from "next/router";
 import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 
+// "Dine Out" entry added in the unified Food Lover + Food Explorer
+// rollout. Routes into the (legacy) /diner/* tree where the
+// discover/book/history screens still live.
 const NAV = [
-  { href: "/consumer/dashboard", label: "Home",    icon: "🏠", match: ["/consumer/dashboard"] },
-  { href: "/consumer/explore",   label: "Explore", icon: "✨", match: ["/consumer/explore"] },
-  { href: "/consumer/cook",      label: "Cook",    icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry", "/consumer/guided-cooking"] },
-  { href: "/consumer/order",     label: "Order",   icon: "🛵", match: ["/consumer/order"] },
-  { href: "/consumer/profile",   label: "Profile", icon: "👤", match: ["/consumer/profile", "/consumer/social"] },
+  { href: "/consumer/dashboard", label: "Home",     icon: "🏠",    match: ["/consumer/dashboard"] },
+  { href: "/consumer/explore",   label: "Explore",  icon: "✨",    match: ["/consumer/explore"] },
+  { href: "/consumer/cook",      label: "Cook",     icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry", "/consumer/guided-cooking"] },
+  { href: "/diner/discover",     label: "Dine Out", icon: "🍽️",   match: ["/diner/discover", "/diner/book", "/diner/history", "/diner/restaurant"] },
+  { href: "/consumer/order",     label: "Order",    icon: "🛵",    match: ["/consumer/order"] },
+  { href: "/consumer/profile",   label: "Profile",  icon: "👤",    match: ["/consumer/profile", "/consumer/social"] },
 ];
 
 const QUICK_LINKS = [
+  { href: "/consumer/assistant", label: "Ask Flavor",      icon: "👨‍🍳" },
   { href: "/consumer/pantry",    label: "My Pantry",       icon: "🧺" },
   { href: "/consumer/planner",   label: "Meal Planner",    icon: "📅" },
   { href: "/consumer/journal",   label: "Food Journal",    icon: "📔" },
-  { href: "/consumer/assistant", label: "Culinary Help",   icon: "👨‍🍳" },
   { href: "/consumer/wine",      label: "Wine Pairing",    icon: "🍷" },
   { href: "/consumer/music",     label: "Music Mood",      icon: "🎵" },
   { href: "/consumer/beverages", label: "Beverages",       icon: "🥂" },
   { href: "/consumer/social",    label: "Connect Apps",    icon: "🔗" },
+  { href: "/diner/book",         label: "My Bookings",     icon: "📅" },
+  { href: "/diner/history",      label: "Visit History",   icon: "📖" },
 ];
 
 export default function ConsumerLayout({ children }) {

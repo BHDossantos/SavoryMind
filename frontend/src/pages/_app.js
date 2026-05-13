@@ -31,8 +31,12 @@ function homePath(user) {
   if (!user) return "/login";
   if (user.account_type === "staff") return "/staff-portal";
   if (!user.onboarding_completed) return "/onboarding";
-  if (user.account_type === "consumer") return "/consumer/dashboard";
-  if (user.account_type === "diner") return "/diner/dashboard";
+  // Food Lover (consumer) and Food Explorer (diner) used to be
+  // separate nav trees. Unified into one: both account types land
+  // on the consumer shell, which now hosts cook + dine features.
+  // Diner-only pages (discover/book/history) stay in /diner/* and
+  // are reached via the Dine entry in the consumer nav.
+  if (user.account_type === "consumer" || user.account_type === "diner") return "/consumer/dashboard";
   return "/dashboard";
 }
 
@@ -112,10 +116,14 @@ function AppContent({ Component, pageProps }) {
       const type = user.account_type;
       // null account_type means new social user — onboarding will handle it
       if (!type) return;
-      if (type === "consumer" && !isConsumerRoute) {
+      // Food Lover (consumer) + Food Explorer (diner) now share the
+      // consumer shell. They can freely navigate into /consumer/* OR
+      // /diner/* — both are part of their unified app. Only redirect
+      // them if they wander into a route that isn't theirs (e.g. the
+      // restaurant /dashboard tree).
+      const isFoodPerson = type === "consumer" || type === "diner";
+      if (isFoodPerson && !isConsumerRoute && !isDinerRoute) {
         router.replace("/consumer/dashboard");
-      } else if (type === "diner" && !isDinerRoute) {
-        router.replace("/diner/dashboard");
       } else if (type === "restaurant" && (isConsumerRoute || isDinerRoute)) {
         router.replace("/dashboard");
       }
@@ -143,19 +151,16 @@ function AppContent({ Component, pageProps }) {
     return <Component {...pageProps} />;
   }
 
-  if (user.account_type === "consumer") {
+  // Food Lover (consumer) + Food Explorer (diner) both get the
+  // ConsumerLayout — it's the unified shell with cook + dine nav
+  // after Option B. DinerLayout is kept around for routes that
+  // are explicitly diner-only (legacy /diner/welcome etc.) but
+  // not used as the top-level shell anymore.
+  if (user.account_type === "consumer" || user.account_type === "diner") {
     return (
       <ConsumerLayout>
         <Component {...pageProps} />
       </ConsumerLayout>
-    );
-  }
-
-  if (user.account_type === "diner") {
-    return (
-      <DinerLayout>
-        <Component {...pageProps} />
-      </DinerLayout>
     );
   }
 

@@ -86,6 +86,9 @@ FLAVOR_LANGUAGE_DIRECTIVES = {
     "it": " Rispondi in italiano come madrelingua. Mantieni lo stesso "
           "tono caldo e amichevole, ma usa espressioni naturali italiane "
           "(non traduzioni letterali dall'inglese). Dai del tu all'utente.",
+    "pt": " Responde em português como um falante nativo. Mantém o mesmo "
+          "tom caloroso e amigável, mas usa expressões naturais portuguesas "
+          "(não traduções literais do inglês). Trata o utilizador por tu.",
 }
 
 
