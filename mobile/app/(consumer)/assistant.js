@@ -128,6 +128,7 @@ export default function AssistantScreen() {
    *  calls to the same tool collapse into one mention. */
   function summariseToolCalls(calls) {
     const labels = {
+      // Read tools
       search_wines:           'wine catalog',
       search_beers:           'beer catalog',
       search_spirits:         'spirits catalog',
@@ -146,6 +147,18 @@ export default function AssistantScreen() {
       get_sentiment_summary:  'sentiment summary',
       get_inventory_low_stock:'inventory levels',
       get_top_customers:      'top customers',
+      // Action tools (writes) — phrased as actions taken so the
+      // ghost line reads "✓ Flavor updated your pantry."
+      add_to_pantry:           'updated your pantry',
+      remove_from_pantry:      'updated your pantry',
+      log_meal_memory:         'saved to your journal',
+      update_preferences_field:'updated your preferences',
+      create_booking:          'created a booking',
+      log_visit:               'logged a visit',
+      add_menu_item:           'added a menu item',
+      update_menu_item:        'updated a menu item',
+      accept_booking:          'accepted a booking',
+      decline_booking:         'declined a booking',
     };
     const seen = new Set();
     const parts = [];

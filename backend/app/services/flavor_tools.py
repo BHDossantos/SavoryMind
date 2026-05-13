@@ -470,6 +470,279 @@ def tool_get_top_customers(ctx: UserContext, *, limit: int = 10) -> dict:
     }
 
 
+# ── Action tools (write to DB) ─────────────────────────────────────────────
+#
+# Action tools mutate state on the user's behalf. They auto-execute on
+# Flavor's call — no two-step confirmation round-trip — because the
+# conversation makes user intent clear ("add eggs to my pantry"), and
+# every action lands in BehaviorLog so the user can audit.
+#
+# All actions scope to ctx.user_id. Restaurant actions additionally
+# verify the target row's user_id matches the caller — a restaurant
+# operator can't accept another restaurant's booking even if Claude
+# misroutes.
+
+def _log_action(ctx: UserContext, action: str, meta: dict) -> None:
+    """Audit-log a Flavor-initiated mutation. Mirrors the _log pattern
+    in consumer routes. Best-effort: never blocks the action."""
+    try:
+        from ..models.consumer import BehaviorLog
+        row = BehaviorLog(
+            user_id=ctx.user_id,
+            action_type=f"flavor_action:{action}",
+            meta=json.dumps(meta, default=str)[:1000],
+        )
+        ctx.db.add(row)
+        ctx.db.commit()
+    except Exception:
+        ctx.db.rollback()
+
+
+def tool_add_to_pantry(ctx: UserContext, *, ingredient: str, quantity: str = "", category: str = "") -> dict:
+    """Add an ingredient to the user's pantry."""
+    name = (ingredient or "").strip()
+    if not name:
+        return {"error": "ingredient is required"}
+    if len(name) > 100:
+        return {"error": "ingredient name too long"}
+    item = PantryItem(
+        user_id=ctx.user_id,
+        ingredient=name,
+        quantity=quantity.strip() or None,
+        category=category.strip() or None,
+    )
+    ctx.db.add(item)
+    ctx.db.commit()
+    ctx.db.refresh(item)
+    _log_action(ctx, "add_to_pantry", {"ingredient": name, "quantity": quantity, "category": category})
+    return {"ok": True, "id": item.id, "ingredient": item.ingredient}
+
+
+def tool_remove_from_pantry(ctx: UserContext, *, ingredient: str) -> dict:
+    """Remove an ingredient from the user's pantry by name (case-insensitive
+    match on the most recent entry with that name)."""
+    name = (ingredient or "").strip()
+    if not name:
+        return {"error": "ingredient is required"}
+    row = (
+        ctx.db.query(PantryItem)
+        .filter(PantryItem.user_id == ctx.user_id)
+        .filter(PantryItem.ingredient.ilike(name))
+        .order_by(PantryItem.added_at.desc())
+        .first()
+    )
+    if not row:
+        return {"ok": False, "error": f"'{name}' not found in your pantry"}
+    ctx.db.delete(row)
+    ctx.db.commit()
+    _log_action(ctx, "remove_from_pantry", {"ingredient": name})
+    return {"ok": True, "removed": name}
+
+
+def tool_log_meal_memory(ctx: UserContext, *, dish_name: str, rating: int = 5,
+                        emoji: str = "🍽️", notes: str = "", cuisine: str = "",
+                        what_to_change: str = "") -> dict:
+    """Save a meal memory to the user's food journal."""
+    name = (dish_name or "").strip()
+    if not name:
+        return {"error": "dish_name is required"}
+    rating = max(1, min(int(rating or 5), 5))
+    memory = MealMemory(
+        user_id=ctx.user_id,
+        dish_name=name[:150],
+        emoji=(emoji or "🍽️")[:10],
+        rating=rating,
+        notes=notes.strip() or None,
+        what_id_change=what_to_change.strip() or None,
+        cuisine=cuisine.strip() or None,
+    )
+    ctx.db.add(memory)
+    ctx.db.commit()
+    ctx.db.refresh(memory)
+    _log_action(ctx, "log_meal_memory", {"dish_name": name, "rating": rating})
+    return {"ok": True, "id": memory.id, "dish_name": memory.dish_name, "rating": rating}
+
+
+# Profile fields we let Flavor write to. Excludes anything sensitive
+# (email, password, account_type, employer_id) or that would mess up
+# the unified shell (account_type changes route the user elsewhere).
+_PROFILE_WRITABLE_FIELDS = {
+    "first_name", "last_name", "city", "country", "bio",
+    "kitchen_style", "skill_level", "cooking_frequency", "cooking_time_pref",
+    "ingredient_budget", "language",
+    # JSON-text fields — Flavor passes the list directly, we serialise.
+    "cuisine_preferences", "cuisine_dislikes", "dietary_preferences",
+    "cooking_goals", "meal_types", "kitchen_tools", "music_genres",
+}
+
+
+def tool_update_preferences_field(ctx: UserContext, *, field: str, value) -> dict:
+    """Update a single profile field. JSON-text fields accept a list."""
+    field = (field or "").strip()
+    if field not in _PROFILE_WRITABLE_FIELDS:
+        return {"error": f"field '{field}' is not writable via Flavor"}
+    u = ctx.db.query(User).filter(User.id == ctx.user_id).first()
+    if not u:
+        return {"error": "user not found"}
+    # JSON-text fields get serialised; everything else is a plain string.
+    if field in {"cuisine_preferences", "cuisine_dislikes", "dietary_preferences",
+                 "cooking_goals", "meal_types", "kitchen_tools", "music_genres"}:
+        if not isinstance(value, list):
+            return {"error": f"field '{field}' expects a list"}
+        setattr(u, field, json.dumps(value))
+    else:
+        if not isinstance(value, (str, int, float)):
+            return {"error": f"field '{field}' expects a string"}
+        setattr(u, field, str(value))
+    ctx.db.commit()
+    _log_action(ctx, "update_preferences", {"field": field, "value": str(value)[:100]})
+    return {"ok": True, "field": field}
+
+
+def tool_create_booking(ctx: UserContext, *, restaurant_name: str, date: str,
+                       time: str = "19:00", party_size: int = 2,
+                       special_requests: str = "") -> dict:
+    """Create a restaurant booking. Dates are ISO format (YYYY-MM-DD)."""
+    name = (restaurant_name or "").strip()
+    if not name:
+        return {"error": "restaurant_name is required"}
+    if not date or len(date) < 8:
+        return {"error": "date is required (YYYY-MM-DD)"}
+    party_size = max(1, min(int(party_size or 2), 20))
+    booking = DinerBooking(
+        user_id=ctx.user_id,
+        restaurant_name=name[:150],
+        booking_date=date.strip(),
+        booking_time=(time or "19:00").strip()[:10],
+        party_size=party_size,
+        special_requests=special_requests.strip() or None,
+        status="pending",
+    )
+    ctx.db.add(booking)
+    ctx.db.commit()
+    ctx.db.refresh(booking)
+    _log_action(ctx, "create_booking", {"restaurant": name, "date": date, "time": time})
+    return {
+        "ok": True, "id": booking.id,
+        "restaurant": booking.restaurant_name,
+        "date": booking.booking_date, "time": booking.booking_time,
+        "party_size": booking.party_size, "status": booking.status,
+        "note": "Booking is in 'pending' status until the restaurant confirms.",
+    }
+
+
+def tool_log_visit(ctx: UserContext, *, restaurant_name: str, visit_date: str,
+                  rating: float = 5.0, items: str = "",
+                  highlights: str = "", lowlights: str = "",
+                  would_return: bool = True) -> dict:
+    """Log a past restaurant visit to the diner's history."""
+    name = (restaurant_name or "").strip()
+    if not name:
+        return {"error": "restaurant_name is required"}
+    if not visit_date:
+        return {"error": "visit_date is required (YYYY-MM-DD)"}
+    visit = DinerVisit(
+        user_id=ctx.user_id,
+        restaurant_name=name[:150],
+        visit_date=visit_date.strip(),
+        items_ordered=items.strip() or None,
+        overall_rating=max(0.0, min(float(rating or 5.0), 5.0)),
+        food_rating=max(0.0, min(float(rating or 5.0), 5.0)),
+        staff_rating=max(0.0, min(float(rating or 5.0), 5.0)),
+        highlights=highlights.strip() or None,
+        lowlights=lowlights.strip() or None,
+        would_return=bool(would_return),
+    )
+    ctx.db.add(visit)
+    ctx.db.commit()
+    ctx.db.refresh(visit)
+    _log_action(ctx, "log_visit", {"restaurant": name, "date": visit_date, "rating": rating})
+    return {"ok": True, "id": visit.id, "restaurant": visit.restaurant_name, "rating": visit.overall_rating}
+
+
+# ── Restaurant action tools ────────────────────────────────────────────────
+
+def tool_add_menu_item(ctx: UserContext, *, name: str, category: str, price: float,
+                     cost: float = 0.0, description: str = "") -> dict:
+    """Add a new item to the restaurant's menu."""
+    n = (name or "").strip()
+    if not n:
+        return {"error": "name is required"}
+    if not category:
+        return {"error": "category is required"}
+    if price is None or price <= 0:
+        return {"error": "price must be > 0"}
+    item = MenuItem(
+        user_id=ctx.user_id,
+        name=n[:150],
+        category=category.strip(),
+        price=float(price),
+        cost=max(0.0, float(cost or 0)),
+        description=description.strip()[:500],
+    )
+    ctx.db.add(item)
+    ctx.db.commit()
+    ctx.db.refresh(item)
+    _log_action(ctx, "add_menu_item", {"name": n, "category": category, "price": price})
+    return {"ok": True, "id": item.id, "name": item.name}
+
+
+def tool_update_menu_item(ctx: UserContext, *, item_id: int, name: str = "",
+                        category: str = "", price: float = None,
+                        cost: float = None, description: str = None) -> dict:
+    """Update fields on a menu item the restaurant operator owns."""
+    item = (
+        ctx.db.query(MenuItem)
+        .filter(MenuItem.id == item_id, MenuItem.user_id == ctx.user_id)
+        .first()
+    )
+    if not item:
+        return {"error": f"menu item {item_id} not found in your menu"}
+    if name:        item.name = name.strip()[:150]
+    if category:    item.category = category.strip()
+    if price is not None and price > 0:  item.price = float(price)
+    if cost is not None and cost >= 0:   item.cost = float(cost)
+    if description is not None:          item.description = description.strip()[:500]
+    ctx.db.commit()
+    _log_action(ctx, "update_menu_item", {"item_id": item_id})
+    return {"ok": True, "id": item.id, "name": item.name}
+
+
+def tool_accept_booking(ctx: UserContext, *, booking_id: int) -> dict:
+    """Mark an incoming booking as confirmed."""
+    booking = (
+        ctx.db.query(Booking)
+        .filter(Booking.id == booking_id, Booking.user_id == ctx.user_id)
+        .first()
+    )
+    if not booking:
+        return {"error": f"booking {booking_id} not found"}
+    booking.status = "confirmed"
+    ctx.db.commit()
+    _log_action(ctx, "accept_booking", {"booking_id": booking_id})
+    return {"ok": True, "id": booking_id, "status": "confirmed"}
+
+
+def tool_decline_booking(ctx: UserContext, *, booking_id: int, reason: str) -> dict:
+    """Mark an incoming booking as declined. A reason is required so the
+    audit log captures why; the reason can be surfaced to the customer
+    in a follow-up touch-point."""
+    if not (reason or "").strip():
+        return {"error": "reason is required to decline a booking"}
+    booking = (
+        ctx.db.query(Booking)
+        .filter(Booking.id == booking_id, Booking.user_id == ctx.user_id)
+        .first()
+    )
+    if not booking:
+        return {"error": f"booking {booking_id} not found"}
+    booking.status = "declined"
+    booking.notes = (booking.notes or "") + f"\n[declined] {reason.strip()}"
+    ctx.db.commit()
+    _log_action(ctx, "decline_booking", {"booking_id": booking_id, "reason": reason.strip()[:200]})
+    return {"ok": True, "id": booking_id, "status": "declined"}
+
+
 # ── Anthropic tool definitions ─────────────────────────────────────────────
 #
 # Schema format follows https://docs.anthropic.com/en/docs/build-with-claude/tool-use.
@@ -647,6 +920,112 @@ _DINER_TOOL_DEFINITIONS = [
             "properties": {"limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50}},
         },
     },
+    # ── Action tools (write) ──
+    {
+        "name": "add_to_pantry",
+        "description": (
+            "Add an ingredient to the user's pantry. ONLY call when the user "
+            "EXPLICITLY says to add something (e.g. 'add eggs to my pantry'). "
+            "Do NOT call when the user is just talking about ingredients or "
+            "asking what to cook with X."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "ingredient": {"type": "string"},
+                "quantity":   {"type": "string", "description": "Optional, e.g. '2 lb'"},
+                "category":   {"type": "string", "description": "Optional, e.g. 'produce'"},
+            },
+            "required": ["ingredient"],
+        },
+    },
+    {
+        "name": "remove_from_pantry",
+        "description": "Remove an ingredient from the user's pantry by name. Only call on explicit 'remove' / 'used up'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"ingredient": {"type": "string"}},
+            "required": ["ingredient"],
+        },
+    },
+    {
+        "name": "log_meal_memory",
+        "description": (
+            "Save a meal to the user's food journal. Call after the user "
+            "confirms they cooked + want it logged (e.g. 'log that I made "
+            "the carbonara, 5 stars')."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "dish_name":      {"type": "string"},
+                "rating":         {"type": "integer", "minimum": 1, "maximum": 5, "default": 5},
+                "emoji":          {"type": "string"},
+                "notes":          {"type": "string"},
+                "cuisine":        {"type": "string"},
+                "what_to_change": {"type": "string"},
+            },
+            "required": ["dish_name"],
+        },
+    },
+    {
+        "name": "update_preferences_field",
+        "description": (
+            "Update a single profile preference field. Use when the user "
+            "tells you about a preference change ('I'm vegetarian now', "
+            "'I prefer Italian food'). Writable fields: first_name, "
+            "last_name, city, country, bio, kitchen_style, skill_level, "
+            "cooking_frequency, cooking_time_pref, ingredient_budget, "
+            "language, and the list fields cuisine_preferences, "
+            "cuisine_dislikes, dietary_preferences, cooking_goals, "
+            "meal_types, kitchen_tools, music_genres."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "field": {"type": "string"},
+                "value": {"description": "String for scalar fields; array for list fields."},
+            },
+            "required": ["field", "value"],
+        },
+    },
+    {
+        "name": "create_booking",
+        "description": (
+            "Create a restaurant booking for the user. Lands as 'pending' "
+            "until the restaurant confirms. Confirm date + time + party "
+            "size with the user before calling — bookings touch real "
+            "restaurants and are mildly irreversible."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "restaurant_name":  {"type": "string"},
+                "date":             {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                "time":             {"type": "string", "description": "HH:MM (24h)", "default": "19:00"},
+                "party_size":       {"type": "integer", "minimum": 1, "maximum": 20, "default": 2},
+                "special_requests": {"type": "string"},
+            },
+            "required": ["restaurant_name", "date"],
+        },
+    },
+    {
+        "name": "log_visit",
+        "description": "Log a past restaurant visit to the diner's history.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "restaurant_name": {"type": "string"},
+                "visit_date":      {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                "rating":          {"type": "number", "minimum": 0, "maximum": 5, "default": 5},
+                "items":           {"type": "string", "description": "Comma-separated dishes"},
+                "highlights":      {"type": "string"},
+                "lowlights":       {"type": "string"},
+                "would_return":    {"type": "boolean", "default": True},
+            },
+            "required": ["restaurant_name", "visit_date"],
+        },
+    },
 ]
 
 _RESTAURANT_TOOL_DEFINITIONS = [
@@ -699,6 +1078,62 @@ _RESTAURANT_TOOL_DEFINITIONS = [
             "properties": {"limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50}},
         },
     },
+    # ── Restaurant action tools (write) ──
+    {
+        "name": "add_menu_item",
+        "description": "Add a new item to the restaurant's menu.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name":        {"type": "string"},
+                "category":    {"type": "string", "description": "'Mains' / 'Starters' / 'Desserts' / 'Drinks'"},
+                "price":       {"type": "number", "exclusiveMinimum": 0},
+                "cost":        {"type": "number", "minimum": 0, "default": 0},
+                "description": {"type": "string"},
+            },
+            "required": ["name", "category", "price"],
+        },
+    },
+    {
+        "name": "update_menu_item",
+        "description": "Update fields on an existing menu item. Pass only the fields you want to change.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "item_id":     {"type": "integer"},
+                "name":        {"type": "string"},
+                "category":    {"type": "string"},
+                "price":       {"type": "number"},
+                "cost":        {"type": "number"},
+                "description": {"type": "string"},
+            },
+            "required": ["item_id"],
+        },
+    },
+    {
+        "name": "accept_booking",
+        "description": "Confirm an incoming booking. Only call on explicit operator instruction.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"booking_id": {"type": "integer"}},
+            "required": ["booking_id"],
+        },
+    },
+    {
+        "name": "decline_booking",
+        "description": (
+            "Decline an incoming booking. A reason is required (used in "
+            "the audit log + can be surfaced to the customer)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "booking_id": {"type": "integer"},
+                "reason":     {"type": "string"},
+            },
+            "required": ["booking_id", "reason"],
+        },
+    },
 ]
 
 
@@ -717,15 +1152,27 @@ _TOOLS = {
     "get_pantry":            tool_get_pantry,
     "get_journal_recent":    tool_get_journal_recent,
     "get_user_preferences":  tool_get_user_preferences,
-    # Diner / consumer (unified) tools — bookings + visit history.
+    # Diner / consumer (unified) read tools.
     "get_my_bookings":       tool_get_my_bookings,
     "get_visit_history":     tool_get_visit_history,
-    # Restaurant-only tools.
+    # Diner / consumer action tools (Phase 9 — writes).
+    "add_to_pantry":            tool_add_to_pantry,
+    "remove_from_pantry":       tool_remove_from_pantry,
+    "log_meal_memory":          tool_log_meal_memory,
+    "update_preferences_field": tool_update_preferences_field,
+    "create_booking":           tool_create_booking,
+    "log_visit":                tool_log_visit,
+    # Restaurant read tools.
     "get_menu":              tool_get_menu,
     "get_bookings_today":    tool_get_bookings_today,
     "get_sentiment_summary": tool_get_sentiment_summary,
     "get_inventory_low_stock": tool_get_inventory_low_stock,
     "get_top_customers":     tool_get_top_customers,
+    # Restaurant action tools.
+    "add_menu_item":         tool_add_menu_item,
+    "update_menu_item":      tool_update_menu_item,
+    "accept_booking":        tool_accept_booking,
+    "decline_booking":       tool_decline_booking,
 }
 
 
