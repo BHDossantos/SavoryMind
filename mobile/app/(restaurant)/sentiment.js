@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal, ActivityIndicator, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -8,13 +9,17 @@ import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 import { useFocusEffect } from 'expo-router';
 
-function Badge({ label }) {
+// Badge takes the canonical sentiment value (positive/negative/neutral)
+// from the backend and renders a translated label via the t() injected
+// in render. The colour mapping stays on the canonical value.
+function Badge({ label, text }) {
   const colors = { positive: { bg: '#dcfce7', text: '#16a34a' }, negative: { bg: '#fee2e2', text: '#dc2626' }, neutral: { bg: '#f1f5f9', text: '#64748b' } };
   const s = colors[label] || colors.neutral;
-  return <Text style={[styles.badge, { backgroundColor: s.bg, color: s.text }]}>{label}</Text>;
+  return <Text style={[styles.badge, { backgroundColor: s.bg, color: s.text }]}>{text}</Text>;
 }
 
 export default function SentimentScreen() {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState([]);
   const [summary, setSummary] = useState(null);
   // Claude-extracted top complaints / praise / themes / tone — populated
@@ -48,40 +53,51 @@ export default function SentimentScreen() {
   const filtered = reviews.filter((r) => filter === 'all' || r.sentiment_label === filter);
 
   const handleSubmit = async () => {
-    if (!form.menu_item) { setFormError('Select a menu item.'); return; }
+    if (!form.menu_item) { setFormError(t('sentimentScreen.errSelectMenuItem')); return; }
     const rating = parseInt(form.rating);
-    if (rating < 1 || rating > 5) { setFormError('Rating must be 1–5.'); return; }
+    if (rating < 1 || rating > 5) { setFormError(t('sentimentScreen.errRatingRange')); return; }
     setSaving(true); setFormError(null);
     try {
       await api.createReview({ ...form, rating });
       setShowForm(false);
       setForm({ customer_name: '', menu_item: '', rating: '5', comment: '' });
       load();
-    } catch (e) { setFormError(e.message || 'Submit failed.'); }
+    } catch (e) { setFormError(e.message || t('sentimentScreen.errSubmitFailed')); }
     finally { setSaving(false); }
   };
 
   const handleDelete = (r) =>
-    Alert.alert('Delete Review', `Delete review by "${r.customer_name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await api.deleteReview(r.id); load(); } },
+    Alert.alert(t('sentimentScreen.deleteTitle'), t('sentimentScreen.deleteBody', { name: r.customer_name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('sentimentScreen.delete'), style: 'destructive', onPress: async () => { await api.deleteReview(r.id); load(); } },
     ]);
 
-  if (loading) return <LoadingSpinner message="Loading reviews..." color={C.restaurant.primary} />;
+  if (loading) return <LoadingSpinner message={t('sentimentScreen.loading')} color={C.restaurant.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={load} />;
 
+  const SENTIMENT_LABEL = {
+    positive: t('sentimentScreen.summaryPositive'),
+    neutral:  t('sentimentScreen.summaryNeutral'),
+    negative: t('sentimentScreen.summaryNegative'),
+  };
+  const FILTER_LABEL = {
+    all:      t('sentimentScreen.filterAll'),
+    positive: t('sentimentScreen.filterPositive'),
+    neutral:  t('sentimentScreen.filterNeutral'),
+    negative: t('sentimentScreen.filterNegative'),
+  };
   const barData = summary ? [
-    { label: 'Positive', value: summary.positive_count, color: C.green },
-    { label: 'Neutral',  value: summary.neutral_count,  color: C.gray[400] },
-    { label: 'Negative', value: summary.negative_count, color: C.red },
+    { label: SENTIMENT_LABEL.positive, value: summary.positive_count, color: C.green },
+    { label: SENTIMENT_LABEL.neutral,  value: summary.neutral_count,  color: C.gray[400] },
+    { label: SENTIMENT_LABEL.negative, value: summary.negative_count, color: C.red },
   ] : [];
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Sentiment</Text>
+        <Text style={styles.title}>{t('sentimentScreen.title')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowForm(true)}>
-          <Text style={styles.addBtnText}>+ Review</Text>
+          <Text style={styles.addBtnText}>{t('sentimentScreen.addBtn')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -90,10 +106,10 @@ export default function SentimentScreen() {
         {summary && (
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
-              <View style={styles.summaryItem}><Text style={styles.summaryVal}>{summary.total_reviews}</Text><Text style={styles.summaryLab}>Total</Text></View>
-              <View style={styles.summaryItem}><Text style={[styles.summaryVal, { color: C.green }]}>{summary.positive_count}</Text><Text style={styles.summaryLab}>Positive</Text></View>
-              <View style={styles.summaryItem}><Text style={styles.summaryVal}>{summary.neutral_count}</Text><Text style={styles.summaryLab}>Neutral</Text></View>
-              <View style={styles.summaryItem}><Text style={[styles.summaryVal, { color: C.red }]}>{summary.negative_count}</Text><Text style={styles.summaryLab}>Negative</Text></View>
+              <View style={styles.summaryItem}><Text style={styles.summaryVal}>{summary.total_reviews}</Text><Text style={styles.summaryLab}>{t('sentimentScreen.summaryTotal')}</Text></View>
+              <View style={styles.summaryItem}><Text style={[styles.summaryVal, { color: C.green }]}>{summary.positive_count}</Text><Text style={styles.summaryLab}>{SENTIMENT_LABEL.positive}</Text></View>
+              <View style={styles.summaryItem}><Text style={styles.summaryVal}>{summary.neutral_count}</Text><Text style={styles.summaryLab}>{SENTIMENT_LABEL.neutral}</Text></View>
+              <View style={styles.summaryItem}><Text style={[styles.summaryVal, { color: C.red }]}>{summary.negative_count}</Text><Text style={styles.summaryLab}>{SENTIMENT_LABEL.negative}</Text></View>
             </View>
             <SimpleBarChart data={barData} height={120} />
           </View>
@@ -108,27 +124,26 @@ export default function SentimentScreen() {
             explanation. */}
         {themes && themes.total_reviews > 0 && themes.enriched_reviews === 0 && (
           <View style={styles.themesCard} testID="themes-empty">
-            <Text style={styles.themesHeading}>What guests are talking about</Text>
+            <Text style={styles.themesHeading}>{t('sentimentScreen.themesHeading')}</Text>
             <Text style={[styles.themesSub, { marginTop: 6 }]}>
-              None of your {themes.total_reviews} reviews have been analysed yet.
+              {t('sentimentScreen.themesEmpty', { total: themes.total_reviews })}
             </Text>
             <Text style={[styles.themesSub, { marginTop: 8, color: C.gray[400] }]}>
-              New reviews are analysed automatically. Existing reviews can be
-              enriched by running the backfill script (requires ANTHROPIC_API_KEY).
+              {t('sentimentScreen.themesEmptyHelp')}
             </Text>
           </View>
         )}
 
         {themes && themes.enriched_reviews > 0 && (
           <View style={styles.themesCard}>
-            <Text style={styles.themesHeading}>What guests are talking about</Text>
+            <Text style={styles.themesHeading}>{t('sentimentScreen.themesHeading')}</Text>
             <Text style={styles.themesSub}>
-              From {themes.enriched_reviews} of {themes.total_reviews} reviews
+              {t('sentimentScreen.themesFromOf', { enriched: themes.enriched_reviews, total: themes.total_reviews })}
             </Text>
 
             {themes.top_complaints && themes.top_complaints.length > 0 && (
               <View style={{ marginTop: 12 }}>
-                <Text style={styles.themesGroup}>Top complaints</Text>
+                <Text style={styles.themesGroup}>{t('sentimentScreen.themesTopComplaints')}</Text>
                 <View style={styles.tagRow}>
                   {themes.top_complaints.map((c) => (
                     <View key={c.label} style={[styles.tag, styles.tagRed]}>
@@ -142,7 +157,7 @@ export default function SentimentScreen() {
 
             {themes.top_praise && themes.top_praise.length > 0 && (
               <View style={{ marginTop: 12 }}>
-                <Text style={styles.themesGroup}>Top praise</Text>
+                <Text style={styles.themesGroup}>{t('sentimentScreen.themesTopPraise')}</Text>
                 <View style={styles.tagRow}>
                   {themes.top_praise.map((p) => (
                     <View key={p.label} style={[styles.tag, styles.tagGreen]}>
@@ -156,7 +171,7 @@ export default function SentimentScreen() {
 
             {themes.top_themes && themes.top_themes.length > 0 && (
               <View style={{ marginTop: 12 }}>
-                <Text style={styles.themesGroup}>Themes</Text>
+                <Text style={styles.themesGroup}>{t('sentimentScreen.themesGroup')}</Text>
                 <View style={styles.tagRow}>
                   {themes.top_themes.map((t) => (
                     <View key={t.label} style={[styles.tag, styles.tagBlue]}>
@@ -174,7 +189,7 @@ export default function SentimentScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           {['all', 'positive', 'neutral', 'negative'].map((f) => (
             <TouchableOpacity key={f} style={[styles.filterBtn, filter === f && styles.filterBtnActive]} onPress={() => setFilter(f)}>
-              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f === 'all' ? 'All' : f}</Text>
+              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{FILTER_LABEL[f]}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -188,7 +203,7 @@ export default function SentimentScreen() {
                 <Text style={styles.stars}>{'⭐'.repeat(r.rating)}</Text>
                 <Text style={styles.comment}>{r.comment}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                  <Badge label={r.sentiment_label} />
+                  <Badge label={r.sentiment_label} text={SENTIMENT_LABEL[r.sentiment_label] || r.sentiment_label} />
                   <Text style={styles.score}>{r.sentiment_score.toFixed(2)}</Text>
                 </View>
               </View>
@@ -196,23 +211,27 @@ export default function SentimentScreen() {
             </View>
           </View>
         ))}
-        {filtered.length === 0 && <Text style={styles.empty}>No reviews match this filter.</Text>}
+        {filtered.length === 0 && <Text style={styles.empty}>{t('sentimentScreen.empty')}</Text>}
       </ScrollView>
 
       {/* Add Review Modal */}
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
         <SafeScreen>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-            <Text style={styles.modalTitle}>Add Review</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}><Text style={{ color: C.gray[500] }}>Cancel</Text></TouchableOpacity>
+            <Text style={styles.modalTitle}>{t('sentimentScreen.modalAdd')}</Text>
+            <TouchableOpacity onPress={() => setShowForm(false)}><Text style={{ color: C.gray[500] }}>{t('common.cancel')}</Text></TouchableOpacity>
           </View>
-          {[{ key: 'customer_name', label: 'Customer Name' }, { key: 'rating', label: 'Rating (1–5)', kb: 'number-pad' }, { key: 'comment', label: 'Comment', multi: true }].map(({ key, label, kb, multi }) => (
+          {[
+            { key: 'customer_name', label: t('sentimentScreen.labelCustomerName') },
+            { key: 'rating',        label: t('sentimentScreen.labelRating'), kb: 'number-pad' },
+            { key: 'comment',       label: t('sentimentScreen.labelComment'), multi: true },
+          ].map(({ key, label, kb, multi }) => (
             <View key={key} style={{ marginBottom: 12 }}>
               <Text style={styles.label}>{label}</Text>
               <TextInput style={[styles.input, multi && { height: 80, textAlignVertical: 'top' }]} value={form[key]} onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))} keyboardType={kb || 'default'} multiline={multi} />
             </View>
           ))}
-          <Text style={styles.label}>Menu Item</Text>
+          <Text style={styles.label}>{t('sentimentScreen.labelMenuItem')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {menuItems.map((i) => (
               <TouchableOpacity key={i.id} style={[styles.filterBtn, form.menu_item === i.name && styles.filterBtnActive]} onPress={() => setForm((f) => ({ ...f, menu_item: i.name }))}>
@@ -222,7 +241,7 @@ export default function SentimentScreen() {
           </ScrollView>
           {formError && <Text style={styles.formError}>{formError}</Text>}
           <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit} disabled={saving}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Submit Review</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t('sentimentScreen.submit')}</Text>}
           </TouchableOpacity>
         </SafeScreen>
       </Modal>

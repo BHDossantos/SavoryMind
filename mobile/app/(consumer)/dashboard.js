@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { api } from '../../services/api';
@@ -7,23 +8,26 @@ import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
 import { useFocusEffect, useRouter } from 'expo-router';
 
-const QUICK = [
-  { icon: '🍷', label: 'Pairings',   route: '/(consumer)/pairings' },
-  { icon: '🎵', label: 'Music Mood', route: '/(consumer)/music' },
-  { icon: '👨‍🍳', label: 'Recipes',   route: '/(consumer)/recipes' },
-  { icon: '🥫', label: 'Pantry',     route: '/(consumer)/pantry' },
-  { icon: '📓', label: 'Journal',    route: '/(consumer)/journal' },
-  { icon: '🔗', label: 'Connect',    route: '/(consumer)/social' },
-  { icon: '🛵', label: 'Order',      route: '/(consumer)/order' },
-];
-
 export default function ConsumerDashboard() {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [pairings, setPairings] = useState([]);
   const [moods, setMoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Quick-actions strip. Derived per-render so the labels re-translate
+  // when the active language changes; the route + icon stay static.
+  const QUICK = [
+    { icon: '🍷', label: t('nav.pairings'),  route: '/(consumer)/pairings' },
+    { icon: '🎵', label: t('nav.musicMood'), route: '/(consumer)/music' },
+    { icon: '👨‍🍳', label: t('nav.recipes'), route: '/(consumer)/recipes' },
+    { icon: '🥫', label: t('nav.pantry'),    route: '/(consumer)/pantry' },
+    { icon: '📓', label: t('nav.journal'),   route: '/(consumer)/journal' },
+    { icon: '🔗', label: t('nav.connect'),   route: '/(consumer)/social' },
+    { icon: '🛵', label: t('nav.order'),     route: '/(consumer)/order' },
+  ];
 
   const load = async () => {
     try {
@@ -42,20 +46,24 @@ export default function ConsumerDashboard() {
 
   useFocusEffect(useCallback(() => { load(); }, []));
 
-  if (loading) return <LoadingSpinner message="Loading..." color={C.consumer.primary} />;
+  if (loading) return <LoadingSpinner message={t('dashboard.loading')} color={C.consumer.primary} />;
+
+  const firstName = user?.display_name?.split(' ')[0];
 
   return (
     <SafeScreen onRefresh={load}>
       <View style={styles.topBar}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>Hey, {user?.display_name?.split(' ')[0] || 'there'} 👋</Text>
-          <Text style={styles.sub}>What are you exploring today?</Text>
+          <Text style={styles.greeting}>
+            {firstName ? t('dashboard.greeting', { name: firstName }) : t('dashboard.greetingFallback')}
+          </Text>
+          <Text style={styles.sub}>{t('dashboard.consumerSubtitle')}</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/notifications')}
           style={styles.bell}
           hitSlop={10}
-          accessibilityLabel="Notifications"
+          accessibilityLabel={t('notifications.title')}
         >
           <Text style={styles.bellIcon}>🔔</Text>
           {unreadCount > 0 && (
@@ -86,15 +94,15 @@ export default function ConsumerDashboard() {
       >
         <Text style={styles.assistantEmoji}>👨‍🍳</Text>
         <View style={{ flex: 1 }}>
-          <Text style={styles.assistantTitle}>Ask Flavor</Text>
-          <Text style={styles.assistantSub}>Real-time help with recipes, fixes, pairings, and substitutions.</Text>
+          <Text style={styles.assistantTitle}>{t('dashboard.askFlavor')}</Text>
+          <Text style={styles.assistantSub}>{t('dashboard.askFlavorSub')}</Text>
         </View>
         <Text style={styles.assistantArrow}>→</Text>
       </TouchableOpacity>
 
       {pairings.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Recent Pairings</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.recentPairings')}</Text>
           {pairings.map((p, i) => (
             <View key={i} style={styles.recentCard}>
               <Text style={styles.recentIcon}>🍷</Text>
@@ -109,7 +117,7 @@ export default function ConsumerDashboard() {
 
       {moods.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Recent Music Moods</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.recentMusicMoods')}</Text>
           {moods.map((m, i) => (
             <View key={i} style={styles.recentCard}>
               <Text style={styles.recentIcon}>🎵</Text>

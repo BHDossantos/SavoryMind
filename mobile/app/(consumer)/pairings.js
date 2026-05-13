@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { C } from '../../constants/colors';
 import { api } from '../../services/api';
 
@@ -13,14 +14,6 @@ import { api } from '../../services/api';
 // or, for wine via createWinePairing:
 //   { id, dish_name, recommendations: [{ name, grape, region, ... }], created_at }
 // We normalize both shapes into a single `pairings` array for display.
-const TABS = [
-  { id: 'wine',    label: 'Wine',    icon: '🍷' },
-  { id: 'beer',    label: 'Beer',    icon: '🍺' },
-  { id: 'spirits', label: 'Spirits', icon: '🥃' },
-];
-
-const SUGGESTIONS = ['Beef Steak', 'Grilled Salmon', 'Spicy Thai Curry', 'Margherita Pizza', 'Chocolate Cake'];
-
 
 function confidenceColor(c) {
   if (c >= 0.8) return '#16a34a';
@@ -30,11 +23,28 @@ function confidenceColor(c) {
 
 
 export default function PairingsScreen() {
+  const { t } = useTranslation();
   const [tab, setTab]         = useState('wine');
   const [dish, setDish]       = useState('');
   const [results, setResults] = useState(null);   // raw response from API
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
+
+  // Tab + suggestion lists derived per-render so labels re-translate
+  // when the user flips the language picker.
+  const TABS = useMemo(() => [
+    { id: 'wine',    label: t('pairingsScreen.tabWine'),    icon: '🍷', placeholder: t('pairingsScreen.dishPlaceholderWine') },
+    { id: 'beer',    label: t('pairingsScreen.tabBeer'),    icon: '🍺', placeholder: t('pairingsScreen.dishPlaceholderBeer') },
+    { id: 'spirits', label: t('pairingsScreen.tabSpirits'), icon: '🥃', placeholder: t('pairingsScreen.dishPlaceholderSpirits') },
+  ], [t]);
+
+  const SUGGESTIONS = useMemo(() => [
+    t('pairingsScreen.suggestion1'),
+    t('pairingsScreen.suggestion2'),
+    t('pairingsScreen.suggestion3'),
+    t('pairingsScreen.suggestion4'),
+    t('pairingsScreen.suggestion5'),
+  ], [t]);
 
   // Reset everything when the user switches tabs.
   useFocusEffect(useCallback(() => {
@@ -42,13 +52,11 @@ export default function PairingsScreen() {
   }, []));
 
   const handleSearch = async () => {
-    if (!dish.trim()) { setError('Enter a dish name.'); return; }
+    if (!dish.trim()) { setError(t('pairingsScreen.errorEnterDish')); return; }
     setLoading(true); setError(null); setResults(null);
     try {
       let data;
       if (tab === 'wine') {
-        // Wine endpoint takes dish_name; mood + occasion are stored on
-        // the WinePairing row but not strictly required by the schema.
         data = await api.createWinePairing({ dish_name: dish.trim() });
       } else if (tab === 'beer') {
         data = await api.getBeerPairing(dish.trim());
@@ -57,7 +65,7 @@ export default function PairingsScreen() {
       }
       setResults(data);
     } catch (e) {
-      setError(e.message || 'Could not get pairing.');
+      setError(e.message || t('pairingsScreen.errorPairing'));
     } finally {
       setLoading(false);
     }
@@ -73,8 +81,8 @@ export default function PairingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>🥂 Beverage Pairing</Text>
-        <Text style={styles.subtitle}>AI-matched wine, beer & spirits for any dish</Text>
+        <Text style={styles.title}>{t('pairingsScreen.title')}</Text>
+        <Text style={styles.subtitle}>{t('pairingsScreen.subtitle')}</Text>
       </View>
 
       <ScrollView
@@ -104,7 +112,7 @@ export default function PairingsScreen() {
             style={styles.input}
             value={dish}
             onChangeText={(v) => { setDish(v); setError(null); }}
-            placeholder={`Dish to pair with ${tab}...`}
+            placeholder={TABS.find((x) => x.id === tab)?.placeholder}
             placeholderTextColor={C.gray[400]}
             returnKeyType="search"
             onSubmitEditing={handleSearch}
@@ -116,7 +124,7 @@ export default function PairingsScreen() {
             disabled={loading || !dish.trim()}
             testID="search-btn"
           >
-            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchBtnText}>Pair</Text>}
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchBtnText}>{t('pairingsScreen.pair')}</Text>}
           </TouchableOpacity>
         </View>
 
@@ -126,11 +134,11 @@ export default function PairingsScreen() {
         {items.length > 0 && (
           <View style={{ marginTop: 8 }}>
             <Text style={styles.resultsHeader}>
-              Top {tab} pairings for "{dishLabel}"
+              {t('pairingsScreen.topPairings', { type: TABS.find((x) => x.id === tab)?.label.toLowerCase(), dish: dishLabel })}
             </Text>
             {items.map((p, i) => (
               <View key={i} style={[styles.pairingCard, i === 0 && styles.pairingCardTop]} testID={`pairing-card-${i}`}>
-                {i === 0 && <Text style={styles.topMatchBadge}>⭐ Top Match</Text>}
+                {i === 0 && <Text style={styles.topMatchBadge}>{t('pairingsScreen.topMatch')}</Text>}
                 <Text style={styles.pairingEmoji}>{tabIcon}</Text>
                 <Text style={styles.pairingName}>{p.name}</Text>
 
@@ -196,7 +204,7 @@ export default function PairingsScreen() {
         {/* Inspiration chips when no result */}
         {!results && !loading && (
           <View style={{ marginTop: 16 }}>
-            <Text style={styles.suggestionsLabel}>Try these:</Text>
+            <Text style={styles.suggestionsLabel}>{t('pairingsScreen.tryThese')}</Text>
             <View style={styles.chipRow}>
               {SUGGESTIONS.map((d) => (
                 <TouchableOpacity key={d} style={styles.suggestionChip} onPress={() => setDish(d)}>

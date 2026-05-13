@@ -35,7 +35,7 @@ beforeEach(() => {
 describe('Notifications screen', () => {
   test('empty state when no notifications', async () => {
     const { findByText } = render(<NotificationsScreen />);
-    expect(await findByText("You're all caught up")).toBeDefined();
+    expect(await findByText("You're all caught up.")).toBeDefined();
   });
 
   test('renders the notification list', async () => {

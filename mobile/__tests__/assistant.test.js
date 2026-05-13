@@ -41,7 +41,7 @@ describe('Assistant screen', () => {
 
     const { getByText, getByPlaceholderText } = render(<AssistantScreen />);
     fireEvent.changeText(
-      getByPlaceholderText('Ask anything — recipes, techniques, pairings, fixes...'),
+      getByPlaceholderText('Ask anything — recipes, techniques, pairings, fixes…'),
       'How long to rest a steak?',
     );
 
@@ -67,7 +67,7 @@ describe('Assistant screen', () => {
 
     const { getByText, getByPlaceholderText } = render(<AssistantScreen />);
     fireEvent.changeText(
-      getByPlaceholderText('Ask anything — recipes, techniques, pairings, fixes...'),
+      getByPlaceholderText('Ask anything — recipes, techniques, pairings, fixes…'),
       'something',
     );
 

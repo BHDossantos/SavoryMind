@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../components/SafeScreen';
 import { api } from '../services/api';
 import { C } from '../constants/colors';
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [items, setItems]       = useState([]);
   const [loading, setLoading]   = useState(true);
 
@@ -28,23 +30,23 @@ export default function NotificationsScreen() {
     <SafeScreen>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.back}>← Back</Text>
+          <Text style={styles.back}>{t('auth.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🔔 Notifications</Text>
+        <Text style={styles.title}>🔔 {t('notifications.title')}</Text>
       </View>
 
       {items.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🔕</Text>
-          <Text style={styles.emptyTitle}>You're all caught up</Text>
-          <Text style={styles.emptySub}>New booking confirmations, review replies, and updates land here.</Text>
+          <Text style={styles.emptyTitle}>{t('notifications.empty')}</Text>
+          <Text style={styles.emptySub}>{t('notifications.emptySub')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           {items.map((n) => (
             <View key={n.id} style={[styles.row, !n.read && styles.unread]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>{n.title || n.message || 'Notification'}</Text>
+                <Text style={styles.rowTitle}>{n.title || n.message || t('notifications.title')}</Text>
                 {n.body && <Text style={styles.rowBody}>{n.body}</Text>}
                 {n.created_at && (
                   <Text style={styles.rowDate}>{new Date(n.created_at).toLocaleString()}</Text>

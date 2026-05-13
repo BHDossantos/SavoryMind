@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import MetricCard from '../../components/MetricCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -9,31 +10,34 @@ import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
 import { useFocusEffect, useRouter } from 'expo-router';
 
-const QUICK_ACTIONS = [
-  { icon: '📅', label: 'Bookings',    route: '/bookings' },
-  { icon: '👥', label: 'CRM',         route: '/crm' },
-  { icon: '🔮', label: 'Forecast',    route: '/predictions' },
-  { icon: '🗑️', label: 'Food Waste',  route: '/waste' },
-  { icon: '⏱️', label: 'Kitchen',     route: '/kitchen' },
-  { icon: '🎓', label: 'Training',    route: '/training' },
-  { icon: '🧑‍🍳', label: 'Staff',     route: '/staff' },
-  { icon: '📋', label: 'Reports',     route: '/reports' },
-];
-
-function greeting() {
+function greetingKey() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'dashboard.goodMorning';
+  if (h < 17) return 'dashboard.goodAfternoon';
+  return 'dashboard.goodEvening';
 }
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const router           = useRouter();
+  const { t } = useTranslation();
   const [stats, setStats]         = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Quick actions strip. Per-render so labels re-translate on language
+  // switch; route/icon stay static.
+  const QUICK_ACTIONS = [
+    { icon: '📅',  label: t('restaurantFeatures.quickActionBookings'), route: '/bookings' },
+    { icon: '👥',  label: t('restaurantFeatures.quickActionCrm'),      route: '/crm' },
+    { icon: '🔮',  label: t('restaurantFeatures.quickActionForecast'), route: '/predictions' },
+    { icon: '🗑️', label: t('restaurantFeatures.quickActionWaste'),    route: '/waste' },
+    { icon: '⏱️', label: t('restaurantFeatures.quickActionKitchen'),  route: '/kitchen' },
+    { icon: '🎓',  label: t('restaurantFeatures.quickActionTraining'), route: '/training' },
+    { icon: '🧑‍🍳', label: t('restaurantFeatures.quickActionStaff'),  route: '/staff' },
+    { icon: '📋',  label: t('restaurantFeatures.quickActionReports'),  route: '/reports' },
+  ];
 
   const load = async () => {
     try {
@@ -45,17 +49,17 @@ export default function Dashboard() {
 
   useFocusEffect(useCallback(() => { load(); }, []));
 
-  if (loading) return <LoadingSpinner message="Loading dashboard..." color={C.restaurant.primary} />;
+  if (loading) return <LoadingSpinner message={t('dashboard.loadingDashboard')} color={C.restaurant.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={load} />;
 
   return (
     <SafeScreen onRefresh={load} refreshing={refreshing}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>{greeting()} 👋</Text>
-          <Text style={styles.name}>{user?.display_name || 'Restaurant'}</Text>
+          <Text style={styles.greeting}>{t(greetingKey())} 👋</Text>
+          <Text style={styles.name}>{user?.display_name || t('common.restaurant')}</Text>
         </View>
-        <Text onPress={logout} style={styles.logout}>Sign out</Text>
+        <Text onPress={logout} style={styles.logout}>{t('profile.signOut')}</Text>
       </View>
 
       {/* Quick actions grid */}
@@ -73,15 +77,15 @@ export default function Dashboard() {
         ))}
       </View>
 
-      <Text style={styles.section}>Last 30 Days</Text>
+      <Text style={styles.section}>{t('dashboard.last30Days')}</Text>
 
-      <MetricCard label="Total Revenue"     value={`$${(stats.total_revenue || 0).toLocaleString()}`}   accent={C.restaurant.primary} />
-      <MetricCard label="Total Orders"      value={(stats.total_orders || 0).toLocaleString()}            accent={C.restaurant.dark} />
-      <MetricCard label="Avg Order Value"   value={`$${(stats.avg_order_value || 0).toFixed(2)}`}         accent="#f59e0b" />
-      <MetricCard label="Avg Profit Margin" value={`${(stats.avg_profit_margin || 0).toFixed(1)}%`}       accent={C.green} />
-      <MetricCard label="Avg Rating"        value={`⭐ ${(stats.avg_rating || 0).toFixed(1)}`}            accent="#8b5cf6" />
+      <MetricCard label={t('dashboard.totalRevenue')}     value={`$${(stats.total_revenue || 0).toLocaleString()}`}   accent={C.restaurant.primary} />
+      <MetricCard label={t('dashboard.totalOrders')}      value={(stats.total_orders || 0).toLocaleString()}          accent={C.restaurant.dark} />
+      <MetricCard label={t('dashboard.avgOrderValue')}    value={`$${(stats.avg_order_value || 0).toFixed(2)}`}       accent="#f59e0b" />
+      <MetricCard label={t('dashboard.avgProfitMargin')}  value={`${(stats.avg_profit_margin || 0).toFixed(1)}%`}     accent={C.green} />
+      <MetricCard label={t('dashboard.avgRating')}        value={`⭐ ${(stats.avg_rating || 0).toFixed(1)}`}          accent="#8b5cf6" />
       {stats.top_item && (
-        <MetricCard label="Top Seller" value={stats.top_item} sub="by revenue this month" accent="#0d9488" />
+        <MetricCard label={t('dashboard.topSeller')} value={stats.top_item} sub={t('dashboard.topSellerSub')} accent="#0d9488" />
       )}
     </SafeScreen>
   );
