@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
@@ -11,6 +12,7 @@ import { C } from '../../constants/colors';
 
 export default function SpotifyConnectScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [conn, setConn] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -83,7 +85,7 @@ export default function SpotifyConnectScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <Text style={styles.back}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🔗 Connect Music</Text>
+        <Text style={styles.title}>{t('screens.social.title')}</Text>
         <Text style={styles.sub}>Link Spotify to play real tracks matched to your mood and food.</Text>
       </View>
 

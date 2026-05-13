@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Linking, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
@@ -16,6 +17,7 @@ const STREAMING = [
 
 export default function MusicScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [mood, setMood]           = useState('');
   const [cuisine, setCuisine]     = useState('');
   const [result, setResult]       = useState(null);
@@ -106,7 +108,7 @@ export default function MusicScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Music Mood</Text>
+        <Text style={styles.title}>{t('screens.music.title')}</Text>
         <Text style={styles.sub}>Set the soundtrack for your meal</Text>
       </View>
 

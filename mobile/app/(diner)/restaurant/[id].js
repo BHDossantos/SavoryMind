@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert,
@@ -9,6 +10,7 @@ import { api } from '../../../services/api';
 import { C } from '../../../constants/colors';
 
 export default function DinerRestaurantDetail() {
+  const { t } = useTranslation();
   const { id }   = useLocalSearchParams();
   const router   = useRouter();
   const [restaurant, setRestaurant] = useState(null);
@@ -56,7 +58,7 @@ export default function DinerRestaurantDetail() {
   if (!restaurant) return (
     <SafeScreen>
       <View style={{ padding: 32, alignItems: 'center' }}>
-        <Text style={styles.title}>Restaurant not found</Text>
+        <Text style={styles.title}>{t('screens.restaurantNotFound')}</Text>
         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
           <Text style={styles.back}>← Back</Text>
         </TouchableOpacity>

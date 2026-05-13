@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
@@ -32,6 +33,7 @@ const sp = StyleSheet.create({
 });
 
 export default function HistoryScreen() {
+  const { t } = useTranslation();
   const [visits, setVisits]       = useState([]);
   const [showForm, setShowForm]   = useState(false);
   const [form, setForm]           = useState(EMPTY);
@@ -72,7 +74,7 @@ export default function HistoryScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Visit History</Text>
+          <Text style={styles.title}>{t('screens.history.title')}</Text>
           {visits.length > 0 && <Text style={styles.sub}>{visits.length} visits · ⭐ {avgRating} avg</Text>}
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setShowForm(!showForm); setForm(EMPTY); setFormError(null); }}>

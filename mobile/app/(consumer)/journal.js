@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
@@ -11,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 const MOODS = ['🥰', '😊', '😋', '🤤', '😐', '😩'];
 
 export default function JournalScreen() {
+  const { t } = useTranslation();
   const [memories, setMemories] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -62,7 +64,7 @@ export default function JournalScreen() {
     <SafeScreen onRefresh={load}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>📓 Meal Journal</Text>
+          <Text style={styles.title}>{t('screens.journal.title')}</Text>
           <Text style={styles.sub}>Remember the great ones, learn from the misses</Text>
         </View>
         <TouchableOpacity onPress={() => setShowForm(!showForm)} style={styles.addBtn}>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 
@@ -9,6 +10,7 @@ const CUISINES = ['Italian', 'Japanese', 'Mexican', 'French', 'Indian', 'America
 
 export default function RecipesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [recipes, setRecipes]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [keywords, setKeywords]       = useState('');
@@ -62,7 +64,7 @@ export default function RecipesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Recipes</Text>
+        <Text style={styles.title}>{t('screens.recipes.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

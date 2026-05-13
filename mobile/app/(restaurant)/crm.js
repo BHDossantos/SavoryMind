@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
@@ -17,6 +18,7 @@ function Tag({ label }) {
 }
 
 export default function CRMScreen() {
+  const { t } = useTranslation();
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary]     = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -71,7 +73,7 @@ export default function CRMScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>CRM</Text>
+        <Text style={styles.title}>{t('screens.crm.title')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>
           <Text style={styles.addBtnText}>+ Add</Text>
         </TouchableOpacity>

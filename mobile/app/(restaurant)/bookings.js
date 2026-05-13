@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
@@ -16,6 +17,7 @@ function Badge({ label, color }) {
 }
 
 export default function BookingsScreen() {
+  const { t } = useTranslation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -63,7 +65,7 @@ export default function BookingsScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Bookings</Text>
+          <Text style={styles.title}>{t('screens.bookings.title')}</Text>
           <Text style={styles.sub}>Today: {todayConfirmed.length} bookings · {covers} covers</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>

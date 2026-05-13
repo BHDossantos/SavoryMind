@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
@@ -19,6 +20,7 @@ const CATEGORIES = [
 
 export default function PantryScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [items, setItems]       = useState([]);
   const [recipes, setRecipes]   = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -89,7 +91,7 @@ export default function PantryScreen() {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>🥫 Pantry</Text>
+            <Text style={styles.title}>{t('screens.pantry.title')}</Text>
             <Text style={styles.sub}>What's on hand → what you can cook tonight</Text>
           </View>
           {items.length > 0 && (
