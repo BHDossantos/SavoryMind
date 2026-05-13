@@ -4,6 +4,7 @@ import {
   SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuth from 'expo-apple-authentication';
@@ -35,6 +36,7 @@ const SOCIAL_PROVIDERS = [
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { login, loginGoogle, loginApple } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,7 +63,7 @@ export default function LoginScreen() {
       const idToken = googleResponse.authentication?.idToken
         || googleResponse.params?.id_token;  // fallback for response_type=token
       if (!idToken) {
-        setError('Google sign-in didn\'t return an ID token. Try again.');
+        setError(t('auth.errors.googleNoIdToken'));
         setSocialLoading(null);
         return;
       }
@@ -69,13 +71,13 @@ export default function LoginScreen() {
         try {
           await loginGoogle(idToken);
         } catch (e) {
-          setError(e.message || 'Google sign-in failed.');
+          setError(e.message || t('auth.errors.googleFailed'));
         } finally {
           setSocialLoading(null);
         }
       })();
     } else if (googleResponse.type === 'error') {
-      setError('Google sign-in failed. Please try again.');
+      setError(t('auth.errors.googleFailed'));
       setSocialLoading(null);
     } else {
       setSocialLoading(null);  // cancel / dismiss
@@ -114,7 +116,7 @@ export default function LoginScreen() {
           ],
         });
         if (!credential.identityToken) {
-          setError("Apple sign-in didn't return an identity token. Try again.");
+          setError(t('auth.errors.appleNoIdToken'));
           setSocialLoading(null);
           return;
         }
@@ -137,7 +139,7 @@ export default function LoginScreen() {
           setSocialLoading(null);
           return;
         }
-        setError(e?.message || 'Apple sign-in failed. Please try again.');
+        setError(e?.message || t('auth.errors.appleFailed'));
         setSocialLoading(null);
         return;
       }
@@ -146,20 +148,20 @@ export default function LoginScreen() {
     try {
       await WebBrowser.openBrowserAsync(`${WEB_APP_URL}/login`);
     } catch {
-      setError('Could not open browser.');
+      setError(t('auth.errors.browserFailed'));
     } finally {
       setSocialLoading(null);
     }
   };
 
   const handleLogin = async () => {
-    if (!email.trim() || !password) { setError('Email and password are required.'); return; }
+    if (!email.trim() || !password) { setError(t('auth.errors.credentialsRequired')); return; }
     setLoading(true);
     setError(null);
     try {
       await login(email.trim(), password);
     } catch (e) {
-      setError(e.message || 'Login failed. Check your credentials.');
+      setError(e.message || t('auth.errors.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -172,11 +174,11 @@ export default function LoginScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.kav}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>{t('auth.back')}</Text>
           </TouchableOpacity>
           <Text style={styles.logo}>🧠</Text>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.sub}>Sign in to your SavoryMind account</Text>
+          <Text style={styles.title}>{t('auth.signInTitle')}</Text>
+          <Text style={styles.sub}>{t('auth.signInSubtitle')}</Text>
 
           {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
 
@@ -200,36 +202,38 @@ export default function LoginScreen() {
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or sign in with email</Text>
+            <Text style={styles.dividerText}>{t('auth.orSignInEmail')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('auth.email')}</Text>
             <TextInput
               style={styles.input}
               value={email}
-              onChangeText={(t) => { setEmail(t); setError(null); }}
-              placeholder="you@example.com"
+              onChangeText={(v) => { setEmail(v); setError(null); }}
+              placeholder={t('auth.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>{t('auth.password')}</Text>
             <TextInput
               style={styles.input}
               value={password}
-              onChangeText={(t) => { setPassword(t); setError(null); }}
-              placeholder="Your password"
+              onChangeText={(v) => { setPassword(v); setError(null); }}
+              placeholder={t('auth.passwordPlaceholder')}
               secureTextEntry
             />
             <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={busy}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('auth.signInButton')}</Text>}
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity onPress={() => router.push('/signup')} style={styles.signupLink}>
-            <Text style={styles.signupText}>No account? <Text style={styles.signupBold}>Sign up free</Text></Text>
+            <Text style={styles.signupText}>
+              {t('auth.noAccount')} <Text style={styles.signupBold}>{t('auth.signUpFree')}</Text>
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

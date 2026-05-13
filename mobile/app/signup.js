@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,16 +25,19 @@ const SOCIAL_PROVIDERS = [
   { id: 'linkedin', label: 'LinkedIn',  bg: '#0A66C2', emoji: '💼' },
 ];
 
-const TYPES = [
-  { value: 'consumer',   label: '🏠 Food Lover',           color: C.consumer.primary },
-  { value: 'diner',      label: '🍽️ Food Explorer',      color: C.diner.primary },
-  { value: 'restaurant', label: '🏪 Restaurant Owner',  color: C.restaurant.primary },
-];
-
 export default function SignupScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { register, loginGoogle } = useAuth();
   const { type: defaultType } = useLocalSearchParams();
+
+  // Account-type tiles. Derived per-render so the labels re-translate
+  // when the active language changes.
+  const TYPES = [
+    { value: 'consumer',   label: `🏠 ${t('welcome.foodLover')}`,        color: C.consumer.primary },
+    { value: 'diner',      label: `🍽️ ${t('welcome.foodExplorer')}`,    color: C.diner.primary },
+    { value: 'restaurant', label: `🏪 ${t('welcome.restaurantOwner')}`,  color: C.restaurant.primary },
+  ];
   const [form, setForm] = useState({
     email: '', password: '', display_name: '', account_type: defaultType || 'consumer',
   });
@@ -57,7 +61,7 @@ export default function SignupScreen() {
       const idToken = googleResponse.authentication?.idToken
         || googleResponse.params?.id_token;
       if (!idToken) {
-        setError("Google sign-in didn't return an ID token. Try again.");
+        setError(t('auth.errors.googleNoIdToken'));
         setSocialLoading(null);
         return;
       }
@@ -65,13 +69,13 @@ export default function SignupScreen() {
         try {
           await loginGoogle(idToken);
         } catch (e) {
-          setError(e.message || 'Google sign-in failed.');
+          setError(e.message || t('auth.errors.googleFailed'));
         } finally {
           setSocialLoading(null);
         }
       })();
     } else if (googleResponse.type === 'error') {
-      setError('Google sign-in failed. Please try again.');
+      setError(t('auth.errors.googleFailed'));
       setSocialLoading(null);
     } else {
       setSocialLoading(null);
@@ -92,21 +96,21 @@ export default function SignupScreen() {
     }
 
     try { await WebBrowser.openBrowserAsync(WEB_APP_URL + '/login'); }
-    catch { setError('Could not open browser.'); }
+    catch { setError(t('auth.errors.browserFailed')); }
     finally { setSocialLoading(null); }
   };
 
   const handleSignup = async () => {
     if (!form.email.trim() || !form.password || !form.display_name.trim()) {
-      setError('All fields are required.'); return;
+      setError(t('auth.errors.allFieldsRequired')); return;
     }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (form.password.length < 6) { setError(t('auth.errors.passwordTooShort')); return; }
     setLoading(true);
     setError(null);
     try {
       await register({ ...form, email: form.email.trim() });
     } catch (e) {
-      setError(e.message || 'Signup failed. Please try again.');
+      setError(e.message || t('auth.errors.signupFailed'));
     } finally {
       setLoading(false);
     }
@@ -119,11 +123,11 @@ export default function SignupScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>{t('auth.back')}</Text>
           </TouchableOpacity>
           <Text style={styles.logo}>🧠</Text>
-          <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.sub}>Free to start — no card needed.</Text>
+          <Text style={styles.title}>{t('auth.signupTitle')}</Text>
+          <Text style={styles.sub}>{t('auth.signupSubtitle')}</Text>
 
           {/* Social providers — open the web app's OAuth flow in a browser. */}
           <View style={styles.socialRow}>
@@ -143,12 +147,12 @@ export default function SignupScreen() {
           </View>
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or sign up with email</Text>
+            <Text style={styles.dividerText}>{t('auth.orSignUpEmail')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Account type selector */}
-          <Text style={styles.label}>I am a...</Text>
+          <Text style={styles.label}>{t('auth.iAmA')}</Text>
           <View style={styles.typeRow}>
             {TYPES.map((t) => (
               <TouchableOpacity
@@ -166,24 +170,26 @@ export default function SignupScreen() {
           {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
 
           <View style={styles.form}>
-            <Text style={styles.label}>Display Name</Text>
-            <TextInput style={styles.input} value={form.display_name} onChangeText={(v) => set('display_name', v)} placeholder="Your name" />
-            <Text style={styles.label}>Email</Text>
-            <TextInput style={styles.input} value={form.email} onChangeText={(v) => set('email', v)} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
-            <Text style={styles.label}>Password</Text>
-            <TextInput style={styles.input} value={form.password} onChangeText={(v) => set('password', v)} placeholder="Min. 6 characters" secureTextEntry />
+            <Text style={styles.label}>{t('auth.displayName')}</Text>
+            <TextInput style={styles.input} value={form.display_name} onChangeText={(v) => set('display_name', v)} placeholder={t('auth.displayNamePlaceholder')} />
+            <Text style={styles.label}>{t('auth.email')}</Text>
+            <TextInput style={styles.input} value={form.email} onChangeText={(v) => set('email', v)} placeholder={t('auth.emailPlaceholder')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+            <Text style={styles.label}>{t('auth.password')}</Text>
+            <TextInput style={styles.input} value={form.password} onChangeText={(v) => set('password', v)} placeholder={t('auth.passwordMin')} secureTextEntry />
 
             <TouchableOpacity
               style={[styles.btn, { backgroundColor: activeType?.color || C.gray[900] }]}
               onPress={handleSignup}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Get Started →</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('auth.signupButton')}</Text>}
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginLink}>
-            <Text style={styles.loginText}>Already have an account? <Text style={styles.loginBold}>Sign in</Text></Text>
+            <Text style={styles.loginText}>
+              {t('welcome.alreadyHaveAccount')} <Text style={styles.loginBold}>{t('welcome.signIn')}</Text>
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
