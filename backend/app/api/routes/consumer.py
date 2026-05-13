@@ -412,8 +412,12 @@ def ask_assistant(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _require_consumer(current_user)
+    # Flavor is the unified AI voice — useful to consumers cooking at home,
+    # diners thinking about pairings, AND restaurant operators looking at
+    # the menu. Used to require consumer role; opened up so the Flavor
+    # entry points on restaurant + diner dashboards reach a working
+    # endpoint instead of 403'ing.
     if not body.question or not body.question.strip():
         raise HTTPException(status_code=422, detail="question is required.")
     _log(db, current_user.id, "assistant_query", {"question": body.question[:120]})
-    return assistant_service.answer(body.question.strip())
+    return assistant_service.answer(body.question.strip(), language=current_user.language)

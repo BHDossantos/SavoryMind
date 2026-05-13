@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -7,11 +7,12 @@ import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 export default function DinerDashboard() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const router = useRouter();
   const [summary, setSummary] = useState(null);
   const [visits, setVisits] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -40,6 +41,23 @@ export default function DinerDashboard() {
         {firstName ? t('dashboard.greeting', { name: firstName }) : t('dashboard.greetingFallback')}
       </Text>
       <Text style={styles.sub}>{t('dashboard.dinerSubtitle')}</Text>
+
+      {/* Flavor entry — same AI assistant the consumer side uses.
+          Helps diners think about pairings, food terms, or what to
+          order. Promoted to the top of the dashboard so it's
+          immediately reachable. */}
+      <TouchableOpacity
+        style={flavorStyles.card}
+        onPress={() => router.push('/(consumer)/assistant')}
+        activeOpacity={0.85}
+      >
+        <Text style={flavorStyles.emoji}>👨‍🍳</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={flavorStyles.title}>{t('dashboard.askFlavor')}</Text>
+          <Text style={flavorStyles.sub}>{t('dashboard.askFlavorSub')}</Text>
+        </View>
+        <Text style={flavorStyles.arrow}>→</Text>
+      </TouchableOpacity>
 
       {summary && (
         <View style={styles.statsRow}>
@@ -122,4 +140,12 @@ const styles = StyleSheet.create({
   emptyIcon:   { fontSize: 48, marginBottom: 12 },
   emptyText:   { fontSize: 17, fontWeight: '700', color: C.gray[700] },
   emptySub:    { fontSize: 13, color: C.gray[500], marginTop: 6, textAlign: 'center' },
+});
+
+const flavorStyles = StyleSheet.create({
+  card:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.diner.primary, borderRadius: 16, padding: 16, marginBottom: 20 },
+  emoji:   { fontSize: 32 },
+  title:   { fontSize: 15, fontWeight: '800', color: '#fff' },
+  sub:     { fontSize: 12, color: '#fff', opacity: 0.85, marginTop: 2, lineHeight: 16 },
+  arrow:   { fontSize: 20, color: '#fff', fontWeight: '700' },
 });

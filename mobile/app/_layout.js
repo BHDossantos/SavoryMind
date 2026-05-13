@@ -21,9 +21,14 @@ function RootLayoutNav() {
     if (!user && inApp) {
       router.replace('/login');
     } else if (user && !inApp && segments[0] !== 'login' && segments[0] !== 'signup') {
+      // Food Lover (consumer) and Food Explorer (diner) used to be
+      // separate nav trees. Unified into one: both account types land
+      // on the consumer shell, which now hosts cook + dine features.
+      // Diner-only screens (discover/book/history/restaurant detail)
+      // are still in the (diner) route group and reached via the Dine
+      // tab + dashboard cards from the consumer shell.
       if (user.account_type === 'staff') router.replace('/(staff)/portal');
-      else if (user.account_type === 'consumer') router.replace('/(consumer)/dashboard');
-      else if (user.account_type === 'diner') router.replace('/(diner)/dashboard');
+      else if (user.account_type === 'consumer' || user.account_type === 'diner') router.replace('/(consumer)/dashboard');
       else router.replace('/(restaurant)/dashboard');
     }
   }, [user, loading, segments]);

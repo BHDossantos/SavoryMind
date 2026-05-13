@@ -6,6 +6,8 @@
     "foodLoverTagline": "El vino ideal. La canción justa. La receta perfecta.",
     "foodExplorer": "Explorador gastronómico",
     "foodExplorerTagline": "Recuerda cada gran comida. Reserva la siguiente.",
+    "foodPerson": "Me encanta la comida",
+    "foodPersonTagline": "Cocina en casa + sal a comer. Maridajes, recetas, restaurantes — todo en una app.",
     "restaurantOwner": "Dueño de restaurante",
     "restaurantOwnerTagline": "Ve tus números con claridad. Cuida mejor a tus comensales.",
     "alreadyHaveAccount": "¿Ya tienes cuenta?",
@@ -314,6 +316,16 @@
     "tryAgain": "Reintentar",
     "somethingWentWrong": "Algo salió mal.",
     "restaurant": "Restaurante"
+  },
+  "dine": {
+    "title": "Salir a comer",
+    "subtitle": "Descubre restaurantes, reserva mesa, lleva el historial de tus visitas",
+    "discoverTitle": "Descubrir restaurantes",
+    "discoverSub": "Encuentra tu próxima gran comida fuera — por ambiente, cocina o presupuesto",
+    "bookTitle": "Mis reservas",
+    "bookSub": "Reservas próximas y pasadas",
+    "historyTitle": "Historial de visitas",
+    "historySub": "Todas las comidas que has registrado"
   },
   "screens": {
     "recipes": { "title": "Recetas", "subtitle": "Lo que has cocinado + ideas para la próxima", "empty": "Aún no hay nada — anímate con una." },
