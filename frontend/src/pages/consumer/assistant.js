@@ -12,6 +12,44 @@ const SUGGESTIONS = [
   "Vegan swap for parmesan",
 ];
 
+// Maps backend tool names to friendly labels used in the ghost line
+// under each assistant message. De-dupes so multiple calls to the
+// same tool collapse into one mention.
+const TOOL_LABELS = {
+  search_wines:           "wine catalog",
+  search_beers:           "beer catalog",
+  search_spirits:         "spirits catalog",
+  get_wine_pairing:       "wine pairing",
+  get_beer_pairing:       "beer pairing",
+  get_spirits_pairing:    "spirits pairing",
+  search_recipes:         "recipe catalog",
+  get_recipe:             "a recipe",
+  get_pantry:             "your pantry",
+  get_journal_recent:     "your meal journal",
+  get_user_preferences:   "your preferences",
+  get_my_bookings:        "your bookings",
+  get_visit_history:      "your visit history",
+  get_menu:               "the menu",
+  get_bookings_today:     "today’s bookings",
+  get_sentiment_summary:  "sentiment summary",
+  get_inventory_low_stock:"inventory levels",
+  get_top_customers:      "top customers",
+};
+
+function summariseToolCalls(calls) {
+  const seen = new Set();
+  const parts = [];
+  for (const c of calls) {
+    const label = TOOL_LABELS[c.name] || c.name;
+    if (seen.has(label)) continue;
+    seen.add(label);
+    parts.push(label);
+  }
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return `✓ Flavor checked ${parts[0]}.`;
+  return `✓ Flavor checked ${parts.slice(0, -1).join(", ")} + ${parts[parts.length - 1]}.`;
+}
+
 export default function AssistantPage() {
   const [messages, setMessages] = useState([
     {
@@ -101,6 +139,11 @@ export default function AssistantPage() {
               <p className={`text-sm leading-relaxed ${msg.role === "user" ? "text-white" : "text-gray-700"}`}>
                 {msg.text}
               </p>
+              {msg.role === "assistant" && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
+                <p className="text-[11px] italic text-gray-400 mt-2">
+                  {summariseToolCalls(msg.toolCalls)}
+                </p>
+              )}
             </div>
           </div>
         ))}

@@ -30,9 +30,9 @@ from sqlalchemy.orm import Session
 
 from . import claude_client
 from .flavor_tools import (
-    TOOL_DEFINITIONS,
     UserContext,
     make_dispatcher,
+    tools_for_user,
 )
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ def answer(
     result = claude_client.call_with_tools(
         system_prompt=_build_system_prompt(language),
         messages=messages,
-        tools=TOOL_DEFINITIONS,
+        tools=tools_for_user(ctx),
         dispatcher=dispatcher,
     )
 

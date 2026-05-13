@@ -92,6 +92,14 @@ export default function AssistantScreen() {
         <View style={styles.botBubble}>
           {msg.title && <Text style={styles.botTitle}>{msg.title}</Text>}
           <Text style={styles.botText}>{msg.text}</Text>
+          {Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
+            <Text style={styles.toolGhost} numberOfLines={2}>
+              {/* Subtle line showing which tools Flavor consulted. Helps the
+                  user understand that the answer was grounded in real data
+                  (wine catalog, their pantry, etc.) rather than a guess. */}
+              {summariseToolCalls(msg.toolCalls)}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -99,6 +107,43 @@ export default function AssistantScreen() {
 
   // FlatList key extractor: index is fine because we never reorder/remove.
   const keyFor = (_, i) => `m${i}`;
+
+  /** Turn the raw tool_calls array from the backend into a short
+   *  "Flavor checked X, Y" line. De-dupes tool names so multiple
+   *  calls to the same tool collapse into one mention. */
+  function summariseToolCalls(calls) {
+    const labels = {
+      search_wines:           'wine catalog',
+      search_beers:           'beer catalog',
+      search_spirits:         'spirits catalog',
+      get_wine_pairing:       'wine pairing',
+      get_beer_pairing:       'beer pairing',
+      get_spirits_pairing:    'spirits pairing',
+      search_recipes:         'recipe catalog',
+      get_recipe:             'a recipe',
+      get_pantry:             'your pantry',
+      get_journal_recent:     'your meal journal',
+      get_user_preferences:   'your preferences',
+      get_my_bookings:        'your bookings',
+      get_visit_history:      'your visit history',
+      get_menu:               'the menu',
+      get_bookings_today:     'today’s bookings',
+      get_sentiment_summary:  'sentiment summary',
+      get_inventory_low_stock:'inventory levels',
+      get_top_customers:      'top customers',
+    };
+    const seen = new Set();
+    const parts = [];
+    for (const c of calls) {
+      const label = labels[c.name] || c.name;
+      if (seen.has(label)) continue;
+      seen.add(label);
+      parts.push(label);
+    }
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return `✓ Flavor checked ${parts[0]}.`;
+    return `✓ Flavor checked ${parts.slice(0, -1).join(', ')} + ${parts[parts.length - 1]}.`;
+  }
 
   // Suggestion chips above the thread when it's still empty (only the
   // initial greeting). Helps users discover what to ask without typing.
@@ -199,6 +244,7 @@ const styles = StyleSheet.create({
   botBubble:   { flex: 1, maxWidth: '82%', backgroundColor: '#fff', borderColor: C.consumer.border, borderWidth: 1, borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
   botTitle:    { fontSize: 11, fontWeight: '800', color: C.consumer.text, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
   botText:     { color: C.gray[700], fontSize: 14, lineHeight: 20 },
+  toolGhost:   { color: C.gray[400], fontSize: 11, marginTop: 8, fontStyle: 'italic' },
   typingBubble:{ flexDirection: 'row', alignItems: 'center', height: 36, paddingVertical: 0 },
 
   inputRow:    { flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 12, borderTopWidth: 1, borderTopColor: C.gray[100], backgroundColor: '#fff' },

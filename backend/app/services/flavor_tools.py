@@ -38,8 +38,13 @@ from sqlalchemy.orm import Session
 
 from ..data import get_wines, get_beers, get_spirits
 from ..models.consumer import PantryItem, MealMemory
+from ..models.diner import DinerBooking, DinerVisit
+from ..models.menu import MenuItem
+from ..models.restaurant_ext import Booking, CRMCustomer
+from ..models.review import Review
+from ..models.inventory import InventoryItem
 from ..models.user import User
-from . import recipe_service, wine_service, beverage_service
+from . import recipe_service, wine_service, beverage_service, review_service
 
 
 # ── Context ────────────────────────────────────────────────────────────────
@@ -275,6 +280,196 @@ def tool_get_user_preferences(ctx: UserContext) -> dict:
     }
 
 
+# ── Diner-side tools (also available to consumer accounts via unification) ─
+#
+# Bookings + visits read from the diner-side tables (DinerBooking,
+# DinerVisit). A unified consumer account that uses the Dine feature
+# set will populate these the same way a pure diner account would.
+
+def tool_get_my_bookings(ctx: UserContext, *, status: str = "") -> dict:
+    """List the user's restaurant bookings (upcoming + past). Optionally
+    filter by status ('confirmed', 'pending', 'cancelled')."""
+    q = ctx.db.query(DinerBooking).filter(DinerBooking.user_id == ctx.user_id)
+    if status:
+        q = q.filter(DinerBooking.status == status.lower())
+    rows = q.order_by(DinerBooking.booking_date.desc()).limit(20).all()
+    return {
+        "count": len(rows),
+        "bookings": [
+            {
+                "id":            r.id,
+                "restaurant":    r.restaurant_name,
+                "date":          r.booking_date,
+                "time":          r.booking_time,
+                "party_size":    r.party_size,
+                "status":        r.status,
+                "special":       r.special_requests,
+            } for r in rows
+        ],
+    }
+
+
+def tool_get_visit_history(ctx: UserContext, *, limit: int = 10) -> dict:
+    """Recent restaurant visits the user has logged — what they ordered,
+    what they rated each visit, what stood out, would they return."""
+    rows = (
+        ctx.db.query(DinerVisit)
+        .filter(DinerVisit.user_id == ctx.user_id)
+        .order_by(DinerVisit.visit_date.desc())
+        .limit(max(1, min(limit, 50)))
+        .all()
+    )
+    return {
+        "count": len(rows),
+        "visits": [
+            {
+                "restaurant":    r.restaurant_name,
+                "date":          r.visit_date,
+                "items":         r.items_ordered,
+                "rating":        r.overall_rating,
+                "food_rating":   r.food_rating,
+                "staff_rating":  r.staff_rating,
+                "would_return":  r.would_return,
+                "highlights":    r.highlights,
+                "lowlights":     r.lowlights,
+            } for r in rows
+        ],
+    }
+
+
+# ── Restaurant-only tools ──────────────────────────────────────────────────
+#
+# These are gated to account_type='restaurant'. Read from the
+# restaurant operator's own tables — menu items, incoming bookings,
+# CRM customers, inventory, sentiment.
+
+def tool_get_menu(ctx: UserContext, *, category: str = "") -> dict:
+    """List the restaurant's menu items. Optionally filter by category
+    ('Mains', 'Starters', 'Desserts', 'Drinks')."""
+    q = ctx.db.query(MenuItem).filter(MenuItem.user_id == ctx.user_id)
+    if category:
+        q = q.filter(MenuItem.category == category)
+    rows = q.order_by(MenuItem.category, MenuItem.name).all()
+    return {
+        "count": len(rows),
+        "items": [
+            {
+                "id":          r.id,
+                "name":        r.name,
+                "category":    r.category,
+                "price":       r.price,
+                "cost":        r.cost,
+                "rating":      r.rating,
+                "description": r.description,
+            } for r in rows
+        ],
+    }
+
+
+def tool_get_bookings_today(ctx: UserContext, *, days: int = 1) -> dict:
+    """Incoming bookings for the restaurant, today + next `days` days.
+    Default = today only."""
+    import datetime as _dt
+    today = _dt.date.today()
+    end = today + _dt.timedelta(days=max(0, days - 1))
+    rows = (
+        ctx.db.query(Booking)
+        .filter(Booking.user_id == ctx.user_id)
+        .filter(Booking.date >= today)
+        .filter(Booking.date <= end)
+        .filter(Booking.status.in_(["confirmed", "pending", "seated"]))
+        .order_by(Booking.date, Booking.time_slot)
+        .all()
+    )
+    return {
+        "count": len(rows),
+        "from":  today.isoformat(),
+        "to":    end.isoformat(),
+        "bookings": [
+            {
+                "id":         r.id,
+                "customer":   r.customer_name,
+                "date":       r.date.isoformat() if r.date else None,
+                "time":       r.time_slot,
+                "party_size": r.party_size,
+                "status":     r.status,
+                "notes":      r.notes,
+            } for r in rows
+        ],
+    }
+
+
+def tool_get_sentiment_summary(ctx: UserContext) -> dict:
+    """Aggregate sentiment over the restaurant's reviews — total
+    count, positive / neutral / negative breakdown, average rating."""
+    reviews = ctx.db.query(Review).filter(Review.user_id == ctx.user_id).all()
+    if not reviews:
+        return {"total": 0, "positive": 0, "neutral": 0, "negative": 0, "avg_rating": None}
+    pos = sum(1 for r in reviews if (r.sentiment_label or "").lower() == "positive")
+    neg = sum(1 for r in reviews if (r.sentiment_label or "").lower() == "negative")
+    neu = len(reviews) - pos - neg
+    avg = sum((r.rating or 0) for r in reviews) / max(len(reviews), 1)
+    return {
+        "total":     len(reviews),
+        "positive":  pos,
+        "neutral":   neu,
+        "negative":  neg,
+        "avg_rating": round(avg, 2),
+    }
+
+
+def tool_get_inventory_low_stock(ctx: UserContext) -> dict:
+    """List inventory items below their par level — restaurant operator
+    wants to know what to reorder today."""
+    rows = (
+        ctx.db.query(InventoryItem)
+        .filter(InventoryItem.user_id == ctx.user_id)
+        .all()
+    )
+    # current_quantity is computed from adjustments; safe shim to derive
+    # from .current_quantity attribute if available, otherwise return all.
+    low = []
+    for r in rows:
+        try:
+            current = getattr(r, "current_quantity", None)
+            par = getattr(r, "par_level", None) or 0
+            if current is not None and current <= par:
+                low.append({
+                    "id":       r.id,
+                    "name":     getattr(r, "name", "?"),
+                    "current":  current,
+                    "par":      par,
+                    "unit":     getattr(r, "unit", ""),
+                })
+        except Exception:
+            continue
+    return {"low_stock_count": len(low), "items": low[:30]}
+
+
+def tool_get_top_customers(ctx: UserContext, *, limit: int = 10) -> dict:
+    """Top customers by total spend — useful for marketing tools, VIP
+    treatment, retention strategy."""
+    rows = (
+        ctx.db.query(CRMCustomer)
+        .filter(CRMCustomer.user_id == ctx.user_id)
+        .order_by(CRMCustomer.total_spend.desc())
+        .limit(max(1, min(limit, 50)))
+        .all()
+    )
+    return {
+        "count": len(rows),
+        "customers": [
+            {
+                "name":         r.name,
+                "total_visits": r.total_visits,
+                "total_spend":  r.total_spend,
+                "last_visit":   r.last_visit.isoformat() if r.last_visit else None,
+                "tags":         r.tags,
+            } for r in rows
+        ],
+    }
+
+
 # ── Anthropic tool definitions ─────────────────────────────────────────────
 #
 # Schema format follows https://docs.anthropic.com/en/docs/build-with-claude/tool-use.
@@ -425,9 +620,92 @@ TOOL_DEFINITIONS = [
 ]
 
 
+# ── Per-role tool definitions (appended via tools_for_user) ────────────────
+
+_DINER_TOOL_DEFINITIONS = [
+    {
+        "name": "get_my_bookings",
+        "description": (
+            "List the current user's restaurant bookings (upcoming + past). "
+            "Optionally filter by status."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "status": {"type": "string", "description": "'confirmed', 'pending', or 'cancelled'."},
+            },
+        },
+    },
+    {
+        "name": "get_visit_history",
+        "description": (
+            "Recent restaurant visits the user has logged — what they "
+            "ordered, ratings, highlights / lowlights, would-return."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50}},
+        },
+    },
+]
+
+_RESTAURANT_TOOL_DEFINITIONS = [
+    {
+        "name": "get_menu",
+        "description": (
+            "List the restaurant's menu items. Optionally filter by "
+            "category ('Mains', 'Starters', 'Desserts', 'Drinks')."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"category": {"type": "string"}},
+        },
+    },
+    {
+        "name": "get_bookings_today",
+        "description": (
+            "Incoming bookings for the restaurant, today + next `days` "
+            "days. Default = today only."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"days": {"type": "integer", "default": 1, "minimum": 1, "maximum": 14}},
+        },
+    },
+    {
+        "name": "get_sentiment_summary",
+        "description": (
+            "Aggregate review sentiment for the restaurant — total count, "
+            "positive / neutral / negative breakdown, average rating."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "get_inventory_low_stock",
+        "description": (
+            "Inventory items currently at or below par level — what "
+            "the operator needs to reorder."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "get_top_customers",
+        "description": (
+            "Top CRM customers by total spend — useful for retention + "
+            "VIP outreach questions."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50}},
+        },
+    },
+]
+
+
 # ── Dispatch table ─────────────────────────────────────────────────────────
 
 _TOOLS = {
+    # Universal — every authenticated user can call these.
     "search_wines":          tool_search_wines,
     "search_beers":          tool_search_beers,
     "search_spirits":        tool_search_spirits,
@@ -439,18 +717,52 @@ _TOOLS = {
     "get_pantry":            tool_get_pantry,
     "get_journal_recent":    tool_get_journal_recent,
     "get_user_preferences":  tool_get_user_preferences,
+    # Diner / consumer (unified) tools — bookings + visit history.
+    "get_my_bookings":       tool_get_my_bookings,
+    "get_visit_history":     tool_get_visit_history,
+    # Restaurant-only tools.
+    "get_menu":              tool_get_menu,
+    "get_bookings_today":    tool_get_bookings_today,
+    "get_sentiment_summary": tool_get_sentiment_summary,
+    "get_inventory_low_stock": tool_get_inventory_low_stock,
+    "get_top_customers":     tool_get_top_customers,
 }
+
+
+# Tools available to each role. Restaurant operators don't see the
+# diner tools (their bookings table is different) and vice versa.
+_ROLE_TOOLS = {
+    "consumer":   _DINER_TOOL_DEFINITIONS,
+    "diner":      _DINER_TOOL_DEFINITIONS,
+    "restaurant": _RESTAURANT_TOOL_DEFINITIONS,
+    "staff":      [],
+}
+
+
+def tools_for_user(ctx: UserContext) -> list[dict]:
+    """Return the tool list to advertise to Claude for this user. Always
+    includes the universal tools; role-specific tools layered on top."""
+    return TOOL_DEFINITIONS + _ROLE_TOOLS.get((ctx.account_type or "").lower(), [])
 
 
 def make_dispatcher(ctx: UserContext):
     """Build a closure-bound dispatcher for the conversation. The
     claude_client.call_with_tools loop calls dispatcher(name, args)
     when Claude requests a tool — we route to the right function with
-    ctx injected."""
+    ctx injected.
+
+    Role-gated: a restaurant operator can't accidentally call diner
+    tools (and vice versa) even if Claude misroutes — the gate returns
+    a clean error so the model can recover."""
+    allowed_role_tools = {t["name"] for t in _ROLE_TOOLS.get((ctx.account_type or "").lower(), [])}
+    universal_names = {t["name"] for t in TOOL_DEFINITIONS}
+
     def dispatch(name: str, args: dict[str, Any]):
         fn = _TOOLS.get(name)
         if fn is None:
             return {"error": f"unknown tool: {name}"}
+        if name not in universal_names and name not in allowed_role_tools:
+            return {"error": f"tool '{name}' not available for account_type='{ctx.account_type}'"}
         # Defensive copy — never pass mutable args from the SDK directly
         # into our typed kwargs.
         return fn(ctx, **dict(args or {}))
