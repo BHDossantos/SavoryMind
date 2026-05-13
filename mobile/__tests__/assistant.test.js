@@ -47,7 +47,7 @@ describe('Assistant screen', () => {
 
     await act(async () => { fireEvent.press(getByText('Send')); });
 
-    expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?');
+    expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?', []);
     await waitFor(() => expect(getByText('Rest 5 minutes.')).toBeTruthy());
     expect(getByText('Resting times')).toBeTruthy();
   });
@@ -58,7 +58,7 @@ describe('Assistant screen', () => {
     const { getByText } = render(<AssistantScreen />);
     await act(async () => { fireEvent.press(getByText('Substitute for buttermilk?')); });
 
-    expect(api.askAssistant).toHaveBeenCalledWith('Substitute for buttermilk?');
+    expect(api.askAssistant).toHaveBeenCalledWith('Substitute for buttermilk?', []);
     await waitFor(() => expect(getByText('Use 1 cup milk + 1 tbsp lemon juice.')).toBeTruthy());
   });
 

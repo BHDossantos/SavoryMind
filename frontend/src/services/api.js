@@ -288,7 +288,12 @@ export const api = {
   getDailySuggestion: (mood = "") => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
   // Consumer — Culinary Assistant
-  askAssistant: (question) => request("/api/consumer/assistant", { method: "POST", body: JSON.stringify({ question }) }),
+  // Pass optional `history` for multi-turn conversation continuity.
+  // Backend caps to last 20 messages anyway.
+  askAssistant: (question, history = null) => request("/api/consumer/assistant", {
+    method: "POST",
+    body: JSON.stringify(history && history.length ? { question, history } : { question }),
+  }),
 
   // Restaurant — Trends & Marketing
   getMenuTrends: () => request("/api/restaurant/trends"),

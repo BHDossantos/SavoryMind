@@ -23,6 +23,10 @@ export default function AssistantPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
+  // Backend-shaped conversation history (Anthropic message format).
+  // Kept in a ref — UI doesn't render it directly. Sent back on every
+  // request so Flavor can handle follow-ups with full context.
+  const historyRef = useRef([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -35,8 +39,14 @@ export default function AssistantPage() {
     setMessages((m) => [...m, { role: "user", text: q }]);
     setLoading(true);
     try {
-      const data = await api.askAssistant(q);
-      setMessages((m) => [...m, { role: "assistant", title: data.title, text: data.answer }]);
+      const data = await api.askAssistant(q, historyRef.current);
+      if (Array.isArray(data?.history)) historyRef.current = data.history;
+      setMessages((m) => [...m, {
+        role: "assistant",
+        title: data.title,
+        text: data.answer,
+        toolCalls: data.tool_calls || [],
+      }]);
     } catch (e) {
       setMessages((m) => [
         ...m,

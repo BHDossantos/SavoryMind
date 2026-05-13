@@ -37,6 +37,11 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
+  // Backend-shaped conversation history (Anthropic message format).
+  // Kept in a ref so we don't re-render the chat when it updates after
+  // a tool-using turn. Sent back on every subsequent request so Flavor
+  // can answer follow-ups like "what about a white instead?".
+  const historyRef = useRef([]);
 
   const scrollToEnd = useCallback(() => {
     // Slight delay so the new message has rendered first.
@@ -51,8 +56,12 @@ export default function AssistantScreen() {
     scrollToEnd();
     setLoading(true);
     try {
-      const data = await api.askAssistant(q);
-      setMessages((m) => [...m, { role: 'assistant', title: data.title, text: data.answer }]);
+      const data = await api.askAssistant(q, historyRef.current);
+      // Backend returns the full conversation messages so the next turn
+      // has continuity. Store it for the follow-up call — we don't
+      // render server-side history (the UI has its own message shape).
+      if (Array.isArray(data?.history)) historyRef.current = data.history;
+      setMessages((m) => [...m, { role: 'assistant', title: data.title, text: data.answer, toolCalls: data.tool_calls || [] }]);
     } catch (e) {
       setMessages((m) => [...m, {
         role: 'assistant',

@@ -290,7 +290,13 @@ export const api = {
   // Backend route: POST /api/consumer/assistant {question} → {title, answer}.
   // Returns "Assistant not configured" if ANTHROPIC_API_KEY is unset on
   // the server, so the mobile UI can render that gracefully without crashing.
-  askAssistant: (question) => request('/api/consumer/assistant', { method: 'POST', body: JSON.stringify({ question }) }),
+  // Pass optional `history` for multi-turn conversation continuity.
+  // Backend caps to last 20 messages anyway; we trim to the last 10
+  // pairs (≈20 messages) here too to keep the payload tight.
+  askAssistant: (question, history = null) => request('/api/consumer/assistant', {
+    method: 'POST',
+    body: JSON.stringify(history && history.length ? { question, history } : { question }),
+  }),
 
   // Diner
   getDinerSummary: () => request('/api/diner/summary'),

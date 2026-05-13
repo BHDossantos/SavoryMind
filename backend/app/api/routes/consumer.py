@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel as pydantic_BaseModel
 from sqlalchemy.orm import Session
@@ -409,6 +410,11 @@ def get_delivery_restaurants(
 
 class _AssistantRequest(pydantic_BaseModel):
     question: str
+    # Optional conversation history from the client. Each message is
+    # {role, content} matching Anthropic's message shape (or a simple
+    # text-only shape — assistant_service handles both). Capped at 20
+    # messages on the server side to limit token spend and latency.
+    history: Optional[list[dict]] = None
 
 
 @router.post("/assistant")
@@ -419,10 +425,18 @@ def ask_assistant(
 ):
     # Flavor is the unified AI voice — useful to consumers cooking at home,
     # diners thinking about pairings, AND restaurant operators looking at
-    # the menu. Used to require consumer role; opened up so the Flavor
-    # entry points on restaurant + diner dashboards reach a working
-    # endpoint instead of 403'ing.
+    # the menu. Endpoint is open to any logged-in user (Phase 5).
     if not body.question or not body.question.strip():
         raise HTTPException(status_code=422, detail="question is required.")
     _log(db, current_user.id, "assistant_query", {"question": body.question[:120]})
-    return assistant_service.answer(body.question.strip(), language=current_user.language)
+
+    history = (body.history or [])[-20:]  # cap on the server side too
+
+    return assistant_service.answer(
+        body.question.strip(),
+        language=current_user.language,
+        user_id=current_user.id,
+        account_type=current_user.account_type or "consumer",
+        db=db,
+        history=history,
+    )
