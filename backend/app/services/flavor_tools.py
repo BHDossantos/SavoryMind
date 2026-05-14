@@ -855,6 +855,127 @@ def tool_log_inventory_adjustment(ctx: UserContext, *, item_id: int,
     }
 
 
+def tool_respond_to_review(ctx: UserContext, *, review_id: int, response_text: str) -> dict:
+    """Post a public operator reply to a guest review. Overwrites any
+    existing reply (operators can revise). user_id-scoped so an operator
+    can only respond to their own restaurant's reviews."""
+    import datetime as _dt
+    text = (response_text or "").strip()
+    if not text:
+        return {"error": "response_text is required"}
+    if len(text) > 2000:
+        return {"error": "response is too long (2000 char max)"}
+    review = (
+        ctx.db.query(Review)
+        .filter(Review.id == review_id, Review.user_id == ctx.user_id)
+        .first()
+    )
+    if not review:
+        return {"error": f"review {review_id} not found in your reviews"}
+    review.response = text
+    review.responded_at = _dt.datetime.utcnow()
+    ctx.db.commit()
+    _log_action(ctx, "respond_to_review", {"review_id": review_id})
+    return {
+        "ok": True, "review_id": review_id,
+        "customer": review.customer_name,
+        "your_response": text,
+    }
+
+
+# ── Composite tools ────────────────────────────────────────────────────────
+#
+# These bundle a common multi-step workflow into one deterministic call
+# so Flavor doesn't burn 3-4 tool-call round-trips orchestrating it
+# herself. They're plain Python — no nested Claude call — so they're
+# cheap + predictable.
+
+def tool_build_shopping_list(ctx: UserContext, *, recipe_id: int) -> dict:
+    """Given a recipe, return what the user still needs to buy: the
+    recipe's ingredients minus whatever's already in their pantry.
+    Composite of get_recipe + get_pantry, diffed."""
+    recipe = recipe_service.get_recipe_by_id(recipe_id)
+    if not recipe:
+        return {"error": f"recipe {recipe_id} not found"}
+    recipe_ings = recipe.get("ingredients", []) or []
+
+    pantry_rows = (
+        ctx.db.query(PantryItem)
+        .filter(PantryItem.user_id == ctx.user_id)
+        .all()
+    )
+    # Pantry match is fuzzy-ish: an ingredient line "400g spaghetti"
+    # counts as covered if the pantry has an entry whose name appears
+    # as a word in the line. Cheap + good enough — Flavor can refine
+    # in conversation if it gets it wrong.
+    pantry_names = [(p.ingredient or "").lower().strip() for p in pantry_rows if p.ingredient]
+
+    have, need = [], []
+    for line in recipe_ings:
+        line_l = str(line).lower()
+        matched = next((pn for pn in pantry_names if pn and pn in line_l), None)
+        (have if matched else need).append(line)
+
+    return {
+        "recipe":      recipe.get("title"),
+        "recipe_id":   recipe_id,
+        "need_to_buy": need,
+        "already_have": have,
+        "need_count":  len(need),
+    }
+
+
+def tool_suggest_tonight(ctx: UserContext) -> dict:
+    """One-shot 'what should I cook tonight' — composites the user's
+    pantry + preferences + recent journal into a single recipe search,
+    returns the top pick + a couple of runners-up. Saves Flavor from
+    chaining get_pantry → get_user_preferences → search_recipes by
+    hand on a question she gets constantly."""
+    # Pantry → ingredients string for the recipe search.
+    pantry_rows = (
+        ctx.db.query(PantryItem)
+        .filter(PantryItem.user_id == ctx.user_id)
+        .limit(50).all()
+    )
+    ingredients = ",".join(p.ingredient for p in pantry_rows if p.ingredient)
+
+    # Preferences → bias the search toward a liked cuisine, away from
+    # disliked ones (the recipe engine doesn't do negative filters, so
+    # we just post-filter dislikes out).
+    u = ctx.db.query(User).filter(User.id == ctx.user_id).first()
+    liked = _safe_json(u.cuisine_preferences, []) if u else []
+    disliked = {c.lower() for c in (_safe_json(u.cuisine_dislikes, []) if u else [])}
+    cuisine = liked[0] if liked else ""
+
+    # Recent journal → don't re-suggest something cooked in the last 5 entries.
+    recent = (
+        ctx.db.query(MealMemory)
+        .filter(MealMemory.user_id == ctx.user_id)
+        .order_by(MealMemory.cooked_at.desc())
+        .limit(5).all()
+    )
+    recent_dishes = {(m.dish_name or "").lower() for m in recent}
+
+    result = recipe_service.get_recipe_recommendations(
+        cuisine=cuisine, ingredients=ingredients,
+    )
+    picks = [
+        r for r in result.get("recipes", [])
+        if r.get("cuisine", "").lower() not in disliked
+        and r.get("title", "").lower() not in recent_dishes
+    ]
+    return {
+        "based_on": {
+            "pantry_items":     len(pantry_rows),
+            "preferred_cuisine": cuisine or None,
+            "avoided_cuisines": sorted(disliked) or None,
+            "skipped_recent":   sorted(recent_dishes) or None,
+        },
+        "top_pick":    picks[0] if picks else None,
+        "runners_up":  picks[1:4],
+    }
+
+
 # ── Anthropic tool definitions ─────────────────────────────────────────────
 #
 # Schema format follows https://docs.anthropic.com/en/docs/build-with-claude/tool-use.
@@ -999,6 +1120,32 @@ TOOL_DEFINITIONS = [
             "dislikes, dietary restrictions, flavour profile, cooking "
             "goals, drinking habits. Call this when an answer would be "
             "noticeably better with personal context."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "build_shopping_list",
+        "description": (
+            "Given a recipe ID, return what the user still needs to buy — "
+            "the recipe's ingredients minus what's already in their "
+            "pantry. One call instead of get_recipe + get_pantry + a "
+            "manual diff."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"recipe_id": {"type": "integer"}},
+            "required": ["recipe_id"],
+        },
+    },
+    {
+        "name": "suggest_tonight",
+        "description": (
+            "One-shot 'what should I cook tonight?' — composites the "
+            "user's pantry + cuisine preferences + recent journal into a "
+            "single ranked recipe pick (+ a couple runners-up). Avoids "
+            "disliked cuisines and dishes cooked in the last few days. "
+            "Prefer this over chaining get_pantry → get_user_preferences "
+            "→ search_recipes by hand."
         ),
         "input_schema": {"type": "object", "properties": {}},
     },
@@ -1320,6 +1467,23 @@ _RESTAURANT_TOOL_DEFINITIONS = [
             "required": ["item_id", "adjustment_type", "delta"],
         },
     },
+    {
+        "name": "respond_to_review",
+        "description": (
+            "Post a public operator reply to a guest review. Overwrites "
+            "any existing reply (operators can revise). Keep replies "
+            "warm, specific, and brief — acknowledge the guest, address "
+            "the point, invite them back."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "review_id":     {"type": "integer"},
+                "response_text": {"type": "string"},
+            },
+            "required": ["review_id", "response_text"],
+        },
+    },
 ]
 
 
@@ -1338,6 +1502,8 @@ _TOOLS = {
     "get_pantry":            tool_get_pantry,
     "get_journal_recent":    tool_get_journal_recent,
     "get_user_preferences":  tool_get_user_preferences,
+    "build_shopping_list":   tool_build_shopping_list,
+    "suggest_tonight":       tool_suggest_tonight,
     # Diner / consumer (unified) read tools.
     "get_my_bookings":       tool_get_my_bookings,
     "get_visit_history":     tool_get_visit_history,
@@ -1363,6 +1529,7 @@ _TOOLS = {
     "decline_booking":          tool_decline_booking,
     "add_crm_customer":         tool_add_crm_customer,
     "log_inventory_adjustment": tool_log_inventory_adjustment,
+    "respond_to_review":        tool_respond_to_review,
 }
 
 

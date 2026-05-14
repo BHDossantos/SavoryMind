@@ -140,6 +140,8 @@ export default function AssistantScreen() {
       get_pantry:             'your pantry',
       get_journal_recent:     'your meal journal',
       get_user_preferences:   'your preferences',
+      build_shopping_list:    'your pantry vs. the recipe',
+      suggest_tonight:        'your pantry, tastes + journal',
       get_my_bookings:        'your bookings',
       get_visit_history:      'your visit history',
       get_menu:               'the menu',
@@ -163,6 +165,7 @@ export default function AssistantScreen() {
       decline_booking:          'declined a booking',
       add_crm_customer:         'added a customer',
       log_inventory_adjustment: 'logged an inventory change',
+      respond_to_review:        'replied to a review',
     };
     const seen = new Set();
     const parts = [];

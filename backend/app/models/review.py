@@ -24,3 +24,8 @@ class Review(Base):
     praise        = Column(Text, nullable=True)  # JSON list of specific positives
     tone          = Column(String, nullable=True)  # one of: positive | neutral | mixed | frustrated | angry
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Operator's public reply. Written via Flavor's respond_to_review
+    # action tool (Phase 9c) or the sentiment screen. NULL = unanswered.
+    response      = Column(Text, nullable=True)
+    responded_at  = Column(DateTime, nullable=True)
