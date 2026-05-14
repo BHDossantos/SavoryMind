@@ -39,14 +39,18 @@ const TOOL_LABELS = {
   // Write — phrased as past-tense actions taken
   add_to_pantry:            "updated your pantry",
   remove_from_pantry:       "updated your pantry",
+  add_pantry_bulk:          "updated your pantry",
   log_meal_memory:          "saved to your journal",
   update_preferences_field: "updated your preferences",
   create_booking:           "created a booking",
+  cancel_booking:           "cancelled a booking",
   log_visit:                "logged a visit",
   add_menu_item:            "added a menu item",
   update_menu_item:         "updated a menu item",
   accept_booking:           "accepted a booking",
   decline_booking:          "declined a booking",
+  add_crm_customer:         "added a customer",
+  log_inventory_adjustment: "logged an inventory change",
 };
 
 function summariseToolCalls(calls) {

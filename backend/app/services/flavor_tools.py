@@ -42,7 +42,7 @@ from ..models.diner import DinerBooking, DinerVisit
 from ..models.menu import MenuItem
 from ..models.restaurant_ext import Booking, CRMCustomer
 from ..models.review import Review
-from ..models.inventory import InventoryItem
+from ..models.inventory import InventoryItem, InventoryAdjustment
 from ..models.user import User
 from . import recipe_service, wine_service, beverage_service, review_service
 
@@ -743,6 +743,118 @@ def tool_decline_booking(ctx: UserContext, *, booking_id: int, reason: str) -> d
     return {"ok": True, "id": booking_id, "status": "declined"}
 
 
+# ── Phase 9b action tools ──────────────────────────────────────────────────
+
+def tool_add_pantry_bulk(ctx: UserContext, *, items: list) -> dict:
+    """Add several pantry ingredients in one call — for parsing a
+    shopping list the user pasted. Each item is {ingredient, quantity?,
+    category?}. Skips blank / overlong names rather than failing the
+    whole batch."""
+    if not isinstance(items, list) or not items:
+        return {"error": "items must be a non-empty list"}
+    added, skipped = [], []
+    for raw in items[:50]:  # cap so a giant paste can't hammer the DB
+        if isinstance(raw, str):
+            name, qty, cat = raw.strip(), "", ""
+        elif isinstance(raw, dict):
+            name = str(raw.get("ingredient", "")).strip()
+            qty = str(raw.get("quantity", "") or "").strip()
+            cat = str(raw.get("category", "") or "").strip()
+        else:
+            skipped.append(str(raw)[:40]); continue
+        if not name or len(name) > 100:
+            skipped.append(name[:40] or "(blank)"); continue
+        ctx.db.add(PantryItem(
+            user_id=ctx.user_id, ingredient=name,
+            quantity=qty or None, category=cat or None,
+        ))
+        added.append(name)
+    ctx.db.commit()
+    _log_action(ctx, "add_pantry_bulk", {"added": len(added), "skipped": len(skipped)})
+    return {"ok": True, "added": added, "added_count": len(added), "skipped": skipped}
+
+
+def tool_cancel_booking(ctx: UserContext, *, booking_id: int) -> dict:
+    """Cancel one of the user's own restaurant bookings (diner side)."""
+    booking = (
+        ctx.db.query(DinerBooking)
+        .filter(DinerBooking.id == booking_id, DinerBooking.user_id == ctx.user_id)
+        .first()
+    )
+    if not booking:
+        return {"error": f"booking {booking_id} not found in your bookings"}
+    if booking.status == "cancelled":
+        return {"ok": True, "id": booking_id, "status": "cancelled", "note": "already cancelled"}
+    booking.status = "cancelled"
+    ctx.db.commit()
+    _log_action(ctx, "cancel_booking", {"booking_id": booking_id})
+    return {"ok": True, "id": booking_id, "status": "cancelled"}
+
+
+def tool_add_crm_customer(ctx: UserContext, *, name: str, email: str = "",
+                         phone: str = "", tags: str = "", notes: str = "") -> dict:
+    """Add a customer to the restaurant's CRM."""
+    n = (name or "").strip()
+    if not n:
+        return {"error": "name is required"}
+    customer = CRMCustomer(
+        user_id=ctx.user_id,
+        name=n[:150],
+        email=email.strip() or None,
+        phone=phone.strip() or None,
+        tags=tags.strip() or None,
+        notes=notes.strip() or None,
+    )
+    ctx.db.add(customer)
+    ctx.db.commit()
+    ctx.db.refresh(customer)
+    _log_action(ctx, "add_crm_customer", {"name": n})
+    return {"ok": True, "id": customer.id, "name": customer.name}
+
+
+_ADJUSTMENT_TYPES = ("delivery", "usage", "waste", "count_correction")
+
+
+def tool_log_inventory_adjustment(ctx: UserContext, *, item_id: int,
+                                 adjustment_type: str, delta: float,
+                                 note: str = "") -> dict:
+    """Append an inventory ledger entry — a delivery, usage, waste, or
+    count correction. delta is positive for stock-in (delivery,
+    upward correction), negative for stock-out (usage, waste)."""
+    atype = (adjustment_type or "").strip().lower()
+    if atype not in _ADJUSTMENT_TYPES:
+        return {"error": f"adjustment_type must be one of {_ADJUSTMENT_TYPES}"}
+    # Verify the item belongs to this operator before writing the ledger row.
+    item = (
+        ctx.db.query(InventoryItem)
+        .filter(InventoryItem.id == item_id, InventoryItem.user_id == ctx.user_id)
+        .first()
+    )
+    if not item:
+        return {"error": f"inventory item {item_id} not found in your inventory"}
+    try:
+        delta_f = float(delta)
+    except (TypeError, ValueError):
+        return {"error": "delta must be a number"}
+    adj = InventoryAdjustment(
+        item_id=item_id,
+        user_id=ctx.user_id,
+        adjustment_type=atype,
+        delta=delta_f,
+        note=note.strip() or None,
+    )
+    ctx.db.add(adj)
+    ctx.db.commit()
+    ctx.db.refresh(adj)
+    _log_action(ctx, "log_inventory_adjustment", {
+        "item_id": item_id, "type": atype, "delta": delta_f,
+    })
+    return {
+        "ok": True, "id": adj.id, "item": item.name,
+        "type": atype, "delta": delta_f,
+    }
+
+
 # ── Anthropic tool definitions ─────────────────────────────────────────────
 #
 # Schema format follows https://docs.anthropic.com/en/docs/build-with-claude/tool-use.
@@ -1026,6 +1138,45 @@ _DINER_TOOL_DEFINITIONS = [
             "required": ["restaurant_name", "visit_date"],
         },
     },
+    {
+        "name": "add_pantry_bulk",
+        "description": (
+            "Add several pantry ingredients at once — use when the user "
+            "pastes or dictates a shopping list. Each item is an object "
+            "{ingredient, quantity?, category?} (or a plain ingredient "
+            "string). Capped at 50 items per call."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "ingredient": {"type": "string"},
+                            "quantity":   {"type": "string"},
+                            "category":   {"type": "string"},
+                        },
+                        "required": ["ingredient"],
+                    },
+                },
+            },
+            "required": ["items"],
+        },
+    },
+    {
+        "name": "cancel_booking",
+        "description": (
+            "Cancel one of the user's OWN restaurant bookings. Only call "
+            "on explicit 'cancel my booking' instruction."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"booking_id": {"type": "integer"}},
+            "required": ["booking_id"],
+        },
+    },
 ]
 
 _RESTAURANT_TOOL_DEFINITIONS = [
@@ -1134,6 +1285,41 @@ _RESTAURANT_TOOL_DEFINITIONS = [
             "required": ["booking_id", "reason"],
         },
     },
+    {
+        "name": "add_crm_customer",
+        "description": "Add a customer to the restaurant's CRM.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name":  {"type": "string"},
+                "email": {"type": "string"},
+                "phone": {"type": "string"},
+                "tags":  {"type": "string", "description": "Comma-separated, e.g. 'vip,regular'"},
+                "notes": {"type": "string"},
+            },
+            "required": ["name"],
+        },
+    },
+    {
+        "name": "log_inventory_adjustment",
+        "description": (
+            "Append an inventory ledger entry. adjustment_type is one of "
+            "'delivery' / 'usage' / 'waste' / 'count_correction'. delta is "
+            "positive for stock-in (delivery, upward correction), negative "
+            "for stock-out (usage, waste). The ledger is append-only — "
+            "there is no edit / delete."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "item_id":         {"type": "integer"},
+                "adjustment_type": {"type": "string", "enum": ["delivery", "usage", "waste", "count_correction"]},
+                "delta":           {"type": "number"},
+                "note":            {"type": "string"},
+            },
+            "required": ["item_id", "adjustment_type", "delta"],
+        },
+    },
 ]
 
 
@@ -1155,12 +1341,14 @@ _TOOLS = {
     # Diner / consumer (unified) read tools.
     "get_my_bookings":       tool_get_my_bookings,
     "get_visit_history":     tool_get_visit_history,
-    # Diner / consumer action tools (Phase 9 — writes).
+    # Diner / consumer action tools (writes).
     "add_to_pantry":            tool_add_to_pantry,
     "remove_from_pantry":       tool_remove_from_pantry,
+    "add_pantry_bulk":          tool_add_pantry_bulk,
     "log_meal_memory":          tool_log_meal_memory,
     "update_preferences_field": tool_update_preferences_field,
     "create_booking":           tool_create_booking,
+    "cancel_booking":           tool_cancel_booking,
     "log_visit":                tool_log_visit,
     # Restaurant read tools.
     "get_menu":              tool_get_menu,
@@ -1169,10 +1357,12 @@ _TOOLS = {
     "get_inventory_low_stock": tool_get_inventory_low_stock,
     "get_top_customers":     tool_get_top_customers,
     # Restaurant action tools.
-    "add_menu_item":         tool_add_menu_item,
-    "update_menu_item":      tool_update_menu_item,
-    "accept_booking":        tool_accept_booking,
-    "decline_booking":       tool_decline_booking,
+    "add_menu_item":            tool_add_menu_item,
+    "update_menu_item":         tool_update_menu_item,
+    "accept_booking":           tool_accept_booking,
+    "decline_booking":          tool_decline_booking,
+    "add_crm_customer":         tool_add_crm_customer,
+    "log_inventory_adjustment": tool_log_inventory_adjustment,
 }
 
 
