@@ -34,6 +34,7 @@ from app.models.restaurant_ext import Booking, CRMCustomer, Staff, SalesLog  # n
 from app.models.kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog  # noqa: F401
 from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
+from app.models.flavor import FlavorMemory  # noqa: F401
 from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth, inventory, internal_jobs, account
 
 

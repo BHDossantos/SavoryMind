@@ -33,6 +33,7 @@ from .flavor_tools import (
     UserContext,
     make_dispatcher,
     tools_for_user,
+    load_user_memories,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,13 @@ ACTION TOOLS (writes) — these mutate the user's data. Rules:
   (e.g. "Added 2 lb eggs to your pantry. Anything else?"). Don't \
   invent results — say only what the tool returned.
 
+MEMORY: when the user tells you something DURABLE about themselves — \
+an allergy, a piece of kitchen equipment, a strong taste, their skill \
+level, ongoing context — call remember_fact so you carry it into \
+every future conversation. Don't remember transient things. If they \
+say something is no longer true, call forget_fact. Anything already \
+in the "WHAT YOU REMEMBER" block below is loaded — don't re-remember it.
+
 Stay in voice. Encouraging language, acknowledge the situation, gentle \
 push-back when the user is about to make a mistake, one emoji max.
 
@@ -87,11 +95,34 @@ TITLE: <3-7 word label, sentence case, no trailing punctuation>
 That's it. The "TITLE:" prefix lets the UI extract the title separately."""
 
 
-def _build_system_prompt(language: str | None) -> str:
+def _format_memories(memories: list[dict]) -> str:
+    """Render the user's remembered facts as a system-prompt block,
+    grouped by category. Empty string when there's nothing remembered
+    yet (no point spending tokens on an empty header)."""
+    if not memories:
+        return ""
+    by_cat: dict[str, list[str]] = {}
+    for m in memories:
+        by_cat.setdefault(m.get("category", "context"), []).append(m.get("fact", ""))
+    lines = ["WHAT YOU REMEMBER ABOUT THIS USER:"]
+    for cat in ("dietary", "equipment", "preference", "skill", "context"):
+        facts = by_cat.get(cat)
+        if facts:
+            lines.append(f"  [{cat}]")
+            lines.extend(f"  - {f}" for f in facts if f)
+    return "\n".join(lines)
+
+
+def _build_system_prompt(language: str | None, memories: list[dict] | None = None) -> str:
     """Compose the per-request system prompt: language-aware persona +
-    fixed task instructions. Same persona as every other Flavor surface,
-    plus the Phase 7 tool-belt awareness."""
-    return f"{claude_client.flavor_persona_for(language)}\n\n{_ASSISTANT_TASK}"
+    fixed task instructions + the user's remembered facts (Phase 10).
+    Same persona as every other Flavor surface, plus the tool-belt
+    awareness and long-term memory injection."""
+    base = f"{claude_client.flavor_persona_for(language)}\n\n{_ASSISTANT_TASK}"
+    memory_block = _format_memories(memories or [])
+    if memory_block:
+        base = f"{base}\n\n{memory_block}"
+    return base
 
 
 def _parse_response(text: str) -> dict:
@@ -184,12 +215,18 @@ def answer(
     )
     dispatcher = make_dispatcher(ctx)
 
+    # Phase 10 — auto-inject the user's long-term memory into the system
+    # prompt. Flavor gets every remembered fact every conversation
+    # without spending a tool call to recall. Best-effort: returns []
+    # on any error so a memory hiccup never blocks the chat.
+    memories = load_user_memories(db, user_id)
+
     # Start with prior turns (if any), then append the new user question.
     messages = list(history or [])
     messages.append({"role": "user", "content": question})
 
     result = claude_client.call_with_tools(
-        system_prompt=_build_system_prompt(language),
+        system_prompt=_build_system_prompt(language, memories),
         messages=messages,
         tools=tools_for_user(ctx),
         dispatcher=dispatcher,

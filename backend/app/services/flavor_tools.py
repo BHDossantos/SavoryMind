@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -39,6 +40,7 @@ from sqlalchemy.orm import Session
 from ..data import get_wines, get_beers, get_spirits
 from ..models.consumer import PantryItem, MealMemory
 from ..models.diner import DinerBooking, DinerVisit
+from ..models.flavor import FlavorMemory
 from ..models.menu import MenuItem
 from ..models.restaurant_ext import Booking, CRMCustomer
 from ..models.review import Review
@@ -883,6 +885,121 @@ def tool_respond_to_review(ctx: UserContext, *, review_id: int, response_text: s
     }
 
 
+# ── Flavor memory (Phase 10) ───────────────────────────────────────────────
+#
+# Persistent per-user facts. remember_fact writes them; they get
+# auto-injected into the system prompt by assistant_service via
+# load_user_memories() below, so Flavor always has them without a
+# tool round-trip. recall_facts + forget_fact let the user audit
+# and prune.
+
+MEMORY_CAP = 60  # max durable facts per user — eviction kicks in past this
+
+_MEMORY_CATEGORIES = ("dietary", "equipment", "preference", "skill", "context")
+
+
+def tool_remember_fact(ctx: UserContext, *, fact: str, category: str = "context") -> dict:
+    """Save a durable fact about the user. Use for things that stay
+    true across conversations — allergies, kitchen equipment, strong
+    preferences, skill level, ongoing context. NOT for transient
+    stuff ('making pasta tonight')."""
+    text = (fact or "").strip()
+    if not text:
+        return {"error": "fact is required"}
+    if len(text) > 300:
+        return {"error": "fact too long (300 char max) — keep it a single crisp statement"}
+    cat = (category or "context").strip().lower()
+    if cat not in _MEMORY_CATEGORIES:
+        cat = "context"
+
+    # De-dupe: if a near-identical fact already exists, skip silently.
+    existing = (
+        ctx.db.query(FlavorMemory)
+        .filter(FlavorMemory.user_id == ctx.user_id)
+        .all()
+    )
+    if any(text.lower() == (m.fact or "").lower() for m in existing):
+        return {"ok": True, "note": "already remembered", "fact": text}
+
+    # Eviction: at the cap, drop the least-recently-referenced fact so
+    # the agent can't write unbounded rows.
+    if len(existing) >= MEMORY_CAP:
+        victim = sorted(
+            existing,
+            key=lambda m: (m.last_referenced_at or m.created_at or datetime.min),
+        )[0]
+        ctx.db.delete(victim)
+
+    mem = FlavorMemory(user_id=ctx.user_id, fact=text, category=cat)
+    ctx.db.add(mem)
+    ctx.db.commit()
+    ctx.db.refresh(mem)
+    _log_action(ctx, "remember_fact", {"category": cat, "fact": text[:120]})
+    return {"ok": True, "id": mem.id, "fact": text, "category": cat}
+
+
+def tool_recall_facts(ctx: UserContext, *, category: str = "") -> dict:
+    """List what Flavor remembers about the user. Optionally filter by
+    category. Mostly for 'what do you know about me?' questions —
+    facts are already auto-injected into the system prompt."""
+    q = ctx.db.query(FlavorMemory).filter(FlavorMemory.user_id == ctx.user_id)
+    if category:
+        q = q.filter(FlavorMemory.category == category.strip().lower())
+    rows = q.order_by(FlavorMemory.created_at.desc()).all()
+    return {
+        "count": len(rows),
+        "facts": [
+            {"id": m.id, "fact": m.fact, "category": m.category}
+            for m in rows
+        ],
+    }
+
+
+def tool_forget_fact(ctx: UserContext, *, fact: str) -> dict:
+    """Remove a remembered fact by fuzzy match (case-insensitive
+    substring). Use when the user says something is no longer true."""
+    needle = (fact or "").strip().lower()
+    if not needle:
+        return {"error": "fact is required"}
+    rows = (
+        ctx.db.query(FlavorMemory)
+        .filter(FlavorMemory.user_id == ctx.user_id)
+        .all()
+    )
+    match = next((m for m in rows if needle in (m.fact or "").lower()), None)
+    if not match:
+        return {"ok": False, "error": f"no remembered fact matching '{fact}'"}
+    forgotten = match.fact
+    ctx.db.delete(match)
+    ctx.db.commit()
+    _log_action(ctx, "forget_fact", {"fact": forgotten[:120]})
+    return {"ok": True, "forgotten": forgotten}
+
+
+def load_user_memories(db: Session, user_id: int) -> list[dict]:
+    """Read every remembered fact for a user — called by assistant_service
+    to auto-inject into the system prompt. Bumps last_referenced_at on
+    everything it returns so the eviction policy favours genuinely
+    stale facts. Returns [] on any error (memory is a nice-to-have,
+    never blocks the chat)."""
+    try:
+        rows = (
+            db.query(FlavorMemory)
+            .filter(FlavorMemory.user_id == user_id)
+            .order_by(FlavorMemory.category, FlavorMemory.created_at)
+            .all()
+        )
+        if rows:
+            now = datetime.utcnow()
+            for m in rows:
+                m.last_referenced_at = now
+            db.commit()
+        return [{"fact": m.fact, "category": m.category} for m in rows]
+    except Exception:
+        db.rollback()
+        return []
+
+
 # ── Composite tools ────────────────────────────────────────────────────────
 #
 # These bundle a common multi-step workflow into one deterministic call
@@ -1148,6 +1265,56 @@ TOOL_DEFINITIONS = [
             "→ search_recipes by hand."
         ),
         "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "remember_fact",
+        "description": (
+            "Save a DURABLE fact about the user — something that stays "
+            "true across conversations. Good: allergies/intolerances, "
+            "kitchen equipment ('no food processor', 'oven runs hot'), "
+            "strong tastes ('hates cilantro', 'prefers metric'), skill "
+            "level, ongoing context ('cooking for a date this Friday'). "
+            "Do NOT remember transient things ('making pasta tonight'). "
+            "Remembered facts are auto-loaded into your context every "
+            "future conversation — so only save what's worth carrying. "
+            "category is one of: dietary, equipment, preference, skill, "
+            "context."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "fact":     {"type": "string", "description": "One crisp statement, ≤300 chars."},
+                "category": {"type": "string", "enum": ["dietary", "equipment", "preference", "skill", "context"]},
+            },
+            "required": ["fact"],
+        },
+    },
+    {
+        "name": "recall_facts",
+        "description": (
+            "List what you remember about the user. Optionally filter by "
+            "category. You already have these facts in your context — "
+            "use this tool mainly for 'what do you know about me?' "
+            "questions or to find a fact's exact wording before "
+            "forgetting it."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"category": {"type": "string"}},
+        },
+    },
+    {
+        "name": "forget_fact",
+        "description": (
+            "Remove a remembered fact (fuzzy substring match). Use when "
+            "the user says something is no longer true ('I'm not vegan "
+            "anymore', 'I got a new oven')."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"fact": {"type": "string"}},
+            "required": ["fact"],
+        },
     },
 ]
 
@@ -1504,6 +1671,9 @@ _TOOLS = {
     "get_user_preferences":  tool_get_user_preferences,
     "build_shopping_list":   tool_build_shopping_list,
     "suggest_tonight":       tool_suggest_tonight,
+    "remember_fact":         tool_remember_fact,
+    "recall_facts":          tool_recall_facts,
+    "forget_fact":           tool_forget_fact,
     # Diner / consumer (unified) read tools.
     "get_my_bookings":       tool_get_my_bookings,
     "get_visit_history":     tool_get_visit_history,

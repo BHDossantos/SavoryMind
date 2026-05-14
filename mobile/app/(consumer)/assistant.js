@@ -166,6 +166,9 @@ export default function AssistantScreen() {
       add_crm_customer:         'added a customer',
       log_inventory_adjustment: 'logged an inventory change',
       respond_to_review:        'replied to a review',
+      remember_fact:            'noted something for next time',
+      recall_facts:             'what she remembers about you',
+      forget_fact:              'updated what she remembers',
     };
     const seen = new Set();
     const parts = [];
