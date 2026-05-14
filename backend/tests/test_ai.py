@@ -355,9 +355,9 @@ def test_assistant_returns_setup_message_when_unconfigured(client, monkeypatch):
     # Flavor's "not configured yet" voice — consistent with the persona.
     assert "Flavor" in body["title"] or "configured" in body["title"].lower()
     assert "admin" in body["answer"].lower() or "key" in body["answer"].lower()
-    # New tool-era contract — the response always carries these.
+    # Phase 14 contract — the response always carries these.
     assert body["tool_calls"] == []
-    assert "history" in body
+    assert "conversation_id" in body
 
 
 def test_assistant_returns_claude_response(client, monkeypatch):

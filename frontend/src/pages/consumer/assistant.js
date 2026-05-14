@@ -74,26 +74,78 @@ function summariseToolCalls(calls) {
   return `✓ Flavor checked ${parts.slice(0, -1).join(", ")} + ${parts[parts.length - 1]}.`;
 }
 
+const GREETING = {
+  role: "assistant",
+  title: "Hey, I'm Flavor 👋",
+  text: "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
+};
+
+/**
+ * Rebuild the UI message list from a persisted Anthropic-shape thread
+ * (Phase 14 resume). User string messages + assistant text blocks
+ * become UI bubbles; tool_result plumbing rows are skipped. Tool
+ * cards aren't reconstructed on resume — the text answer carries the
+ * substance, and any NEW tool calls this session still render fully.
+ */
+function rebuildUiMessages(serverMessages) {
+  const ui = [];
+  for (const m of serverMessages || []) {
+    if (m.role === "user" && typeof m.content === "string") {
+      ui.push({ role: "user", text: m.content });
+    } else if (m.role === "assistant") {
+      const blocks = Array.isArray(m.content) ? m.content : [];
+      const text = blocks.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+      if (!text) continue;
+      let title = "Flavor", body = text;
+      if (text.toUpperCase().startsWith("TITLE:")) {
+        const nl = text.indexOf("\n");
+        if (nl > 0) { title = text.slice(6, nl).trim(); body = text.slice(nl + 1).trim(); }
+      }
+      ui.push({ role: "assistant", title, text: body });
+    }
+  }
+  return ui;
+}
+
 export default function AssistantPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      title: "Hey, I'm Flavor 👋",
-      text: "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
-    },
-  ]);
+  const [messages, setMessages] = useState([GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
-  // Backend-shaped conversation history (Anthropic message format).
-  // Kept in a ref — UI doesn't render it directly. Sent back on every
-  // request so Flavor can handle follow-ups with full context.
-  const historyRef = useRef([]);
+  // Phase 14 — server-side conversation persistence. The id of the
+  // active thread; null = a fresh conversation. Sent on every request
+  // so the server loads the right history; updated from the response.
+  const conversationIdRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Phase 14 — resume the most recent conversation on mount. If the
+  // user has prior threads, load the latest one back into the chat.
+  // Skipped when a ?q= seed is present (a deep-link starts fresh).
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (!router.isReady || resumedRef.current) return;
+    resumedRef.current = true;
+    if (router.query.q) return; // deep-link → fresh conversation
+    (async () => {
+      try {
+        const { conversations } = await api.listConversations();
+        if (!conversations || conversations.length === 0) return;
+        const latest = conversations[0];
+        const thread = await api.getConversation(latest.id);
+        const ui = rebuildUiMessages(thread.messages);
+        if (ui.length > 0) {
+          setMessages([GREETING, ...ui]);
+          conversationIdRef.current = latest.id;
+        }
+      } catch {
+        // No big deal — start fresh if resume fails.
+      }
+    })();
+  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-send the ?q= seed once on first mount — deep-link target for
   // Cellar "Ask Flavor about this" cards. Guarded so back-nav doesn't
@@ -111,6 +163,15 @@ export default function AssistantPage() {
     }
   }, [router.isReady, router.query.q]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // "New chat" — clears the thread back to just the greeting and
+  // detaches from the persisted conversation so the next message
+  // starts a fresh one.
+  const newChat = () => {
+    setMessages([GREETING]);
+    conversationIdRef.current = null;
+    setInput("");
+  };
+
   const send = async (question) => {
     const q = (question || input).trim();
     if (!q || loading) return;
@@ -118,8 +179,8 @@ export default function AssistantPage() {
     setMessages((m) => [...m, { role: "user", text: q }]);
     setLoading(true);
     try {
-      const data = await api.askAssistant(q, historyRef.current);
-      if (Array.isArray(data?.history)) historyRef.current = data.history;
+      const data = await api.askAssistant(q, conversationIdRef.current);
+      if (data?.conversation_id) conversationIdRef.current = data.conversation_id;
       setMessages((m) => [...m, {
         role: "assistant",
         title: data.title,
@@ -143,9 +204,18 @@ export default function AssistantPage() {
   return (
     <div className="max-w-2xl mx-auto flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
       {/* Header */}
-      <div className="mb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold text-gray-900">👨‍🍳 Flavor</h1>
-        <p className="text-gray-400 text-sm mt-1">Real-time help for whatever's going wrong in the kitchen.</p>
+      <div className="mb-4 flex-shrink-0 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">👨‍🍳 Flavor</h1>
+          <p className="text-gray-400 text-sm mt-1">Real-time help for whatever's going wrong in the kitchen.</p>
+        </div>
+        {messages.length > 1 && (
+          <button
+            onClick={newChat}
+            className="flex-shrink-0 text-xs font-semibold text-consumer-700 border border-consumer-200 rounded-full px-3 py-1.5 hover:bg-consumer-50 transition-colors">
+            + New chat
+          </button>
+        )}
       </div>
 
       {/* Suggestion chips */}

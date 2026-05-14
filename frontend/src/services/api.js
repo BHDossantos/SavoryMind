@@ -288,12 +288,16 @@ export const api = {
   getDailySuggestion: (mood = "") => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
   // Consumer — Culinary Assistant
-  // Pass optional `history` for multi-turn conversation continuity.
-  // Backend caps to last 20 messages anyway.
-  askAssistant: (question, history = null) => request("/api/consumer/assistant", {
+  // Phase 14 — conversation persistence. Pass the conversation_id
+  // returned by a prior turn to continue that thread; omit it to
+  // start fresh. The server owns the history now.
+  askAssistant: (question, conversationId = null) => request("/api/consumer/assistant", {
     method: "POST",
-    body: JSON.stringify(history && history.length ? { question, history } : { question }),
+    body: JSON.stringify(conversationId ? { question, conversation_id: conversationId } : { question }),
   }),
+  listConversations:  () => request("/api/consumer/assistant/conversations"),
+  getConversation:    (id) => request(`/api/consumer/assistant/conversations/${id}`),
+  deleteConversation: (id) => request(`/api/consumer/assistant/conversations/${id}`, { method: "DELETE" }),
 
   // Phase 8 — catalog browse endpoints. Catalog is small enough we
   // fetch the whole thing once and let the page filter client-side.

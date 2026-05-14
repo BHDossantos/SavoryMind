@@ -15,7 +15,7 @@ from ...schemas.consumer import (
     PantryItemCreate, PantryItemResponse,
     MealMemoryCreate, MealMemoryResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service, posthog_client
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service, conversation_service, posthog_client
 from ...insights.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
@@ -449,11 +449,12 @@ def get_delivery_restaurants(
 
 class _AssistantRequest(pydantic_BaseModel):
     question: str
-    # Optional conversation history from the client. Each message is
-    # {role, content} matching Anthropic's message shape (or a simple
-    # text-only shape — assistant_service handles both). Capped at 20
-    # messages on the server side to limit token spend and latency.
-    history: Optional[list[dict]] = None
+    # Phase 14 — server-side conversation persistence. The client sends
+    # the conversation_id it got back from a prior turn; the server
+    # loads that thread's history from the DB. Omit / null to start a
+    # fresh conversation. (The old client-managed `history` field is
+    # gone — the server is now the source of truth.)
+    conversation_id: Optional[int] = None
 
 
 @router.post("/assistant")
@@ -467,15 +468,70 @@ def ask_assistant(
     # the menu. Endpoint is open to any logged-in user (Phase 5).
     if not body.question or not body.question.strip():
         raise HTTPException(status_code=422, detail="question is required.")
-    _log(db, current_user.id, "assistant_query", {"question": body.question[:120]})
+    question = body.question.strip()
+    _log(db, current_user.id, "assistant_query", {"question": question[:120]})
 
-    history = (body.history or [])[-20:]  # cap on the server side too
+    # Load prior history from the persisted conversation (Phase 14). A
+    # stale / not-owned conversation_id falls through to a fresh thread
+    # rather than 500ing.
+    convo, prior = conversation_service.get_or_create(db, current_user.id, body.conversation_id)
 
-    return assistant_service.answer(
-        body.question.strip(),
+    result = assistant_service.answer(
+        question,
         language=current_user.language,
         user_id=current_user.id,
         account_type=current_user.account_type or "consumer",
         db=db,
-        history=history,
+        history=prior,
     )
+
+    # Persist the updated thread. save() returns the conversation id
+    # (creating the row on first turn) — the client sends it back next
+    # turn to continue. None means persistence hiccuped; the chat still
+    # works, it just won't resume.
+    conversation_id = conversation_service.save(
+        db, current_user.id, convo, result.get("history", []), question
+    )
+
+    return {
+        "title":           result["title"],
+        "answer":          result["answer"],
+        "tool_calls":      result["tool_calls"],
+        "conversation_id": conversation_id,
+    }
+
+
+@router.get("/assistant/conversations")
+def list_conversations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The user's Flavor chat threads, most-recently-updated first.
+    Lightweight — no message bodies, just id / title / count / time."""
+    return {"conversations": conversation_service.list_for_user(db, current_user.id)}
+
+
+@router.get("/assistant/conversations/{conversation_id}")
+def get_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Full thread for resuming a conversation. 404 for a thread the
+    caller doesn't own (or one that doesn't exist)."""
+    thread = conversation_service.get_thread(db, current_user.id, conversation_id)
+    if thread is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    return thread
+
+
+@router.delete("/assistant/conversations/{conversation_id}", status_code=204)
+def delete_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a conversation thread. Idempotent-ish — 404 if it wasn't
+    there (or wasn't the caller's) so the client knows nothing happened."""
+    if not conversation_service.clear(db, current_user.id, conversation_id):
+        raise HTTPException(status_code=404, detail="conversation not found")

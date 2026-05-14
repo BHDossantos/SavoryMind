@@ -10,6 +10,33 @@ import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 import FlavorToolCards from '../../components/FlavorToolCards';
 
+/**
+ * Rebuild the UI message list from a persisted Anthropic-shape thread
+ * (Phase 14 resume). User string messages + assistant text blocks
+ * become UI bubbles; tool_result plumbing rows are skipped. Tool
+ * cards aren't reconstructed on resume — the text answer carries the
+ * substance, and any NEW tool calls this session still render fully.
+ */
+function rebuildUiMessages(serverMessages) {
+  const ui = [];
+  for (const m of serverMessages || []) {
+    if (m.role === 'user' && typeof m.content === 'string') {
+      ui.push({ role: 'user', text: m.content });
+    } else if (m.role === 'assistant') {
+      const blocks = Array.isArray(m.content) ? m.content : [];
+      const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+      if (!text) continue;
+      let title = 'Flavor', body = text;
+      if (text.toUpperCase().startsWith('TITLE:')) {
+        const nl = text.indexOf('\n');
+        if (nl > 0) { title = text.slice(6, nl).trim(); body = text.slice(nl + 1).trim(); }
+      }
+      ui.push({ role: 'assistant', title, text: body });
+    }
+  }
+  return ui;
+}
+
 export default function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -41,11 +68,35 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
-  // Backend-shaped conversation history (Anthropic message format).
-  // Kept in a ref so we don't re-render the chat when it updates after
-  // a tool-using turn. Sent back on every subsequent request so Flavor
-  // can answer follow-ups like "what about a white instead?".
-  const historyRef = useRef([]);
+  // Phase 14 — server-side conversation persistence. Holds the active
+  // thread's id (null = fresh). Sent on every request so the server
+  // loads the right history; updated from the response.
+  const conversationIdRef = useRef(null);
+
+  // Phase 14 — resume the most recent conversation on mount. Skipped
+  // when a ?q= seed deep-link is present (that starts fresh).
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current) return;
+    resumedRef.current = true;
+    if (params?.q) return; // deep-link → fresh conversation
+    (async () => {
+      try {
+        const { conversations } = await api.listConversations();
+        if (!conversations || conversations.length === 0) return;
+        const latest = conversations[0];
+        const thread = await api.getConversation(latest.id);
+        const ui = rebuildUiMessages(thread.messages);
+        if (ui.length > 0) {
+          setMessages([GREETING, ...ui]);
+          conversationIdRef.current = latest.id;
+          scrollToEnd();
+        }
+      } catch {
+        // Resume is best-effort — start fresh if it fails.
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-send the ?q= seed once on first mount. Guarded so navigating
   // back/forth doesn't re-trigger.
@@ -64,6 +115,14 @@ export default function AssistantScreen() {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
   }, []);
 
+  // "New chat" — clears the thread to just the greeting and detaches
+  // from the persisted conversation so the next message starts fresh.
+  const newChat = () => {
+    setMessages([GREETING]);
+    conversationIdRef.current = null;
+    setInput('');
+  };
+
   const send = async (questionOverride) => {
     const q = (questionOverride ?? input).trim();
     if (!q || loading) return;
@@ -72,11 +131,10 @@ export default function AssistantScreen() {
     scrollToEnd();
     setLoading(true);
     try {
-      const data = await api.askAssistant(q, historyRef.current);
-      // Backend returns the full conversation messages so the next turn
-      // has continuity. Store it for the follow-up call — we don't
-      // render server-side history (the UI has its own message shape).
-      if (Array.isArray(data?.history)) historyRef.current = data.history;
+      const data = await api.askAssistant(q, conversationIdRef.current);
+      // Server owns the thread now — stash the id it returns so the
+      // next turn continues the same conversation.
+      if (data?.conversation_id) conversationIdRef.current = data.conversation_id;
       setMessages((m) => [...m, { role: 'assistant', title: data.title, text: data.answer, toolCalls: data.tool_calls || [] }]);
     } catch (e) {
       setMessages((m) => [...m, {
@@ -195,9 +253,16 @@ export default function AssistantScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.backBtn}>{t('auth.back')}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+            <Text style={styles.backBtn}>{t('auth.back')}</Text>
+          </TouchableOpacity>
+          {messages.length > 1 && (
+            <TouchableOpacity onPress={newChat} hitSlop={12}>
+              <Text style={styles.newChatBtn}>+ New chat</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={styles.title}>{t('assistant.title')}</Text>
         <Text style={styles.sub}>{t('assistant.subtitle')}</Text>
       </View>
@@ -264,8 +329,10 @@ export default function AssistantScreen() {
 
 const styles = StyleSheet.create({
   safe:        { flex: 1, backgroundColor: '#fff' },
-  header:      { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
-  backBtn:     { fontSize: 14, color: C.gray[600], marginBottom: 8 },
+  header:       { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  backBtn:      { fontSize: 14, color: C.gray[600] },
+  newChatBtn:   { fontSize: 13, fontWeight: '700', color: C.consumer.primary },
   title:       { fontSize: 22, fontWeight: '800', color: C.gray[900] },
   sub:         { fontSize: 13, color: C.gray[500], marginTop: 2 },
 

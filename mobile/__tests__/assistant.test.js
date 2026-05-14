@@ -17,7 +17,14 @@ jest.mock('expo-router', () => ({
 // (even one prefixed with `mock`) doesn't work cleanly for Jest's
 // auto-hoist when the factory captures the binding pre-initialisation.
 jest.mock('../services/api', () => ({
-  api: { askAssistant: jest.fn() },
+  // Phase 14 — the screen calls listConversations() on mount to resume
+  // the latest thread. Default it to "no prior conversations" so tests
+  // start on a fresh chat unless they override it.
+  api: {
+    askAssistant: jest.fn(),
+    listConversations: jest.fn().mockResolvedValue({ conversations: [] }),
+    getConversation: jest.fn(),
+  },
 }));
 const { api } = require('../services/api');
 
@@ -27,6 +34,9 @@ const AssistantScreen = require('../app/(consumer)/assistant').default;
 beforeEach(() => {
   mockBack.mockReset();
   api.askAssistant.mockReset();
+  // Keep the mount-resume effect quiet — no prior conversations.
+  api.listConversations.mockReset().mockResolvedValue({ conversations: [] });
+  api.getConversation.mockReset();
 });
 
 
@@ -48,7 +58,7 @@ describe('Assistant screen', () => {
 
     await act(async () => { fireEvent.press(getByText('Send')); });
 
-    expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?', []);
+    expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?', null);
     await waitFor(() => expect(getByText('Rest 5 minutes.')).toBeTruthy());
     expect(getByText('Resting times')).toBeTruthy();
   });
@@ -59,7 +69,7 @@ describe('Assistant screen', () => {
     const { getByText } = render(<AssistantScreen />);
     await act(async () => { fireEvent.press(getByText('Substitute for buttermilk?')); });
 
-    expect(api.askAssistant).toHaveBeenCalledWith('Substitute for buttermilk?', []);
+    expect(api.askAssistant).toHaveBeenCalledWith('Substitute for buttermilk?', null);
     await waitFor(() => expect(getByText('Use 1 cup milk + 1 tbsp lemon juice.')).toBeTruthy());
   });
 

@@ -29,7 +29,14 @@ jest.mock('next/link', () => {
 });
 
 jest.mock('../../../services/api', () => ({
-  api: { askAssistant: jest.fn() },
+  // Phase 14 — the page calls listConversations() on mount to resume
+  // the latest thread. Default to "no prior conversations" so tests
+  // open on a fresh chat unless they override it.
+  api: {
+    askAssistant: jest.fn(),
+    listConversations: jest.fn(),
+    getConversation: jest.fn(),
+  },
 }));
 
 const { api } = require('../../../services/api');
@@ -38,6 +45,8 @@ const AssistantPage = require('../assistant').default;
 
 beforeEach(() => {
   api.askAssistant.mockReset();
+  api.listConversations.mockReset().mockResolvedValue({ conversations: [] });
+  api.getConversation.mockReset();
   mockReplace.mockReset();
   mockQuery = {};
   // jsdom doesn't implement scrollIntoView — the page calls it on every
@@ -46,12 +55,14 @@ beforeEach(() => {
 });
 
 
+// Phase 14 — the response carries conversation_id, not history. The
+// server owns the thread; the client just threads the id.
 function reply(overrides = {}) {
   return {
     title: 'Resting times',
     answer: 'Rest a 1-inch steak 5 minutes.',
     tool_calls: [],
-    history: [{ role: 'user', content: 'q' }, { role: 'assistant', content: 'a' }],
+    conversation_id: 1,
     ...overrides,
   };
 }
@@ -71,16 +82,16 @@ describe('Assistant page — basics', () => {
     fireEvent.change(textarea, { target: { value: 'How long to rest a steak?' } });
     await act(async () => { fireEvent.click(screen.getByText('Send')); });
 
-    expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?', []);
+    // Fresh conversation → first call passes conversation_id null.
+    expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?', null);
     await waitFor(() => expect(screen.getByText('Rest a 1-inch steak 5 minutes.')).toBeInTheDocument());
     expect(screen.getByText('Resting times')).toBeInTheDocument();
   });
 
-  it('threads history into the second request', async () => {
-    const firstHistory = [{ role: 'user', content: 'first' }, { role: 'assistant', content: 'reply' }];
+  it('threads the conversation_id into the second request', async () => {
     api.askAssistant
-      .mockResolvedValueOnce(reply({ history: firstHistory }))
-      .mockResolvedValueOnce(reply({ title: 'Follow-up', answer: 'A white instead.' }));
+      .mockResolvedValueOnce(reply({ conversation_id: 42 }))
+      .mockResolvedValueOnce(reply({ title: 'Follow-up', answer: 'A white instead.', conversation_id: 42 }));
 
     render(<AssistantPage />);
     const textarea = screen.getByPlaceholderText(/Ask anything/);
@@ -92,8 +103,53 @@ describe('Assistant page — basics', () => {
     fireEvent.change(textarea, { target: { value: 'what about a white?' } });
     await act(async () => { fireEvent.click(screen.getByText('Send')); });
 
-    // 2nd call must carry the history the 1st call returned.
-    expect(api.askAssistant).toHaveBeenNthCalledWith(2, 'what about a white?', firstHistory);
+    // 2nd call must carry the conversation_id the 1st call returned.
+    expect(api.askAssistant).toHaveBeenNthCalledWith(2, 'what about a white?', 42);
+  });
+
+  it('resumes the most recent conversation on mount', async () => {
+    api.listConversations.mockResolvedValue({
+      conversations: [{ id: 7, title: 'Old chat', message_count: 2, updated_at: '2026-05-14' }],
+    });
+    api.getConversation.mockResolvedValue({
+      id: 7,
+      title: 'Old chat',
+      messages: [
+        { role: 'user', content: 'what wine with fish?' },
+        { role: 'assistant', content: [{ type: 'text', text: 'TITLE: Fish pairing\n\nGo with a crisp white.' }] },
+      ],
+    });
+
+    await act(async () => { render(<AssistantPage />); });
+
+    // The persisted thread is rebuilt into the UI.
+    await waitFor(() => expect(screen.getByText('what wine with fish?')).toBeInTheDocument());
+    expect(screen.getByText('Go with a crisp white.')).toBeInTheDocument();
+    expect(screen.getByText('Fish pairing')).toBeInTheDocument();
+
+    // And the next message threads that conversation's id.
+    api.askAssistant.mockResolvedValue(reply({ conversation_id: 7 }));
+    fireEvent.change(screen.getByPlaceholderText(/Ask anything/), { target: { value: 'and with steak?' } });
+    await act(async () => { fireEvent.click(screen.getByText('Send')); });
+    expect(api.askAssistant).toHaveBeenCalledWith('and with steak?', 7);
+  });
+
+  it('New chat button resets the thread and detaches the conversation', async () => {
+    api.askAssistant.mockResolvedValue(reply({ conversation_id: 5 }));
+    render(<AssistantPage />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Ask anything/), { target: { value: 'first message' } });
+    await act(async () => { fireEvent.click(screen.getByText('Send')); });
+    await waitFor(() => expect(screen.getByText('first message')).toBeInTheDocument());
+
+    // "+ New chat" appears once there's a thread.
+    fireEvent.click(screen.getByText('+ New chat'));
+    expect(screen.queryByText('first message')).not.toBeInTheDocument();
+
+    // Next send starts a fresh conversation (id null again).
+    fireEvent.change(screen.getByPlaceholderText(/Ask anything/), { target: { value: 'brand new' } });
+    await act(async () => { fireEvent.click(screen.getByText('Send')); });
+    expect(api.askAssistant).toHaveBeenLastCalledWith('brand new', null);
   });
 
   it('shows a friendly error when the API call rejects', async () => {
@@ -148,7 +204,7 @@ describe('Assistant page — ?q= seed deep-link', () => {
 
     await act(async () => { render(<AssistantPage />); });
 
-    await waitFor(() => expect(api.askAssistant).toHaveBeenCalledWith('Tell me about Malbec.', []));
+    await waitFor(() => expect(api.askAssistant).toHaveBeenCalledWith('Tell me about Malbec.', null));
     // URL is cleared so a refresh doesn't replay the seed.
     expect(mockReplace).toHaveBeenCalledWith('/consumer/assistant', undefined, { shallow: true });
     await waitFor(() => expect(screen.getByText('Bold Argentine red.')).toBeInTheDocument());
