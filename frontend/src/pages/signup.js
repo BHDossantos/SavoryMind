@@ -4,26 +4,21 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useAuth } from "../context/AuthContext";
 
+// Two account-type options after the Food Lover + Food Explorer
+// unification — consumer covers anyone who cooks at home OR eats out
+// (or both); restaurant is for operators. `diner` stays a valid
+// backend account_type for legacy accounts, but new signups always
+// pick consumer so they land on the unified shell.
 const TYPES = [
   {
     id: "consumer",
-    icon: "🏠",
-    title: "Food Lover",
-    subtitle: "Wine, beer, spirits & recipes",
+    icon: "🍴",
+    title: "I love food",
+    subtitle: "Cook at home + go out · pairings, recipes, restaurants",
     border: "border-consumer-500 bg-consumer-50",
     borderDefault: "border-gray-200 hover:border-consumer-300",
     accent: "bg-consumer-600 hover:bg-consumer-700 focus:ring-consumer-400",
-    label: "Food Lover",
-  },
-  {
-    id: "diner",
-    icon: "🍽️",
-    title: "Food Explorer",
-    subtitle: "Bookings, visits & ratings",
-    border: "border-diner-500 bg-diner-50",
-    borderDefault: "border-gray-200 hover:border-diner-300",
-    accent: "bg-diner-600 hover:bg-diner-700 focus:ring-diner-400",
-    label: "Food Explorer",
+    label: "Food Person",
   },
   {
     id: "restaurant",
@@ -129,8 +124,12 @@ export default function Signup() {
   const [configuredProviders, setConfiguredProviders] = useState([]);
 
   useEffect(() => {
-    const t = router.query.type;
-    if (["consumer", "diner", "restaurant"].includes(t)) setAccountType(t);
+    let t = router.query.type;
+    // ?type=diner is a stale link from before the Food Lover / Food
+    // Explorer unification. Normalise to consumer so the user lands
+    // on the unified shell instead of seeing a non-existent tile.
+    if (t === "diner") t = "consumer";
+    if (["consumer", "restaurant"].includes(t)) setAccountType(t);
     fetch("/api/auth/providers-list").then(r => r.json()).then(setConfiguredProviders).catch(() => {});
   }, [router.query.type]);
 

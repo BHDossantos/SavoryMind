@@ -24,8 +24,9 @@ import * as SecureStore from 'expo-secure-store';
 import en from '../locales/en.json';
 import es from '../locales/es.json';
 import it from '../locales/it.json';
+import pt from '../locales/pt.json';
 
-export const SUPPORTED_LANGUAGES = ['en', 'es', 'it'];
+export const SUPPORTED_LANGUAGES = ['en', 'es', 'it', 'pt'];
 const DEFAULT_LANGUAGE = 'en';
 const STORAGE_KEY = 'savorymind.language';
 
@@ -53,6 +54,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     es: { translation: es },
     it: { translation: it },
+    pt: { translation: pt },
   },
   lng: detectDeviceLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,

@@ -340,9 +340,9 @@ def test_diner_recommendations_falls_back_to_rules(client, db_session, monkeypat
 
 
 def test_assistant_returns_setup_message_when_unconfigured(client, monkeypatch):
-    """Flavor falls back gracefully when ANTHROPIC_API_KEY is unset.
-    The fallback string mentions the env-var name so an operator
-    reading the response (e.g. via the API directly) sees what's missing."""
+    """Flavor falls back gracefully when the AI key is unset. The
+    fallback points the operator at what's missing without leaking
+    the literal env-var name into the API response."""
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     access, _ = register_user(client, account_type="consumer")
     r = client.post(
@@ -352,29 +352,62 @@ def test_assistant_returns_setup_message_when_unconfigured(client, monkeypatch):
     )
     assert r.status_code == 200
     body = r.json()
-    # Flavor's "not configured yet" voice — consistent with the persona
+    # Flavor's "not configured yet" voice — consistent with the persona.
     assert "Flavor" in body["title"] or "configured" in body["title"].lower()
-    assert "ANTHROPIC_API_KEY" in body["answer"]
+    assert "admin" in body["answer"].lower() or "key" in body["answer"].lower()
+    # Phase 14 contract — the response always carries these.
+    assert body["tool_calls"] == []
+    assert "conversation_id" in body
 
 
 def test_assistant_returns_claude_response(client, monkeypatch):
+    """Phase 7+ — the assistant route runs through the tool-calling
+    loop. We mock the Anthropic client to script a single end_turn
+    response (no tool calls) and assert the parsed {title, answer}."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
     access, _ = register_user(client, account_type="consumer")
-    fake = {"title": "Resting times", "answer": "Rest a 1-inch steak 5 minutes."}
-    with patch("app.services.assistant_service.claude_client.call_json", return_value=fake):
+
+    class _TextBlock:
+        type = "text"
+        def __init__(self, text): self.text = text
+
+    class _Resp:
+        stop_reason = "end_turn"
+        def __init__(self): self.content = [_TextBlock("TITLE: Resting times\n\nRest a 1-inch steak 5 minutes.")]
+
+    class _FakeMessages:
+        def create(self, **kw): return _Resp()
+
+    class _FakeClient:
+        messages = _FakeMessages()
+
+    with patch("app.services.claude_client._get_client", return_value=_FakeClient()):
         r = client.post(
             "/api/consumer/assistant",
             headers=auth_headers(access),
             json={"question": "How long to rest a steak?"},
         )
         assert r.status_code == 200
-        assert r.json() == fake
+        body = r.json()
+        assert body["title"] == "Resting times"
+        assert "Rest a 1-inch steak 5 minutes." in body["answer"]
+        assert body["tool_calls"] == []
 
 
 def test_assistant_returns_try_again_on_claude_failure(client, monkeypatch):
+    """When the Claude call raises, call_with_tools catches it and
+    returns answer=None; assistant_service parses that into the
+    friendly 'hit a snag' fallback."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
     access, _ = register_user(client, account_type="consumer")
-    with patch("app.services.assistant_service.claude_client.call_json", return_value=None):
+
+    class _BoomMessages:
+        def create(self, **kw): raise RuntimeError("claude is down")
+
+    class _BoomClient:
+        messages = _BoomMessages()
+
+    with patch("app.services.claude_client._get_client", return_value=_BoomClient()):
         r = client.post(
             "/api/consumer/assistant",
             headers=auth_headers(access),
@@ -382,8 +415,7 @@ def test_assistant_returns_try_again_on_claude_failure(client, monkeypatch):
         )
         assert r.status_code == 200
         body = r.json()
-        # Flavor's transient-failure title is a friendly phrase; we just
-        # verify the answer points the user toward retrying.
+        # Friendly transient-failure copy — points the user at retrying.
         assert "try" in body["answer"].lower() or "again" in body["answer"].lower()
 
 

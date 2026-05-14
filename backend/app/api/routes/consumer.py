@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel as pydantic_BaseModel
 from sqlalchemy.orm import Session
@@ -14,14 +15,19 @@ from ...schemas.consumer import (
     PantryItemCreate, PantryItemResponse,
     MealMemoryCreate, MealMemoryResponse,
 )
-from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service, posthog_client
+from ...services import wine_service, music_service, beverage_service, recipe_service, meal_plan_service, pantry_service, memory_service, delivery_service, assistant_service, conversation_service, posthog_client
 from ...insights.engine import build_consumer_recommendations
 
 router = APIRouter(prefix="/consumer", tags=["consumer"])
 
 
 def _require_consumer(user: User) -> User:
-    if user.account_type != "consumer":
+    # Food Lover (consumer) and Food Explorer (diner) were unified into
+    # a single shell — both are "food person" accounts with access to
+    # the full consumer feature set (recipes, pairings, pantry, journal,
+    # etc.). Restaurant + staff stay gated out because those features
+    # don't apply to operator accounts.
+    if user.account_type not in ("consumer", "diner"):
         raise HTTPException(status_code=403, detail="Consumer account required.")
     return user
 
@@ -192,6 +198,45 @@ def get_recommendations(db: Session = Depends(get_db), current_user: User = Depe
 
 
 # ── Beverages ─────────────────────────────────────────────────────────────────
+
+# ── Catalog browse endpoints (Phase 8) ────────────────────────────────────
+# Return the full catalog with optional client-side filterable fields.
+# Pairing endpoints below are dish→wines/beers/spirits; these are
+# inventory→list-with-filters for the new browse UI.
+
+@router.get("/catalog/wines")
+def catalog_wines(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Full wine catalog (grape varietals). Frontend filters
+    client-side for speed — the catalog is small enough that
+    server-side filtering would just add round-trips."""
+    _require_consumer(current_user)
+    from ..data import get_wines
+    catalog = get_wines()
+    # Return as a list with the slug attached so the UI can render
+    # consistent keys without reshaping.
+    return {
+        "count": len(catalog),
+        "wines": [{"slug": slug, **entry} for slug, entry in catalog.items()],
+    }
+
+
+@router.get("/catalog/beers")
+def catalog_beers(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Full beer catalog."""
+    _require_consumer(current_user)
+    from ..data import get_beers
+    catalog = get_beers()
+    return {"count": len(catalog), "beers": catalog}
+
+
+@router.get("/catalog/spirits")
+def catalog_spirits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Full spirits catalog."""
+    _require_consumer(current_user)
+    from ..data import get_spirits
+    catalog = get_spirits()
+    return {"count": len(catalog), "spirits": catalog}
+
 
 @router.get("/beverages/beer")
 def beer_pairing(dish: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -404,6 +449,12 @@ def get_delivery_restaurants(
 
 class _AssistantRequest(pydantic_BaseModel):
     question: str
+    # Phase 14 — server-side conversation persistence. The client sends
+    # the conversation_id it got back from a prior turn; the server
+    # loads that thread's history from the DB. Omit / null to start a
+    # fresh conversation. (The old client-managed `history` field is
+    # gone — the server is now the source of truth.)
+    conversation_id: Optional[int] = None
 
 
 @router.post("/assistant")
@@ -414,10 +465,73 @@ def ask_assistant(
 ):
     # Flavor is the unified AI voice — useful to consumers cooking at home,
     # diners thinking about pairings, AND restaurant operators looking at
-    # the menu. Used to require consumer role; opened up so the Flavor
-    # entry points on restaurant + diner dashboards reach a working
-    # endpoint instead of 403'ing.
+    # the menu. Endpoint is open to any logged-in user (Phase 5).
     if not body.question or not body.question.strip():
         raise HTTPException(status_code=422, detail="question is required.")
-    _log(db, current_user.id, "assistant_query", {"question": body.question[:120]})
-    return assistant_service.answer(body.question.strip(), language=current_user.language)
+    question = body.question.strip()
+    _log(db, current_user.id, "assistant_query", {"question": question[:120]})
+
+    # Load prior history from the persisted conversation (Phase 14). A
+    # stale / not-owned conversation_id falls through to a fresh thread
+    # rather than 500ing.
+    convo, prior = conversation_service.get_or_create(db, current_user.id, body.conversation_id)
+
+    result = assistant_service.answer(
+        question,
+        language=current_user.language,
+        user_id=current_user.id,
+        account_type=current_user.account_type or "consumer",
+        db=db,
+        history=prior,
+    )
+
+    # Persist the updated thread. save() returns the conversation id
+    # (creating the row on first turn) — the client sends it back next
+    # turn to continue. None means persistence hiccuped; the chat still
+    # works, it just won't resume.
+    conversation_id = conversation_service.save(
+        db, current_user.id, convo, result.get("history", []), question
+    )
+
+    return {
+        "title":           result["title"],
+        "answer":          result["answer"],
+        "tool_calls":      result["tool_calls"],
+        "conversation_id": conversation_id,
+    }
+
+
+@router.get("/assistant/conversations")
+def list_conversations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The user's Flavor chat threads, most-recently-updated first.
+    Lightweight — no message bodies, just id / title / count / time."""
+    return {"conversations": conversation_service.list_for_user(db, current_user.id)}
+
+
+@router.get("/assistant/conversations/{conversation_id}")
+def get_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Full thread for resuming a conversation. 404 for a thread the
+    caller doesn't own (or one that doesn't exist)."""
+    thread = conversation_service.get_thread(db, current_user.id, conversation_id)
+    if thread is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    return thread
+
+
+@router.delete("/assistant/conversations/{conversation_id}", status_code=204)
+def delete_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a conversation thread. Idempotent-ish — 404 if it wasn't
+    there (or wasn't the caller's) so the client knows nothing happened."""
+    if not conversation_service.clear(db, current_user.id, conversation_id):
+        raise HTTPException(status_code=404, detail="conversation not found")

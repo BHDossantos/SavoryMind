@@ -23,6 +23,7 @@ export default function ConsumerDashboard() {
   // buried below the grid where users had to scroll to reach it.
   const QUICK = [
     { icon: '👨‍🍳', label: t('nav.assistant'),   route: '/(consumer)/assistant', flavor: true },
+    { icon: '🥂',   label: 'Cellar',             route: '/(consumer)/cellar' },
     { icon: '🍷',   label: t('nav.pairings'),    route: '/(consumer)/pairings' },
     { icon: '🎵',   label: t('nav.musicMood'),   route: '/(consumer)/music' },
     { icon: '👩‍🍳', label: t('nav.recipes'),     route: '/(consumer)/recipes' },

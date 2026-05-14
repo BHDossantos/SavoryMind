@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Single Malt Scotch",
+    "spirit": "Whisky",
+    "region": "Scottish Highlands",
+    "abv": 43,
+    "flavour": "Peat, vanilla, dried fruit, oak",
+    "serve": "Neat or with a drop of water"
+  },
+  {
+    "name": "Blanco Tequila",
+    "spirit": "Tequila",
+    "region": "Jalisco, Mexico",
+    "abv": 40,
+    "flavour": "Agave, citrus, pepper, clean finish",
+    "serve": "Chilled, shot or cocktail"
+  },
+  {
+    "name": "London Dry Gin",
+    "spirit": "Gin",
+    "region": "UK",
+    "abv": 40,
+    "flavour": "Juniper, citrus peel, botanicals",
+    "serve": "G&T with lemon, or Martini"
+  },
+  {
+    "name": "Dark Rum",
+    "spirit": "Rum",
+    "region": "Caribbean",
+    "abv": 40,
+    "flavour": "Molasses, vanilla, banana, warm spice",
+    "serve": "Neat, on the rocks, or Dark & Stormy"
+  },
+  {
+    "name": "Cognac VS",
+    "spirit": "Brandy",
+    "region": "Cognac, France",
+    "abv": 40,
+    "flavour": "Dried fruit, floral, vanilla, oak",
+    "serve": "Neat in a snifter"
+  },
+  {
+    "name": "Bourbon",
+    "spirit": "Whiskey",
+    "region": "Kentucky, USA",
+    "abv": 45,
+    "flavour": "Corn, caramel, vanilla, toasted oak",
+    "serve": "Neat, Manhattan, or Old Fashioned"
+  },
+  {
+    "name": "Grappa",
+    "spirit": "Grappa",
+    "region": "Italy",
+    "abv": 42,
+    "flavour": "Grape pomace, floral, slightly oily",
+    "serve": "Chilled shot after espresso"
+  },
+  {
+    "name": "Calvados",
+    "spirit": "Apple Brandy",
+    "region": "Normandy, France",
+    "abv": 40,
+    "flavour": "Apple, pear, oak, warm spice",
+    "serve": "Neat or with cheese"
+  },
+  {
+    "name": "Mezcal Joven",
+    "spirit": "Mezcal",
+    "region": "Oaxaca, Mexico",
+    "abv": 42,
+    "flavour": "Smoky, earthy, agave, fruit",
+    "serve": "Neat with orange and sal de gusano"
+  },
+  {
+    "name": "Pisco Sour Base",
+    "spirit": "Pisco",
+    "region": "Peru / Chile",
+    "abv": 40,
+    "flavour": "Floral, grape, fruity, clean",
+    "serve": "Pisco Sour cocktail"
+  }
+]

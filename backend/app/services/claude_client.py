@@ -86,6 +86,9 @@ FLAVOR_LANGUAGE_DIRECTIVES = {
     "it": " Rispondi in italiano come madrelingua. Mantieni lo stesso "
           "tono caldo e amichevole, ma usa espressioni naturali italiane "
           "(non traduzioni letterali dall'inglese). Dai del tu all'utente.",
+    "pt": " Responde em português como um falante nativo. Mantém o mesmo "
+          "tom caloroso e amigável, mas usa expressões naturais portuguesas "
+          "(não traduções literais do inglês). Trata o utilizador por tu.",
 }
 
 
@@ -177,3 +180,139 @@ def call_json(
     except Exception:
         logger.exception("claude_client.call_json failed")
         return None
+
+
+# ── Tool-calling layer ─────────────────────────────────────────────────────
+#
+# Used by Phase 7 — Flavor with tools. The caller registers a list of
+# tool definitions (Anthropic schema format) and a dispatcher function.
+# This helper handles the multi-turn loop: Claude requests a tool →
+# dispatcher runs it → result fed back → Claude either calls another
+# tool or returns a final answer.
+#
+# Why this lives here (not in flavor_tools.py): keeps the SDK-specific
+# message-shape transformations in one place. Tool implementations
+# stay pure Python — they take a dict of args, return JSON-serialisable
+# output. The dispatcher only knows {name → callable}.
+
+
+# Safety cap so a runaway loop can't burn unbounded tokens. Real Flavor
+# usage rarely needs more than 2-3 tool calls per turn.
+_MAX_TOOL_ITERATIONS = 8
+
+
+def call_with_tools(
+    system_prompt: str,
+    messages: list[dict],
+    tools: list[dict],
+    dispatcher,
+    *,
+    model: str = DEFAULT_MODEL,
+    max_tokens: int = 4096,
+):
+    """Multi-turn Claude call with tool execution.
+
+    Args:
+      system_prompt:  the system message (FLAVOR_PERSONA + task instructions)
+      messages:       starting conversation [{"role": "user"|"assistant", "content": ...}, ...]
+                      Mutated in-place to record assistant/tool exchanges.
+      tools:          Anthropic-format tool definitions (name, description,
+                      input_schema). See flavor_tools.TOOL_DEFINITIONS.
+      dispatcher:     callable(name: str, args: dict) → JSON-serialisable result
+                      OR raises. Wrap exceptions in the dispatcher; we'll
+                      report failure to Claude so it can recover gracefully.
+
+    Returns:
+      {
+        "answer":     final assistant text, or None on failure
+        "tool_calls": list of {"name", "args", "result"} for UI / logging
+        "messages":   the full conversation (handy for the next turn)
+      }
+    """
+    if not is_configured():
+        return {"answer": None, "tool_calls": [], "messages": messages}
+
+    tool_calls_log: list[dict] = []
+
+    try:
+        client = _get_client()
+        system_blocks = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+
+        for _ in range(_MAX_TOOL_ITERATIONS):
+            response = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                system=system_blocks,
+                tools=tools,
+                messages=messages,
+            )
+
+            if getattr(response, "stop_reason", None) == "refusal":
+                logger.warning("claude_client: model refused the tool-calling turn")
+                return {"answer": None, "tool_calls": tool_calls_log, "messages": messages}
+
+            # Record the assistant turn so subsequent iterations see the
+            # tool-use blocks. The SDK returns content as a list of typed
+            # blocks; we preserve that shape exactly.
+            assistant_blocks = [
+                _block_to_dict(b) for b in response.content
+            ]
+            messages.append({"role": "assistant", "content": assistant_blocks})
+
+            if response.stop_reason == "end_turn":
+                # No more tool calls — extract the final text answer.
+                text = next(
+                    (b.text for b in response.content if getattr(b, "type", None) == "text"),
+                    "",
+                )
+                return {"answer": text, "tool_calls": tool_calls_log, "messages": messages}
+
+            if response.stop_reason != "tool_use":
+                logger.warning("claude_client: unexpected stop_reason %r", response.stop_reason)
+                return {"answer": None, "tool_calls": tool_calls_log, "messages": messages}
+
+            # Execute every requested tool and add tool_result blocks.
+            tool_results = []
+            for block in response.content:
+                if getattr(block, "type", None) != "tool_use":
+                    continue
+                name = block.name
+                args = block.input or {}
+                try:
+                    result = dispatcher(name, args)
+                    is_error = False
+                except Exception as exc:
+                    logger.exception("tool %s raised", name)
+                    result = {"error": f"{type(exc).__name__}: {exc}"}
+                    is_error = True
+
+                tool_calls_log.append({"name": name, "args": args, "result": result})
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": json.dumps(result, default=str, ensure_ascii=False),
+                    **({"is_error": True} if is_error else {}),
+                })
+
+            messages.append({"role": "user", "content": tool_results})
+
+        logger.warning("claude_client: hit _MAX_TOOL_ITERATIONS=%d without end_turn", _MAX_TOOL_ITERATIONS)
+        return {"answer": None, "tool_calls": tool_calls_log, "messages": messages}
+
+    except Exception:
+        logger.exception("claude_client.call_with_tools failed")
+        return {"answer": None, "tool_calls": tool_calls_log, "messages": messages}
+
+
+def _block_to_dict(block) -> dict:
+    """Convert an Anthropic SDK content block back into the dict shape the
+    API expects on the next turn. The SDK gives us typed objects but
+    `messages.create` accepts dicts on input, so we round-trip carefully."""
+    t = getattr(block, "type", None)
+    if t == "text":
+        return {"type": "text", "text": block.text}
+    if t == "tool_use":
+        return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
+    # Fallback: best-effort dump. Unknown block types are rare and will
+    # log as a warning when Claude tries to consume them on the next turn.
+    return getattr(block, "model_dump", lambda: {})()

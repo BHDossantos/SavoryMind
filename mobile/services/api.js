@@ -290,7 +290,21 @@ export const api = {
   // Backend route: POST /api/consumer/assistant {question} → {title, answer}.
   // Returns "Assistant not configured" if ANTHROPIC_API_KEY is unset on
   // the server, so the mobile UI can render that gracefully without crashing.
-  askAssistant: (question) => request('/api/consumer/assistant', { method: 'POST', body: JSON.stringify({ question }) }),
+  // Phase 14 — conversation persistence. Pass the conversation_id from
+  // a prior turn to continue that thread; omit it to start fresh.
+  // The server owns the history now.
+  askAssistant: (question, conversationId = null) => request('/api/consumer/assistant', {
+    method: 'POST',
+    body: JSON.stringify(conversationId ? { question, conversation_id: conversationId } : { question }),
+  }),
+  listConversations:  () => request('/api/consumer/assistant/conversations'),
+  getConversation:    (id) => request(`/api/consumer/assistant/conversations/${id}`),
+  deleteConversation: (id) => request(`/api/consumer/assistant/conversations/${id}`, { method: 'DELETE' }),
+
+  // Phase 8 — catalog browse endpoints. Returned as { count, wines | beers | spirits }.
+  getWineCatalog:    () => request('/api/consumer/catalog/wines'),
+  getBeerCatalog:    () => request('/api/consumer/catalog/beers'),
+  getSpiritsCatalog: () => request('/api/consumer/catalog/spirits'),
 
   // Diner
   getDinerSummary: () => request('/api/diner/summary'),

@@ -180,7 +180,7 @@ class ProfileUpdate(BaseModel):
     # IANA timezone string for restaurant-local scheduling (inventory digest etc.)
     timezone: Optional[str] = None
 
-    # i18n preference. v1 supported codes: en, es, it.
+    # i18n preference. Supported codes: en, es, it, pt.
     language: Optional[str] = None
 
     @field_validator("language")
@@ -189,8 +189,8 @@ class ProfileUpdate(BaseModel):
         if v is None:
             return v
         v = v.lower().strip()
-        if v not in ("en", "es", "it"):
-            raise ValueError("language must be one of: en, es, it")
+        if v not in ("en", "es", "it", "pt"):
+            raise ValueError("language must be one of: en, es, it, pt")
         return v
 
     @field_validator("timezone")

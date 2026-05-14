@@ -1,17 +1,48 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, FlatList, ActivityIndicator,
   ScrollView, SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import FlavorToolCards from '../../components/FlavorToolCards';
+
+/**
+ * Rebuild the UI message list from a persisted Anthropic-shape thread
+ * (Phase 14 resume). User string messages + assistant text blocks
+ * become UI bubbles; tool_result plumbing rows are skipped. Tool
+ * cards aren't reconstructed on resume — the text answer carries the
+ * substance, and any NEW tool calls this session still render fully.
+ */
+function rebuildUiMessages(serverMessages) {
+  const ui = [];
+  for (const m of serverMessages || []) {
+    if (m.role === 'user' && typeof m.content === 'string') {
+      ui.push({ role: 'user', text: m.content });
+    } else if (m.role === 'assistant') {
+      const blocks = Array.isArray(m.content) ? m.content : [];
+      const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+      if (!text) continue;
+      let title = 'Flavor', body = text;
+      if (text.toUpperCase().startsWith('TITLE:')) {
+        const nl = text.indexOf('\n');
+        if (nl > 0) { title = text.slice(6, nl).trim(); body = text.slice(nl + 1).trim(); }
+      }
+      ui.push({ role: 'assistant', title, text: body });
+    }
+  }
+  return ui;
+}
 
 export default function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  // ?q= seed param from deep links (Cellar "Ask Flavor about this" cards
+  // route here with the question pre-loaded). Auto-sent on mount.
+  const params = useLocalSearchParams();
 
   // Greeting is the first message in the thread. Derived from the i18n
   // bundle so it switches language alongside the rest of the UI; the
@@ -37,11 +68,60 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
+  // Phase 14 — server-side conversation persistence. Holds the active
+  // thread's id (null = fresh). Sent on every request so the server
+  // loads the right history; updated from the response.
+  const conversationIdRef = useRef(null);
+
+  // Phase 14 — resume the most recent conversation on mount. Skipped
+  // when a ?q= seed deep-link is present (that starts fresh).
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current) return;
+    resumedRef.current = true;
+    if (params?.q) return; // deep-link → fresh conversation
+    (async () => {
+      try {
+        const { conversations } = await api.listConversations();
+        if (!conversations || conversations.length === 0) return;
+        const latest = conversations[0];
+        const thread = await api.getConversation(latest.id);
+        const ui = rebuildUiMessages(thread.messages);
+        if (ui.length > 0) {
+          setMessages([GREETING, ...ui]);
+          conversationIdRef.current = latest.id;
+          scrollToEnd();
+        }
+      } catch {
+        // Resume is best-effort — start fresh if it fails.
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-send the ?q= seed once on first mount. Guarded so navigating
+  // back/forth doesn't re-trigger.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    const seed = typeof params?.q === 'string' ? params.q : Array.isArray(params?.q) ? params.q[0] : null;
+    if (seed && !seededRef.current) {
+      seededRef.current = true;
+      // Defer to the next tick so the GREETING message renders first.
+      setTimeout(() => send(seed), 0);
+    }
+  }, [params?.q]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToEnd = useCallback(() => {
     // Slight delay so the new message has rendered first.
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
   }, []);
+
+  // "New chat" — clears the thread to just the greeting and detaches
+  // from the persisted conversation so the next message starts fresh.
+  const newChat = () => {
+    setMessages([GREETING]);
+    conversationIdRef.current = null;
+    setInput('');
+  };
 
   const send = async (questionOverride) => {
     const q = (questionOverride ?? input).trim();
@@ -51,8 +131,11 @@ export default function AssistantScreen() {
     scrollToEnd();
     setLoading(true);
     try {
-      const data = await api.askAssistant(q);
-      setMessages((m) => [...m, { role: 'assistant', title: data.title, text: data.answer }]);
+      const data = await api.askAssistant(q, conversationIdRef.current);
+      // Server owns the thread now — stash the id it returns so the
+      // next turn continues the same conversation.
+      if (data?.conversation_id) conversationIdRef.current = data.conversation_id;
+      setMessages((m) => [...m, { role: 'assistant', title: data.title, text: data.answer, toolCalls: data.tool_calls || [] }]);
     } catch (e) {
       setMessages((m) => [...m, {
         role: 'assistant',
@@ -83,6 +166,18 @@ export default function AssistantScreen() {
         <View style={styles.botBubble}>
           {msg.title && <Text style={styles.botTitle}>{msg.title}</Text>}
           <Text style={styles.botText}>{msg.text}</Text>
+          {/* Phase 12 — structured cards (wines / recipes / shopping
+              list) rendered from tool_calls[].result. Renders nothing
+              when the batch has no card-able tools. */}
+          <FlavorToolCards toolCalls={msg.toolCalls} />
+          {Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
+            <Text style={styles.toolGhost} numberOfLines={2}>
+              {/* Subtle line showing which tools Flavor consulted. Helps the
+                  user understand that the answer was grounded in real data
+                  (wine catalog, their pantry, etc.) rather than a guess. */}
+              {summariseToolCalls(msg.toolCalls)}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -91,6 +186,66 @@ export default function AssistantScreen() {
   // FlatList key extractor: index is fine because we never reorder/remove.
   const keyFor = (_, i) => `m${i}`;
 
+  /** Turn the raw tool_calls array from the backend into a short
+   *  "Flavor checked X, Y" line. De-dupes tool names so multiple
+   *  calls to the same tool collapse into one mention. */
+  function summariseToolCalls(calls) {
+    const labels = {
+      // Read tools
+      search_wines:           'wine catalog',
+      search_beers:           'beer catalog',
+      search_spirits:         'spirits catalog',
+      get_wine_pairing:       'wine pairing',
+      get_beer_pairing:       'beer pairing',
+      get_spirits_pairing:    'spirits pairing',
+      search_recipes:         'recipe catalog',
+      get_recipe:             'a recipe',
+      get_pantry:             'your pantry',
+      get_journal_recent:     'your meal journal',
+      get_user_preferences:   'your preferences',
+      build_shopping_list:    'your pantry vs. the recipe',
+      suggest_tonight:        'your pantry, tastes + journal',
+      get_my_bookings:        'your bookings',
+      get_visit_history:      'your visit history',
+      get_menu:               'the menu',
+      get_bookings_today:     'today’s bookings',
+      get_sentiment_summary:  'sentiment summary',
+      get_inventory_low_stock:'inventory levels',
+      get_top_customers:      'top customers',
+      // Action tools (writes) — phrased as actions taken so the
+      // ghost line reads "✓ Flavor updated your pantry."
+      add_to_pantry:            'updated your pantry',
+      remove_from_pantry:       'updated your pantry',
+      add_pantry_bulk:          'updated your pantry',
+      log_meal_memory:          'saved to your journal',
+      update_preferences_field: 'updated your preferences',
+      create_booking:           'created a booking',
+      cancel_booking:           'cancelled a booking',
+      log_visit:                'logged a visit',
+      add_menu_item:            'added a menu item',
+      update_menu_item:         'updated a menu item',
+      accept_booking:           'accepted a booking',
+      decline_booking:          'declined a booking',
+      add_crm_customer:         'added a customer',
+      log_inventory_adjustment: 'logged an inventory change',
+      respond_to_review:        'replied to a review',
+      remember_fact:            'noted something for next time',
+      recall_facts:             'what she remembers about you',
+      forget_fact:              'updated what she remembers',
+    };
+    const seen = new Set();
+    const parts = [];
+    for (const c of calls) {
+      const label = labels[c.name] || c.name;
+      if (seen.has(label)) continue;
+      seen.add(label);
+      parts.push(label);
+    }
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return `✓ Flavor checked ${parts[0]}.`;
+    return `✓ Flavor checked ${parts.slice(0, -1).join(', ')} + ${parts[parts.length - 1]}.`;
+  }
+
   // Suggestion chips above the thread when it's still empty (only the
   // initial greeting). Helps users discover what to ask without typing.
   const showSuggestions = messages.length === 1;
@@ -98,9 +253,16 @@ export default function AssistantScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.backBtn}>{t('auth.back')}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+            <Text style={styles.backBtn}>{t('auth.back')}</Text>
+          </TouchableOpacity>
+          {messages.length > 1 && (
+            <TouchableOpacity onPress={newChat} hitSlop={12}>
+              <Text style={styles.newChatBtn}>+ New chat</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={styles.title}>{t('assistant.title')}</Text>
         <Text style={styles.sub}>{t('assistant.subtitle')}</Text>
       </View>
@@ -167,8 +329,10 @@ export default function AssistantScreen() {
 
 const styles = StyleSheet.create({
   safe:        { flex: 1, backgroundColor: '#fff' },
-  header:      { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
-  backBtn:     { fontSize: 14, color: C.gray[600], marginBottom: 8 },
+  header:       { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  backBtn:      { fontSize: 14, color: C.gray[600] },
+  newChatBtn:   { fontSize: 13, fontWeight: '700', color: C.consumer.primary },
   title:       { fontSize: 22, fontWeight: '800', color: C.gray[900] },
   sub:         { fontSize: 13, color: C.gray[500], marginTop: 2 },
 
@@ -190,6 +354,7 @@ const styles = StyleSheet.create({
   botBubble:   { flex: 1, maxWidth: '82%', backgroundColor: '#fff', borderColor: C.consumer.border, borderWidth: 1, borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
   botTitle:    { fontSize: 11, fontWeight: '800', color: C.consumer.text, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
   botText:     { color: C.gray[700], fontSize: 14, lineHeight: 20 },
+  toolGhost:   { color: C.gray[400], fontSize: 11, marginTop: 8, fontStyle: 'italic' },
   typingBubble:{ flexDirection: 'row', alignItems: 'center', height: 36, paddingVertical: 0 },
 
   inputRow:    { flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 12, borderTopWidth: 1, borderTopColor: C.gray[100], backgroundColor: '#fff' },

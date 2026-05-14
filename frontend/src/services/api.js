@@ -288,7 +288,22 @@ export const api = {
   getDailySuggestion: (mood = "") => request(`/api/consumer/daily-suggestion?mood=${mood}`),
 
   // Consumer — Culinary Assistant
-  askAssistant: (question) => request("/api/consumer/assistant", { method: "POST", body: JSON.stringify({ question }) }),
+  // Phase 14 — conversation persistence. Pass the conversation_id
+  // returned by a prior turn to continue that thread; omit it to
+  // start fresh. The server owns the history now.
+  askAssistant: (question, conversationId = null) => request("/api/consumer/assistant", {
+    method: "POST",
+    body: JSON.stringify(conversationId ? { question, conversation_id: conversationId } : { question }),
+  }),
+  listConversations:  () => request("/api/consumer/assistant/conversations"),
+  getConversation:    (id) => request(`/api/consumer/assistant/conversations/${id}`),
+  deleteConversation: (id) => request(`/api/consumer/assistant/conversations/${id}`, { method: "DELETE" }),
+
+  // Phase 8 — catalog browse endpoints. Catalog is small enough we
+  // fetch the whole thing once and let the page filter client-side.
+  getWineCatalog:    () => request("/api/consumer/catalog/wines"),
+  getBeerCatalog:    () => request("/api/consumer/catalog/beers"),
+  getSpiritsCatalog: () => request("/api/consumer/catalog/spirits"),
 
   // Restaurant — Trends & Marketing
   getMenuTrends: () => request("/api/restaurant/trends"),

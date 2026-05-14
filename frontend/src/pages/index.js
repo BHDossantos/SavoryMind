@@ -32,8 +32,8 @@ export default function Landing() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.account_type === "consumer") router.replace("/consumer/dashboard");
-      else if (user.account_type === "diner") router.replace("/diner/dashboard");
+      // Food Lover + Food Explorer unified — both land on the consumer shell.
+      if (user.account_type === "consumer" || user.account_type === "diner") router.replace("/consumer/dashboard");
       else router.replace("/dashboard");
     }
   }, [user, loading, router]);
@@ -63,7 +63,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <span>✨</span> For Food Lovers. For Food Explorers. For Restaurant Owners.
+          <span>✨</span> For people who love food. For restaurant owners.
         </div>
         <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
           Every meal has a story.
@@ -73,20 +73,23 @@ export default function Landing() {
           </span>
         </h1>
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-16">
-          Whether you're in the kitchen, at the table, or behind the pass — SavoryMind is built around your relationship with food.
+          Cook at home, eat out, or run a restaurant — SavoryMind is built around your relationship with food.
         </p>
 
-        {/* Three mode cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Consumer */}
-          <div className="bg-gradient-to-br from-consumer-50 to-consumer-100 border border-consumer-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-consumer-100 transition-all group">
-            <div className="text-4xl mb-4">🏠</div>
-            <h2 className="text-xl font-bold text-consumer-800 mb-2">For Food Lovers</h2>
+        {/* Two mode cards — the old Food Lover / Food Explorer split
+            was unified into one consumer experience that hosts both
+            cook-at-home + go-out features. Restaurant Owner stays
+            separate because the mental model + permissions differ. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {/* Food Person (unified consumer) */}
+          <div className="bg-gradient-to-br from-consumer-50 via-purple-50 to-diner-50 border border-consumer-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-consumer-100 transition-all group">
+            <div className="text-4xl mb-4">🍴</div>
+            <h2 className="text-xl font-bold text-consumer-800 mb-2">I love food</h2>
             <p className="text-consumer-700 text-sm leading-relaxed mb-5">
-              Find the perfect wine for tonight's dish. Set a playlist that matches the mood. Cook something new. Your kitchen, elevated.
+              Cook at home + go out. Pairings, recipes, restaurant discovery, journal — all in one app.
             </p>
             <ul className="space-y-1.5 mb-7">
-              {["Wine, beer & spirits pairing", "Music mood by food & vibe", "Recipe discovery engine", "Spotify + Amazon + Alexa"].map((f) => (
+              {["Wine, beer & spirits pairing", "Recipe discovery + guided cooking", "Discover & book restaurants", "Journal every meal you love", "Ask Flavor — your AI food assistant"].map((f) => (
                 <li key={f} className="flex items-center gap-2 text-xs text-consumer-800">
                   <span className="text-consumer-500 font-bold">✓</span> {f}
                 </li>
@@ -94,27 +97,7 @@ export default function Landing() {
             </ul>
             <Link href="/signup?type=consumer"
               className="block text-center bg-consumer-600 text-white font-bold py-3 rounded-2xl hover:bg-consumer-700 transition-colors text-sm">
-              Join as Food Lover →
-            </Link>
-          </div>
-
-          {/* Diner */}
-          <div className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-diner-100 transition-all group">
-            <div className="text-4xl mb-4">🍽️</div>
-            <h2 className="text-xl font-bold text-diner-800 mb-2">For Food Explorers</h2>
-            <p className="text-diner-700 text-sm leading-relaxed mb-5">
-              Remember every great meal. Book the next one. Build a dining history as personal as your taste.
-            </p>
-            <ul className="space-y-1.5 mb-7">
-              {["Book tables at restaurants", "Log orders & rate each visit", "Track staff friendliness", "Personal dining history"].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-xs text-diner-800">
-                  <span className="text-diner-500 font-bold">✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup?type=diner"
-              className="block text-center bg-diner-600 text-white font-bold py-3 rounded-2xl hover:bg-diner-700 transition-colors text-sm">
-              Join as Food Explorer →
+              Get started →
             </Link>
           </div>
 

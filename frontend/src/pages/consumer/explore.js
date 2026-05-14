@@ -180,10 +180,10 @@ export default function ExplorePage() {
 
   const userCuisines = pj(user?.cuisine_preferences, []);
 
-  const search = useCallback(async (keyword = "", cuisine = "", mood = "") => {
+  const search = useCallback(async ({ keywords = "", cuisine = "", mood = "", max_time = 0 } = {}) => {
     setLoading(true); setDetail(null); setFetchError(null);
     try {
-      const data = await api.getRecipes({ keywords: keyword, cuisine, mood });
+      const data = await api.getRecipes({ keywords, cuisine, mood, max_time });
       setRecipes(data.recipes || []);
     } catch (e) { setRecipes([]); setFetchError(e.message || "Failed to load recipes."); }
     finally { setLoading(false); }
@@ -191,16 +191,27 @@ export default function ExplorePage() {
 
   // Default load using user's top cuisine preference
   useEffect(() => {
-    search("", userCuisines[0] || "");
+    search({ cuisine: userCuisines[0] || "" });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // EFFORT labels map to a max_time (minutes). Used to be passed as the
+  // `difficulty` axis which was wrong — recipe.difficulty is Easy/
+  // Medium/Hard, not time-banded, so the filter was silently a no-op.
+  const EFFORT_MAX_MIN = {
+    "Under 15 min":   15,
+    "15–30 min":      30,
+    "30–60 min":      60,
+    "1–2 hours":      120,
+    "All day affair": 600,
+  };
 
   const handleSelect = (item) => {
     setSelected(item.id);
-    if (mode === "mood")     search(item.desc, "", item.id);
-    if (mode === "craving")  search(item.id);
-    if (mode === "cuisine")  search("", item.id);
-    if (mode === "occasion") search(item.label);
-    if (mode === "effort")   search("", "", "", item.id);
+    if (mode === "mood")     search({ mood: item.id });
+    if (mode === "craving")  search({ keywords: item.id });
+    if (mode === "cuisine")  search({ cuisine: item.id });
+    if (mode === "occasion") search({ keywords: item.label });
+    if (mode === "effort")   search({ max_time: EFFORT_MAX_MIN[item.id] || 0 });
   };
 
   if (detail) return (

@@ -238,6 +238,23 @@ export default function DinerDashboard() {
   return (
     <div className="space-y-6">
 
+      {/* Flavor — same AI assistant the consumer side has. Diners
+          use it for pairings, food terms, or what to order. Backend
+          endpoint is open to all logged-in users. */}
+      <Link
+        href="/consumer/assistant"
+        className="group flex items-center gap-4 rounded-2xl bg-gradient-to-r from-diner-600 to-diner-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
+      >
+        <span className="text-4xl flex-shrink-0">👨‍🍳</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base">Ask Flavor</p>
+          <p className="text-xs text-white/80 mt-0.5 leading-relaxed">
+            Real-time help with pairings, ingredients, what to order.
+          </p>
+        </div>
+        <span className="text-2xl flex-shrink-0 group-hover:translate-x-1 transition-transform">→</span>
+      </Link>
+
       {/* Booking modal */}
       {reserving && <BookingModal restaurant={reserving} onClose={() => setReserving(null)} onBooked={handleBooked} />}
 
