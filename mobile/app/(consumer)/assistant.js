@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import FlavorToolCards from '../../components/FlavorToolCards';
 
 export default function AssistantScreen() {
   const router = useRouter();
@@ -107,6 +108,10 @@ export default function AssistantScreen() {
         <View style={styles.botBubble}>
           {msg.title && <Text style={styles.botTitle}>{msg.title}</Text>}
           <Text style={styles.botText}>{msg.text}</Text>
+          {/* Phase 12 — structured cards (wines / recipes / shopping
+              list) rendered from tool_calls[].result. Renders nothing
+              when the batch has no card-able tools. */}
+          <FlavorToolCards toolCalls={msg.toolCalls} />
           {Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
             <Text style={styles.toolGhost} numberOfLines={2}>
               {/* Subtle line showing which tools Flavor consulted. Helps the

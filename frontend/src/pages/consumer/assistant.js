@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import { api } from "../../services/api";
+import FlavorToolCards from "../../components/FlavorToolCards";
 
 const SUGGESTIONS = [
   "I'm in the mood for steak — what do you recommend?",
@@ -179,6 +180,9 @@ export default function AssistantPage() {
               <p className={`text-sm leading-relaxed ${msg.role === "user" ? "text-white" : "text-gray-700"}`}>
                 {msg.text}
               </p>
+              {msg.role === "assistant" && (
+                <FlavorToolCards toolCalls={msg.toolCalls} />
+              )}
               {msg.role === "assistant" && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
                 <p className="text-[11px] italic text-gray-400 mt-2">
                   {summariseToolCalls(msg.toolCalls)}
