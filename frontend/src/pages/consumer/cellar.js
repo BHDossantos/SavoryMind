@@ -147,10 +147,12 @@ export default function CellarPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Reset filters when switching tabs so a filter that's valid for
-  // wine ("Burgundy") doesn't haunt the beer view as a no-results state.
+  // Reset filters AND the search box when switching tabs — a query
+  // valid for wine ("Burgundy", "chablis") would otherwise haunt the
+  // beer view as a no-results state.
   const switchTab = (id) => {
     setTab(id);
+    setSearch("");
     setFilterStyle("");
     setFilterRegion("");
   };
