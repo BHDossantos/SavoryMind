@@ -37,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f24683b2-ffb7-4a62-9984-34be3e717e9b"
+      }
+    },
+    "owner": "brunodossantos707"
   }
 }
