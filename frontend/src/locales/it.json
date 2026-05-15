@@ -23,7 +23,8 @@
     "qrCodes": "Codici QR dei dipendenti",
     "restaurantMode": "Modalità Ristorante",
     "foodLover": "Appassionato di cucina",
-    "foodExplorer": "Esploratore gastronomico"
+    "foodExplorer": "Esploratore gastronomico",
+    "flavor": "Flavor"
   },
   "common": {
     "loading": "Caricamento…",
