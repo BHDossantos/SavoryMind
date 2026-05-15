@@ -326,7 +326,27 @@
     "bookTitle": "Le mie prenotazioni",
     "bookSub": "Prenotazioni in arrivo e passate",
     "historyTitle": "Cronologia visite",
-    "historySub": "Tutti i pasti che hai registrato"
+    "historySub": "Tutti i pasti che hai registrato",
+    "scanTitle": "Valuta il tuo cameriere",
+    "scanSub": "Scansiona il QR sul suo cartellino per lasciare un feedback anonimo"
+  },
+  "scan": {
+    "cameraTitle": "Inquadra il codice QR con la fotocamera",
+    "permissionDenied": "Serve l'accesso alla fotocamera per scansionare i codici QR.",
+    "allowCamera": "Consenti fotocamera",
+    "openSettings": "Apri impostazioni",
+    "invalidQr": "Questo non è un codice QR di SavoryMind.",
+    "invalidQrTitle": "Questo QR non è valido",
+    "requiredField": "Per favore, rispondi a questa domanda.",
+    "thanksTitle": "Grazie per il tuo feedback!",
+    "thanksSub": "Inviato a {{restaurant}}.",
+    "sendingButton": "Invio in corso…",
+    "sendButton": "Invia feedback",
+    "howWasTime": "Com'è stato il servizio di {{name}}?",
+    "yes": "Sì",
+    "no": "No",
+    "commentPlaceholder": "Qualcos'altro? (opzionale)",
+    "anonymousNote": "Le tue risposte sono anonime. Non serve un account."
   },
   "screens": {
     "recipes": { "title": "Ricette", "subtitle": "Quello che hai cucinato + idee per la prossima volta", "empty": "Ancora niente — provane una." },

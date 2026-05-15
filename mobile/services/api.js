@@ -250,6 +250,15 @@ export const api = {
   createEmployee: (data) => request('/api/staff/employees', { method: 'POST', body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/api/staff/employees/${id}`, { method: 'DELETE' }),
 
+  // Employee QR survey — public (no auth) + owner-side
+  getEmployeeSurvey: (token) => request(`/api/employee-survey/${encodeURIComponent(token)}`),
+  submitEmployeeSurvey: (token, body) => request(
+    `/api/employee-survey/${encodeURIComponent(token)}/submit`,
+    { method: 'POST', body: JSON.stringify(body) },
+  ),
+  getEmployeeQRCodes: () => request('/api/employee-survey/owner/employees'),
+  getEmployeeSurveyResults: (id) => request(`/api/employee-survey/owner/employees/${id}/results`),
+
   // Consumer
   getWinePairings: () => request('/api/consumer/wine-pairing'),
   createWinePairing: (data) => request('/api/consumer/wine-pairing', { method: 'POST', body: JSON.stringify(data) }),

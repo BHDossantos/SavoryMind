@@ -34,6 +34,12 @@ export default function DineHub() {
       sub: t('dine.historySub'),
       onPress: () => router.push('/(diner)/history'),
     },
+    {
+      icon: '🔳',
+      title: t('dine.scanTitle'),
+      sub: t('dine.scanSub'),
+      onPress: () => router.push('/scan'),
+    },
   ];
 
   return (
