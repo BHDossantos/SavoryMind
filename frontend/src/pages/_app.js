@@ -8,6 +8,10 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { getAccessToken } from "../services/api";
 import { trackPageview, identify } from "../lib/analytics";
+// i18n must be imported (side-effect: initialises i18next) before any
+// component that calls useTranslation() renders. _app is the top of
+// the tree, so this guarantees a single init for the whole SPA.
+import "../services/i18n";
 import "../styles/globals.css";
 
 // Routes that must render without auth. Marketing surfaces, plus the
@@ -73,6 +77,18 @@ function AppContent({ Component, pageProps }) {
       });
     }
   }, [user?.id, user?.account_type]);
+
+  // Sync the user's server-stored language preference on hydrate. Without
+  // this, a user who picked Spanish on mobile would still see English on
+  // web after login until they manually re-pick. Imported lazily to avoid
+  // a circular import with _app's side-effect init of services/i18n.
+  useEffect(() => {
+    if (user?.language) {
+      import("../services/i18n").then(({ applyServerLanguage }) => {
+        applyServerLanguage(user.language);
+      });
+    }
+  }, [user?.language]);
 
   useEffect(() => {
     if (loading) return;

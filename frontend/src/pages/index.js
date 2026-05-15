@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import LanguageSelector from "../components/LanguageSelector";
 
 // Cook-at-home + dine-out features live in one unified Food Person
 // experience now. Listed together so the landing page reflects what
@@ -28,6 +30,7 @@ const restaurantFeatures = [
 
 export default function Landing() {
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {
@@ -51,10 +54,11 @@ export default function Landing() {
               SavoryMind
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">Sign in</Link>
+          <div className="flex items-center gap-3">
+            <LanguageSelector compact />
+            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">{t("nav.signIn")}</Link>
             <Link href="/signup" className="bg-gray-900 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
-              Get started
+              {t("nav.getStarted")}
             </Link>
           </div>
         </div>
@@ -63,17 +67,17 @@ export default function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <span>✨</span> For people who love food. For restaurant owners.
+          <span>✨</span> {t("landing.heroBadge")}
         </div>
         <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
-          Every meal has a story.
+          {t("landing.heroTitle1")}
           <br />
           <span className="bg-gradient-to-r from-brand-500 via-diner-500 to-consumer-500 bg-clip-text text-transparent">
-            Yours starts here.
+            {t("landing.heroTitle2")}
           </span>
         </h1>
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-16">
-          Cook at home, eat out, or run a restaurant — SavoryMind is built around your relationship with food.
+          {t("landing.heroSub")}
         </p>
 
         {/* Two mode cards — the old Food Lover / Food Explorer split
@@ -84,12 +88,12 @@ export default function Landing() {
           {/* Food Person (unified consumer) */}
           <div className="bg-gradient-to-br from-consumer-50 via-purple-50 to-diner-50 border border-consumer-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-consumer-100 transition-all group">
             <div className="text-4xl mb-4">🍴</div>
-            <h2 className="text-xl font-bold text-consumer-800 mb-2">I love food</h2>
+            <h2 className="text-xl font-bold text-consumer-800 mb-2">{t("landing.foodPersonCardTitle")}</h2>
             <p className="text-consumer-700 text-sm leading-relaxed mb-5">
-              Cook at home + go out. Pairings, recipes, restaurant discovery, journal — all in one app.
+              {t("landing.foodPersonCardSub")}
             </p>
             <ul className="space-y-1.5 mb-7">
-              {["Wine, beer & spirits pairing", "Recipe discovery + guided cooking", "Discover & book restaurants", "Journal every meal you love", "Ask Flavor — your AI food assistant"].map((f) => (
+              {(t("landing.foodPersonFeatures", { returnObjects: true }) || []).map((f) => (
                 <li key={f} className="flex items-center gap-2 text-xs text-consumer-800">
                   <span className="text-consumer-500 font-bold">✓</span> {f}
                 </li>
@@ -97,19 +101,19 @@ export default function Landing() {
             </ul>
             <Link href="/signup?type=consumer"
               className="block text-center bg-consumer-600 text-white font-bold py-3 rounded-2xl hover:bg-consumer-700 transition-colors text-sm">
-              Get started →
+              {t("landing.ctaConsumer")}
             </Link>
           </div>
 
           {/* Restaurant */}
           <div className="bg-gradient-to-br from-brand-50 to-orange-100 border border-brand-200 rounded-3xl p-7 text-left hover:shadow-xl hover:shadow-brand-100 transition-all group">
             <div className="text-4xl mb-4">🏪</div>
-            <h2 className="text-xl font-bold text-brand-800 mb-2">For Restaurant Owners</h2>
+            <h2 className="text-xl font-bold text-brand-800 mb-2">{t("landing.restaurantCardTitle")}</h2>
             <p className="text-brand-700 text-sm leading-relaxed mb-5">
-              You built this with your hands. Now see exactly what's working — your margins, your team, your guests — all in one place.
+              {t("landing.restaurantCardSub")}
             </p>
             <ul className="space-y-1.5 mb-7">
-              {["Food waste & kitchen time tracking", "Staff performance & training insights", "CRM & customer loyalty", "Sales forecasting & demand planning"].map((f) => (
+              {(t("landing.restaurantFeatures", { returnObjects: true }) || []).map((f) => (
                 <li key={f} className="flex items-center gap-2 text-xs text-brand-800">
                   <span className="text-brand-500 font-bold">✓</span> {f}
                 </li>
@@ -117,7 +121,7 @@ export default function Landing() {
             </ul>
             <Link href="/signup?type=restaurant"
               className="block text-center bg-brand-600 text-white font-bold py-3 rounded-2xl hover:bg-brand-700 transition-colors text-sm">
-              Join as Restaurant →
+              {t("landing.ctaRestaurant")}
             </Link>
           </div>
         </div>
@@ -129,9 +133,9 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-consumer-50 via-white to-diner-50 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍴 For Food People</div>
-            <h2 className="text-3xl font-bold text-gray-900">Cook at home + go out. All in one app.</h2>
-            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Pairings, recipes, restaurant discovery, journaling, and a real-time AI food assistant — everything between your kitchen and your table.</p>
+            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍴 {t("landing.featuresSectionBadge")}</div>
+            <h2 className="text-3xl font-bold text-gray-900">{t("landing.featuresSectionTitle")}</h2>
+            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">{t("landing.featuresSectionSub")}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {foodPersonFeatures.map((f) => (
@@ -149,8 +153,8 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-brand-50 to-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏪 Restaurant Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">Built for people who pour their life into their restaurant.</h2>
+            <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏪 {t("landing.restaurantSectionBadge")}</div>
+            <h2 className="text-3xl font-bold text-gray-900">{t("landing.restaurantSectionTitle")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {restaurantFeatures.map((f) => (
@@ -168,14 +172,14 @@ export default function Landing() {
           The legacy /signup?type=diner path still works server-side, but
           we don't surface it as a separate front-door choice anymore. */}
       <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Your table is set.</h2>
-        <p className="text-gray-500 text-lg mb-10">Free to start. Pick your path and we'll do the rest.</p>
+        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">{t("landing.finalCtaTitle")}</h2>
+        <p className="text-gray-500 text-lg mb-10">{t("landing.finalCtaSub")}</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
           <Link href="/signup?type=consumer" className="bg-consumer-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-consumer-700 transition-colors shadow-lg shadow-consumer-100">
-            🍴 I love food
+            {t("landing.finalCtaConsumer")}
           </Link>
           <Link href="/signup?type=restaurant" className="bg-brand-500 text-white font-bold px-7 py-4 rounded-xl hover:bg-brand-600 transition-colors shadow-lg shadow-brand-100">
-            🏪 I Run a Restaurant
+            {t("landing.finalCtaRestaurant")}
           </Link>
         </div>
       </section>
@@ -186,7 +190,7 @@ export default function Landing() {
             <span className="text-xl">🧠</span>
             <span className="font-bold text-gray-700">SavoryMind</span>
           </div>
-          <p className="text-xs text-gray-400">© 2024 SavoryMind — Food. Drink. Dining.</p>
+          <p className="text-xs text-gray-400">© 2024 SavoryMind — {t("landing.footerTagline")}</p>
         </div>
       </footer>
     </div>

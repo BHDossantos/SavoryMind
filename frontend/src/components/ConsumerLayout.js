@@ -1,8 +1,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
+import LanguageSelector from "./LanguageSelector";
 
 // "Dine Out" entry added in the unified Food Lover + Food Explorer
 // rollout. Routes into the (legacy) /diner/* tree where the
@@ -33,6 +35,7 @@ const QUICK_LINKS = [
 export default function ConsumerLayout({ children }) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const firstName = user?.first_name || user?.display_name?.split(" ")[0] || "Chef";
 
@@ -100,12 +103,15 @@ export default function ConsumerLayout({ children }) {
       {/* Footer */}
       <div className="p-4 border-t border-consumer-100 space-y-2">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-consumer-50">
-          <span className="text-xs text-consumer-600 font-medium">Food Lover</span>
+          <span className="text-xs text-consumer-600 font-medium">{t("nav.foodLover")}</span>
           <span className="ml-auto text-xs bg-consumer-500 text-white px-2 py-0.5 rounded-full">Free</span>
+        </div>
+        <div className="px-1">
+          <LanguageSelector />
         </div>
         <button onClick={logout}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-          <span>🚪</span> Sign out
+          <span>🚪</span> {t("nav.signOut")}
         </button>
       </div>
     </aside>
