@@ -4,9 +4,9 @@ name: EAS Mobile Build
 # changes land on main. Also dispatchable manually so you can rebuild
 # without a code change (e.g. to pick up updated app store credentials).
 #
-# Requires the EXPO_TOKEN repository secret — generate one at
+# Requires the EXPO_TOKEN1 repository secret — generate one at
 # https://expo.dev/accounts/[account]/settings/access-tokens and store
-# it as EXPO_TOKEN under Settings → Secrets and variables → Actions.
+# it as EXPO_TOKEN1 under Settings → Secrets and variables → Actions.
 #
 # --non-interactive keeps the runner from prompting for credentials.
 # --no-wait returns the build URL immediately rather than tying up a
@@ -60,7 +60,7 @@ jobs:
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          token: ${{ secrets.EXPO_TOKEN1 }}
 
       - name: Install mobile dependencies
         working-directory: mobile
@@ -72,7 +72,7 @@ jobs:
       - name: Trigger EAS build
         working-directory: mobile
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'all' }}"
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
