@@ -54,6 +54,7 @@ export default function ConsumerProfile() {
     es: t('profile.languageSpanish'),
     it: t('profile.languageItalian'),
     pt: t('profile.languagePortuguese'),
+    fr: t('profile.languageFrench'),
   };
 
   // Spotify is the only connected service that uses real OAuth — the

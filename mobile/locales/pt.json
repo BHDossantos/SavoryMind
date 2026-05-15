@@ -89,7 +89,8 @@
     "spotify": "Spotify",
     "connect": "Ligar",
     "connected": "Ligado ✓",
-    "connectedAs": "Ligado como {{username}}"
+    "connectedAs": "Ligado como {{username}}",
+    "languageFrench": "Francês"
   },
   "dashboard": {
     "greeting": "Olá, {{name}} 👋",
@@ -349,13 +350,38 @@
     "anonymousNote": "As tuas respostas são anónimas. Não precisas de conta."
   },
   "screens": {
-    "recipes": { "title": "Receitas", "subtitle": "O que cozinhaste + ideias para a próxima", "empty": "Ainda nada — experimenta uma." },
-    "pantry": { "title": "🥫 Despensa", "subtitle": "O que tens no frigorífico?", "empty": "Adiciona ingredientes e sugerimos pratos." },
-    "journal": { "title": "📓 Diário gastronómico", "subtitle": "Anota o que cozinhas e o que comes", "empty": "A tua história gastronómica começa aqui." },
-    "social": { "title": "🔗 Ligar música", "subtitle": "Entra com o Spotify para recomendações personalizadas" },
-    "planner": { "title": "Planeador de refeições", "subtitle": "O teu plano semanal personalizado", "todaysPick": "O prato de hoje — {{day}}" },
-    "music": { "title": "Música conforme o momento", "subtitle": "A banda sonora certa para a ocasião" },
-    "order": { "title": "🛵 Pedir", "subtitle": "Repete preferidos ou prova algo novo" },
+    "recipes": {
+      "title": "Receitas",
+      "subtitle": "O que cozinhaste + ideias para a próxima",
+      "empty": "Ainda nada — experimenta uma."
+    },
+    "pantry": {
+      "title": "🥫 Despensa",
+      "subtitle": "O que tens no frigorífico?",
+      "empty": "Adiciona ingredientes e sugerimos pratos."
+    },
+    "journal": {
+      "title": "📓 Diário gastronómico",
+      "subtitle": "Anota o que cozinhas e o que comes",
+      "empty": "A tua história gastronómica começa aqui."
+    },
+    "social": {
+      "title": "🔗 Ligar música",
+      "subtitle": "Entra com o Spotify para recomendações personalizadas"
+    },
+    "planner": {
+      "title": "Planeador de refeições",
+      "subtitle": "O teu plano semanal personalizado",
+      "todaysPick": "O prato de hoje — {{day}}"
+    },
+    "music": {
+      "title": "Música conforme o momento",
+      "subtitle": "A banda sonora certa para a ocasião"
+    },
+    "order": {
+      "title": "🛵 Pedir",
+      "subtitle": "Repete preferidos ou prova algo novo"
+    },
     "guidedCooking": {
       "stepOf": "Passo {{current}} de {{total}}",
       "pause": "Pausa",
@@ -391,23 +417,76 @@
       "notesPlaceholder": "Estava delicioso! O molho ficou perfeito…",
       "changePlaceholder": "Menos sal, mais alho…"
     },
-    "recommendations": { "title": "Insights", "empty": "Sem sugestões para este filtro." },
-    "bookings": { "title": "Reservas", "subtitle": "Gere as reservas" },
-    "crm": { "title": "CRM", "subtitle": "Fidelização e histórico de clientes" },
-    "employees": { "title": "👥 Funcionários", "subtitle": "Contas do portal do pessoal" },
-    "marketing": { "title": "Marketing", "subtitle": "Captação e fidelização", "actionItems": "Ações recomendadas", "marketingTips": "Dicas de marketing" },
-    "inventory": { "title": "Inventário", "subtitle": "Stock + resumo semanal de stock baixo" },
-    "kitchen": { "title": "Tempos de cozinha", "subtitle": "Tempos de preparação e cozedura" },
-    "predictions": { "title": "Previsão de vendas", "subtitle": "Previsão de vendas a 4 horas" },
-    "reports": { "title": "Relatórios", "subtitle": "Analítica e exportação" },
-    "staff": { "title": "Pessoal", "subtitle": "Picagem e turnos" },
-    "staffTime": { "title": "Horas do pessoal", "subtitle": "Horas de turno e horas extra" },
-    "training": { "title": "Formação", "subtitle": "Coaching baseado em desempenho" },
-    "trends": { "title": "Alertas de tendências", "subtitle": "Tendências da ementa e pratos em alta" },
-    "waste": { "title": "Desperdício", "subtitle": "Registo e custo de desperdício" },
-    "book": { "title": "Reservar", "subtitle": "Reserva a próxima mesa" },
-    "history": { "title": "Histórico de visitas", "subtitle": "As tuas refeições passadas" },
+    "recommendations": {
+      "title": "Insights",
+      "empty": "Sem sugestões para este filtro."
+    },
+    "bookings": {
+      "title": "Reservas",
+      "subtitle": "Gere as reservas"
+    },
+    "crm": {
+      "title": "CRM",
+      "subtitle": "Fidelização e histórico de clientes"
+    },
+    "employees": {
+      "title": "👥 Funcionários",
+      "subtitle": "Contas do portal do pessoal"
+    },
+    "marketing": {
+      "title": "Marketing",
+      "subtitle": "Captação e fidelização",
+      "actionItems": "Ações recomendadas",
+      "marketingTips": "Dicas de marketing"
+    },
+    "inventory": {
+      "title": "Inventário",
+      "subtitle": "Stock + resumo semanal de stock baixo"
+    },
+    "kitchen": {
+      "title": "Tempos de cozinha",
+      "subtitle": "Tempos de preparação e cozedura"
+    },
+    "predictions": {
+      "title": "Previsão de vendas",
+      "subtitle": "Previsão de vendas a 4 horas"
+    },
+    "reports": {
+      "title": "Relatórios",
+      "subtitle": "Analítica e exportação"
+    },
+    "staff": {
+      "title": "Pessoal",
+      "subtitle": "Picagem e turnos"
+    },
+    "staffTime": {
+      "title": "Horas do pessoal",
+      "subtitle": "Horas de turno e horas extra"
+    },
+    "training": {
+      "title": "Formação",
+      "subtitle": "Coaching baseado em desempenho"
+    },
+    "trends": {
+      "title": "Alertas de tendências",
+      "subtitle": "Tendências da ementa e pratos em alta"
+    },
+    "waste": {
+      "title": "Desperdício",
+      "subtitle": "Registo e custo de desperdício"
+    },
+    "book": {
+      "title": "Reservar",
+      "subtitle": "Reserva a próxima mesa"
+    },
+    "history": {
+      "title": "Histórico de visitas",
+      "subtitle": "As tuas refeições passadas"
+    },
     "restaurantNotFound": "Restaurante não encontrado",
-    "staffPortal": { "title": "Portal do pessoal", "subtitle": "Picagem + o teu turno" }
+    "staffPortal": {
+      "title": "Portal do pessoal",
+      "subtitle": "Picagem + o teu turno"
+    }
   }
 }

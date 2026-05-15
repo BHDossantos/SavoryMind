@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { setLanguage, SUPPORTED_LANGUAGES } from '../../services/i18n';
 import { C } from '../../constants/colors';
 import { useFocusEffect } from 'expo-router';
 
@@ -15,11 +16,30 @@ const REC_ICON = {
 };
 
 export default function DinerProfile() {
-  const { user, logout }       = useAuth();
-  const { t } = useTranslation();
-  const [summary, setSummary]   = useState(null);
-  const [visits, setVisits]     = useState([]);
-  const [recs, setRecs]         = useState([]);
+  const { user, logout, setUser } = useAuth();
+  const { t, i18n }              = useTranslation();
+  const [summary, setSummary]    = useState(null);
+  const [visits, setVisits]      = useState([]);
+  const [recs, setRecs]          = useState([]);
+
+  // Same handler shape as the consumer profile — flip the locale, persist
+  // locally, and PATCH the user's profile so Flavor + recommendations
+  // respond in the new language on the next call.
+  const handlePickLanguage = async (code) => {
+    if (code === i18n.language) return;
+    await setLanguage(code, {
+      syncToServer: (payload) => api.updateAuthProfile(payload),
+    });
+    setUser((u) => ({ ...u, language: code }));
+  };
+
+  const LANGUAGE_LABEL = {
+    en: t('profile.languageEnglish'),
+    es: t('profile.languageSpanish'),
+    it: t('profile.languageItalian'),
+    pt: t('profile.languagePortuguese'),
+    fr: t('profile.languageFrench'),
+  };
 
   const load = async () => {
     try {
@@ -114,6 +134,31 @@ export default function DinerProfile() {
           </View>
         )}
 
+        {/* Language picker — same UX as the consumer profile so a diner
+            can switch the whole app + Flavor between en/es/it/pt/fr. */}
+        <View style={styles.langCard}>
+          <Text style={styles.sectionTitle}>{t('profile.language')}</Text>
+          <Text style={styles.langHint}>{t('profile.languageDescription')}</Text>
+          <View>
+            {SUPPORTED_LANGUAGES.map((code) => {
+              const active = i18n.language === code;
+              return (
+                <TouchableOpacity
+                  key={code}
+                  style={[styles.langRow, active && styles.langRowActive]}
+                  onPress={() => handlePickLanguage(code)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.langLabel, active && styles.langLabelActive]}>
+                    {LANGUAGE_LABEL[code]}
+                  </Text>
+                  {active && <Text style={styles.langCheck}>✓</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         <View style={styles.tipCard}>
           <Text style={styles.tipIcon}>💡</Text>
           <Text style={styles.tipText}>{t('dinerProfile.tip')}</Text>
@@ -160,4 +205,11 @@ const styles = StyleSheet.create({
   tipCard:     { flexDirection: 'row', gap: 12, backgroundColor: C.diner.light, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.diner.border },
   tipIcon:     { fontSize: 22 },
   tipText:     { flex: 1, fontSize: 13, color: C.diner.text, lineHeight: 19 },
+  langCard:      { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: C.gray[100] },
+  langHint:      { fontSize: 12, color: C.gray[500], marginTop: -8, marginBottom: 12, lineHeight: 16 },
+  langRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: C.gray[100], marginBottom: 8 },
+  langRowActive: { borderColor: C.diner.primary, backgroundColor: C.diner.light },
+  langLabel:     { fontSize: 14, color: C.gray[700], fontWeight: '600' },
+  langLabelActive:{ color: C.diner.primary },
+  langCheck:     { color: C.diner.primary, fontWeight: '800', fontSize: 16 },
 });
