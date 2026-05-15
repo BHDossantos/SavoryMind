@@ -1,0 +1,95 @@
+name: EAS Mobile Build
+
+# Triggers a cloud build on Expo's EAS infrastructure whenever mobile code
+# changes land on main. Also dispatchable manually so you can rebuild
+# without a code change (e.g. to pick up updated app store credentials).
+#
+# Requires the EXPO_TOKEN repository secret — generate one at
+# https://expo.dev/accounts/[account]/settings/access-tokens and store
+# it as EXPO_TOKEN under Settings → Secrets and variables → Actions.
+#
+# --non-interactive keeps the runner from prompting for credentials.
+# --no-wait returns the build URL immediately rather than tying up a
+# GitHub Actions runner for the 25–35 min EAS takes to build. Follow
+# build progress at https://expo.dev/accounts/[account]/projects/savorymind-mobile/builds
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/eas-mobile-build.yml"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which platform to build"
+        required: true
+        default: "all"
+        type: choice
+        options: [all, android, ios]
+      profile:
+        description: "eas.json build profile"
+        required: true
+        default: "production"
+        type: choice
+        options: [production, preview, development]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: EAS build
+    runs-on: ubuntu-latest
+    # Even with --no-wait the EAS CLI does a fair bit of local prep
+    # (manifest upload, fingerprinting, credentials sync) before it
+    # hands off to the cloud. 20 min covers the slowest of those.
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        # --ignore-scripts skips Expo postinstall hooks that need native
+        # tooling we don't have on a vanilla runner; EAS provisions
+        # everything it needs cloud-side.
+        run: npm ci --ignore-scripts
+
+      - name: Trigger EAS build
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PLATFORM="${{ github.event.inputs.platform || 'all' }}"
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          echo "Starting EAS build — platform=$PLATFORM profile=$PROFILE"
+          eas build \
+            --platform "$PLATFORM" \
+            --profile "$PROFILE" \
+            --non-interactive \
+            --no-wait
+
+      - name: Build summary
+        run: |
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## EAS build dispatched
+
+          Track progress at https://expo.dev/accounts/_/projects/savorymind-mobile/builds
+
+          The build runs in Expo's cloud — this workflow only initiates it.
+          You'll get an email + Expo dashboard notification when artifacts are ready.
+          EOF
