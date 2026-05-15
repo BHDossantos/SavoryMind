@@ -18,7 +18,7 @@ describe('i18n service', () => {
   });
 
   test('exposes the supported set', () => {
-    expect(SUPPORTED_LANGUAGES).toEqual(['en', 'es', 'it', 'pt']);
+    expect(SUPPORTED_LANGUAGES).toEqual(['en', 'es', 'it', 'pt', 'fr']);
   });
 
   test('setLanguage switches active language', async () => {
@@ -47,8 +47,14 @@ describe('i18n service', () => {
   });
 
   test('applyServerLanguage normalises unsupported codes to English', async () => {
-    await applyServerLanguage('fr-FR');
+    // de (German) isn't in the supported set — should fall back to en.
+    await applyServerLanguage('de-DE');
     expect(i18n.language).toBe('en');
+  });
+
+  test('applyServerLanguage applies fr-FR as French', async () => {
+    await applyServerLanguage('fr-FR');
+    expect(i18n.language).toBe('fr');
   });
 
   test('applyServerLanguage handles full locale tags (es-MX → es)', async () => {

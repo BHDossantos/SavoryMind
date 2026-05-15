@@ -2,12 +2,33 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
+import { setLanguage, SUPPORTED_LANGUAGES } from '../../services/i18n';
 import { C } from '../../constants/colors';
 
 export default function MoreScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
-  const { t } = useTranslation();
+  const { user, logout, setUser } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  // Same language picker as the consumer / diner profiles — this is the
+  // only profile-shaped surface on the restaurant side of the mobile
+  // app, so the picker lives here.
+  const handlePickLanguage = async (code) => {
+    if (code === i18n.language) return;
+    await setLanguage(code, {
+      syncToServer: (payload) => api.updateAuthProfile(payload),
+    });
+    setUser((u) => ({ ...u, language: code }));
+  };
+
+  const LANGUAGE_LABEL = {
+    en: t('profile.languageEnglish'),
+    es: t('profile.languageSpanish'),
+    it: t('profile.languageItalian'),
+    pt: t('profile.languagePortuguese'),
+    fr: t('profile.languageFrench'),
+  };
 
   // Features list. Derived per-render so labels re-translate on
   // language switch; icon + screen route stay static.
@@ -55,6 +76,27 @@ export default function MoreScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        <View style={styles.langCard}>
+          <Text style={styles.langTitle}>{t('profile.language')}</Text>
+          <Text style={styles.langHint}>{t('profile.languageDescription')}</Text>
+          {SUPPORTED_LANGUAGES.map((code) => {
+            const active = i18n.language === code;
+            return (
+              <TouchableOpacity
+                key={code}
+                style={[styles.langRow, active && styles.langRowActive]}
+                onPress={() => handlePickLanguage(code)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.langLabel, active && styles.langLabelActive]}>
+                  {LANGUAGE_LABEL[code]}
+                </Text>
+                {active && <Text style={styles.langCheck}>✓</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </ScrollView>
     </View>
   );
@@ -72,4 +114,12 @@ const styles = StyleSheet.create({
   featureTitle:  { fontSize: 14, fontWeight: '700', color: C.gray[900], marginBottom: 3 },
   featureSub:    { fontSize: 11, color: C.gray[500], lineHeight: 16 },
   arrow:         { fontSize: 16, color: C.restaurant.primary, marginTop: 8, fontWeight: '700' },
+  langCard:        { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: C.gray[100] },
+  langTitle:       { fontSize: 14, fontWeight: '700', color: C.gray[700], marginBottom: 4 },
+  langHint:        { fontSize: 12, color: C.gray[500], marginBottom: 12, lineHeight: 16 },
+  langRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: C.gray[100], marginBottom: 8 },
+  langRowActive:   { borderColor: C.restaurant.primary, backgroundColor: C.restaurant.light },
+  langLabel:       { fontSize: 14, color: C.gray[700], fontWeight: '600' },
+  langLabelActive: { color: C.restaurant.primary },
+  langCheck:       { color: C.restaurant.primary, fontWeight: '800', fontSize: 16 },
 });

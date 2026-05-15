@@ -15,11 +15,13 @@ export default function DinerLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
-      <Tabs.Screen name="dashboard" options={{ title: t('nav.home'),     tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }} />
-      <Tabs.Screen name="discover"  options={{ title: t('nav.discover'), tabBarIcon: () => <Text style={{ fontSize: 20 }}>🔍</Text> }} />
-      <Tabs.Screen name="book"      options={{ title: t('nav.book'),     tabBarIcon: () => <Text style={{ fontSize: 20 }}>📅</Text> }} />
-      <Tabs.Screen name="history"   options={{ title: t('nav.history'),  tabBarIcon: () => <Text style={{ fontSize: 20 }}>📖</Text> }} />
-      <Tabs.Screen name="profile"   options={{ title: t('nav.profile'),  tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />
+      <Tabs.Screen name="dashboard" options={{ title: t('nav.home'),      tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }} />
+      <Tabs.Screen name="discover"  options={{ title: t('nav.discover'),  tabBarIcon: () => <Text style={{ fontSize: 20 }}>🔍</Text> }} />
+      <Tabs.Screen name="assistant" options={{ title: t('nav.assistant'), tabBarIcon: () => <Text style={{ fontSize: 20 }}>👨‍🍳</Text> }} />
+      <Tabs.Screen name="book"      options={{ title: t('nav.book'),      tabBarIcon: () => <Text style={{ fontSize: 20 }}>📅</Text> }} />
+      <Tabs.Screen name="profile"   options={{ title: t('nav.profile'),   tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />
+      {/* Hidden from the tab bar — reachable from dashboard / profile. */}
+      <Tabs.Screen name="history"   options={{ href: null }} />
     </Tabs>
   );
 }

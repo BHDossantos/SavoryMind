@@ -12,9 +12,9 @@
  *   profile so Flavor / recommendations / etc. respond in the right
  *   language across both web and mobile.
  *
- * Supported set is intentionally small (en/es/it) — same set the backend
- * validates in ProfileUpdate.validate_language(). Anything else falls
- * back to English.
+ * Supported set is intentionally small (en/es/it/pt/fr) — same set the
+ * backend validates in ProfileUpdate.validate_language(). Anything else
+ * falls back to English.
  */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
@@ -25,8 +25,9 @@ import en from '../locales/en.json';
 import es from '../locales/es.json';
 import it from '../locales/it.json';
 import pt from '../locales/pt.json';
+import fr from '../locales/fr.json';
 
-export const SUPPORTED_LANGUAGES = ['en', 'es', 'it', 'pt'];
+export const SUPPORTED_LANGUAGES = ['en', 'es', 'it', 'pt', 'fr'];
 const DEFAULT_LANGUAGE = 'en';
 const STORAGE_KEY = 'savorymind.language';
 
@@ -55,6 +56,7 @@ i18n.use(initReactI18next).init({
     es: { translation: es },
     it: { translation: it },
     pt: { translation: pt },
+    fr: { translation: fr },
   },
   lng: detectDeviceLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
