@@ -326,7 +326,27 @@
     "bookTitle": "My bookings",
     "bookSub": "Upcoming and past reservations",
     "historyTitle": "Visit history",
-    "historySub": "Every meal you've logged"
+    "historySub": "Every meal you've logged",
+    "scanTitle": "Rate your server",
+    "scanSub": "Scan the QR on their card to leave anonymous feedback"
+  },
+  "scan": {
+    "cameraTitle": "Point your camera at the QR code",
+    "permissionDenied": "Camera access is needed to scan QR codes.",
+    "allowCamera": "Allow camera",
+    "openSettings": "Open settings",
+    "invalidQr": "That's not a SavoryMind QR code.",
+    "invalidQrTitle": "This QR isn't valid",
+    "requiredField": "Please answer this question.",
+    "thanksTitle": "Thanks for the feedback!",
+    "thanksSub": "Sent to {{restaurant}}.",
+    "sendingButton": "Sending…",
+    "sendButton": "Send feedback",
+    "howWasTime": "How was your time with {{name}}?",
+    "yes": "Yes",
+    "no": "No",
+    "commentPlaceholder": "Anything else? (optional)",
+    "anonymousNote": "Your responses are anonymous. No account needed."
   },
   "screens": {
     "recipes": { "title": "Recipes", "subtitle": "What you've cooked + ideas for next time", "empty": "Nothing here yet — give one a try." },

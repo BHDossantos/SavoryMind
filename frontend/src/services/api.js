@@ -314,6 +314,10 @@ export const api = {
   createEmployee: (data) => request("/api/staff/employees", { method: "POST", body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/api/staff/employees/${id}`, { method: "DELETE" }),
 
+  // Restaurant — Employee QR survey (owner-side endpoints)
+  getEmployeeQRCodes: () => request("/api/employee-survey/owner/employees"),
+  getEmployeeSurveyResults: (id) => request(`/api/employee-survey/owner/employees/${id}/results`),
+
   // Staff portal — self-service clock in/out
   getClockStatus: () => request("/api/staff/status"),
   clockIn: (data) => request("/api/staff/clock-in", { method: "POST", body: JSON.stringify(data) }),
