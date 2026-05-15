@@ -24,6 +24,9 @@ const PUBLIC_ROUTES = [
   "/legal/terms",
   "/legal/account-deletion",
   "/support",
+  // Public anonymous-feedback flow — a diner scans an employee's printed
+  // QR code and lands here. No account required.
+  "/scan/[token]",
 ];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 

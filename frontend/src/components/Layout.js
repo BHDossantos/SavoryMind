@@ -22,6 +22,7 @@ const navLinks = [
   { href: "/restaurant/stafftime",     label: "Staff Time",      icon: "⏱️" },
   { href: "/restaurant/training",     label: "Staff Training",  icon: "🎓" },
   { href: "/restaurant/employees",    label: "Employee Logins", icon: "👔" },
+  { href: "/restaurant/employee-qr-codes", label: "Employee QR Codes", icon: "🔳" },
 ];
 
 export default function Layout({ children }) {
