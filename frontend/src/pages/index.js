@@ -3,18 +3,18 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 
-const homeFeatures = [
+// Cook-at-home + dine-out features live in one unified Food Person
+// experience now. Listed together so the landing page reflects what
+// the actual app does post-unification — one shell, two halves.
+const foodPersonFeatures = [
   { icon: "🍷", title: "Wine, Beer & Spirits Pairing", desc: "From a bold Cabernet to a hoppy IPA or a smoky Mezcal — the right pour for whatever's on your plate tonight." },
-  { icon: "🎵", title: "Music Mood Engine", desc: "Tell us how you're feeling and we'll set the mood — the right sounds for your Sunday morning eggs or Friday night feast." },
   { icon: "👨‍🍳", title: "Recipe Discovery", desc: "Not sure what to cook? Browse recipes matched to your mood, your cuisine, your craving." },
-  { icon: "🔗", title: "Stream Anywhere", desc: "Tap once and your dining soundtrack plays — Spotify, Amazon Music, or Alexa, completely hands-free." },
-];
-
-const dinerFeatures = [
-  { icon: "📅", title: "Book a Table", desc: "Reserve your spot and show up ready to enjoy every second — specify your party, time, and any special requests." },
-  { icon: "📖", title: "Visit History", desc: "Write your own dining journal — what you loved, who served you well, whether you'd go back." },
+  { icon: "🤖", title: "Ask Flavor", desc: "Your AI food assistant — pairings, fixes, substitutions, technique. Anything you'd ask the chef who lives in your phone." },
+  { icon: "🎵", title: "Music Mood Engine", desc: "Tell us how you're feeling and we'll set the mood — the right sounds for your Sunday morning eggs or Friday night feast." },
+  { icon: "📅", title: "Discover & Book Restaurants", desc: "Find your next great meal out — by mood, cuisine, or budget. Reserve in a tap and show up ready." },
+  { icon: "📖", title: "Visit History & Journal", desc: "Write your dining journal — what you loved, who served you well, whether you'd go back." },
   { icon: "⭐", title: "Rate Everything", desc: "Your honest take on every visit — food, service, atmosphere — so you never forget what made the night." },
-  { icon: "💎", title: "Your Dining Profile", desc: "The more you dine, the better you know yourself. Your profile tells your food story." },
+  { icon: "💎", title: "Your Food Profile", desc: "The more you cook and dine, the more SavoryMind learns what you love. Your profile tells your food story." },
 ];
 
 const restaurantFeatures = [
@@ -123,35 +123,19 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Home Cook features */}
-      <section className="bg-gradient-to-br from-consumer-50 to-white py-20">
+      {/* Unified Food Person features. Used to be split into two sections
+          (Food Lover Mode + Food Explorer Mode) — merged into one to
+          match the unified consumer shell the actual app ships. */}
+      <section className="bg-gradient-to-br from-consumer-50 via-white to-diner-50 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🏠 Food Lover Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">The right wine. The right song. The right recipe.</h2>
+            <div className="inline-flex items-center gap-2 bg-consumer-100 text-consumer-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍴 For Food People</div>
+            <h2 className="text-3xl font-bold text-gray-900">Cook at home + go out. All in one app.</h2>
+            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Pairings, recipes, restaurant discovery, journaling, and a real-time AI food assistant — everything between your kitchen and your table.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {homeFeatures.map((f) => (
+            {foodPersonFeatures.map((f) => (
               <div key={f.title} className="bg-white rounded-2xl p-5 border border-consumer-100 hover:border-consumer-300 hover:shadow-md transition-all">
-                <div className="text-3xl mb-3">{f.icon}</div>
-                <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Diner features */}
-      <section className="bg-gradient-to-br from-diner-50 to-white py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-diner-100 text-diner-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">🍽️ Food Explorer Mode</div>
-            <h2 className="text-3xl font-bold text-gray-900">Every table deserves to be remembered.</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {dinerFeatures.map((f) => (
-              <div key={f.title} className="bg-white rounded-2xl p-5 border border-diner-100 hover:border-diner-300 hover:shadow-md transition-all">
                 <div className="text-3xl mb-3">{f.icon}</div>
                 <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
@@ -180,16 +164,15 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA — two paths matching the unified app: Food Person + Restaurant.
+          The legacy /signup?type=diner path still works server-side, but
+          we don't surface it as a separate front-door choice anymore. */}
       <section className="max-w-6xl mx-auto px-6 py-20 text-center">
         <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Your table is set.</h2>
         <p className="text-gray-500 text-lg mb-10">Free to start. Pick your path and we'll do the rest.</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
           <Link href="/signup?type=consumer" className="bg-consumer-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-consumer-700 transition-colors shadow-lg shadow-consumer-100">
-            🏠 Food Lover
-          </Link>
-          <Link href="/signup?type=diner" className="bg-diner-600 text-white font-bold px-7 py-4 rounded-xl hover:bg-diner-700 transition-colors shadow-lg shadow-diner-100">
-            🍽️ Food Explorer
+            🍴 I love food
           </Link>
           <Link href="/signup?type=restaurant" className="bg-brand-500 text-white font-bold px-7 py-4 rounded-xl hover:bg-brand-600 transition-colors shadow-lg shadow-brand-100">
             🏪 I Run a Restaurant
