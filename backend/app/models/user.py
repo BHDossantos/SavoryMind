@@ -91,3 +91,9 @@ class User(Base):
 
     # Staff account linkage — only set when account_type == "staff"
     employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)
+
+    # Public, opaque per-staff identifier used to mint the employee QR code.
+    # Set only when account_type == "staff"; auto-generated on staff creation
+    # (backfilled by the migration for pre-existing staff rows). Unique so a
+    # scanned token resolves to exactly one employee.
+    qr_token = Column(String(36), unique=True, nullable=True, index=True)
