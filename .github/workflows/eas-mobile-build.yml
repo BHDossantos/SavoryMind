@@ -150,23 +150,29 @@ jobs:
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
           echo "Starting EAS build — platform=$PLATFORM profile=$PROFILE"
 
-          # --auto-submit makes EAS upload the build to App Store Connect
-          # (TestFlight) automatically once it finishes — without it the
-          # runner would have to block for ~30 min just to call eas submit.
-          # Only valid when there's a matching submit.* config in eas.json,
-          # which we only have for production.ios.
-          AUTO_SUBMIT_FLAG=""
+          # Auto-submit is iOS-only for now — Android Play Store submission
+          # needs a Google service account JSON we haven't set up yet. So
+          # when "platform=all" is requested we split into two `eas build`
+          # invocations: Android plain, iOS with --auto-submit. This keeps
+          # the iOS → TestFlight pipeline working without forcing Android
+          # credentials to be configured first.
+          IOS_AUTO_SUBMIT=""
           if [ "$PROFILE" = "production" ] && [ -f asc-api-key.p8 ]; then
-            AUTO_SUBMIT_FLAG="--auto-submit"
-            echo "Production profile + ASC key present → will auto-submit iOS to TestFlight."
+            IOS_AUTO_SUBMIT="--auto-submit"
+            echo "Production + ASC key present → iOS build will auto-submit to TestFlight."
           fi
 
-          eas build \
-            --platform "$PLATFORM" \
-            --profile "$PROFILE" \
-            --non-interactive \
-            --no-wait \
-            $AUTO_SUBMIT_FLAG
+          if [ "$PLATFORM" = "all" ]; then
+            echo "▶ Building Android (no auto-submit)"
+            eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
+            echo "▶ Building iOS"
+            eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
+          elif [ "$PLATFORM" = "ios" ]; then
+            eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
+          else
+            # android-only — no auto-submit until Play Store creds are wired up
+            eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
+          fi
 
       - name: Build summary
         run: |
