@@ -116,19 +116,57 @@ jobs:
           fi
         continue-on-error: true
 
+      - name: Write Apple ASC API key (production iOS only)
+        # Only materialise the .p8 when we'll actually use it — preview and
+        # development builds don't submit, so they don't need it. Skipping
+        # also avoids surfacing a "missing secret" error for repos that
+        # haven't set up the Apple credentials yet.
+        if: github.event.inputs.profile == 'production' || github.event_name == 'push'
+        working-directory: mobile
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          if [ -n "$ASC_API_KEY_P8" ]; then
+            printf '%s' "$ASC_API_KEY_P8" > asc-api-key.p8
+            chmod 600 asc-api-key.p8
+            echo "Wrote asc-api-key.p8 ($(wc -c < asc-api-key.p8) bytes)"
+          else
+            echo "ASC_API_KEY_P8 secret not set — skipping (iOS auto-submit will be disabled)."
+          fi
+
       - name: Trigger EAS build
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Apple App Store Connect API key, used both for iOS credentials
+          # provisioning during the build (so we don't need a stored
+          # distribution cert) and for the auto-submit step after the build
+          # finishes. eas.json references $ASC_API_KEY_ID / $ASC_API_ISSUER_ID
+          # by name, so they must be on the env at this step.
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'all' }}"
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
           echo "Starting EAS build — platform=$PLATFORM profile=$PROFILE"
+
+          # --auto-submit makes EAS upload the build to App Store Connect
+          # (TestFlight) automatically once it finishes — without it the
+          # runner would have to block for ~30 min just to call eas submit.
+          # Only valid when there's a matching submit.* config in eas.json,
+          # which we only have for production.ios.
+          AUTO_SUBMIT_FLAG=""
+          if [ "$PROFILE" = "production" ] && [ -f asc-api-key.p8 ]; then
+            AUTO_SUBMIT_FLAG="--auto-submit"
+            echo "Production profile + ASC key present → will auto-submit iOS to TestFlight."
+          fi
+
           eas build \
             --platform "$PLATFORM" \
             --profile "$PROFILE" \
             --non-interactive \
-            --no-wait
+            --no-wait \
+            $AUTO_SUBMIT_FLAG
 
       - name: Build summary
         run: |
