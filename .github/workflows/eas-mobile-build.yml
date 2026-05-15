@@ -35,7 +35,10 @@ on:
         options: [production, preview, development]
 
 permissions:
-  contents: read
+  # Need write so the auto-init step can commit the EAS projectId back
+  # to mobile/app.json on the very first run. Subsequent runs skip the
+  # commit because the file already has it.
+  contents: write
 
 jobs:
   build:
@@ -48,6 +51,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Use a token instead of GITHUB_TOKEN for the optional commit
+          # below, so the push event re-triggers downstream workflows
+          # like CI. With the default token, pushed commits are silent
+          # to other workflows.
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -68,6 +77,44 @@ jobs:
         # tooling we don't have on a vanilla runner; EAS provisions
         # everything it needs cloud-side.
         run: npm ci --ignore-scripts
+
+      - name: Initialise EAS project (one-time bootstrap)
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+        run: |
+          # eas init is required before `eas build` can run non-interactively.
+          # It writes extra.eas.projectId into app.json, linking this repo to
+          # an EAS project (creating one under the token's account if the slug
+          # isn't already taken). After the first run we commit that change
+          # back to main so subsequent builds skip this step entirely.
+          if grep -q '"projectId"' app.json; then
+            echo "EAS projectId already set — skipping init."
+          else
+            echo "No EAS projectId in app.json — running eas init"
+            eas init --non-interactive --force
+          fi
+
+      - name: Commit projectId back to main (first run only)
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        working-directory: mobile
+        run: |
+          # Best-effort: if app.json now has changes (i.e. the bootstrap
+          # step just added projectId), commit + push so future runs find
+          # the same project. [skip ci] avoids re-triggering this same
+          # workflow in a loop. continue-on-error in the step below means
+          # we still proceed to build even if the push is rejected (e.g.
+          # branch protection rules block direct pushes to main).
+          if git diff --quiet app.json; then
+            echo "No app.json changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app.json
+            git commit -m "ci: bootstrap EAS projectId in app.json [skip ci]"
+            git push origin HEAD:main || echo "Push failed — continuing to build anyway."
+          fi
+        continue-on-error: true
 
       - name: Trigger EAS build
         working-directory: mobile
