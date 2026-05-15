@@ -23,7 +23,8 @@
     "qrCodes": "Employee QR Codes",
     "restaurantMode": "Restaurant Mode",
     "foodLover": "Food Lover",
-    "foodExplorer": "Food Explorer"
+    "foodExplorer": "Food Explorer",
+    "flavor": "Flavor"
   },
   "common": {
     "loading": "Loading…",
