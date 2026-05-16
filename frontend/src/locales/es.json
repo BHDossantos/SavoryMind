@@ -1795,5 +1795,20 @@
     "breakMin": "{{n}}m descanso",
     "active": "Activo",
     "totalHoursSuffix": "h"
+  },
+  "scanPage": {
+    "loading": "Cargando...",
+    "rateLabel": "Calificar {{n}}",
+    "yes": "Sí",
+    "no": "No",
+    "invalidTitle": "Este QR no es válido",
+    "thanksTitle": "¡Gracias por tus comentarios!",
+    "sentTo": "Se ha enviado a {{name}}.",
+    "howWasTime": "¿Qué tal estuvo tu experiencia con",
+    "optionalPh": "Opcional...",
+    "pleaseAnswer": "Responde a: {{prompt}}",
+    "sending": "Enviando...",
+    "sendFeedback": "Enviar comentarios",
+    "anonymousNote": "Tus respuestas son anónimas. No necesitas cuenta."
   }
 }
