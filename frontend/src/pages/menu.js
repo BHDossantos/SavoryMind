@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { api } from "../services/api";
 import clsx from "clsx";
 
-const CATEGORIES = ["All", "Mains", "Starters", "Desserts", "Drinks"];
+// Internal category IDs stay English — they're what the backend
+// stores and filter logic compares against. The display label
+// per-category comes from i18n in the render path.
+const CATEGORY_IDS = ["All", "Mains", "Starters", "Desserts", "Drinks"];
+const CATEGORY_LABEL_KEYS = {
+  All: "menuPage.catAll",
+  Mains: "menuPage.catMains",
+  Starters: "menuPage.catStarters",
+  Desserts: "menuPage.catDesserts",
+  Drinks: "menuPage.catDrinks",
+};
 const EMPTY_FORM = { name: "", category: "Mains", price: "", cost: "", orders_last_30_days: "", rating: "", description: "" };
 
 function ProfitBadge({ margin }) {
@@ -14,19 +25,23 @@ function ProfitBadge({ margin }) {
   return <span className="badge-negative">{margin.toFixed(0)}%</span>;
 }
 
+// Validation returns an i18n KEY rather than a translated string so
+// the renderer (which has t() in scope) translates at display time,
+// re-translating on language switch.
 function validateForm(form) {
   const price = parseFloat(form.price);
   const cost = parseFloat(form.cost);
   const rating = form.rating !== "" ? parseFloat(form.rating) : null;
-  if (!form.name.trim()) return "Name is required.";
-  if (isNaN(price) || price <= 0) return "Price must be greater than 0.";
-  if (isNaN(cost) || cost < 0) return "Cost cannot be negative.";
-  if (cost >= price) return "Cost must be less than price.";
-  if (rating !== null && (rating < 0 || rating > 5)) return "Rating must be between 0 and 5.";
+  if (!form.name.trim()) return "menuPage.errNameRequired";
+  if (isNaN(price) || price <= 0) return "menuPage.errPricePositive";
+  if (isNaN(cost) || cost < 0) return "menuPage.errCostNegative";
+  if (cost >= price) return "menuPage.errCostBelowPrice";
+  if (rating !== null && (rating < 0 || rating > 5)) return "menuPage.errRatingRange";
   return null;
 }
 
 export default function MenuPage() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -116,7 +131,7 @@ export default function MenuPage() {
 
   const handleDelete = (item) => {
     setConfirmDialog({
-      message: `Delete "${item.name}"? This cannot be undone.`,
+      message: t("menuPage.deletePrompt", { name: item.name }),
       onConfirm: async () => {
         setConfirmDialog(null);
         setDeletingId(item.id);
@@ -125,7 +140,7 @@ export default function MenuPage() {
           await api.deleteMenuItem(item.id);
           fetchItems();
         } catch (err) {
-          setDeleteError(err.message || "Failed to delete item.");
+          setDeleteError(err.message || t("menuPage.deleteFailed"));
         } finally {
           setDeletingId(null);
         }
@@ -138,33 +153,37 @@ export default function MenuPage() {
     if (formError) setFormError(null);
   };
 
-  if (loading) return <LoadingSpinner message="Loading menu..." />;
+  if (loading) return <LoadingSpinner message={t("menuPage.loading")} />;
   if (error) return <ErrorMessage message={error} onRetry={fetchItems} />;
+
+  // Translate the form-error key once at render so the rest of the JSX
+  // doesn't have to special-case error display.
+  const renderedFormError = formError ? t(formError) : null;
 
   return (
     <div>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Analysis</h1>
-          <p className="text-gray-400 mt-1">Performance metrics for all menu items</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("menuPage.title")}</h1>
+          <p className="text-gray-400 mt-1">{t("menuPage.subtitle")}</p>
         </div>
         <button onClick={showForm ? closeForm : openCreate} className="btn-primary">
-          {showForm ? "Cancel" : "+ Add Item"}
+          {showForm ? t("menuPage.cancel") : t("menuPage.addItem")}
         </button>
       </div>
 
       {/* Add / Edit Form */}
       {showForm && (
         <div className="card mb-6">
-          <h2 className="text-base font-semibold mb-4">{editingItem ? `Edit: ${editingItem.name}` : "New Menu Item"}</h2>
+          <h2 className="text-base font-semibold mb-4">{editingItem ? t("menuPage.editTitle", { name: editingItem.name }) : t("menuPage.newTitle")}</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             {[
-              { label: "Name", key: "name", type: "text", required: true },
-              { label: "Price ($)", key: "price", type: "number", required: true },
-              { label: "Cost ($)", key: "cost", type: "number", required: true },
-              { label: "Orders (30 days)", key: "orders_last_30_days", type: "number" },
-              { label: "Rating (0–5)", key: "rating", type: "number" },
-              { label: "Description", key: "description", type: "text" },
+              { label: t("menuPage.name"),        key: "name", type: "text", required: true },
+              { label: t("menuPage.price"),       key: "price", type: "number", required: true },
+              { label: t("menuPage.cost"),        key: "cost", type: "number", required: true },
+              { label: t("menuPage.orders"),      key: "orders_last_30_days", type: "number" },
+              { label: t("menuPage.rating"),      key: "rating", type: "number" },
+              { label: t("menuPage.description"), key: "description", type: "text" },
             ].map(({ label, key, type, required }) => (
               <div key={key}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -179,26 +198,28 @@ export default function MenuPage() {
               </div>
             ))}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("menuPage.category")}</label>
               <select
                 value={form.category}
                 onChange={(e) => handleFieldChange("category", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
               >
-                {["Mains", "Starters", "Desserts", "Drinks"].map((c) => <option key={c}>{c}</option>)}
+                {["Mains", "Starters", "Desserts", "Drinks"].map((c) => (
+                  <option key={c} value={c}>{t(CATEGORY_LABEL_KEYS[c])}</option>
+                ))}
               </select>
             </div>
-            {formError && (
+            {renderedFormError && (
               <div className="col-span-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">
-                {formError}
+                {renderedFormError}
               </div>
             )}
             <div className="col-span-2 flex justify-end gap-2">
               <button type="button" onClick={closeForm} className="px-4 py-2 rounded-lg text-sm border border-gray-200 text-gray-600 hover:bg-gray-50">
-                Cancel
+                {t("menuPage.cancel")}
               </button>
               <button type="submit" disabled={saving} className="btn-primary">
-                {saving ? "Saving..." : editingItem ? "Save Changes" : "Add Item"}
+                {saving ? t("menuPage.saving") : editingItem ? t("menuPage.saveChanges") : t("menuPage.addItemBtn")}
               </button>
             </div>
           </form>
@@ -216,13 +237,13 @@ export default function MenuPage() {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <input
           type="text"
-          placeholder="Search items..."
+          placeholder={t("menuPage.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 w-44"
         />
         <div className="flex gap-2 flex-wrap">
-          {CATEGORIES.map((c) => (
+          {CATEGORY_IDS.map((c) => (
             <button
               key={c}
               onClick={() => setCategory(c)}
@@ -231,21 +252,21 @@ export default function MenuPage() {
                 category === c ? "bg-brand-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               )}
             >
-              {c}
+              {t(CATEGORY_LABEL_KEYS[c])}
             </button>
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <label className="text-sm text-gray-500">Sort by:</label>
+          <label className="text-sm text-gray-500">{t("menuPage.sortBy")}</label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none"
           >
-            <option value="revenue_last_30_days">Revenue</option>
-            <option value="orders_last_30_days">Orders</option>
-            <option value="profit_margin">Profit Margin</option>
-            <option value="rating">Rating</option>
+            <option value="revenue_last_30_days">{t("menuPage.sortRevenue")}</option>
+            <option value="orders_last_30_days">{t("menuPage.sortOrders")}</option>
+            <option value="profit_margin">{t("menuPage.sortMargin")}</option>
+            <option value="rating">{t("menuPage.sortRating")}</option>
           </select>
         </div>
       </div>
@@ -256,15 +277,15 @@ export default function MenuPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Item</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Category</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Price</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Cost</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Margin</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Orders</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Revenue</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Rating</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Actions</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t("menuPage.colItem")}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t("menuPage.colCategory")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colPrice")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colCost")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colMargin")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colOrders")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colRevenue")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colRating")}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("menuPage.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +297,7 @@ export default function MenuPage() {
                       <span className="text-xs text-gray-400 block mt-0.5 max-w-xs truncate">{item.description}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{item.category}</td>
+                  <td className="px-4 py-3 text-gray-500">{t(CATEGORY_LABEL_KEYS[item.category] || "menuPage.catMains")}</td>
                   <td className="px-4 py-3 text-right">${item.price.toFixed(2)}</td>
                   <td className="px-4 py-3 text-right text-gray-500">${item.cost.toFixed(2)}</td>
                   <td className="px-4 py-3 text-right"><ProfitBadge margin={item.profit_margin} /></td>
@@ -292,7 +313,7 @@ export default function MenuPage() {
                       <button
                         onClick={() => openEdit(item)}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                        title="Edit"
+                        title={t("menuPage.edit")}
                       >
                         ✏️
                       </button>
@@ -300,7 +321,7 @@ export default function MenuPage() {
                         onClick={() => handleDelete(item)}
                         disabled={deletingId === item.id}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                        title="Delete"
+                        title={t("menuPage.delete")}
                       >
                         🗑️
                       </button>
@@ -310,14 +331,14 @@ export default function MenuPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400">No items match your filters.</td>
+                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400">{t("menuPage.noMatch")}</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
-      <p className="text-xs text-gray-400 mt-2">{filtered.length} of {items.length} items shown</p>
+      <p className="text-xs text-gray-400 mt-2">{t("menuPage.shownCount", { shown: filtered.length, total: items.length })}</p>
 
       {confirmDialog && (
         <ConfirmDialog
