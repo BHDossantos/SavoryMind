@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
 import { api } from "../../services/api";
 
@@ -38,6 +39,7 @@ function QRImage({ token, size = 220 }) {
 
 
 function ResultsModal({ employee, onClose }) {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,13 +57,13 @@ function ResultsModal({ employee, onClose }) {
       <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="font-bold text-gray-900 text-lg">Survey Results — {employee.display_name}</h2>
-            <p className="text-sm text-gray-500">Anonymous diner feedback from QR scans</p>
+            <h2 className="font-bold text-gray-900 text-lg">{t("qrCodesPage.resultsTitle", { name: employee.display_name })}</h2>
+            <p className="text-sm text-gray-500">{t("qrCodesPage.resultsSub")}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
         </div>
 
-        {loading && <p className="text-gray-400 text-sm">Loading...</p>}
+        {loading && <p className="text-gray-400 text-sm">{t("qrCodesPage.loading")}</p>}
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>}
 
         {data && (
@@ -69,15 +71,15 @@ function ResultsModal({ employee, onClose }) {
             <div className="grid grid-cols-2 gap-3 mb-5">
               <div className="bg-brand-50 rounded-xl p-3 text-center">
                 <p className="text-2xl font-bold text-brand-700">{data.stats.total_responses}</p>
-                <p className="text-xs text-gray-600 mt-0.5">Total responses</p>
+                <p className="text-xs text-gray-600 mt-0.5">{t("qrCodesPage.totalResponses")}</p>
               </div>
               <div className="bg-blue-50 rounded-xl p-3 text-center">
                 <p className="text-2xl font-bold text-blue-700">{data.stats.unique_devices}</p>
-                <p className="text-xs text-gray-600 mt-0.5">Unique diners</p>
+                <p className="text-xs text-gray-600 mt-0.5">{t("qrCodesPage.uniqueDiners")}</p>
               </div>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Ratings</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t("qrCodesPage.ratings")}</h3>
             <div className="space-y-2 mb-5">
               {data.survey.questions.filter((q) => q.type === "rating_5").map((q) => {
                 const r = data.stats.ratings[q.id];
@@ -93,7 +95,7 @@ function ResultsModal({ employee, onClose }) {
               })}
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Would Return</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t("qrCodesPage.wouldReturn")}</h3>
             <div className="mb-5">
               {data.survey.questions.filter((q) => q.type === "yes_no").map((q) => {
                 const b = data.stats.booleans[q.id];
@@ -101,7 +103,7 @@ function ResultsModal({ employee, onClose }) {
                   <div key={q.id} className="bg-gray-50 rounded-lg px-3 py-2 flex items-center justify-between">
                     <span className="text-sm text-gray-700">{q.prompt}</span>
                     <span className="text-sm font-semibold text-gray-900">
-                      {b?.yes_percent != null ? `${b.yes_percent}% yes` : "—"}
+                      {b?.yes_percent != null ? t("qrCodesPage.yesPercent", { percent: b.yes_percent }) : "—"}
                       <span className="text-xs text-gray-400 ml-1">({(b?.yes_count || 0) + (b?.no_count || 0)})</span>
                     </span>
                   </div>
@@ -109,9 +111,9 @@ function ResultsModal({ employee, onClose }) {
               })}
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Recent Comments</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t("qrCodesPage.recentComments")}</h3>
             {data.stats.comments.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No comments yet.</p>
+              <p className="text-sm text-gray-400 italic">{t("qrCodesPage.noComments")}</p>
             ) : (
               <div className="space-y-2">
                 {data.stats.comments.map((c, i) => (
@@ -130,6 +132,7 @@ function ResultsModal({ employee, onClose }) {
 
 
 export default function EmployeeQRCodes() {
+  const { t } = useTranslation();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -157,15 +160,15 @@ export default function EmployeeQRCodes() {
     <div>
       <div className="flex items-center justify-between mb-8 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">🔳 Employee QR Codes</h1>
-          <p className="text-gray-400 mt-1 text-sm">Print these for each employee — diners scan to leave anonymous feedback</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("qrCodesPage.title")}</h1>
+          <p className="text-gray-400 mt-1 text-sm">{t("qrCodesPage.subtitle")}</p>
         </div>
         <button
           onClick={handlePrint}
           disabled={!employees.length}
           className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors disabled:opacity-50"
         >
-          🖨️ Print All
+          {t("qrCodesPage.printAll")}
         </button>
       </div>
 
@@ -174,23 +177,25 @@ export default function EmployeeQRCodes() {
       <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 flex gap-3 print:hidden">
         <span className="text-xl mt-0.5">💡</span>
         <div>
-          <p className="text-sm font-semibold text-blue-800">How employee QR codes work</p>
+          <p className="text-sm font-semibold text-blue-800">{t("qrCodesPage.howItWorksTitle")}</p>
           <p className="text-sm text-blue-600 mt-0.5">
-            Each employee has a unique QR. When a diner scans it (no app needed — phone camera works), they get a short
-            anonymous survey that ties to that employee. Results are aggregated below. Add new employees on the{" "}
-            <a href="/restaurant/employees" className="underline">Employee Logins</a> page — they get a QR automatically.
+            {t("qrCodesPage.howItWorksPrefix")}{" "}
+            <a href="/restaurant/employees" className="underline">{t("qrCodesPage.employeeLoginsLink")}</a>{" "}
+            {t("qrCodesPage.howItWorksSuffix")}
           </p>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
+        <p className="text-gray-400 text-sm">{t("qrCodesPage.loading")}</p>
       ) : employees.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
           <p className="text-4xl mb-3">🔳</p>
-          <p className="text-gray-500 font-medium">No employees yet</p>
+          <p className="text-gray-500 font-medium">{t("qrCodesPage.noEmployees")}</p>
           <p className="text-gray-400 text-sm mt-1">
-            Add employees on the <a href="/restaurant/employees" className="text-brand-600 underline">Employee Logins</a> page first.
+            {t("qrCodesPage.noEmployeesSubPrefix")}{" "}
+            <a href="/restaurant/employees" className="text-brand-600 underline">{t("qrCodesPage.employeeLoginsLink")}</a>{" "}
+            {t("qrCodesPage.noEmployeesSubSuffix")}
           </p>
         </div>
       ) : (
@@ -203,14 +208,14 @@ export default function EmployeeQRCodes() {
                 <div className="flex justify-center mb-3">
                   <QRImage token={emp.qr_token} size={220} />
                 </div>
-                <p className="text-xs text-gray-400 break-all">Scan to leave anonymous feedback</p>
+                <p className="text-xs text-gray-400 break-all">{t("qrCodesPage.scanToLeave")}</p>
               </div>
               <div className="mt-4 pt-3 border-t border-gray-50 print:hidden">
                 <button
                   onClick={() => setResultsFor(emp)}
                   className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 rounded-lg text-sm transition-colors"
                 >
-                  View results
+                  {t("qrCodesPage.viewResults")}
                 </button>
               </div>
             </div>
