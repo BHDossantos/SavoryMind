@@ -818,5 +818,36 @@
     "yesPercent": "{{percent}}% yes",
     "recentComments": "Recent Comments",
     "noComments": "No comments yet."
+  },
+  "plannerPage": {
+    "title": "📅 Meal Planner",
+    "subtitle": "Your personalised 7-day plan with shopping list",
+    "todayPrefix": "Today —",
+    "dietLabel": "Diet:",
+    "dietAll": "All",
+    "dietVegetarian": "Vegetarian",
+    "dietVegan": "Vegan",
+    "dietKeto": "Keto",
+    "dietGlutenFree": "Gluten-Free",
+    "dietDairyFree": "Dairy-Free",
+    "tabWeekly": "Weekly Plan",
+    "tabShopping": "Shopping List",
+    "mealLunch": "Lunch",
+    "mealDinner": "Dinner",
+    "shoppingHeader": "{{count}} items for your week"
+  },
+  "beveragesPage": {
+    "title": "🥂 Beverage Pairing",
+    "subtitle": "AI-matched wine, beer & spirits for any dish",
+    "tabWine": "Wine",
+    "tabBeer": "Beer",
+    "tabSpirits": "Spirits",
+    "searchPh": "Enter a dish to pair with {{type}}...",
+    "pairing": "Pairing...",
+    "pair": "Pair",
+    "topPairings": "Top {{type}} pairings for",
+    "topMatch": "⭐ Top Match",
+    "tryThese": "Try these:",
+    "abv": "{{value}}% ABV"
   }
 }

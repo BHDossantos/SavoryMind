@@ -818,5 +818,36 @@
     "yesPercent": "{{percent}}% oui",
     "recentComments": "Commentaires récents",
     "noComments": "Pas encore de commentaires."
+  },
+  "plannerPage": {
+    "title": "📅 Planificateur de repas",
+    "subtitle": "Votre plan personnalisé sur 7 jours avec liste de courses",
+    "todayPrefix": "Aujourd'hui —",
+    "dietLabel": "Régime :",
+    "dietAll": "Tous",
+    "dietVegetarian": "Végétarien",
+    "dietVegan": "Végan",
+    "dietKeto": "Keto",
+    "dietGlutenFree": "Sans gluten",
+    "dietDairyFree": "Sans lactose",
+    "tabWeekly": "Plan hebdomadaire",
+    "tabShopping": "Liste de courses",
+    "mealLunch": "Déjeuner",
+    "mealDinner": "Dîner",
+    "shoppingHeader": "{{count}} articles pour votre semaine"
+  },
+  "beveragesPage": {
+    "title": "🥂 Accords boissons",
+    "subtitle": "Vin, bière et spiritueux accordés par IA pour n'importe quel plat",
+    "tabWine": "Vin",
+    "tabBeer": "Bière",
+    "tabSpirits": "Spiritueux",
+    "searchPh": "Saisissez un plat à accorder avec {{type}}...",
+    "pairing": "Accord en cours...",
+    "pair": "Accorder",
+    "topPairings": "Meilleurs accords {{type}} pour",
+    "topMatch": "⭐ Meilleur accord",
+    "tryThese": "Essayez :",
+    "abv": "{{value}}% ABV"
   }
 }
