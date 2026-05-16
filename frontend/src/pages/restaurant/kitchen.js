@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function KitchenTimes() {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,8 +28,8 @@ export default function KitchenTimes() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.item_name.trim() || !form.staff_name.trim()) { setError("Item and staff name required."); return; }
-    if (parseFloat(form.prep_minutes) < 0 || parseFloat(form.cook_minutes) < 0) { setError("Times cannot be negative."); return; }
+    if (!form.item_name.trim() || !form.staff_name.trim()) { setError(t("kitchenPage.errItemStaff")); return; }
+    if (parseFloat(form.prep_minutes) < 0 || parseFloat(form.cook_minutes) < 0) { setError(t("kitchenPage.errNegative")); return; }
     setSaving(true); setError(null);
     try {
       await api.createDishTime({ ...form, prep_minutes: parseFloat(form.prep_minutes), cook_minutes: parseFloat(form.cook_minutes) });
@@ -40,7 +42,7 @@ export default function KitchenTimes() {
 
   const handleDelete = (id) => {
     setConfirmDialog({
-      message: "Delete this kitchen time entry? This cannot be undone.",
+      message: t("kitchenPage.deletePrompt"),
       onConfirm: async () => {
         setConfirmDialog(null);
         await api.deleteDishTime(id);
@@ -57,10 +59,10 @@ export default function KitchenTimes() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">⏱️ Kitchen Time Tracker</h1>
-          <p className="text-gray-400 mt-1">Measure prep and cook times — identify where training is needed</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("kitchenPage.title")}</h1>
+          <p className="text-gray-400 mt-1">{t("kitchenPage.subtitle")}</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600">+ Log Time</button>
+        <button onClick={() => setShowForm(true)} className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600">{t("kitchenPage.logTime")}</button>
       </div>
 
       {/* Summary */}
@@ -68,23 +70,23 @@ export default function KitchenTimes() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="card">
             <p className="text-xl">⏱️</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{summary.avg_total_minutes} min</p>
-            <p className="text-xs text-gray-400 mt-0.5">Team Avg Total Time</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{summary.avg_total_minutes} {t("kitchenPage.minutesUnit")}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t("kitchenPage.teamAvgTotal")}</p>
           </div>
           <div className="card">
             <p className="text-xl">🐢</p>
             <p className="text-lg font-bold text-gray-900 mt-1 truncate">{summary.slowest_dish || "—"}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Slowest Dish</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t("kitchenPage.slowestDish")}</p>
           </div>
           <div className="card">
             <p className="text-xl">🏃</p>
             <p className="text-lg font-bold text-gray-900 mt-1 truncate">{summary.fastest_staff || "—"}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Fastest Chef</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t("kitchenPage.fastestChef")}</p>
           </div>
           <div className="card">
             <p className="text-xl">📊</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{logs.length}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Entries Logged</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t("kitchenPage.entriesLogged")}</p>
           </div>
         </div>
       )}
@@ -93,25 +95,25 @@ export default function KitchenTimes() {
       {dishChartData.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="card">
-            <h2 className="font-semibold text-gray-800 mb-4">Avg Time by Dish (minutes)</h2>
+            <h2 className="font-semibold text-gray-800 mb-4">{t("kitchenPage.avgByDish")}</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={dishChartData} margin={{ left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [`${v} min`, "Avg Time"]} />
+                <Tooltip formatter={(v) => [`${v} min`, t("kitchenPage.tooltipAvg")]} />
                 <Bar dataKey="minutes" fill="#f97316" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="card">
-            <h2 className="font-semibold text-gray-800 mb-4">Avg Time by Chef (fastest → slowest)</h2>
+            <h2 className="font-semibold text-gray-800 mb-4">{t("kitchenPage.avgByChef")}</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={staffChartData} margin={{ left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [`${v} min`, "Avg Time"]} />
+                <Tooltip formatter={(v) => [`${v} min`, t("kitchenPage.tooltipAvg")]} />
                 <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
                   {staffChartData.map((_, i) => <Cell key={i} fill={staffColors[i] || "#fed7aa"} />)}
                 </Bar>
@@ -124,43 +126,46 @@ export default function KitchenTimes() {
       {/* Per-staff detail */}
       {summary?.by_staff?.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {summary.by_staff.map((s, i) => (
-            <div key={s.name} className="card">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-gray-900">{s.name}</p>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${i === 0 ? "bg-green-100 text-green-700" : i === summary.by_staff.length - 1 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}>
-                  {i === 0 ? "Fastest" : i === summary.by_staff.length - 1 ? "Slowest" : "Mid"}
-                </span>
+          {summary.by_staff.map((s, i) => {
+            const badge = i === 0 ? t("kitchenPage.fastestBadge") : i === summary.by_staff.length - 1 ? t("kitchenPage.slowestBadge") : t("kitchenPage.midBadge");
+            return (
+              <div key={s.name} className="card">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-semibold text-gray-900">{s.name}</p>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${i === 0 ? "bg-green-100 text-green-700" : i === summary.by_staff.length - 1 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}>
+                    {badge}
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-brand-600">{s.avg_minutes} <span className="text-sm font-normal text-gray-500">{t("kitchenPage.minAvgSuffix")}</span></p>
+                <p className="text-xs text-gray-400 mt-1">{t("kitchenPage.dishesLogged", { count: s.entries })}</p>
+                {i > 0 && (
+                  <p className="mt-2 text-xs text-orange-600">
+                    {t("kitchenPage.vsFastest", { diff: (s.avg_minutes - summary.by_staff[0].avg_minutes).toFixed(0) })}
+                  </p>
+                )}
               </div>
-              <p className="text-2xl font-bold text-brand-600">{s.avg_minutes} <span className="text-sm font-normal text-gray-500">min avg</span></p>
-              <p className="text-xs text-gray-400 mt-1">{s.entries} dishes logged</p>
-              {i > 0 && (
-                <p className="mt-2 text-xs text-orange-600">
-                  +{(s.avg_minutes - summary.by_staff[0].avg_minutes).toFixed(0)} min vs fastest
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Log table */}
       <div className="card overflow-hidden p-0">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">All Entries</h2>
+          <h2 className="font-semibold text-gray-800">{t("kitchenPage.allEntries")}</h2>
         </div>
-        {loading ? <p className="p-5 text-sm text-gray-400">Loading...</p> : logs.length === 0 ? (
-          <p className="p-8 text-center text-gray-400 text-sm">No times logged yet.</p>
+        {loading ? <p className="p-5 text-sm text-gray-400">{t("kitchenPage.loading")}</p> : logs.length === 0 ? (
+          <p className="p-8 text-center text-gray-400 text-sm">{t("kitchenPage.noEntries")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Dish</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Chef</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Prep (min)</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cook (min)</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Total</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colDish")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colChef")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colPrep")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colCook")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colTotal")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colDate")}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -195,43 +200,43 @@ export default function KitchenTimes() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="font-bold text-gray-900 text-lg mb-4">Log Kitchen Time</h2>
+            <h2 className="font-bold text-gray-900 text-lg mb-4">{t("kitchenPage.modalTitle")}</h2>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
             <form onSubmit={handleSave} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Dish Name *</label>
-                  <input name="item_name" value={form.item_name} onChange={handleChange} placeholder="Beef Tenderloin"
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("kitchenPage.dishName")}</label>
+                  <input name="item_name" value={form.item_name} onChange={handleChange} placeholder={t("kitchenPage.dishPh")}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Chef / Staff *</label>
-                  <input name="staff_name" value={form.staff_name} onChange={handleChange} placeholder="Marco Rivera"
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("kitchenPage.chefName")}</label>
+                  <input name="staff_name" value={form.staff_name} onChange={handleChange} placeholder={t("kitchenPage.chefPh")}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Prep (minutes)</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("kitchenPage.prepLabel")}</label>
                   <input type="number" name="prep_minutes" value={form.prep_minutes} onChange={handleChange} min="0" step="0.5"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Cook (minutes)</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("kitchenPage.cookLabel")}</label>
                   <input type="number" name="cook_minutes" value={form.cook_minutes} onChange={handleChange} min="0" step="0.5"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Notes</label>
-                <input name="notes" value={form.notes} onChange={handleChange} placeholder="Any context..."
+                <label className="text-xs font-medium text-gray-700 mb-1 block">{t("kitchenPage.notes")}</label>
+                <input name="notes" value={form.notes} onChange={handleChange} placeholder={t("kitchenPage.notesPh")}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving} className="flex-1 bg-brand-500 text-white font-semibold py-2.5 rounded-xl hover:bg-brand-600 disabled:opacity-60">
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? t("kitchenPage.saving") : t("kitchenPage.save")}
                 </button>
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">Cancel</button>
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">{t("kitchenPage.cancel")}</button>
               </div>
             </form>
           </div>
