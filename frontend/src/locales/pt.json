@@ -140,5 +140,27 @@
   "languageSelector": {
     "label": "Idioma",
     "tooltip": "Mudar idioma"
+  },
+  "restaurantDashboard": {
+    "title": "Painel",
+    "subtitle": "Resumo do desempenho do teu restaurante",
+    "loading": "A carregar painel...",
+    "askFlavor": "Pergunta ao Flavor",
+    "askFlavorSub": "Ajuda em tempo real para engenharia da ementa, harmonizações e salvamentos na cozinha.",
+    "revenue30": "Receita (30 dias)",
+    "avgProfitMargin": "Margem média",
+    "totalOrders": "Total de pedidos",
+    "last30Days": "Últimos 30 dias",
+    "menuItems": "Itens da ementa",
+    "avgRating": "Avaliação média",
+    "topPerformer": "Melhor desempenho",
+    "mostOrderedItem": "Item mais pedido",
+    "topItemsByOrders": "Itens mais pedidos",
+    "ordersLabel": "Pedidos",
+    "byCategory": "Por categoria",
+    "sentimentOverview": "Resumo de opiniões de clientes",
+    "positive": "Positivos",
+    "neutral": "Neutros",
+    "negative": "Negativos"
   }
 }

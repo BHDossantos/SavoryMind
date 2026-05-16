@@ -140,5 +140,27 @@
   "languageSelector": {
     "label": "Langue",
     "tooltip": "Changer de langue"
+  },
+  "restaurantDashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Aperçu des performances de votre restaurant",
+    "loading": "Chargement du tableau de bord...",
+    "askFlavor": "Demandez à Flavor",
+    "askFlavorSub": "Aide en temps réel pour l'ingénierie du menu, les accords et les solutions en cuisine.",
+    "revenue30": "Chiffre d'affaires (30 jours)",
+    "avgProfitMargin": "Marge moyenne",
+    "totalOrders": "Total des commandes",
+    "last30Days": "30 derniers jours",
+    "menuItems": "Plats du menu",
+    "avgRating": "Note moyenne",
+    "topPerformer": "Meilleure performance",
+    "mostOrderedItem": "Plat le plus commandé",
+    "topItemsByOrders": "Plats les plus commandés",
+    "ordersLabel": "Commandes",
+    "byCategory": "Par catégorie",
+    "sentimentOverview": "Aperçu du sentiment client",
+    "positive": "Positifs",
+    "neutral": "Neutres",
+    "negative": "Négatifs"
   }
 }
