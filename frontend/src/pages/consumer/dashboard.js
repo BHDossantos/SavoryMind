@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -18,17 +19,20 @@ function pj(val, fallback) {
   try { return JSON.parse(val); } catch { return fallback; }
 }
 
+// Mood chips' labelKey lookup happens inside the component so they
+// re-translate on language switch (the static export was English-only).
 const MOOD_CHIPS = [
-  { id: "cozy",        emoji: "🍲", label: "Cozy"        },
-  { id: "healthy",     emoji: "🥗", label: "Healthy"     },
-  { id: "adventurous", emoji: "🌶️", label: "Adventurous" },
-  { id: "indulgent",   emoji: "🍝", label: "Indulgent"   },
-  { id: "quick",       emoji: "⚡", label: "Quick"       },
-  { id: "brunch",      emoji: "🥞", label: "Brunch"      },
+  { id: "cozy",        emoji: "🍲", labelKey: "consumerDashboard.moodCozy"        },
+  { id: "healthy",     emoji: "🥗", labelKey: "consumerDashboard.moodHealthy"     },
+  { id: "adventurous", emoji: "🌶️", labelKey: "consumerDashboard.moodAdventurous" },
+  { id: "indulgent",   emoji: "🍝", labelKey: "consumerDashboard.moodIndulgent"   },
+  { id: "quick",       emoji: "⚡", labelKey: "consumerDashboard.moodQuick"       },
+  { id: "brunch",      emoji: "🥞", labelKey: "consumerDashboard.moodBrunch"      },
 ];
 
 export default function ConsumerDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [pairings,     setPairings]     = useState([]);
   const [moods,        setMoods]        = useState([]);
   const [recs,         setRecs]         = useState([]);
@@ -67,10 +71,10 @@ export default function ConsumerDashboard() {
     finally { setSuggLoading(false); }
   };
 
-  if (loading) return <LoadingSpinner message="Loading your dashboard..." />;
+  if (loading) return <LoadingSpinner message={t("consumerDashboard.loading")} />;
 
   const hour         = new Date().getHours();
-  const greeting     = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting     = hour < 12 ? t("consumerDashboard.goodMorning") : hour < 18 ? t("consumerDashboard.goodAfternoon") : t("consumerDashboard.goodEvening");
   const firstName    = user?.first_name || user?.display_name?.split(" ")[0] || "Chef";
   const persona      = KITCHEN_PERSONAS[user?.kitchen_style] || null;
   const connectedCnt = connections.filter((c) => c.connected).length;
@@ -78,10 +82,10 @@ export default function ConsumerDashboard() {
   const goals        = pj(user?.cooking_goals, []);
 
   const QUICK_ACTIONS = [
-    { href: "/consumer/pantry",  icon: "🧺", label: "My Pantry",      sub: "Cook from what you have" },
-    { href: "/consumer/explore", icon: "✨", label: "Explore",         sub: "Find tonight's recipe" },
-    { href: "/consumer/journal", icon: "📔", label: "Food Journal",   sub: "Your cooking memories" },
-    { href: "/consumer/wine",    icon: "🍷", label: "Pair a Wine",    sub: "Match wine to your dish" },
+    { href: "/consumer/pantry",  icon: "🧺", label: t("consumerDashboard.qaPantry"),  sub: t("consumerDashboard.qaPantrySub") },
+    { href: "/consumer/explore", icon: "✨", label: t("consumerDashboard.qaExplore"), sub: t("consumerDashboard.qaExploreSub") },
+    { href: "/consumer/journal", icon: "📔", label: t("consumerDashboard.qaJournal"), sub: t("consumerDashboard.qaJournalSub") },
+    { href: "/consumer/wine",    icon: "🍷", label: t("consumerDashboard.qaWine"),    sub: t("consumerDashboard.qaWineSub") },
   ];
 
   return (
@@ -99,7 +103,7 @@ export default function ConsumerDashboard() {
             </div>
           )}
           {cuisines.length > 0 && (
-            <p className="mt-3 text-white/70 text-xs">Loves: {cuisines.join(" · ")}</p>
+            <p className="mt-3 text-white/70 text-xs">{t("consumerDashboard.loves")}: {cuisines.join(" · ")}</p>
           )}
         </div>
         <div className="absolute right-6 top-6 text-6xl opacity-20">{persona?.icon || "🍽️"}</div>
@@ -114,9 +118,9 @@ export default function ConsumerDashboard() {
       >
         <span className="text-4xl flex-shrink-0">👨‍🍳</span>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-base">Ask Flavor</p>
+          <p className="font-bold text-base">{t("consumerDashboard.askFlavor")}</p>
           <p className="text-xs text-white/80 mt-0.5 leading-relaxed">
-            Real-time help with recipes, fixes, pairings, and substitutions.
+            {t("consumerDashboard.askFlavorSub")}
           </p>
         </div>
         <span className="text-2xl flex-shrink-0 group-hover:translate-x-1 transition-transform">→</span>
@@ -124,8 +128,8 @@ export default function ConsumerDashboard() {
 
       {/* ── Mood entry widget ── */}
       <div className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-5">
-        <p className="text-sm font-bold text-gray-900 mb-1">What are you feeling tonight?</p>
-        <p className="text-xs text-gray-400 mb-4">Pick a mood and we'll find the perfect dish for you.</p>
+        <p className="text-sm font-bold text-gray-900 mb-1">{t("consumerDashboard.moodPrompt")}</p>
+        <p className="text-xs text-gray-400 mb-4">{t("consumerDashboard.moodSub")}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {MOOD_CHIPS.map((m) => (
             <button key={m.id} onClick={() => pickMood(m.id)}
@@ -134,14 +138,14 @@ export default function ConsumerDashboard() {
                   ? "bg-consumer-600 text-white border-consumer-600 shadow-md"
                   : "bg-consumer-50 text-gray-700 border-consumer-200 hover:border-consumer-500 hover:text-consumer-700"
               }`}>
-              <span>{m.emoji}</span> {m.label}
+              <span>{m.emoji}</span> {t(m.labelKey)}
             </button>
           ))}
         </div>
 
         {suggLoading && (
           <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-            <span className="animate-spin">🍽️</span> Finding a dish for you…
+            <span className="animate-spin">🍽️</span> {t("consumerDashboard.findingDish")}
           </div>
         )}
 
@@ -160,7 +164,7 @@ export default function ConsumerDashboard() {
             </div>
             <Link href={`/consumer/explore`}
               className="flex-shrink-0 bg-consumer-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-consumer-700 transition-colors">
-              Cook this →
+              {t("consumerDashboard.cookThis")}
             </Link>
           </div>
         )}
@@ -169,10 +173,10 @@ export default function ConsumerDashboard() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Meals Logged",    value: memories.length,  icon: "📔", href: "/consumer/journal" },
-          { label: "Pantry Items",    value: pantry.length,    icon: "🧺", href: "/consumer/pantry"  },
-          { label: "Wine Pairings",   value: pairings.length,  icon: "🍷", href: "/consumer/wine"    },
-          { label: "Apps Connected",  value: connectedCnt,     icon: "🔗", href: "/consumer/social"  },
+          { label: t("consumerDashboard.mealsLogged"),  value: memories.length, icon: "📔", href: "/consumer/journal" },
+          { label: t("consumerDashboard.pantryItems"),  value: pantry.length,   icon: "🧺", href: "/consumer/pantry"  },
+          { label: t("consumerDashboard.winePairings"), value: pairings.length, icon: "🍷", href: "/consumer/wine"    },
+          { label: t("consumerDashboard.appsConnected"),value: connectedCnt,    icon: "🔗", href: "/consumer/social"  },
         ].map((s) => (
           <Link key={s.label} href={s.href}
             className="bg-white rounded-2xl p-5 shadow-sm border border-consumer-100 hover:border-consumer-300 hover:shadow-md transition-all group">
@@ -199,25 +203,25 @@ export default function ConsumerDashboard() {
           consumer shell. Cards route into the (legacy) /diner/*
           screens which still work for any logged-in user. */}
       <div>
-        <h2 className="font-semibold text-gray-800 mb-3">Going out 🍽️</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{t("consumerDashboard.goingOut")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Link href="/diner/discover"
             className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-2xl p-4 hover:shadow-md transition-all group">
             <span className="text-2xl">🔍</span>
-            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">Discover restaurants</p>
-            <p className="text-xs text-gray-500 mt-0.5">Mood, cuisine, budget</p>
+            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">{t("consumerDashboard.discoverRest")}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("consumerDashboard.discoverRestSub")}</p>
           </Link>
           <Link href="/diner/book"
             className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-2xl p-4 hover:shadow-md transition-all group">
             <span className="text-2xl">📅</span>
-            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">My bookings</p>
-            <p className="text-xs text-gray-500 mt-0.5">Upcoming + past</p>
+            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">{t("consumerDashboard.myBookings")}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("consumerDashboard.myBookingsSub")}</p>
           </Link>
           <Link href="/diner/history"
             className="bg-gradient-to-br from-diner-50 to-diner-100 border border-diner-200 rounded-2xl p-4 hover:shadow-md transition-all group">
             <span className="text-2xl">📖</span>
-            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">Visit history</p>
-            <p className="text-xs text-gray-500 mt-0.5">Every meal logged</p>
+            <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-diner-700 transition-colors">{t("consumerDashboard.visitHistory")}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("consumerDashboard.visitHistorySub")}</p>
           </Link>
         </div>
       </div>
@@ -228,16 +232,16 @@ export default function ConsumerDashboard() {
         {/* Wine pairings */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">🍷 Recent Wine Pairings</h2>
-            <Link href="/consumer/wine" className="text-xs text-consumer-600 font-medium hover:underline">Pair a dish →</Link>
+            <h2 className="font-semibold text-gray-800">{t("consumerDashboard.recentPairingsTitle")}</h2>
+            <Link href="/consumer/wine" className="text-xs text-consumer-600 font-medium hover:underline">{t("consumerDashboard.pairDish")}</Link>
           </div>
           {pairings.length === 0 ? (
             <div className="text-center py-10 px-6">
               <div className="text-4xl mb-3">🍷</div>
-              <p className="text-gray-500 text-sm mb-4">No pairings yet — describe a dish and we'll find the perfect wine.</p>
+              <p className="text-gray-500 text-sm mb-4">{t("consumerDashboard.noPairings")}</p>
               <Link href="/consumer/wine"
                 className="inline-flex bg-consumer-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-                Try your first pairing
+                {t("consumerDashboard.tryFirstPairing")}
               </Link>
             </div>
           ) : (
@@ -249,7 +253,7 @@ export default function ConsumerDashboard() {
                     <div className="w-10 h-10 rounded-xl bg-consumer-100 flex items-center justify-center text-xl flex-shrink-0">🍽️</div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 text-sm truncate">{p.dish_name}</p>
-                      <p className="text-xs text-gray-400 truncate mt-0.5">{top?.name || "Analysing…"}</p>
+                      <p className="text-xs text-gray-400 truncate mt-0.5">{top?.name || t("consumerDashboard.analysing")}</p>
                     </div>
                     {top && (
                       <span className="text-xs font-bold text-consumer-700 bg-consumer-100 px-2.5 py-1 rounded-full flex-shrink-0">
@@ -266,16 +270,16 @@ export default function ConsumerDashboard() {
         {/* Recent journal entries */}
         <div className="bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">📔 Food Journal</h2>
-            <Link href="/consumer/journal" className="text-xs text-consumer-600 font-medium hover:underline">View all →</Link>
+            <h2 className="font-semibold text-gray-800">{t("consumerDashboard.foodJournal")}</h2>
+            <Link href="/consumer/journal" className="text-xs text-consumer-600 font-medium hover:underline">{t("consumerDashboard.viewAll")}</Link>
           </div>
           {memories.length === 0 ? (
             <div className="text-center py-10 px-6">
               <div className="text-4xl mb-3">📔</div>
-              <p className="text-gray-500 text-sm mb-4">No memories yet — cook something and log how it went.</p>
+              <p className="text-gray-500 text-sm mb-4">{t("consumerDashboard.noMemories")}</p>
               <Link href="/consumer/cook"
                 className="inline-flex bg-consumer-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-                Start cooking
+                {t("consumerDashboard.startCooking")}
               </Link>
             </div>
           ) : (
@@ -304,19 +308,19 @@ export default function ConsumerDashboard() {
         <div className="bg-gradient-to-r from-consumer-50 to-consumer-100 border border-consumer-200 rounded-2xl p-5 flex items-center gap-5">
           <span className="text-4xl flex-shrink-0">🧺</span>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-900">What's in your kitchen right now?</p>
-            <p className="text-sm text-gray-500 mt-0.5">Add your ingredients and we'll find recipes you can make tonight.</p>
+            <p className="font-bold text-gray-900">{t("consumerDashboard.pantryNudgeTitle")}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{t("consumerDashboard.pantryNudgeSub")}</p>
           </div>
           <Link href="/consumer/pantry"
             className="flex-shrink-0 bg-consumer-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-            Add ingredients
+            {t("consumerDashboard.addIngredients")}
           </Link>
         </div>
       ) : moods.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">🎵 Recent Music Moods</h2>
-            <Link href="/consumer/music" className="text-xs text-consumer-600 font-medium hover:underline">Set a mood →</Link>
+            <h2 className="font-semibold text-gray-800">{t("consumerDashboard.recentMoodsTitle")}</h2>
+            <Link href="/consumer/music" className="text-xs text-consumer-600 font-medium hover:underline">{t("consumerDashboard.setMood")}</Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-6">
             {moods.slice(0, 3).map((m) => (
