@@ -794,5 +794,29 @@
     "errNameRequired": "El nombre es obligatorio.",
     "errEmailValid": "Correo válido obligatorio.",
     "errPwTooShort": "La contraseña debe tener al menos 6 caracteres."
+  },
+  "qrCodesPage": {
+    "title": "🔳 Códigos QR de empleados",
+    "subtitle": "Imprime uno para cada empleado — los clientes escanean para dejar feedback anónimo",
+    "printAll": "🖨️ Imprimir todo",
+    "howItWorksTitle": "Cómo funcionan los QR de empleados",
+    "howItWorksPrefix": "Cada empleado tiene un QR único. Cuando un cliente lo escanea (sin app — basta con la cámara del móvil), obtiene una breve encuesta anónima vinculada a ese empleado. Los resultados se agregan abajo. Añade nuevos empleados en la",
+    "employeeLoginsLink": "Cuentas de personal",
+    "howItWorksSuffix": "— obtienen un QR automáticamente.",
+    "loading": "Cargando...",
+    "noEmployees": "Aún no hay empleados",
+    "noEmployeesSubPrefix": "Añade empleados primero en la",
+    "noEmployeesSubSuffix": "página.",
+    "scanToLeave": "Escanea para dejar feedback anónimo",
+    "viewResults": "Ver resultados",
+    "resultsTitle": "Resultados — {{name}}",
+    "resultsSub": "Feedback anónimo de clientes desde los QR",
+    "totalResponses": "Respuestas totales",
+    "uniqueDiners": "Clientes únicos",
+    "ratings": "Valoraciones",
+    "wouldReturn": "¿Volverían?",
+    "yesPercent": "{{percent}}% sí",
+    "recentComments": "Comentarios recientes",
+    "noComments": "Aún sin comentarios."
   }
 }

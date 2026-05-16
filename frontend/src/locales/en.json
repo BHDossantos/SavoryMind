@@ -794,5 +794,29 @@
     "errNameRequired": "Name is required.",
     "errEmailValid": "Valid email required.",
     "errPwTooShort": "Password must be at least 6 characters."
+  },
+  "qrCodesPage": {
+    "title": "🔳 Employee QR Codes",
+    "subtitle": "Print these for each employee — diners scan to leave anonymous feedback",
+    "printAll": "🖨️ Print All",
+    "howItWorksTitle": "How employee QR codes work",
+    "howItWorksPrefix": "Each employee has a unique QR. When a diner scans it (no app needed — phone camera works), they get a short anonymous survey that ties to that employee. Results are aggregated below. Add new employees on the",
+    "employeeLoginsLink": "Employee Logins",
+    "howItWorksSuffix": "page — they get a QR automatically.",
+    "loading": "Loading...",
+    "noEmployees": "No employees yet",
+    "noEmployeesSubPrefix": "Add employees on the",
+    "noEmployeesSubSuffix": "page first.",
+    "scanToLeave": "Scan to leave anonymous feedback",
+    "viewResults": "View results",
+    "resultsTitle": "Survey Results — {{name}}",
+    "resultsSub": "Anonymous diner feedback from QR scans",
+    "totalResponses": "Total responses",
+    "uniqueDiners": "Unique diners",
+    "ratings": "Ratings",
+    "wouldReturn": "Would Return",
+    "yesPercent": "{{percent}}% yes",
+    "recentComments": "Recent Comments",
+    "noComments": "No comments yet."
   }
 }
