@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import LanguageSelector from "../components/LanguageSelector";
 
 // Two account-type options after the Food Lover + Food Explorer
 // unification — consumer covers anyone who cooks at home OR eats out
@@ -116,6 +118,7 @@ const SOCIAL = [
 export default function Signup() {
   const { register } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [accountType, setAccountType] = useState(null);
   const [form, setForm] = useState({ email: "", password: "", display_name: "" });
   const [error, setError] = useState(null);
@@ -140,8 +143,8 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!accountType) { setError("Please choose an account type above."); return; }
-    if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (!accountType) { setError(t("auth.pleaseChooseType")); return; }
+    if (form.password.length < 6) { setError(t("auth.errors.passwordTooShort")); return; }
     setLoading(true); setError(null);
     try {
       await register(form.email, form.password, form.display_name, accountType);
@@ -154,7 +157,8 @@ export default function Signup() {
 
   const handleSocial = async (providerId) => {
     if (!configuredProviders.includes(providerId)) {
-      setError(`${SOCIAL.find(p => p.id === providerId)?.label || "Social"} sign-in isn't connected yet — use email signup below.`);
+      const label = SOCIAL.find(p => p.id === providerId)?.label || "Social";
+      setError(t("auth.socialNotConnectedSignup", { provider: label }));
       return;
     }
     setSocialLoading(providerId);
@@ -162,7 +166,7 @@ export default function Signup() {
     try {
       await signIn(providerId, { callbackUrl: "/" });
     } catch {
-      setError("Social login failed. Please try again.");
+      setError(t("auth.socialFailed"));
       setSocialLoading(null);
     }
   };
@@ -172,6 +176,11 @@ export default function Signup() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
+        {/* Language picker — also visible during signup. */}
+        <div className="flex justify-end mb-3">
+          <LanguageSelector compact />
+        </div>
+
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-3xl">🧠</span>
@@ -179,11 +188,11 @@ export default function Signup() {
               SavoryMind
             </span>
           </Link>
-          <p className="text-gray-500 mt-2">Create your account</p>
+          <p className="text-gray-500 mt-2">{t("auth.signupPageSub")}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-xl font-bold text-gray-900 mb-5">Choose your experience</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-5">{t("auth.chooseExperience")}</h1>
 
           {/* Type selector */}
           <div className="grid grid-cols-3 gap-3 mb-6">
@@ -205,14 +214,14 @@ export default function Signup() {
 
           {/* Social sign-up */}
           <div className="mb-5">
-            <p className="text-xs text-gray-400 text-center mb-3">Sign up with</p>
+            <p className="text-xs text-gray-400 text-center mb-3">{t("auth.signUpWith")}</p>
             <div className="grid grid-cols-4 gap-2">
               {SOCIAL.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleSocial(p.id)}
                     disabled={!!socialLoading}
-                    title={`Continue with ${p.label}`}
+                    title={`${t("auth.continueWithGoogle").replace("Google", p.label)}`}
                     className={`flex items-center justify-center py-2.5 rounded-lg transition-all disabled:opacity-60 ${p.bg}`}
                   >
                     {socialLoading === p.id ? (
@@ -229,7 +238,7 @@ export default function Signup() {
                 <div className="w-full border-t border-gray-100" />
               </div>
               <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3">
-                or with email
+                {t("auth.orWithEmailSignup")}
               </div>
             </div>
           </div>
@@ -243,7 +252,7 @@ export default function Signup() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {accountType === "restaurant" ? "Restaurant name" : "Your name"}
+                {accountType === "restaurant" ? t("auth.restaurantName") : t("auth.yourName")}
               </label>
               <input
                 type="text"
@@ -252,31 +261,31 @@ export default function Signup() {
                 onChange={handleChange}
                 required
                 minLength={2}
-                placeholder={accountType === "restaurant" ? "The Blue Plate" : "Your full name"}
+                placeholder={accountType === "restaurant" ? t("auth.restaurantNamePlaceholder") : t("auth.yourNamePlaceholder")}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.email")}</label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
                 required
-                placeholder="you@email.com"
+                placeholder={t("auth.emailPlaceholderSimple")}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.password")}</label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 required
-                placeholder="Min 6 characters"
+                placeholder={t("auth.passwordPlaceholderMin")}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
@@ -289,21 +298,21 @@ export default function Signup() {
               }`}
             >
               {loading
-                ? "Creating account..."
+                ? t("auth.creatingAccount")
                 : selected
-                  ? `Create ${selected.label} Account`
-                  : "Select an option above"}
+                  ? t("auth.createAccountTyped", { type: selected.label })
+                  : t("auth.selectOption")}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Already have an account?{" "}
+            {t("auth.haveAccount")}{" "}
             <Link href="/login" className="text-gray-900 font-medium hover:underline">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
           <p className="text-center text-xs text-gray-400 mt-3">
-            Demo data pre-loaded automatically on signup.
+            {t("auth.demoNote")}
           </p>
         </div>
       </div>

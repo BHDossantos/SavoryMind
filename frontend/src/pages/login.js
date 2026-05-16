@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import LanguageSelector from "../components/LanguageSelector";
 
 const SOCIAL_PROVIDERS = [
   {
@@ -112,6 +114,7 @@ const SOCIAL_PROVIDERS = [
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -122,8 +125,8 @@ export default function Login() {
   useEffect(() => {
     fetch("/api/auth/providers-list").then(r => r.json()).then(setConfiguredProviders).catch(() => {});
     const { error: qError } = router.query;
-    if (qError) setError("Social login failed. Please try again or use email.");
-  }, [router.query]);
+    if (qError) setError(t("auth.socialFailedOrEmail"));
+  }, [router.query, t]);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -149,7 +152,8 @@ export default function Login() {
 
   const handleSocial = async (providerId) => {
     if (!configuredProviders.includes(providerId)) {
-      setError(`${SOCIAL_PROVIDERS.find(p => p.id === providerId)?.label || "Social"} sign-in isn't connected yet — use email instead.`);
+      const label = SOCIAL_PROVIDERS.find(p => p.id === providerId)?.label || "Social";
+      setError(t("auth.socialNotConnected", { provider: label }));
       return;
     }
     setSocialLoading(providerId);
@@ -157,7 +161,7 @@ export default function Login() {
     try {
       await signIn(providerId, { callbackUrl: "/" });
     } catch {
-      setError("Social login failed. Please try again.");
+      setError(t("auth.socialFailed"));
       setSocialLoading(null);
     }
   };
@@ -165,6 +169,12 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
+        {/* Language picker — visible even to logged-out users so they
+            can pick their language before signing in. */}
+        <div className="flex justify-end mb-3">
+          <LanguageSelector compact />
+        </div>
+
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-3xl">🧠</span>
@@ -172,11 +182,11 @@ export default function Login() {
               SavoryMind
             </span>
           </Link>
-          <p className="text-gray-500 mt-2">Sign in to your account</p>
+          <p className="text-gray-500 mt-2">{t("auth.loginPageSub")}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-xl font-bold text-gray-900 mb-6">Welcome back</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-6">{t("auth.signInTitle")}</h1>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -198,7 +208,7 @@ export default function Login() {
                   ) : (
                     p.icon
                   )}
-                  {socialLoading === p.id ? "Connecting..." : p.label}
+                  {socialLoading === p.id ? t("auth.connecting") : p.label}
                 </button>
               ))}
 
@@ -207,7 +217,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-100" />
               </div>
               <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3">
-                or continue with email
+                {t("auth.orContinueEmail")}
               </div>
             </div>
           </div>
@@ -215,26 +225,26 @@ export default function Login() {
           {/* Email login form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.email")}</label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
                 required
-                placeholder="you@email.com"
+                placeholder={t("auth.emailPlaceholderSimple")}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.password")}</label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 required
-                placeholder="••••••••"
+                placeholder={t("auth.passwordPlaceholderDots")}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
               />
             </div>
@@ -243,29 +253,27 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-gray-900 text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 disabled:opacity-60 transition-colors"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("auth.signingIn") : t("auth.signIn")}
             </button>
 
             {warmingUp && (
               <p className="text-xs text-center text-amber-600 mt-2 animate-pulse">
-                ⏳ Server is waking up — almost there…
+                {t("auth.warmingUp")}
               </p>
             )}
           </form>
 
           <div className="mt-6 pt-5 border-t border-gray-100 text-center space-y-2">
+            {/* Unified front door — only two signup paths. Consumer covers
+                Food Lover + Food Explorer post-Phase-5. */}
             <p className="text-sm text-gray-500">
-              No account?{" "}
+              {t("auth.noAccount")}{" "}
               <Link href="/signup?type=consumer" className="text-consumer-600 font-medium hover:underline">
-                Food Lover
-              </Link>
-              {" · "}
-              <Link href="/signup?type=diner" className="text-diner-600 font-medium hover:underline">
-                Food Explorer
+                {t("nav.foodLover")}
               </Link>
               {" · "}
               <Link href="/signup?type=restaurant" className="text-brand-600 font-medium hover:underline">
-                Restaurant
+                {t("common.restaurant", "Restaurant")}
               </Link>
             </p>
           </div>

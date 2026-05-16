@@ -82,6 +82,10 @@ jobs:
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Production builds use a Dev Build (not Expo Go) — silence
+          # the "you're using Expo Go for development" warning that
+          # otherwise clutters every CI run's log.
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
           # eas init is required before `eas build` can run non-interactively.
           # It writes extra.eas.projectId into app.json, linking this repo to
@@ -144,6 +148,10 @@ jobs:
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Production builds use a Dev Build (not Expo Go) — silence
+          # the "you're using Expo Go for development" warning that
+          # otherwise clutters every CI run's log.
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
           echo "▶ Building Android — profile=$PROFILE"
@@ -156,6 +164,10 @@ jobs:
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Production builds use a Dev Build (not Expo Go) — silence
+          # the "you're using Expo Go for development" warning that
+          # otherwise clutters every CI run's log.
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
           # Apple App Store Connect API key, used both for iOS credentials
           # provisioning during the build (so we don't need a stored
           # distribution cert) and for the auto-submit step after the build
