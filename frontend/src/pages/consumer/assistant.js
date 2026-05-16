@@ -1,17 +1,20 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import FlavorToolCards from "../../components/FlavorToolCards";
 
-const SUGGESTIONS = [
-  "I'm in the mood for steak — what do you recommend?",
-  "Quick weeknight dinner with chicken thighs",
-  "My sauce is breaking — how do I save it?",
-  "What wine goes with mushroom risotto?",
-  "Substitute for buttermilk?",
-  "How long to rest a ribeye?",
-  "Easy dessert using only pantry staples",
-  "Vegan swap for parmesan",
+// 8 suggestion chip i18n keys — built fresh per render via useMemo so
+// they re-translate on language switch without losing the click handler.
+const SUGGESTION_KEYS = [
+  "flavorPage.suggestion1",
+  "flavorPage.suggestion2",
+  "flavorPage.suggestion3",
+  "flavorPage.suggestion4",
+  "flavorPage.suggestion5",
+  "flavorPage.suggestion6",
+  "flavorPage.suggestion7",
+  "flavorPage.suggestion8",
 ];
 
 // Maps backend tool names to friendly labels used in the ghost line
@@ -60,7 +63,13 @@ const TOOL_LABELS = {
   forget_fact:              "updated what she remembers",
 };
 
-function summariseToolCalls(calls) {
+// Tool labels stay English for the v1 — translating 40+ tool names
+// across 5 languages would balloon the locale files and most users
+// don't read this ghost line. The wrapping "✓ Flavor checked …"
+// phrasing IS translated though, since that's the conversational
+// part. Promote individual tool labels in a follow-up if there's
+// demand.
+function summariseToolCalls(calls, t) {
   const seen = new Set();
   const parts = [];
   for (const c of calls) {
@@ -70,15 +79,12 @@ function summariseToolCalls(calls) {
     parts.push(label);
   }
   if (parts.length === 0) return "";
-  if (parts.length === 1) return `✓ Flavor checked ${parts[0]}.`;
-  return `✓ Flavor checked ${parts.slice(0, -1).join(", ")} + ${parts[parts.length - 1]}.`;
+  if (parts.length === 1) return t("flavorPage.checkedOne", { label: parts[0] });
+  return t("flavorPage.checkedMany", {
+    labels: parts.slice(0, -1).join(", "),
+    last:   parts[parts.length - 1],
+  });
 }
-
-const GREETING = {
-  role: "assistant",
-  title: "Hey, I'm Flavor 👋",
-  text: "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
-};
 
 /**
  * Rebuild the UI message list from a persisted Anthropic-shape thread
@@ -109,10 +115,29 @@ function rebuildUiMessages(serverMessages) {
 
 export default function AssistantPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState([GREETING]);
+  const { t } = useTranslation();
+  // Greeting message has to come from t() inside the component so it
+  // re-translates on language switch. Memoised on t (which changes
+  // identity when the active language changes) so the initial
+  // useState seed only re-renders when language flips.
+  const greeting = useMemo(() => ({
+    role: "assistant",
+    title: t("flavorPage.greetingTitle"),
+    text:  t("flavorPage.greetingText"),
+  }), [t]);
+  const [messages, setMessages] = useState([greeting]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
+
+  // When the language flips, replace the greeting at index 0 with the
+  // freshly-translated copy. Doesn't touch any user/assistant messages
+  // — those stay in whatever language they were sent in (the same
+  // tradeoff the mobile screen makes).
+  useEffect(() => {
+    setMessages((prev) => prev.length === 0 ? [greeting] : [greeting, ...prev.slice(1)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [greeting]);
   // Phase 14 — server-side conversation persistence. The id of the
   // active thread; null = a fresh conversation. Sent on every request
   // so the server loads the right history; updated from the response.
@@ -138,7 +163,7 @@ export default function AssistantPage() {
         const thread = await api.getConversation(latest.id);
         const ui = rebuildUiMessages(thread.messages);
         if (ui.length > 0) {
-          setMessages([GREETING, ...ui]);
+          setMessages([greeting, ...ui]);
           conversationIdRef.current = latest.id;
         }
       } catch {
@@ -167,7 +192,7 @@ export default function AssistantPage() {
   // detaches from the persisted conversation so the next message
   // starts a fresh one.
   const newChat = () => {
-    setMessages([GREETING]);
+    setMessages([greeting]);
     conversationIdRef.current = null;
     setInput("");
   };
@@ -190,7 +215,7 @@ export default function AssistantPage() {
     } catch (e) {
       setMessages((m) => [
         ...m,
-        { role: "assistant", title: "Oops", text: e.message || "Something went wrong — try again." },
+        { role: "assistant", title: t("flavorPage.errorTitle"), text: e.message || t("flavorPage.errorText") },
       ]);
     } finally {
       setLoading(false);
@@ -206,14 +231,14 @@ export default function AssistantPage() {
       {/* Header */}
       <div className="mb-4 flex-shrink-0 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">👨‍🍳 Flavor</h1>
-          <p className="text-gray-400 text-sm mt-1">Real-time help for whatever's going wrong in the kitchen.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("flavorPage.title")}</h1>
+          <p className="text-gray-400 text-sm mt-1">{t("flavorPage.subtitle")}</p>
         </div>
         {messages.length > 1 && (
           <button
             onClick={newChat}
             className="flex-shrink-0 text-xs font-semibold text-consumer-700 border border-consumer-200 rounded-full px-3 py-1.5 hover:bg-consumer-50 transition-colors">
-            + New chat
+            {t("flavorPage.newChat")}
           </button>
         )}
       </div>
@@ -221,12 +246,15 @@ export default function AssistantPage() {
       {/* Suggestion chips */}
       {messages.length === 1 && (
         <div className="flex flex-wrap gap-2 mb-4 flex-shrink-0">
-          {SUGGESTIONS.map((s) => (
-            <button key={s} onClick={() => send(s)}
-              className="text-xs bg-consumer-50 border border-consumer-200 text-consumer-700 font-medium px-3 py-1.5 rounded-full hover:bg-consumer-100 transition-colors">
-              {s}
-            </button>
-          ))}
+          {SUGGESTION_KEYS.map((k) => {
+            const s = t(k);
+            return (
+              <button key={k} onClick={() => send(s)}
+                className="text-xs bg-consumer-50 border border-consumer-200 text-consumer-700 font-medium px-3 py-1.5 rounded-full hover:bg-consumer-100 transition-colors">
+                {s}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -255,7 +283,7 @@ export default function AssistantPage() {
               )}
               {msg.role === "assistant" && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
                 <p className="text-[11px] italic text-gray-400 mt-2">
-                  {summariseToolCalls(msg.toolCalls)}
+                  {summariseToolCalls(msg.toolCalls, t)}
                 </p>
               )}
             </div>
@@ -286,7 +314,7 @@ export default function AssistantPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Ask anything — recipes, techniques, pairings, fixes..."
+            placeholder={t("flavorPage.inputPlaceholder")}
             rows={2}
             className="flex-1 border border-consumer-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400 resize-none"
           />
@@ -294,10 +322,10 @@ export default function AssistantPage() {
             onClick={() => send()}
             disabled={!input.trim() || loading}
             className="bg-consumer-600 text-white font-bold px-5 rounded-2xl hover:bg-consumer-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0">
-            Send
+            {t("flavorPage.send")}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2 text-center">Press Enter to send · Shift+Enter for new line</p>
+        <p className="text-xs text-gray-400 mt-2 text-center">{t("flavorPage.inputHint")}</p>
       </div>
     </div>
   );

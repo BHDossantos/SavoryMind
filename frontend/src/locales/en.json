@@ -314,5 +314,27 @@
     "delete": "Delete",
     "noMatch": "No items match your filters.",
     "shownCount": "{{shown}} of {{total}} items shown"
+  },
+  "flavorPage": {
+    "title": "👨‍🍳 Flavor",
+    "subtitle": "Real-time help for whatever's going wrong in the kitchen.",
+    "greetingTitle": "Hey, I'm Flavor 👋",
+    "greetingText": "Ask me anything food-related — recipe ideas, technique tips, fixes for what's going wrong, ingredient swaps, wine pairings. Whatever's on the stove.",
+    "newChat": "+ New chat",
+    "errorTitle": "Oops",
+    "errorText": "Something went wrong — try again.",
+    "inputPlaceholder": "Ask anything — recipes, techniques, pairings, fixes...",
+    "send": "Send",
+    "inputHint": "Press Enter to send · Shift+Enter for new line",
+    "checkedOne": "✓ Flavor checked {{label}}.",
+    "checkedMany": "✓ Flavor checked {{labels}} + {{last}}.",
+    "suggestion1": "I'm in the mood for steak — what do you recommend?",
+    "suggestion2": "Quick weeknight dinner with chicken thighs",
+    "suggestion3": "My sauce is breaking — how do I save it?",
+    "suggestion4": "What wine goes with mushroom risotto?",
+    "suggestion5": "Substitute for buttermilk?",
+    "suggestion6": "How long to rest a ribeye?",
+    "suggestion7": "Easy dessert using only pantry staples",
+    "suggestion8": "Vegan swap for parmesan"
   }
 }

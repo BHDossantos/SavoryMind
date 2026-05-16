@@ -314,5 +314,27 @@
     "delete": "Eliminar",
     "noMatch": "Nenhum item corresponde aos teus filtros.",
     "shownCount": "{{shown}} de {{total}} itens mostrados"
+  },
+  "flavorPage": {
+    "title": "👨‍🍳 Flavor",
+    "subtitle": "Ajuda em tempo real para o que estiver a correr mal na cozinha.",
+    "greetingTitle": "Olá, sou o Flavor 👋",
+    "greetingText": "Pergunta-me qualquer coisa sobre comida — ideias de receitas, dicas de técnica, salvamentos, substituições, harmonizações de vinho. O que tiveres no fogão.",
+    "newChat": "+ Nova conversa",
+    "errorTitle": "Ups",
+    "errorText": "Algo correu mal — tenta de novo.",
+    "inputPlaceholder": "Pergunta o que quiseres — receitas, técnicas, harmonizações, salvamentos...",
+    "send": "Enviar",
+    "inputHint": "Carrega Enter para enviar · Shift+Enter para nova linha",
+    "checkedOne": "✓ O Flavor verificou {{label}}.",
+    "checkedMany": "✓ O Flavor verificou {{labels}} + {{last}}.",
+    "suggestion1": "Apetece-me carne — o que recomendas?",
+    "suggestion2": "Jantar rápido a meio da semana com coxas de frango",
+    "suggestion3": "O molho talhou — como o salvo?",
+    "suggestion4": "Que vino vai com risotto de cogumelos?",
+    "suggestion5": "Substituto para o leitelho?",
+    "suggestion6": "Quanto tempo deve descansar um lombo de vaca?",
+    "suggestion7": "Sobremesa fácil só com o que está na despensa",
+    "suggestion8": "Substituto vegano do parmesão"
   }
 }

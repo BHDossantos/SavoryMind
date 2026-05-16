@@ -314,5 +314,27 @@
     "delete": "Supprimer",
     "noMatch": "Aucun plat ne correspond à vos filtres.",
     "shownCount": "{{shown}} sur {{total}} plats affichés"
+  },
+  "flavorPage": {
+    "title": "👨‍🍳 Flavor",
+    "subtitle": "Aide en temps réel pour tout ce qui tourne mal en cuisine.",
+    "greetingTitle": "Salut, je suis Flavor 👋",
+    "greetingText": "Demandez-moi tout sur la cuisine — idées de recettes, conseils de technique, solutions, substitutions, accords vins. Ce qui mijote sur le feu.",
+    "newChat": "+ Nouvelle conversation",
+    "errorTitle": "Oups",
+    "errorText": "Quelque chose s'est mal passé — réessayez.",
+    "inputPlaceholder": "Demandez n'importe quoi — recettes, techniques, accords, solutions...",
+    "send": "Envoyer",
+    "inputHint": "Appuyez sur Entrée pour envoyer · Maj+Entrée pour une nouvelle ligne",
+    "checkedOne": "✓ Flavor a consulté {{label}}.",
+    "checkedMany": "✓ Flavor a consulté {{labels}} + {{last}}.",
+    "suggestion1": "J'ai envie de bœuf — que recommandez-vous ?",
+    "suggestion2": "Dîner rapide en semaine avec des cuisses de poulet",
+    "suggestion3": "Ma sauce a tourné — comment la rattraper ?",
+    "suggestion4": "Quel vin avec un risotto aux champignons ?",
+    "suggestion5": "Substitut du babeurre ?",
+    "suggestion6": "Combien de temps faire reposer une entrecôte ?",
+    "suggestion7": "Dessert facile avec ce qu'il y a dans le placard",
+    "suggestion8": "Substitut végan du parmesan"
   }
 }
