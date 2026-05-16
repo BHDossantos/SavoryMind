@@ -1,16 +1,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import { api } from "../../../services/api";
 
 const STYLE_ICONS = {
   fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
   pub: "🍺", cafe: "☕", fast_casual: "🌯",
 };
+const STYLE_KEY = {
+  fine_dining: "discoverPage.styleFineDining",
+  casual_fine: "discoverPage.styleCasualFine",
+  bistro:      "discoverPage.styleBistro",
+  casual:      "discoverPage.styleCasual",
+  pub:         "discoverPage.stylePub",
+  cafe:        "discoverPage.styleCafe",
+  fast_casual: "discoverPage.styleFastCasual",
+};
 const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
 
 const today = () => new Date().toISOString().split("T")[0];
 
 export default function RestaurantProfile() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = router.query;
 
@@ -44,7 +55,7 @@ export default function RestaurantProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-gray-400 animate-pulse">Loading restaurant…</p>
+        <p className="text-gray-400 animate-pulse">{t("restaurantDetailPage.loading")}</p>
       </div>
     );
   }
@@ -53,9 +64,9 @@ export default function RestaurantProfile() {
     return (
       <div className="text-center py-20">
         <p className="text-4xl mb-3">🍽️</p>
-        <p className="text-gray-700 font-semibold">Restaurant not found</p>
+        <p className="text-gray-700 font-semibold">{t("restaurantDetailPage.notFound")}</p>
         <button onClick={() => router.push("/diner/discover")} className="mt-4 text-diner-600 font-medium hover:underline">
-          ← Back to Discover
+          {t("restaurantDetailPage.backToDiscover")}
         </button>
       </div>
     );
@@ -66,10 +77,9 @@ export default function RestaurantProfile() {
   return (
     <div className="max-w-2xl mx-auto">
       <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-700 mb-6 flex items-center gap-1">
-        ← Back
+        {t("restaurantDetailPage.back")}
       </button>
 
-      {/* Hero card */}
       <div className="bg-white rounded-2xl border border-diner-100 shadow-sm p-6 mb-5">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 rounded-2xl bg-diner-100 flex items-center justify-center text-3xl flex-shrink-0">
@@ -86,9 +96,9 @@ export default function RestaurantProfile() {
               {(r.cuisine || []).join(" · ")}
               {r.city && <span> · 📍 {r.city}{r.country ? `, ${r.country}` : ""}</span>}
             </p>
-            {r.dining_style && (
+            {r.dining_style && STYLE_KEY[r.dining_style] && (
               <span className="inline-block mt-2 text-xs bg-diner-50 text-diner-700 px-2.5 py-0.5 rounded-full capitalize">
-                {r.dining_style.replace("_", " ")}
+                {t(STYLE_KEY[r.dining_style])}
               </span>
             )}
           </div>
@@ -98,25 +108,23 @@ export default function RestaurantProfile() {
           <p className="mt-4 text-gray-600 leading-relaxed">{r.bio}</p>
         )}
 
-        {/* Badges */}
         <div className="flex flex-wrap gap-2 mt-4">
-          {r.serves_wine      && <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full">🍷 Wine</span>}
-          {r.serves_cocktails && <span className="text-xs bg-pink-50 text-pink-700 px-2.5 py-1 rounded-full">🍸 Cocktails</span>}
-          {r.serves_beer      && <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full">🍺 Beer</span>}
+          {r.serves_wine      && <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full">{t("restaurantDetailPage.wine")}</span>}
+          {r.serves_cocktails && <span className="text-xs bg-pink-50 text-pink-700 px-2.5 py-1 rounded-full">{t("restaurantDetailPage.cocktails")}</span>}
+          {r.serves_beer      && <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full">{t("restaurantDetailPage.beer")}</span>}
           {r.seating_capacity > 0 && (
-            <span className="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full">👥 {r.seating_capacity} seats</span>
+            <span className="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full">{t("restaurantDetailPage.seats", { n: r.seating_capacity })}</span>
           )}
           <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full">
-            📆 Books up to {r.booking_window_days} days ahead
+            {t("restaurantDetailPage.booksAhead", { n: r.booking_window_days })}
           </span>
         </div>
       </div>
 
-      {/* Availability */}
       <div className="bg-white rounded-2xl border border-diner-100 shadow-sm p-6">
-        <h2 className="font-semibold text-gray-800 mb-4">📅 Check Availability</h2>
+        <h2 className="font-semibold text-gray-800 mb-4">{t("restaurantDetailPage.checkAvailability")}</h2>
         <div className="mb-4">
-          <label className="text-xs font-medium text-gray-700 mb-1 block">Select a date</label>
+          <label className="text-xs font-medium text-gray-700 mb-1 block">{t("restaurantDetailPage.selectDate")}</label>
           <input
             type="date"
             value={selectedDate}
@@ -127,14 +135,14 @@ export default function RestaurantProfile() {
         </div>
 
         {slotsLoading ? (
-          <p className="text-sm text-gray-400 animate-pulse">Checking availability…</p>
+          <p className="text-sm text-gray-400 animate-pulse">{t("restaurantDetailPage.checking")}</p>
         ) : availability.length === 0 ? (
           <p className="text-sm text-amber-600 bg-amber-50 rounded-xl p-3">
-            No available slots on this date — try another day.
+            {t("restaurantDetailPage.noSlots")}
           </p>
         ) : (
           <>
-            <p className="text-xs text-gray-500 mb-3">{availability.length} slot{availability.length !== 1 ? "s" : ""} available</p>
+            <p className="text-xs text-gray-500 mb-3">{t("restaurantDetailPage.slotsAvailable", { count: availability.length })}</p>
             <div className="flex flex-wrap gap-2">
               {availability.map((s) => (
                 <button
@@ -142,7 +150,7 @@ export default function RestaurantProfile() {
                   onClick={() => bookSlot(s.time)}
                   className="text-sm px-4 py-2 rounded-xl border border-diner-200 bg-white text-gray-700 font-medium hover:bg-diner-600 hover:text-white hover:border-diner-600 transition-all"
                 >
-                  {s.time} <span className="text-xs opacity-60">{s.remaining_covers} left</span>
+                  {s.time} <span className="text-xs opacity-60">{t("restaurantDetailPage.slotLeft", { n: s.remaining_covers })}</span>
                 </button>
               ))}
             </div>
@@ -150,7 +158,7 @@ export default function RestaurantProfile() {
               onClick={() => router.push(`/diner/book?restaurant_id=${id}&restaurant_name=${encodeURIComponent(r.name)}`)}
               className="mt-5 w-full bg-diner-600 text-white font-semibold py-2.5 rounded-xl hover:bg-diner-700 transition-colors"
             >
-              📅 Book a Table
+              {t("restaurantDetailPage.bookTable")}
             </button>
           </>
         )}

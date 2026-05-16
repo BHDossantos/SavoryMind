@@ -1706,5 +1706,24 @@
     "topSpots": "🏆 Top Spots",
     "visitsCount": "{{n}}x",
     "statsEmpty": "Log your first visit to see your dining stats here."
+  },
+  "restaurantDetailPage": {
+    "loading": "Loading restaurant…",
+    "notFound": "Restaurant not found",
+    "backToDiscover": "← Back to Discover",
+    "back": "← Back",
+    "wine": "🍷 Wine",
+    "cocktails": "🍸 Cocktails",
+    "beer": "🍺 Beer",
+    "seats": "👥 {{n}} seats",
+    "booksAhead": "📆 Books up to {{n}} days ahead",
+    "checkAvailability": "📅 Check Availability",
+    "selectDate": "Select a date",
+    "checking": "Checking availability…",
+    "noSlots": "No available slots on this date — try another day.",
+    "slotsAvailable_one": "{{count}} slot available",
+    "slotsAvailable_other": "{{count}} slots available",
+    "slotLeft": "{{n}} left",
+    "bookTable": "📅 Book a Table"
   }
 }
