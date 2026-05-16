@@ -134,7 +134,25 @@ jobs:
             echo "ASC_API_KEY_P8 secret not set — skipping (iOS auto-submit will be disabled)."
           fi
 
-      - name: Trigger EAS build
+      - name: Trigger EAS build (Android)
+        id: build_android
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android' || github.event_name == 'push'
+        # Don't fail the whole workflow if Android can't dispatch — e.g.
+        # EAS free-tier quota exhausted, in which case the iOS build below
+        # should still get its chance.
+        continue-on-error: true
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          echo "▶ Building Android — profile=$PROFILE"
+          eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
+
+      - name: Trigger EAS build (iOS)
+        id: build_ios
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'ios' || github.event_name == 'push'
+        continue-on-error: true
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
@@ -146,41 +164,35 @@ jobs:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
         run: |
-          PLATFORM="${{ github.event.inputs.platform || 'all' }}"
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
-          echo "Starting EAS build — platform=$PLATFORM profile=$PROFILE"
-
-          # Auto-submit is iOS-only for now — Android Play Store submission
-          # needs a Google service account JSON we haven't set up yet. So
-          # when "platform=all" is requested we split into two `eas build`
-          # invocations: Android plain, iOS with --auto-submit. This keeps
-          # the iOS → TestFlight pipeline working without forcing Android
-          # credentials to be configured first.
+          # Auto-submit only on production iOS builds with credentials.
           IOS_AUTO_SUBMIT=""
           if [ "$PROFILE" = "production" ] && [ -f asc-api-key.p8 ]; then
             IOS_AUTO_SUBMIT="--auto-submit"
             echo "Production + ASC key present → iOS build will auto-submit to TestFlight."
           fi
+          echo "▶ Building iOS — profile=$PROFILE"
+          eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
 
-          if [ "$PLATFORM" = "all" ]; then
-            echo "▶ Building Android (no auto-submit)"
-            eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
-            echo "▶ Building iOS"
-            eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
-          elif [ "$PLATFORM" = "ios" ]; then
-            eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
-          else
-            # android-only — no auto-submit until Play Store creds are wired up
-            eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
-          fi
+      - name: Fail if both platforms failed
+        # Without this guard the job would always succeed even when neither
+        # platform dispatched. We tolerate one failing (e.g. Android quota
+        # exhausted) but flag the run red when both went down.
+        if: steps.build_android.outcome == 'failure' && steps.build_ios.outcome == 'failure'
+        run: |
+          echo "::error::Both Android AND iOS builds failed to dispatch — see the steps above."
+          exit 1
 
       - name: Build summary
+        if: always()
         run: |
-          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
-          ## EAS build dispatched
-
-          Track progress at https://expo.dev/accounts/_/projects/savorymind-mobile/builds
-
-          The build runs in Expo's cloud — this workflow only initiates it.
-          You'll get an email + Expo dashboard notification when artifacts are ready.
-          EOF
+          {
+            echo "## EAS build summary"
+            echo ""
+            echo "- Android: **${{ steps.build_android.outcome }}**"
+            echo "- iOS:     **${{ steps.build_ios.outcome }}**"
+            echo ""
+            echo "Track progress at https://expo.dev/accounts/_/projects/savorymind-mobile/builds"
+            echo ""
+            echo "Builds run in Expo's cloud — this workflow only initiates them."
+          } >> "$GITHUB_STEP_SUMMARY"
