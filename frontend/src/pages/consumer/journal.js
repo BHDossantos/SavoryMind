@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Link from "next/link";
@@ -26,6 +27,7 @@ function StarRating({ value, onChange }) {
 const EMPTY_FORM = { dish_name: "", emoji: "🍽️", rating: 5, notes: "", what_id_change: "", cuisine: "" };
 
 export default function JournalPage() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,6 @@ export default function JournalPage() {
   const [error, setError] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // Pre-fill form if redirected from guided cooking with query params
   useEffect(() => {
     if (router.query.dish) {
       setForm((f) => ({
@@ -53,12 +54,12 @@ export default function JournalPage() {
   const load = async () => {
     setLoading(true);
     try { setMemories(await api.getMemories()); }
-    catch (e) { setError(e.message || "Failed to load journal."); }
+    catch (e) { setError(e.message || t("journalPage.errLoad")); }
     finally { setLoading(false); }
   };
 
   const save = async () => {
-    if (!form.dish_name.trim()) { setError("Enter a dish name."); return; }
+    if (!form.dish_name.trim()) { setError(t("journalPage.errDish")); return; }
     setSaving(true); setError("");
     try {
       const mem = await api.createMemory({
@@ -80,12 +81,12 @@ export default function JournalPage() {
     try {
       await api.deleteMemory(id);
       setMemories((prev) => prev.filter((m) => m.id !== id));
-    } catch (e) { setError(e.message || "Failed to delete memory."); }
+    } catch (e) { setError(e.message || t("journalPage.errDelete")); }
   };
 
   const formatDate = (iso) => {
     const d = new Date(iso);
-    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    return d.toLocaleDateString(i18n.language || "en-GB", { day: "numeric", month: "short", year: "numeric" });
   };
 
   if (loading) return <LoadingSpinner />;
@@ -95,11 +96,11 @@ export default function JournalPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📔 My Food Journal</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("journalPage.title")}</h1>
           <p className="text-gray-400 mt-1">
             {memories.length === 0
-              ? "Your cooking memories live here."
-              : `${memories.length} meal${memories.length !== 1 ? "s" : ""} remembered`}
+              ? t("journalPage.emptySubtitle")
+              : t("journalPage.countSubtitle", { count: memories.length })}
           </p>
         </div>
         <button onClick={() => { setShowForm((s) => !s); setError(""); }}
@@ -107,20 +108,19 @@ export default function JournalPage() {
             showForm
               ? "border border-gray-200 text-gray-600 hover:bg-gray-50"
               : "bg-consumer-600 text-white hover:bg-consumer-700"}`}>
-          {showForm ? "Cancel" : "+ Log a meal"}
+          {showForm ? t("journalPage.cancel") : t("journalPage.logMeal")}
         </button>
       </div>
 
       {/* Add memory form */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-consumer-200 p-6 mb-8 shadow-sm">
-          <h2 className="text-base font-bold text-gray-900 mb-5">Log a new memory</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-5">{t("journalPage.logNewMemory")}</h2>
           {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Emoji + dish name */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">Dish</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">{t("journalPage.dishLabel")}</label>
               <div className="flex gap-2">
                 <div className="relative">
                   <button onClick={() => setShowEmojiPicker((s) => !s)}
@@ -140,37 +140,36 @@ export default function JournalPage() {
                 </div>
                 <input value={form.dish_name}
                   onChange={(e) => { setForm((f) => ({ ...f, dish_name: e.target.value })); setError(""); }}
-                  placeholder="What did you make?"
+                  placeholder={t("journalPage.dishPh")}
                   className="flex-1 border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
                 />
               </div>
             </div>
 
-            {/* Cuisine */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">Cuisine <span className="text-gray-400 font-normal">(optional)</span></label>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                {t("journalPage.cuisineLabel")} <span className="text-gray-400 font-normal">{t("journalPage.optional")}</span>
+              </label>
               <input value={form.cuisine}
                 onChange={(e) => setForm((f) => ({ ...f, cuisine: e.target.value }))}
-                placeholder="Italian, Thai, Japanese…"
+                placeholder={t("journalPage.cuisinePh")}
                 className="w-full border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
               />
             </div>
           </div>
 
-          {/* Rating */}
           <div className="mb-4">
-            <label className="block text-xs font-bold text-gray-700 mb-2">Your rating</label>
+            <label className="block text-xs font-bold text-gray-700 mb-2">{t("journalPage.ratingLabel")}</label>
             <StarRating value={form.rating} onChange={(r) => setForm((f) => ({ ...f, rating: r }))} />
           </div>
 
-          {/* Notes */}
           <div className="mb-4">
             <label className="block text-xs font-bold text-gray-700 mb-1.5">
-              How did it go? <span className="text-gray-400 font-normal">(optional)</span>
+              {t("journalPage.howGoLabel")} <span className="text-gray-400 font-normal">{t("journalPage.optional")}</span>
             </label>
             <textarea value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              placeholder="The sauce was rich and the pasta perfectly al dente…"
+              placeholder={t("journalPage.howGoPh")}
               rows={2}
               className="w-full border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400 resize-none"
             />
@@ -178,11 +177,11 @@ export default function JournalPage() {
 
           <div className="mb-5">
             <label className="block text-xs font-bold text-gray-700 mb-1.5">
-              What would you change? <span className="text-gray-400 font-normal">(optional)</span>
+              {t("journalPage.changeLabel")} <span className="text-gray-400 font-normal">{t("journalPage.optional")}</span>
             </label>
             <textarea value={form.what_id_change}
               onChange={(e) => setForm((f) => ({ ...f, what_id_change: e.target.value }))}
-              placeholder="Less salt next time, more chilli…"
+              placeholder={t("journalPage.changePh")}
               rows={2}
               className="w-full border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400 resize-none"
             />
@@ -190,7 +189,7 @@ export default function JournalPage() {
 
           <button onClick={save} disabled={saving}
             className="bg-consumer-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-consumer-700 disabled:opacity-60 transition-colors">
-            {saving ? "Saving…" : "Save to journal"}
+            {saving ? t("journalPage.saving") : t("journalPage.saveToJournal")}
           </button>
         </div>
       )}
@@ -199,19 +198,16 @@ export default function JournalPage() {
       {memories.length === 0 ? (
         <div className="bg-consumer-50 rounded-2xl border border-consumer-100 p-12 text-center">
           <p className="text-4xl mb-3">📔</p>
-          <p className="text-gray-500 text-sm mb-4">
-            No memories yet. Cook something and log how it went — your food story starts here.
-          </p>
+          <p className="text-gray-500 text-sm mb-4">{t("journalPage.emptyTitle")}</p>
           <Link href="/consumer/cook"
             className="inline-flex bg-consumer-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-            Start cooking →
+            {t("journalPage.startCookingLink")}
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {memories.map((m) => (
             <div key={m.id} className="bg-white rounded-2xl border border-consumer-100 p-5 hover:shadow-sm transition-all group relative">
-              {/* Delete */}
               <button onClick={() => remove(m.id)}
                 className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 text-lg leading-none transition-all">
                 ×
@@ -238,7 +234,7 @@ export default function JournalPage() {
 
               {m.what_id_change && (
                 <div className="mt-3 pt-3 border-t border-consumer-50">
-                  <p className="text-xs font-semibold text-consumer-600 mb-0.5">Next time:</p>
+                  <p className="text-xs font-semibold text-consumer-600 mb-0.5">{t("journalPage.nextTime")}</p>
                   <p className="text-xs text-gray-500 leading-relaxed">{m.what_id_change}</p>
                 </div>
               )}
