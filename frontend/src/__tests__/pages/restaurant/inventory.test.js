@@ -27,7 +27,7 @@ jest.mock('../../../components/ConfirmDialog', () => {
 });
 
 const { api } = require('../../../services/api');
-const InventoryPage = require('../inventory').default;
+const InventoryPage = require('../../../pages/restaurant/inventory').default;
 
 
 beforeEach(() => {

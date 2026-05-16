@@ -40,7 +40,7 @@ jest.mock('../../../services/api', () => ({
 }));
 
 const { api } = require('../../../services/api');
-const AssistantPage = require('../assistant').default;
+const AssistantPage = require('../../../pages/consumer/assistant').default;
 
 
 beforeEach(() => {

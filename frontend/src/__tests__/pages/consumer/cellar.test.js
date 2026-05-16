@@ -22,7 +22,7 @@ jest.mock('../../../services/api', () => ({
 }));
 
 const { api } = require('../../../services/api');
-const CellarPage = require('../cellar').default;
+const CellarPage = require('../../../pages/consumer/cellar').default;
 
 
 const WINES = {
