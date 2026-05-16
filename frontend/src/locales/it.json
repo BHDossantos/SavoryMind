@@ -1706,5 +1706,24 @@
     "topSpots": "🏆 Posti preferiti",
     "visitsCount": "{{n}}x",
     "statsEmpty": "Registra la tua prima visita per vedere le statistiche qui."
+  },
+  "restaurantDetailPage": {
+    "loading": "Caricamento ristorante…",
+    "notFound": "Ristorante non trovato",
+    "backToDiscover": "← Torna a Scopri",
+    "back": "← Indietro",
+    "wine": "🍷 Vino",
+    "cocktails": "🍸 Cocktail",
+    "beer": "🍺 Birra",
+    "seats": "👥 {{n}} posti",
+    "booksAhead": "📆 Prenota fino a {{n}} giorni prima",
+    "checkAvailability": "📅 Controlla disponibilità",
+    "selectDate": "Seleziona una data",
+    "checking": "Verifica disponibilità…",
+    "noSlots": "Nessuno slot disponibile in questa data — prova un altro giorno.",
+    "slotsAvailable_one": "{{count}} slot disponibile",
+    "slotsAvailable_other": "{{count}} slot disponibili",
+    "slotLeft": "{{n}} liberi",
+    "bookTable": "📅 Prenota un tavolo"
   }
 }
