@@ -1,27 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
-const CATEGORIES = [
-  { value: "alcohol",        label: "Alcohol",        color: "bg-purple-100 text-purple-700" },
-  { value: "food",           label: "Food",           color: "bg-orange-100 text-orange-700" },
-  { value: "produce",        label: "Produce",        color: "bg-green-100 text-green-700" },
-  { value: "dry_goods",      label: "Dry goods",      color: "bg-yellow-100 text-yellow-700" },
-  { value: "kitchen_supply", label: "Kitchen supply", color: "bg-blue-100 text-blue-700" },
-  { value: "cleaning",       label: "Cleaning",       color: "bg-gray-200 text-gray-700" },
+// Category IDs stay English (matching what the backend stores). The
+// display labels are looked up via i18n inside components.
+const CATEGORY_DEFS = [
+  { value: "alcohol",        labelKey: "inventoryPage.catAlcohol",       color: "bg-purple-100 text-purple-700" },
+  { value: "food",           labelKey: "inventoryPage.catFood",          color: "bg-orange-100 text-orange-700" },
+  { value: "produce",        labelKey: "inventoryPage.catProduce",       color: "bg-green-100 text-green-700" },
+  { value: "dry_goods",      labelKey: "inventoryPage.catDryGoods",      color: "bg-yellow-100 text-yellow-700" },
+  { value: "kitchen_supply", labelKey: "inventoryPage.catKitchenSupply", color: "bg-blue-100 text-blue-700" },
+  { value: "cleaning",       labelKey: "inventoryPage.catCleaning",      color: "bg-gray-200 text-gray-700" },
 ];
 
 const UNITS = ["bottles", "cases", "kg", "lbs", "each", "liters"];
-const ADJUST_TYPES = [
-  { value: "delivery",         label: "Delivery (received)" },
-  { value: "usage",            label: "Usage (sold/used)" },
-  { value: "waste",            label: "Waste (broken/spoiled)" },
-  { value: "count_correction", label: "Count correction" },
+
+const ADJUST_TYPE_DEFS = [
+  { value: "delivery",         labelKey: "inventoryPage.adjDelivery" },
+  { value: "usage",            labelKey: "inventoryPage.adjUsage" },
+  { value: "waste",            labelKey: "inventoryPage.adjWaste" },
+  { value: "count_correction", labelKey: "inventoryPage.adjCount" },
 ];
 
 
-function categoryLabel(value) {
-  return CATEGORIES.find((c) => c.value === value) || { label: value, color: "bg-gray-100 text-gray-700" };
+function categoryColor(value) {
+  return (CATEGORY_DEFS.find((c) => c.value === value) || {}).color || "bg-gray-100 text-gray-700";
+}
+
+function categoryLabelKey(value) {
+  return (CATEGORY_DEFS.find((c) => c.value === value) || {}).labelKey || null;
 }
 
 
@@ -40,6 +48,7 @@ function blank() {
 
 
 export default function InventoryPage() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +65,7 @@ export default function InventoryPage() {
       setItems(data);
       setError(null);
     } catch (err) {
-      setError(err.message || "Failed to load inventory");
+      setError(err.message || t("inventoryPage.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -73,7 +82,7 @@ export default function InventoryPage() {
 
   const handleArchive = (item) => {
     setConfirmDialog({
-      message: `Archive "${item.name}"? Past adjustments stay in the audit trail; the item just hides from the main list.`,
+      message: t("inventoryPage.archivePrompt", { name: item.name }),
       onConfirm: async () => {
         setConfirmDialog(null);
         await api.archiveInventoryItem(item.id);
@@ -86,14 +95,14 @@ export default function InventoryPage() {
     <div className="px-4 py-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Inventory</h1>
-          <p className="text-sm text-gray-500">Track stock, log adjustments, get a weekly low-stock digest.</p>
+          <h1 className="text-2xl font-bold">{t("inventoryPage.title")}</h1>
+          <p className="text-sm text-gray-500">{t("inventoryPage.subtitle")}</p>
         </div>
         <button
           onClick={() => setShowAdd(true)}
           className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800"
         >
-          + Add item
+          {t("inventoryPage.addItem")}
         </button>
       </div>
 
@@ -101,29 +110,29 @@ export default function InventoryPage() {
         <button
           onClick={() => setFilter(null)}
           className={`px-3 py-1.5 rounded-full text-xs font-medium ${filter === null ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-        >All</button>
-        {CATEGORIES.map((c) => (
+        >{t("inventoryPage.all")}</button>
+        {CATEGORY_DEFS.map((c) => (
           <button
             key={c.value}
             onClick={() => setFilter(c.value)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${filter === c.value ? "bg-black text-white" : `${c.color} hover:opacity-80`}`}
-          >{c.label}</button>
+          >{t(c.labelKey)}</button>
         ))}
       </div>
 
-      {loading && <p className="text-sm text-gray-500">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500">{t("inventoryPage.loading")}</p>}
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-600">{error}</div>
       )}
 
       {!loading && sortedItems.length === 0 && (
         <div className="card text-center py-12" data-testid="inventory-empty">
-          <h2 className="text-lg font-semibold mb-1">No inventory items yet</h2>
-          <p className="text-sm text-gray-500 mb-4">Add your first one to start tracking.</p>
+          <h2 className="text-lg font-semibold mb-1">{t("inventoryPage.emptyTitle")}</h2>
+          <p className="text-sm text-gray-500 mb-4">{t("inventoryPage.emptySub")}</p>
           <button
             onClick={() => setShowAdd(true)}
             className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium"
-          >+ Add your first item</button>
+          >{t("inventoryPage.addFirst")}</button>
         </div>
       )}
 
@@ -132,41 +141,43 @@ export default function InventoryPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="text-left px-4 py-3">Name</th>
-                <th className="text-left px-4 py-3">Category</th>
-                <th className="text-right px-4 py-3">Current</th>
-                <th className="text-right px-4 py-3">Par</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3">Actions</th>
+                <th className="text-left px-4 py-3">{t("inventoryPage.colName")}</th>
+                <th className="text-left px-4 py-3">{t("inventoryPage.colCategory")}</th>
+                <th className="text-right px-4 py-3">{t("inventoryPage.colCurrent")}</th>
+                <th className="text-right px-4 py-3">{t("inventoryPage.colPar")}</th>
+                <th className="text-left px-4 py-3">{t("inventoryPage.colStatus")}</th>
+                <th className="text-right px-4 py-3">{t("inventoryPage.colActions")}</th>
               </tr>
             </thead>
             <tbody>
               {sortedItems.map((item) => {
-                const cat = categoryLabel(item.category);
+                const catColor = categoryColor(item.category);
+                const catKey = categoryLabelKey(item.category);
+                const catLabel = catKey ? t(catKey) : item.category;
                 return (
                   <tr key={item.id} className={`border-t ${item.is_low ? "bg-red-50/40" : ""}`}>
                     <td className="px-4 py-3 font-medium">{item.name}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${cat.color}`}>{cat.label}</span>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${catColor}`}>{catLabel}</span>
                     </td>
                     <td className="px-4 py-3 text-right font-mono">{item.current_quantity}</td>
                     <td className="px-4 py-3 text-right text-gray-500 font-mono">{item.par_level}</td>
                     <td className="px-4 py-3">
                       {item.is_low ? (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">⚠ Low</span>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">{t("inventoryPage.low")}</span>
                       ) : (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">✓ OK</span>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">{t("inventoryPage.ok")}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
                       <button
                         onClick={() => setAdjustingItem(item)}
                         className="text-xs text-blue-600 hover:underline"
-                      >Adjust</button>
+                      >{t("inventoryPage.adjust")}</button>
                       <button
                         onClick={() => handleArchive(item)}
                         className="text-xs text-gray-500 hover:text-red-600 hover:underline"
-                      >Archive</button>
+                      >{t("inventoryPage.archive")}</button>
                     </td>
                   </tr>
                 );
@@ -197,6 +208,7 @@ export default function InventoryPage() {
 
 
 function AddItemModal({ onClose, onSaved }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(blank());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -223,9 +235,9 @@ function AddItemModal({ onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError("Name is required."); return; }
+    if (!form.name.trim()) { setError(t("inventoryPage.nameRequired")); return; }
     if (parseFloat(form.par_level) < 0 || form.par_level === "") {
-      setError("Par level must be 0 or greater.");
+      setError(t("inventoryPage.parInvalid"));
       return;
     }
     setSaving(true); setError(null);
@@ -256,31 +268,31 @@ function AddItemModal({ onClose, onSaved }) {
         onSubmit={handleSubmit}
         className="bg-white rounded-xl p-6 w-full max-w-md space-y-3"
       >
-        <h2 className="text-lg font-semibold mb-2">Add inventory item</h2>
+        <h2 className="text-lg font-semibold mb-2">{t("inventoryPage.addModalTitle")}</h2>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Name</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldName")}</span>
           <input
             value={form.name}
             onChange={update("name")}
             onBlur={handleNameBlur}
-            placeholder="e.g. Tito's Vodka 1.75L"
+            placeholder={t("inventoryPage.namePlaceholder")}
             className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
             required
           />
-          {categorizing && <span className="text-xs text-gray-400">Suggesting category…</span>}
+          {categorizing && <span className="text-xs text-gray-400">{t("inventoryPage.suggestingCat")}</span>}
         </label>
 
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <span className="text-xs uppercase tracking-wide text-gray-500">Category</span>
+            <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldCategory")}</span>
             <select value={form.category} onChange={update("category")}
                     className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
-              {CATEGORIES.map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
+              {CATEGORY_DEFS.map((c) => (<option key={c.value} value={c.value}>{t(c.labelKey)}</option>))}
             </select>
           </label>
           <label>
-            <span className="text-xs uppercase tracking-wide text-gray-500">Unit</span>
+            <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldUnit")}</span>
             <select value={form.unit} onChange={update("unit")}
                     className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
               {UNITS.map((u) => (<option key={u} value={u}>{u}</option>))}
@@ -290,13 +302,13 @@ function AddItemModal({ onClose, onSaved }) {
 
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <span className="text-xs uppercase tracking-wide text-gray-500">Par level *</span>
+            <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldParLevel")}</span>
             <input type="number" min="0" step="any" value={form.par_level}
                    onChange={update("par_level")}
                    className="w-full border rounded-lg px-3 py-2 text-sm mt-1" required />
           </label>
           <label>
-            <span className="text-xs uppercase tracking-wide text-gray-500">Reorder qty</span>
+            <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldReorder")}</span>
             <input type="number" min="0" step="any" value={form.reorder_quantity}
                    onChange={update("reorder_quantity")}
                    className="w-full border rounded-lg px-3 py-2 text-sm mt-1" />
@@ -304,14 +316,14 @@ function AddItemModal({ onClose, onSaved }) {
         </div>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Supplier</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldSupplier")}</span>
           <input value={form.supplier} onChange={update("supplier")}
-                 placeholder="e.g. Sysco"
+                 placeholder={t("inventoryPage.supplierPlaceholder")}
                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1" />
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Cost per unit</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldCost")}</span>
           <input type="number" min="0" step="0.01" value={form.cost_per_unit}
                  onChange={update("cost_per_unit")}
                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1" />
@@ -321,10 +333,10 @@ function AddItemModal({ onClose, onSaved }) {
 
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose}
-                  className="px-4 py-2 text-sm text-gray-600">Cancel</button>
+                  className="px-4 py-2 text-sm text-gray-600">{t("inventoryPage.cancel")}</button>
           <button type="submit" disabled={saving}
                   className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
-            {saving ? "Saving…" : "Add item"}
+            {saving ? t("inventoryPage.saving") : t("inventoryPage.addItemBtn")}
           </button>
         </div>
       </form>
@@ -334,6 +346,7 @@ function AddItemModal({ onClose, onSaved }) {
 
 
 function AdjustModal({ item, onClose, onSaved }) {
+  const { t } = useTranslation();
   const [type, setType] = useState("delivery");
   const [delta, setDelta] = useState("");
   const [note, setNote] = useState("");
@@ -343,7 +356,7 @@ function AdjustModal({ item, onClose, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     const value = parseFloat(delta);
-    if (!value || value === 0) { setError("Delta must be a non-zero number."); return; }
+    if (!value || value === 0) { setError(t("inventoryPage.deltaInvalid")); return; }
     setSaving(true); setError(null);
     try {
       await api.adjustInventoryItem(item.id, {
@@ -366,33 +379,33 @@ function AdjustModal({ item, onClose, onSaved }) {
         onSubmit={submit}
         className="bg-white rounded-xl p-6 w-full max-w-md space-y-3"
       >
-        <h2 className="text-lg font-semibold mb-1">Adjust: {item.name}</h2>
+        <h2 className="text-lg font-semibold mb-1">{t("inventoryPage.adjustTitle", { name: item.name })}</h2>
         <p className="text-xs text-gray-500 mb-2">
-          Current: <span className="font-mono">{item.current_quantity} {item.unit}</span> · Par: <span className="font-mono">{item.par_level}</span>
+          {t("inventoryPage.currentLine", { current: item.current_quantity, unit: item.unit, par: item.par_level })}
         </p>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Type</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldType")}</span>
           <select value={type} onChange={(e) => setType(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
-            {ADJUST_TYPES.map((t) => (<option key={t.value} value={t.value}>{t.label}</option>))}
+            {ADJUST_TYPE_DEFS.map((opt) => (<option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>))}
           </select>
         </label>
 
         <label className="block">
           <span className="text-xs uppercase tracking-wide text-gray-500">
-            Delta (use negative for usage / waste)
+            {t("inventoryPage.fieldDelta")}
           </span>
           <input type="number" step="any" value={delta}
                  onChange={(e) => setDelta(e.target.value)}
-                 placeholder="e.g. 24 for delivery, -3 for usage"
+                 placeholder={t("inventoryPage.deltaPlaceholder")}
                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1" required />
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Note</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t("inventoryPage.fieldNote")}</span>
           <input value={note} onChange={(e) => setNote(e.target.value)}
-                 placeholder="Optional — e.g. Sysco delivery #12345"
+                 placeholder={t("inventoryPage.notePlaceholder")}
                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1" />
         </label>
 
@@ -400,10 +413,10 @@ function AdjustModal({ item, onClose, onSaved }) {
 
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose}
-                  className="px-4 py-2 text-sm text-gray-600">Cancel</button>
+                  className="px-4 py-2 text-sm text-gray-600">{t("inventoryPage.cancel")}</button>
           <button type="submit" disabled={saving}
                   className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
-            {saving ? "Saving…" : "Log adjustment"}
+            {saving ? t("inventoryPage.saving") : t("inventoryPage.logAdjustment")}
           </button>
         </div>
       </form>
