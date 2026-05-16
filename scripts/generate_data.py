@@ -267,7 +267,10 @@ def _read_existing(name: str):
     path = DATA_DIR / f"{name}.json"
     if not path.exists():
         return {} if name == "wines" else []
-    with open(path) as f:
+    # Explicit UTF-8 — Windows defaults to cp1252, which fails on any
+    # accented character in existing recipes (Crème brûlée, Beef
+    # Bourguignon, etc.). _write() already pins utf-8; keep them paired.
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
