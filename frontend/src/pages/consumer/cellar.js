@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
@@ -13,15 +14,12 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 // engine, just entered via this surface.
 
 const TABS = [
-  { id: "wine",    label: "Wine",    icon: "🍷" },
-  { id: "beer",    label: "Beer",    icon: "🍺" },
-  { id: "spirits", label: "Spirits", icon: "🥃" },
+  { id: "wine",    labelKey: "cellarPage.tabWine",    icon: "🍷", searchPhKey: "cellarPage.searchWines" },
+  { id: "beer",    labelKey: "cellarPage.tabBeer",    icon: "🍺", searchPhKey: "cellarPage.searchBeers" },
+  { id: "spirits", labelKey: "cellarPage.tabSpirits", icon: "🥃", searchPhKey: "cellarPage.searchSpirits" },
 ];
 
 function uniqueValues(items, key) {
-  // Returns sorted unique values for a field — used to populate filter
-  // dropdowns dynamically based on whatever the catalog actually
-  // contains, so adding wines for a new region doesn't need code change.
   const set = new Set();
   for (const it of items) {
     const v = it[key];
@@ -31,14 +29,14 @@ function uniqueValues(items, key) {
   return Array.from(set).sort();
 }
 
-function ChipRow({ options, value, onChange }) {
+function ChipRow({ options, value, onChange, allLabel }) {
   return (
     <div className="flex flex-wrap gap-2">
       <button onClick={() => onChange("")}
         className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
           value === "" ? "bg-consumer-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
         }`}>
-        All
+        {allLabel}
       </button>
       {options.map((o) => (
         <button key={o} onClick={() => onChange(o)}
@@ -53,6 +51,8 @@ function ChipRow({ options, value, onChange }) {
 }
 
 function WineCard({ w }) {
+  const { t } = useTranslation();
+  const prompt = t("cellarPage.tellMePrompt", { name: w.name });
   return (
     <div className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -70,17 +70,19 @@ function WineCard({ w }) {
       <div className="flex flex-wrap gap-3 text-[11px] text-gray-500 mb-3">
         <span>💰 {w.price_range}</span>
         <span>🌡️ {w.serving_temp}</span>
-        {w.decant && <span>🍷 Decant {w.decant_time || "30 min"}</span>}
+        {w.decant && <span>🍷 {t("cellarPage.decantPrefix")} {w.decant_time || t("cellarPage.decantDefault")}</span>}
       </div>
-      <Link href={`/consumer/assistant?q=${encodeURIComponent(`Tell me about ${w.name} and what to pair with it.`)}`}
+      <Link href={`/consumer/assistant?q=${encodeURIComponent(prompt)}`}
         className="text-xs font-semibold text-consumer-700 hover:text-consumer-800">
-        Ask Flavor about this →
+        {t("cellarPage.askFlavor")}
       </Link>
     </div>
   );
 }
 
 function BeerCard({ b }) {
+  const { t } = useTranslation();
+  const prompt = t("cellarPage.beerPairPrompt", { name: b.name, style: b.style });
   return (
     <div className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -95,15 +97,17 @@ function BeerCard({ b }) {
         <span>{b.abv}% ABV</span>
         <span>🌡️ {b.serve}</span>
       </div>
-      <Link href={`/consumer/assistant?q=${encodeURIComponent(`What food pairs with a ${b.name} (${b.style})?`)}`}
+      <Link href={`/consumer/assistant?q=${encodeURIComponent(prompt)}`}
         className="text-xs font-semibold text-consumer-700 hover:text-consumer-800">
-        Ask Flavor about this →
+        {t("cellarPage.askFlavor")}
       </Link>
     </div>
   );
 }
 
 function SpiritCard({ s }) {
+  const { t } = useTranslation();
+  const prompt = t("cellarPage.spiritPairPrompt", { name: s.name });
   return (
     <div className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -118,15 +122,16 @@ function SpiritCard({ s }) {
         <span>{s.abv}% ABV</span>
         <span>🥃 {s.serve}</span>
       </div>
-      <Link href={`/consumer/assistant?q=${encodeURIComponent(`What food pairs with ${s.name}?`)}`}
+      <Link href={`/consumer/assistant?q=${encodeURIComponent(prompt)}`}
         className="text-xs font-semibold text-consumer-700 hover:text-consumer-800">
-        Ask Flavor about this →
+        {t("cellarPage.askFlavor")}
       </Link>
     </div>
   );
 }
 
 export default function CellarPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState("wine");
   const [wines, setWines]     = useState([]);
   const [beers, setBeers]     = useState([]);
@@ -147,9 +152,6 @@ export default function CellarPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Reset filters AND the search box when switching tabs — a query
-  // valid for wine ("Burgundy", "chablis") would otherwise haunt the
-  // beer view as a no-results state.
   const switchTab = (id) => {
     setTab(id);
     setSearch("");
@@ -164,7 +166,6 @@ export default function CellarPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((it) => {
-      // Free-text search across the cheap-to-stringify fields.
       if (q) {
         const haystack = JSON.stringify(it).toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -181,23 +182,26 @@ export default function CellarPage() {
     });
   }, [items, search, filterStyle, filterRegion]);
 
-  if (loading) return <LoadingSpinner message="Loading the cellar…" />;
+  if (loading) return <LoadingSpinner message={t("cellarPage.loading")} />;
+
+  const currentTab = TABS.find((x) => x.id === tab);
+  const tabLabel = t(currentTab.labelKey);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Cellar</h1>
-        <p className="text-gray-400 mt-1">Every wine, beer, and spirit Flavor can pair from.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900">{t("cellarPage.title")}</h1>
+        <p className="text-gray-400 mt-1">{t("cellarPage.subtitle")}</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-consumer-50 rounded-2xl p-1.5 overflow-x-auto">
-        {TABS.map((t) => (
-          <button key={t.id} onClick={() => switchTab(t.id)}
+        {TABS.map((tk) => (
+          <button key={tk.id} onClick={() => switchTab(tk.id)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
-              tab === t.id ? "bg-white text-consumer-700 shadow-sm" : "text-gray-500 hover:text-consumer-600"
+              tab === tk.id ? "bg-white text-consumer-700 shadow-sm" : "text-gray-500 hover:text-consumer-600"
             }`}>
-            <span>{t.icon}</span> {t.label}
+            <span>{tk.icon}</span> {t(tk.labelKey)}
           </button>
         ))}
       </div>
@@ -205,31 +209,31 @@ export default function CellarPage() {
       {/* Search + filters */}
       <div className="space-y-3">
         <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Search ${tab}s…`}
+          placeholder={t(currentTab.searchPhKey)}
           className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400" />
 
         {styleOptions.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Style</p>
-            <ChipRow options={styleOptions} value={filterStyle} onChange={setFilterStyle} />
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t("cellarPage.style")}</p>
+            <ChipRow options={styleOptions} value={filterStyle} onChange={setFilterStyle} allLabel={t("cellarPage.all")} />
           </div>
         )}
 
         {regionOptions.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Region</p>
-            <ChipRow options={regionOptions.slice(0, 30)} value={filterRegion} onChange={setFilterRegion} />
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t("cellarPage.region")}</p>
+            <ChipRow options={regionOptions.slice(0, 30)} value={filterRegion} onChange={setFilterRegion} allLabel={t("cellarPage.all")} />
           </div>
         )}
       </div>
 
-      <p className="text-xs text-gray-400">{filtered.length} of {items.length} {tab}s</p>
+      <p className="text-xs text-gray-400">{t("cellarPage.countLine", { shown: filtered.length, total: items.length, type: tabLabel.toLowerCase() })}</p>
 
       {/* Cards */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-2xl border border-consumer-100">
           <p className="text-3xl mb-2">🔎</p>
-          <p className="text-sm text-gray-500">Nothing matches these filters yet.</p>
+          <p className="text-sm text-gray-500">{t("cellarPage.noMatch")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
