@@ -29,7 +29,7 @@ jest.mock('recharts', () => {
 });
 
 const { api } = require('../../services/api');
-const SentimentPage = require('../sentiment').default;
+const SentimentPage = require('../../pages/sentiment').default;
 
 
 function summary(overrides = {}) {

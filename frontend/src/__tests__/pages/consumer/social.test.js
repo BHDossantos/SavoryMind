@@ -30,7 +30,7 @@ jest.mock('../../../services/api', () => ({
 }));
 
 const { api } = require('../../../services/api');
-const SocialPage = require('../social').default;
+const SocialPage = require('../../../pages/consumer/social').default;
 
 
 beforeEach(() => {

@@ -24,7 +24,7 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ login: mockLogin }),
 }));
 
-const LoginPage = require('../login').default;
+const LoginPage = require('../../pages/login').default;
 
 
 beforeEach(() => {
