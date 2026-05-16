@@ -818,5 +818,36 @@
     "yesPercent": "{{percent}}% sim",
     "recentComments": "Comentários recentes",
     "noComments": "Ainda sem comentários."
+  },
+  "plannerPage": {
+    "title": "📅 Planeador de refeições",
+    "subtitle": "O teu plano personalizado de 7 dias com lista de compras",
+    "todayPrefix": "Hoje —",
+    "dietLabel": "Dieta:",
+    "dietAll": "Todas",
+    "dietVegetarian": "Vegetariana",
+    "dietVegan": "Vegana",
+    "dietKeto": "Keto",
+    "dietGlutenFree": "Sem glúten",
+    "dietDairyFree": "Sem lactose",
+    "tabWeekly": "Plano semanal",
+    "tabShopping": "Lista de compras",
+    "mealLunch": "Almoço",
+    "mealDinner": "Jantar",
+    "shoppingHeader": "{{count}} itens para a tua semana"
+  },
+  "beveragesPage": {
+    "title": "🥂 Harmonização de bebidas",
+    "subtitle": "Vinho, cerveja e destilados harmonizados por IA para qualquer prato",
+    "tabWine": "Vinho",
+    "tabBeer": "Cerveja",
+    "tabSpirits": "Destilados",
+    "searchPh": "Indica um prato para harmonizar com {{type}}...",
+    "pairing": "A harmonizar...",
+    "pair": "Harmonizar",
+    "topPairings": "Melhores harmonizações de {{type}} para",
+    "topMatch": "⭐ Melhor harmonização",
+    "tryThese": "Experimenta:",
+    "abv": "{{value}}% ABV"
   }
 }

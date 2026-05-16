@@ -818,5 +818,36 @@
     "yesPercent": "{{percent}}% sí",
     "recentComments": "Comentarios recientes",
     "noComments": "Aún sin comentarios."
+  },
+  "plannerPage": {
+    "title": "📅 Planificador de comidas",
+    "subtitle": "Tu plan personalizado de 7 días con lista de la compra",
+    "todayPrefix": "Hoy —",
+    "dietLabel": "Dieta:",
+    "dietAll": "Todas",
+    "dietVegetarian": "Vegetariana",
+    "dietVegan": "Vegana",
+    "dietKeto": "Keto",
+    "dietGlutenFree": "Sin gluten",
+    "dietDairyFree": "Sin lácteos",
+    "tabWeekly": "Plan semanal",
+    "tabShopping": "Lista de la compra",
+    "mealLunch": "Comida",
+    "mealDinner": "Cena",
+    "shoppingHeader": "{{count}} productos para tu semana"
+  },
+  "beveragesPage": {
+    "title": "🥂 Maridaje de bebidas",
+    "subtitle": "Vino, cerveza y destilados maridados por IA para cualquier plato",
+    "tabWine": "Vino",
+    "tabBeer": "Cerveza",
+    "tabSpirits": "Destilados",
+    "searchPh": "Introduce un plato para maridar con {{type}}...",
+    "pairing": "Maridando...",
+    "pair": "Maridar",
+    "topPairings": "Mejores maridajes de {{type}} para",
+    "topMatch": "⭐ Mejor maridaje",
+    "tryThese": "Prueba con:",
+    "abv": "{{value}}% ABV"
   }
 }

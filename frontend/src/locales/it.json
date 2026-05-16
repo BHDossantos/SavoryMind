@@ -818,5 +818,36 @@
     "yesPercent": "{{percent}}% sì",
     "recentComments": "Commenti recenti",
     "noComments": "Ancora nessun commento."
+  },
+  "plannerPage": {
+    "title": "📅 Pianificatore pasti",
+    "subtitle": "Il tuo piano personalizzato di 7 giorni con lista della spesa",
+    "todayPrefix": "Oggi —",
+    "dietLabel": "Dieta:",
+    "dietAll": "Tutte",
+    "dietVegetarian": "Vegetariana",
+    "dietVegan": "Vegana",
+    "dietKeto": "Keto",
+    "dietGlutenFree": "Senza glutine",
+    "dietDairyFree": "Senza lattosio",
+    "tabWeekly": "Piano settimanale",
+    "tabShopping": "Lista della spesa",
+    "mealLunch": "Pranzo",
+    "mealDinner": "Cena",
+    "shoppingHeader": "{{count}} articoli per la tua settimana"
+  },
+  "beveragesPage": {
+    "title": "🥂 Abbinamento bevande",
+    "subtitle": "Vino, birra e distillati abbinati con IA per qualsiasi piatto",
+    "tabWine": "Vino",
+    "tabBeer": "Birra",
+    "tabSpirits": "Distillati",
+    "searchPh": "Inserisci un piatto da abbinare con {{type}}...",
+    "pairing": "Abbinamento...",
+    "pair": "Abbina",
+    "topPairings": "Migliori abbinamenti di {{type}} per",
+    "topMatch": "⭐ Migliore abbinamento",
+    "tryThese": "Prova con:",
+    "abv": "{{value}}% ABV"
   }
 }
