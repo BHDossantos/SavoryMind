@@ -314,5 +314,27 @@
     "delete": "Elimina",
     "noMatch": "Nessuna voce corrisponde ai filtri.",
     "shownCount": "{{shown}} di {{total}} voci mostrate"
+  },
+  "flavorPage": {
+    "title": "👨‍🍳 Flavor",
+    "subtitle": "Aiuto in tempo reale per qualunque cosa stia andando storto in cucina.",
+    "greetingTitle": "Ciao, sono Flavor 👋",
+    "greetingText": "Chiedimi qualsiasi cosa sul cibo — idee per ricette, consigli di tecnica, salvataggi, sostituzioni, abbinamenti vino. Quello che hai sui fornelli.",
+    "newChat": "+ Nuova chat",
+    "errorTitle": "Ops",
+    "errorText": "Qualcosa è andato storto — riprova.",
+    "inputPlaceholder": "Chiedimi qualcosa — ricette, tecniche, abbinamenti, salvataggi...",
+    "send": "Invia",
+    "inputHint": "Premi Invio per inviare · Shift+Invio per andare a capo",
+    "checkedOne": "✓ Flavor ha controllato {{label}}.",
+    "checkedMany": "✓ Flavor ha controllato {{labels}} + {{last}}.",
+    "suggestion1": "Ho voglia di bistecca — cosa mi consigli?",
+    "suggestion2": "Cena veloce infrasettimanale con sovracosce di pollo",
+    "suggestion3": "Mi si è impazzita la salsa — come la salvo?",
+    "suggestion4": "Che vino con un risotto ai funghi?",
+    "suggestion5": "Sostituto del latticello?",
+    "suggestion6": "Quanto deve riposare una costata?",
+    "suggestion7": "Dessert facile solo con ingredienti della dispensa",
+    "suggestion8": "Sostituto vegano del parmigiano"
   }
 }

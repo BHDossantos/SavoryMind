@@ -314,5 +314,27 @@
     "delete": "Eliminar",
     "noMatch": "Ningún plato coincide con tus filtros.",
     "shownCount": "{{shown}} de {{total}} platos mostrados"
+  },
+  "flavorPage": {
+    "title": "👨‍🍳 Flavor",
+    "subtitle": "Ayuda en tiempo real para lo que esté saliendo mal en la cocina.",
+    "greetingTitle": "Hola, soy Flavor 👋",
+    "greetingText": "Pregúntame lo que sea sobre comida — ideas de recetas, consejos de técnica, soluciones para desastres, sustitutos, maridajes de vino. Lo que tengas en el fuego.",
+    "newChat": "+ Nueva conversación",
+    "errorTitle": "Ups",
+    "errorText": "Algo salió mal — inténtalo de nuevo.",
+    "inputPlaceholder": "Pregunta lo que sea — recetas, técnicas, maridajes, soluciones...",
+    "send": "Enviar",
+    "inputHint": "Pulsa Enter para enviar · Mayús+Enter para nueva línea",
+    "checkedOne": "✓ Flavor consultó {{label}}.",
+    "checkedMany": "✓ Flavor consultó {{labels}} + {{last}}.",
+    "suggestion1": "Me apetece carne — ¿qué recomiendas?",
+    "suggestion2": "Cena rápida entre semana con muslos de pollo",
+    "suggestion3": "Se me ha cortado la salsa — ¿cómo la salvo?",
+    "suggestion4": "¿Qué vino acompaña un risotto de setas?",
+    "suggestion5": "¿Por qué puedo sustituir el buttermilk?",
+    "suggestion6": "¿Cuánto debe reposar un entrecot?",
+    "suggestion7": "Postre fácil solo con lo que hay en la despensa",
+    "suggestion8": "Sustituto vegano del parmesano"
   }
 }
