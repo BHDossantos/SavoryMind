@@ -486,5 +486,51 @@
     "adjUsage": "Uso (vendido/usado)",
     "adjWaste": "Pérdida (roto/caducado)",
     "adjCount": "Corrección de inventario"
+  },
+  "trendsPage": {
+    "title": "🚀 Alertas de tendencias",
+    "subtitleStats": "{{items}} platos · {{reviews}} reseñas analizadas",
+    "tabMenu": "Tendencias de tu menú",
+    "tabGlobal": "Tendencias gastronómicas globales",
+    "risingStars": "🚀 Estrellas emergentes",
+    "hiddenGems": "💎 Joyas ocultas",
+    "atRisk": "⚠️ En riesgo",
+    "risingEmpty": "Añade más platos y reseñas para descubrir estrellas emergentes.",
+    "hiddenEmpty": "No hay platos con alto margen que rindan poco — ¡buen trabajo!",
+    "atRiskEmpty": "Todos los platos tienen buen sentimiento — nada en riesgo.",
+    "itemStats": "{{category}} · {{orders}} pedidos · {{margin}}% margen · {{reviews}} reseñas"
+  },
+  "marketingPage": {
+    "title": "💌 Marketing y clientes",
+    "subtitle": "Captación, retención y fidelización de clientes",
+    "totalGuests": "Clientes totales",
+    "vipGuests": "Clientes VIP",
+    "retention": "Retención",
+    "avgSpend": "Gasto medio",
+    "totalBookings": "Reservas totales",
+    "fillRate": "Tasa de ocupación",
+    "cancelRate": "Tasa de cancelación",
+    "actionItems": "Acciones",
+    "marketingTips": "Consejos de marketing"
+  },
+  "trainingPage": {
+    "loading": "Analizando datos del personal...",
+    "loadFailed": "No se pudieron cargar los datos de formación.",
+    "title": "🎓 Formación con IA",
+    "subtitle": "Recomendaciones basadas en datos: desperdicio, tiempos de cocina y valoraciones",
+    "totalRecs": "Recomendaciones",
+    "highPriority": "Prioridad alta",
+    "medLowPriority": "Prioridad media / baja",
+    "priorityLabel": "prioridad {{priority}}",
+    "priorityHigh": "alta",
+    "priorityMedium": "media",
+    "priorityLow": "baja",
+    "actionPlan": "Plan de acción",
+    "footer": "* Recomendaciones generadas a partir de registros de desperdicio, tiempos de cocina y valoraciones del personal. Añade más datos para mejorar la precisión.",
+    "typeWaste": "Reducción de desperdicio",
+    "typeSpeed": "Mejorar velocidad",
+    "typePerf": "Revisión de desempeño",
+    "typePunctual": "Puntualidad",
+    "typeGeneral": "General"
   }
 }

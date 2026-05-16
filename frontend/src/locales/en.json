@@ -486,5 +486,51 @@
     "adjUsage": "Usage (sold/used)",
     "adjWaste": "Waste (broken/spoiled)",
     "adjCount": "Count correction"
+  },
+  "trendsPage": {
+    "title": "🚀 Trend Alerts",
+    "subtitleStats": "{{items}} menu items · {{reviews}} reviews analysed",
+    "tabMenu": "Your Menu Trends",
+    "tabGlobal": "Global Food Trends",
+    "risingStars": "🚀 Rising Stars",
+    "hiddenGems": "💎 Hidden Gems",
+    "atRisk": "⚠️ At Risk",
+    "risingEmpty": "Add more menu items and reviews to unlock rising star insights.",
+    "hiddenEmpty": "No high-margin underperformers found — great work!",
+    "atRiskEmpty": "All items have healthy sentiment — nothing at risk.",
+    "itemStats": "{{category}} · {{orders}} orders · {{margin}}% margin · {{reviews}} reviews"
+  },
+  "marketingPage": {
+    "title": "💌 Marketing & Guests",
+    "subtitle": "Guest acquisition, retention, and loyalty insights",
+    "totalGuests": "Total Guests",
+    "vipGuests": "VIP Guests",
+    "retention": "Retention",
+    "avgSpend": "Avg Spend",
+    "totalBookings": "Total Bookings",
+    "fillRate": "Fill Rate",
+    "cancelRate": "Cancel Rate",
+    "actionItems": "Action Items",
+    "marketingTips": "Marketing Tips"
+  },
+  "trainingPage": {
+    "loading": "Analysing staff data...",
+    "loadFailed": "Failed to load training data.",
+    "title": "🎓 AI Staff Training",
+    "subtitle": "Data-driven recommendations based on waste, kitchen times & ratings",
+    "totalRecs": "Recommendations",
+    "highPriority": "High Priority",
+    "medLowPriority": "Medium / Low Priority",
+    "priorityLabel": "{{priority}} priority",
+    "priorityHigh": "high",
+    "priorityMedium": "medium",
+    "priorityLow": "low",
+    "actionPlan": "Action Plan",
+    "footer": "* Recommendations generated from food waste logs, kitchen time records, and staff performance ratings. Add more data to improve accuracy.",
+    "typeWaste": "Waste reduction",
+    "typeSpeed": "Speed coaching",
+    "typePerf": "Performance review",
+    "typePunctual": "Punctuality",
+    "typeGeneral": "General"
   }
 }

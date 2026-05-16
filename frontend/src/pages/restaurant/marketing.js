@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ErrorMessage from "../../components/ErrorMessage";
@@ -10,6 +11,7 @@ const PRIORITY_STYLES = {
 };
 
 export default function MarketingPage() {
+  const { t } = useTranslation();
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState(null);
@@ -31,25 +33,25 @@ export default function MarketingPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">💌 Marketing & Guests</h1>
-        <p className="text-gray-400 mt-1">Guest acquisition, retention, and loyalty insights</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t("marketingPage.title")}</h1>
+        <p className="text-gray-400 mt-1">{t("marketingPage.subtitle")}</p>
       </div>
 
       {/* Overview metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <MetricCard label="Total Guests"  value={ov.total_guests} />
-        <MetricCard label="VIP Guests"    value={ov.vip_guests} />
-        <MetricCard label="Retention"     value={ov.retention_rate} />
-        <MetricCard label="Avg Spend"     value={ov.avg_spend} />
-        <MetricCard label="Total Bookings" value={ov.total_bookings} />
-        <MetricCard label="Fill Rate"     value={ov.booking_fill_rate} />
-        <MetricCard label="Cancel Rate"   value={ov.cancel_rate} danger />
+        <MetricCard label={t("marketingPage.totalGuests")}   value={ov.total_guests} />
+        <MetricCard label={t("marketingPage.vipGuests")}     value={ov.vip_guests} />
+        <MetricCard label={t("marketingPage.retention")}     value={ov.retention_rate} />
+        <MetricCard label={t("marketingPage.avgSpend")}      value={ov.avg_spend} />
+        <MetricCard label={t("marketingPage.totalBookings")} value={ov.total_bookings} />
+        <MetricCard label={t("marketingPage.fillRate")}      value={ov.booking_fill_rate} />
+        <MetricCard label={t("marketingPage.cancelRate")}    value={ov.cancel_rate} danger />
       </div>
 
       {/* Action items */}
       {data.actions?.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-base font-bold text-gray-900 mb-4">Action Items</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-4">{t("marketingPage.actionItems")}</h2>
           <div className="space-y-3">
             {data.actions.map((a, i) => (
               <div key={i} className={`flex items-start gap-4 bg-white border rounded-2xl p-5 ${PRIORITY_STYLES[a.priority]}`}>
@@ -72,7 +74,7 @@ export default function MarketingPage() {
       {/* Tips */}
       {data.tips?.length > 0 && (
         <div>
-          <h2 className="text-base font-bold text-gray-900 mb-4">Marketing Tips</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-4">{t("marketingPage.marketingTips")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {data.tips.map((t, i) => (
               <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-start gap-3 hover:shadow-sm transition-all">
