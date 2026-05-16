@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 
@@ -251,9 +252,9 @@ const RC = {
 };
 
 const ACCOUNT_TYPES = [
-  { id: "consumer",   icon: "🏠", title: "Home Cook",        sub: "Wine pairings, music moods & recipe recommendations", border: "border-consumer-500", bg: "bg-consumer-50", check: "text-consumer-600" },
-  { id: "diner",      icon: "🍽️", title: "Food Explorer",    sub: "Restaurant discovery, visit history & dining memories", border: "border-diner-500",    bg: "bg-diner-50",    check: "text-diner-600" },
-  { id: "restaurant", icon: "🏪", title: "Restaurant Owner", sub: "Analytics, CRM, staff management & business insights", border: "border-brand-500",    bg: "bg-brand-50",    check: "text-brand-600" },
+  { id: "consumer",   icon: "🏠", titleKey: "onboardingPage.typeConsumerTitle",   subKey: "onboardingPage.typeConsumerSub",   border: "border-consumer-500", bg: "bg-consumer-50", check: "text-consumer-600" },
+  { id: "diner",      icon: "🍽️", titleKey: "onboardingPage.typeDinerTitle",      subKey: "onboardingPage.typeDinerSub",      border: "border-diner-500",    bg: "bg-diner-50",    check: "text-diner-600" },
+  { id: "restaurant", icon: "🏪", titleKey: "onboardingPage.typeRestaurantTitle", subKey: "onboardingPage.typeRestaurantSub", border: "border-brand-500",    bg: "bg-brand-50",    check: "text-brand-600" },
 ];
 
 // ─── Tailwind static colour lookup (no dynamic interpolation) ─────────────────
@@ -315,18 +316,19 @@ function RadioCards({ items, selected, onSelect, cols = 1 }) {
 // ─── Shared steps ─────────────────────────────────────────────────────────────
 
 function StepAccountType({ data, onChange }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500 mb-4">This shapes your entire experience — pick the one that fits you best.</p>
-      {ACCOUNT_TYPES.map((t) => (
-        <button key={t.id} type="button" onClick={() => onChange("account_type", t.id)}
-          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${data.account_type === t.id ? `${t.border} ${t.bg}` : "border-gray-200 hover:border-gray-300 bg-white"}`}>
-          <span className="text-3xl">{t.icon}</span>
+      <p className="text-sm text-gray-500 mb-4">{t("onboardingPage.typeIntro")}</p>
+      {ACCOUNT_TYPES.map((opt) => (
+        <button key={opt.id} type="button" onClick={() => onChange("account_type", opt.id)}
+          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${data.account_type === opt.id ? `${opt.border} ${opt.bg}` : "border-gray-200 hover:border-gray-300 bg-white"}`}>
+          <span className="text-3xl">{opt.icon}</span>
           <div>
-            <p className="font-bold text-gray-900">{t.title}</p>
-            <p className="text-sm text-gray-500 mt-0.5">{t.sub}</p>
+            <p className="font-bold text-gray-900">{t(opt.titleKey)}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{t(opt.subKey)}</p>
           </div>
-          {data.account_type === t.id && <span className={`ml-auto text-lg ${t.check}`}>✓</span>}
+          {data.account_type === opt.id && <span className={`ml-auto text-lg ${opt.check}`}>✓</span>}
         </button>
       ))}
     </div>
@@ -334,18 +336,19 @@ function StepAccountType({ data, onChange }) {
 }
 
 function StepName({ data, onChange }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">First Name</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.firstName")}</label>
         <input value={data.first_name} onChange={(e) => onChange("first_name", e.target.value)}
-          placeholder="Your first name"
+          placeholder={t("onboardingPage.firstNamePh")}
           className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${CC.ring}`} />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Last Name</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.lastName")}</label>
         <input value={data.last_name} onChange={(e) => onChange("last_name", e.target.value)}
-          placeholder="Your last name"
+          placeholder={t("onboardingPage.lastNamePh")}
           className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${CC.ring}`} />
       </div>
     </div>
@@ -353,42 +356,43 @@ function StepName({ data, onChange }) {
 }
 
 function StepLocation({ data, onChange }) {
+  const { t } = useTranslation();
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError,   setGeoError]   = useState(null);
   const detect = () => {
-    if (!navigator.geolocation) { setGeoError("Geolocation not supported."); return; }
+    if (!navigator.geolocation) { setGeoError(t("onboardingPage.geoUnsupported")); return; }
     setGeoLoading(true); setGeoError(null);
     navigator.geolocation.getCurrentPosition(
       (p) => { onChange("latitude", p.coords.latitude); onChange("longitude", p.coords.longitude); setGeoLoading(false); },
-      ()  => { setGeoError("Couldn't get location."); setGeoLoading(false); }
+      ()  => { setGeoError(t("onboardingPage.geoFailed")); setGeoLoading(false); }
     );
   };
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">City</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.city")}</label>
         <input value={data.city} onChange={(e) => onChange("city", e.target.value)}
-          placeholder="e.g. Rome, New York, Tokyo…"
+          placeholder={t("onboardingPage.cityPh")}
           className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${CC.ring}`} />
-        <p className="text-xs text-gray-400 mt-1">Used for nearby restaurant recommendations.</p>
+        <p className="text-xs text-gray-400 mt-1">{t("onboardingPage.cityHint")}</p>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Country</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.country")}</label>
         <select value={data.country} onChange={(e) => onChange("country", e.target.value)}
           className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 ${CC.ring}`}>
-          <option value="">Select your country…</option>
+          <option value="">{t("onboardingPage.selectCountry")}</option>
           {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       <div className="border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50">
-        <p className="text-sm font-medium text-gray-700 mb-1">📍 Precise location <span className="font-normal text-gray-400">(optional)</span></p>
-        <p className="text-xs text-gray-400 mb-3">Allows hyper-local restaurant recommendations near you.</p>
+        <p className="text-sm font-medium text-gray-700 mb-1">{t("onboardingPage.preciseLoc")} <span className="font-normal text-gray-400">{t("onboardingPage.preciseLocOpt")}</span></p>
+        <p className="text-xs text-gray-400 mb-3">{t("onboardingPage.preciseLocHint")}</p>
         {data.latitude
-          ? <p className="text-xs text-green-600 font-medium">✓ Location captured ({data.latitude.toFixed(4)}, {data.longitude.toFixed(4)})</p>
+          ? <p className="text-xs text-green-600 font-medium">{t("onboardingPage.locCaptured", { lat: data.latitude.toFixed(4), lng: data.longitude.toFixed(4) })}</p>
           : <>
               <button type="button" onClick={detect} disabled={geoLoading}
                 className="text-sm bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium">
-                {geoLoading ? "Detecting…" : "Use My Location"}
+                {geoLoading ? t("onboardingPage.detecting") : t("onboardingPage.useLocation")}
               </button>
               {geoError && <p className="text-xs text-red-500 mt-2">{geoError}</p>}
             </>
@@ -857,7 +861,15 @@ function StepDinerSummary({ data }) {
 
 // ─── Flow configs ─────────────────────────────────────────────────────────────
 
-const TYPE_STEP = { id: "type", title: "Pick your path", sub: "What brings you to SavoryMind?", icon: "🧭", fields: [] };
+// Step metadata uses fallback English title/sub strings; the visible
+// labels come via t() lookups on STEP_LABELS below so they translate.
+const STEP_LABELS = {
+  name:           { titleKey: "onboardingPage.stepName",       subKey: "onboardingPage.stepNameSub" },
+  loc:            { titleKey: "onboardingPage.stepLoc",        subKey: "onboardingPage.stepLocSub" },
+  summary:        { titleKey: "onboardingPage.consumerSummaryTitle", subKey: "onboardingPage.consumerSummarySub" },
+  d_summary:      { titleKey: "onboardingPage.dinerSummaryTitle",    subKey: "onboardingPage.dinerSummarySub" },
+  r_summary:      { titleKey: "onboardingPage.restSummaryTitle",     subKey: "onboardingPage.restSummarySub" },
+};
 
 const CONSUMER_STEPS = [
   { id: "name",          title: "What's your name?",           sub: "Let's make this personal.",                   icon: "👋", fields: ["first_name","last_name"] },
@@ -1118,6 +1130,7 @@ function StepRestSummary({ data }) {
 // ─── Main Onboarding component ────────────────────────────────────────────────
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -1184,12 +1197,11 @@ export default function Onboarding() {
         // Full-page navigation so AuthProvider mounts fresh and re-runs
         // /auth/refresh, avoiding any React-state vs route-change race.
         window.location.assign(dest);
-      } catch (e) { setError(e.message || "Something went wrong."); }
+      } catch (e) { setError(e.message || t("onboardingPage.errSomething")); }
       finally { setSaving(false); }
       return;
     }
 
-    // Save this step's fields
     const payload = {};
     current.fields.forEach((f) => {
       const v = data[f];
@@ -1200,23 +1212,30 @@ export default function Onboarding() {
       try {
         const updated = await api.updateProfile(payload);
         updateUser(updated);
-      } catch (e) { setError(e.message || "Error saving — you can continue."); }
+      } catch (e) { setError(e.message || t("onboardingPage.errSavingContinue")); }
       finally { setSaving(false); }
     }
     setStep((s) => s + 1);
   };
 
   const handleTypeNext = async () => {
-    if (!data.account_type) { setError("Please pick your experience type."); return; }
+    if (!data.account_type) { setError(t("onboardingPage.errPickType")); return; }
     setSaving(true); setError(null);
     try {
       const updated = await api.updateProfile({ account_type: data.account_type });
       updateUser(updated);
       setShowType(false);
       setStep(0);
-    } catch (e) { setError(e.message || "Something went wrong."); }
+    } catch (e) { setError(e.message || t("onboardingPage.errSomething")); }
     finally { setSaving(false); }
   };
+
+  const stepTitle = current && STEP_LABELS[current.id]
+    ? t(STEP_LABELS[current.id].titleKey)
+    : current?.title;
+  const stepSub = current && STEP_LABELS[current.id]
+    ? t(STEP_LABELS[current.id].subKey)
+    : current?.sub;
 
   // ── Type selection screen ──
   if (showType) {
@@ -1230,8 +1249,8 @@ export default function Onboarding() {
           <div className="w-full max-w-xl">
             <div className="text-center mb-8">
               <div className="text-5xl mb-4">🧭</div>
-              <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Pick your path</h1>
-              <p className="text-gray-500">What brings you to SavoryMind?</p>
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-2">{t("onboardingPage.typeTitle")}</h1>
+              <p className="text-gray-500">{t("onboardingPage.typeSub")}</p>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
               <StepAccountType data={data} onChange={onChange} />
@@ -1239,7 +1258,7 @@ export default function Onboarding() {
             {error && <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>}
             <button type="button" onClick={handleTypeNext} disabled={saving || !data.account_type}
               className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 disabled:opacity-60 transition-colors">
-              {saving ? "Saving…" : "Continue →"}
+              {saving ? t("onboardingPage.saving") : t("onboardingPage.continue")}
             </button>
           </div>
         </div>
@@ -1252,7 +1271,7 @@ export default function Onboarding() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2"><span className="text-xl">🧠</span><span className="font-bold text-gray-900">SavoryMind</span></div>
-        <div className="text-sm text-gray-400">{step + 1} of {steps.length}</div>
+        <div className="text-sm text-gray-400">{t("onboardingPage.stepProgress", { step: step + 1, total: steps.length })}</div>
       </header>
       <div className="h-1 bg-gray-100 sticky top-[65px] z-10">
         <div className={`h-full ${colours.progress} transition-all duration-500`} style={{ width: `${progress}%` }} />
@@ -1262,9 +1281,9 @@ export default function Onboarding() {
         <div className="w-full max-w-xl">
           <div className="text-center mb-8">
             <div className="text-5xl mb-4">{current.icon}</div>
-            <h1 className="text-2xl font-extrabold text-gray-900 mb-2">{current.title}</h1>
-            <p className="text-gray-500">{current.sub}</p>
-            {firstName && step > 0 && <p className="text-sm text-gray-400 mt-1">Hey {firstName} 👋</p>}
+            <h1 className="text-2xl font-extrabold text-gray-900 mb-2">{stepTitle}</h1>
+            <p className="text-gray-500">{stepSub}</p>
+            {firstName && step > 0 && <p className="text-sm text-gray-400 mt-1">{t("onboardingPage.hey", { name: firstName })}</p>}
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
@@ -1308,18 +1327,18 @@ export default function Onboarding() {
             {step > 0 && (
               <button type="button" onClick={() => setStep((s) => s - 1)}
                 className="px-5 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-                ← Back
+                {t("onboardingPage.back")}
               </button>
             )}
             {!current.isSummary && (
               <button type="button" onClick={() => setStep((s) => s + 1)}
                 className="px-5 py-3 rounded-xl text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                Skip
+                {t("onboardingPage.skip")}
               </button>
             )}
             <button type="button" onClick={handleNext} disabled={saving}
               className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 disabled:opacity-60 transition-colors">
-              {saving ? "Saving…" : isLast ? "Enter SavoryMind →" : "Continue →"}
+              {saving ? t("onboardingPage.saving") : isLast ? t("onboardingPage.enterSavoryMind") : t("onboardingPage.continue")}
             </button>
           </div>
 
