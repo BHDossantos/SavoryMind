@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 // Public, no-auth survey landing page. A diner scans an employee's printed
 // QR code with their phone camera and arrives here. We give them a fixed,
@@ -13,9 +14,6 @@ function getOrCreateDeviceId() {
   if (typeof window === "undefined") return null;
   let id = window.localStorage.getItem(DEVICE_KEY);
   if (!id) {
-    // crypto.randomUUID exists on every browser ≥ 2022; fall back to a
-    // timestamp-based id on the off chance it doesn't (older WebViews
-    // embedded in social apps mostly).
     id = (window.crypto && window.crypto.randomUUID)
       ? window.crypto.randomUUID()
       : `dev-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -24,8 +22,6 @@ function getOrCreateDeviceId() {
   return id;
 }
 
-// The same base-URL resolution logic as services/api.js, narrowed for
-// our public surface — no auth headers, no refresh dance.
 function getApiBase() {
   if (typeof window === "undefined") return "/backend";
   const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -56,6 +52,7 @@ async function submitSurvey(token, body) {
 
 
 function StarPicker({ value, onChange }) {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-2">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -69,7 +66,7 @@ function StarPicker({ value, onChange }) {
               ? "border-brand-500 bg-brand-50 text-brand-700"
               : "border-gray-200 text-gray-300 hover:border-gray-300")
           }
-          aria-label={`Rate ${n}`}
+          aria-label={t("scanPage.rateLabel", { n })}
         >
           ★
         </button>
@@ -80,6 +77,7 @@ function StarPicker({ value, onChange }) {
 
 
 function YesNoPicker({ value, onChange }) {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-3">
       <button
@@ -92,7 +90,7 @@ function YesNoPicker({ value, onChange }) {
             : "border-gray-200 text-gray-500 hover:border-gray-300")
         }
       >
-        Yes
+        {t("scanPage.yes")}
       </button>
       <button
         type="button"
@@ -104,7 +102,7 @@ function YesNoPicker({ value, onChange }) {
             : "border-gray-200 text-gray-500 hover:border-gray-300")
         }
       >
-        No
+        {t("scanPage.no")}
       </button>
     </div>
   );
@@ -112,6 +110,7 @@ function YesNoPicker({ value, onChange }) {
 
 
 export default function ScanSurvey() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { token } = router.query;
   const [state, setState] = useState({ status: "loading", data: null, error: null });
@@ -135,7 +134,7 @@ export default function ScanSurvey() {
     const required = state.data.survey.questions.filter((q) => q.required);
     for (const q of required) {
       if (answers[q.id] === undefined || answers[q.id] === null || answers[q.id] === "") {
-        setSubmitError(`Please answer: ${q.prompt}`);
+        setSubmitError(t("scanPage.pleaseAnswer", { prompt: q.prompt }));
         return;
       }
     }
@@ -154,7 +153,7 @@ export default function ScanSurvey() {
   if (state.status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500 text-sm">Loading...</p>
+        <p className="text-gray-500 text-sm">{t("scanPage.loading")}</p>
       </div>
     );
   }
@@ -164,7 +163,7 @@ export default function ScanSurvey() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
         <div className="bg-white rounded-2xl shadow-sm p-8 max-w-md text-center">
           <p className="text-4xl mb-3">🤔</p>
-          <h1 className="text-lg font-bold text-gray-900 mb-1">This QR isn't valid</h1>
+          <h1 className="text-lg font-bold text-gray-900 mb-1">{t("scanPage.invalidTitle")}</h1>
           <p className="text-sm text-gray-500">{state.error}</p>
         </div>
       </div>
@@ -176,8 +175,8 @@ export default function ScanSurvey() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-white p-6">
         <div className="bg-white rounded-2xl shadow-sm p-8 max-w-md text-center">
           <p className="text-5xl mb-3">🙏</p>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Thanks for the feedback!</h1>
-          <p className="text-sm text-gray-500">It's been sent to {state.data.restaurant.restaurant_name || state.data.restaurant.display_name}.</p>
+          <h1 className="text-xl font-bold text-gray-900 mb-1">{t("scanPage.thanksTitle")}</h1>
+          <p className="text-sm text-gray-500">{t("scanPage.sentTo", { name: state.data.restaurant.restaurant_name || state.data.restaurant.display_name })}</p>
         </div>
       </div>
     );
@@ -191,7 +190,7 @@ export default function ScanSurvey() {
         <div className="text-center mb-6">
           <p className="text-3xl mb-2">🍽️</p>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.restaurant_name || restaurant.display_name}</h1>
-          <p className="text-sm text-gray-500 mt-1">How was your time with <strong className="text-gray-700">{employee.display_name}</strong>?</p>
+          <p className="text-sm text-gray-500 mt-1">{t("scanPage.howWasTime")} <strong className="text-gray-700">{employee.display_name}</strong>?</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -211,7 +210,7 @@ export default function ScanSurvey() {
                 <textarea
                   value={answers[q.id] || ""}
                   onChange={(e) => updateAnswer(q.id, e.target.value)}
-                  placeholder="Optional..."
+                  placeholder={t("scanPage.optionalPh")}
                   rows={3}
                   maxLength={2000}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
@@ -229,11 +228,11 @@ export default function ScanSurvey() {
             disabled={submitting}
             className="w-full bg-brand-500 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-600 transition-colors disabled:opacity-60"
           >
-            {submitting ? "Sending..." : "Send feedback"}
+            {submitting ? t("scanPage.sending") : t("scanPage.sendFeedback")}
           </button>
 
           <p className="text-xs text-gray-400 text-center px-4">
-            Your responses are anonymous. No account needed.
+            {t("scanPage.anonymousNote")}
           </p>
         </form>
       </div>

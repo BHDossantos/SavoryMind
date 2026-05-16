@@ -1795,5 +1795,20 @@
     "breakMin": "{{n}}m break",
     "active": "Active",
     "totalHoursSuffix": "h"
+  },
+  "scanPage": {
+    "loading": "Loading...",
+    "rateLabel": "Rate {{n}}",
+    "yes": "Yes",
+    "no": "No",
+    "invalidTitle": "This QR isn't valid",
+    "thanksTitle": "Thanks for the feedback!",
+    "sentTo": "It's been sent to {{name}}.",
+    "howWasTime": "How was your time with",
+    "optionalPh": "Optional...",
+    "pleaseAnswer": "Please answer: {{prompt}}",
+    "sending": "Sending...",
+    "sendFeedback": "Send feedback",
+    "anonymousNote": "Your responses are anonymous. No account needed."
   }
 }
