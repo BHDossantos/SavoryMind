@@ -140,5 +140,27 @@
   "languageSelector": {
     "label": "Language",
     "tooltip": "Change language"
+  },
+  "restaurantDashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of your restaurant performance",
+    "loading": "Loading dashboard...",
+    "askFlavor": "Ask Flavor",
+    "askFlavorSub": "Real-time help with menu engineering, pairings, kitchen fixes.",
+    "revenue30": "Revenue (30 days)",
+    "avgProfitMargin": "Avg Profit Margin",
+    "totalOrders": "Total Orders",
+    "last30Days": "Last 30 days",
+    "menuItems": "Menu Items",
+    "avgRating": "Avg Rating",
+    "topPerformer": "Top Performer",
+    "mostOrderedItem": "Most ordered item",
+    "topItemsByOrders": "Top Items by Orders",
+    "ordersLabel": "Orders",
+    "byCategory": "By Category",
+    "sentimentOverview": "Customer Sentiment Overview",
+    "positive": "Positive",
+    "neutral": "Neutral",
+    "negative": "Negative"
   }
 }

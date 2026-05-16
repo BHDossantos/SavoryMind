@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
@@ -11,6 +12,7 @@ import { api } from "../services/api";
 const PIE_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa"];
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [sentimentSummary, setSentimentSummary] = useState(null);
@@ -31,7 +33,7 @@ export default function Dashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
-  if (loading) return <LoadingSpinner message="Loading dashboard..." />;
+  if (loading) return <LoadingSpinner message={t("restaurantDashboard.loading")} />;
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
   const topItems = [...menuItems]
@@ -48,32 +50,30 @@ export default function Dashboard() {
 
   const sentimentData = sentimentSummary
     ? [
-        { name: "Positive", value: sentimentSummary.positive_count, fill: "#22c55e" },
-        { name: "Neutral", value: sentimentSummary.neutral_count, fill: "#94a3b8" },
-        { name: "Negative", value: sentimentSummary.negative_count, fill: "#ef4444" },
+        { name: t("restaurantDashboard.positive"), value: sentimentSummary.positive_count, fill: "#22c55e" },
+        { name: t("restaurantDashboard.neutral"),  value: sentimentSummary.neutral_count,  fill: "#94a3b8" },
+        { name: t("restaurantDashboard.negative"), value: sentimentSummary.negative_count, fill: "#ef4444" },
       ]
     : [];
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-400 mt-1">Overview of your restaurant performance</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t("restaurantDashboard.title")}</h1>
+        <p className="text-gray-400 mt-1">{t("restaurantDashboard.subtitle")}</p>
       </div>
 
-      {/* Flavor — same AI assistant the consumer side has. Useful to
-          restaurant operators for menu engineering questions, pairings
-          on the wine list, fixes for tough dishes. Backend endpoint
-          is open to any logged-in user. */}
+      {/* Flavor — same AI assistant the consumer side has. Restaurant
+          owners get the restaurant-side tool registry. */}
       <Link
-        href="/consumer/assistant"
+        href="/restaurant/assistant"
         className="group mb-8 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
       >
         <span className="text-4xl flex-shrink-0">👨‍🍳</span>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-base">Ask Flavor</p>
+          <p className="font-bold text-base">{t("restaurantDashboard.askFlavor")}</p>
           <p className="text-xs text-white/80 mt-0.5 leading-relaxed">
-            Real-time help with menu engineering, pairings, kitchen fixes.
+            {t("restaurantDashboard.askFlavorSub")}
           </p>
         </div>
         <span className="text-2xl flex-shrink-0 group-hover:translate-x-1 transition-transform">→</span>
@@ -82,40 +82,40 @@ export default function Dashboard() {
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <MetricCard
-          title="Revenue (30 days)"
+          title={t("restaurantDashboard.revenue30")}
           value={`$${stats.total_revenue_30_days.toLocaleString()}`}
           icon="💰"
           color="orange"
         />
         <MetricCard
-          title="Avg Profit Margin"
+          title={t("restaurantDashboard.avgProfitMargin")}
           value={`${stats.avg_profit_margin}%`}
           icon="📈"
           color="green"
         />
         <MetricCard
-          title="Total Orders"
+          title={t("restaurantDashboard.totalOrders")}
           value={stats.total_orders_30_days.toLocaleString()}
-          subtitle="Last 30 days"
+          subtitle={t("restaurantDashboard.last30Days")}
           icon="🛒"
           color="blue"
         />
         <MetricCard
-          title="Menu Items"
+          title={t("restaurantDashboard.menuItems")}
           value={stats.total_menu_items}
           icon="🍽️"
           color="purple"
         />
         <MetricCard
-          title="Avg Rating"
+          title={t("restaurantDashboard.avgRating")}
           value={`${stats.avg_rating} / 5`}
           icon="⭐"
           color="orange"
         />
         <MetricCard
-          title="Top Performer"
+          title={t("restaurantDashboard.topPerformer")}
           value={stats.top_performer}
-          subtitle="Most ordered item"
+          subtitle={t("restaurantDashboard.mostOrderedItem")}
           icon="🏆"
           color="green"
         />
@@ -125,21 +125,21 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Bar chart - top items by orders */}
         <div className="card lg:col-span-2">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">Top Items by Orders</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-4">{t("restaurantDashboard.topItemsByOrders")}</h2>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={topItems} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Bar dataKey="orders" fill="#f97316" radius={[4, 4, 0, 0]} name="Orders" />
+              <Bar dataKey="orders" fill="#f97316" radius={[4, 4, 0, 0]} name={t("restaurantDashboard.ordersLabel")} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Pie chart - category breakdown */}
         <div className="card">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">By Category</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-4">{t("restaurantDashboard.byCategory")}</h2>
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
               <Pie data={categoryData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name }) => name}>
@@ -156,7 +156,7 @@ export default function Dashboard() {
       {/* Sentiment summary */}
       {sentimentSummary && (
         <div className="card">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">Customer Sentiment Overview</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-4">{t("restaurantDashboard.sentimentOverview")}</h2>
           <div className="flex items-center gap-8">
             <div className="w-40 h-40 flex-shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -172,19 +172,19 @@ export default function Dashboard() {
             <div className="flex gap-8">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{sentimentSummary.positive_count}</p>
-                <p className="text-sm text-gray-400">Positive</p>
+                <p className="text-sm text-gray-400">{t("restaurantDashboard.positive")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-500">{sentimentSummary.neutral_count}</p>
-                <p className="text-sm text-gray-400">Neutral</p>
+                <p className="text-sm text-gray-400">{t("restaurantDashboard.neutral")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-red-500">{sentimentSummary.negative_count}</p>
-                <p className="text-sm text-gray-400">Negative</p>
+                <p className="text-sm text-gray-400">{t("restaurantDashboard.negative")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-900">{sentimentSummary.avg_rating.toFixed(1)}</p>
-                <p className="text-sm text-gray-400">Avg Rating</p>
+                <p className="text-sm text-gray-400">{t("restaurantDashboard.avgRating")}</p>
               </div>
             </div>
           </div>
