@@ -1,22 +1,41 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import Link from "next/link";
 
+// Backend stores English category IDs; display labels via i18n.
 const CATEGORIES = ["Proteins", "Vegetables", "Dairy", "Grains", "Spices", "Fruits", "Condiments", "Other"];
-
+const CATEGORY_KEY = {
+  Proteins: "pantryPage.catProteins", Vegetables: "pantryPage.catVegetables",
+  Dairy: "pantryPage.catDairy", Grains: "pantryPage.catGrains",
+  Spices: "pantryPage.catSpices", Fruits: "pantryPage.catFruits",
+  Condiments: "pantryPage.catCondiments", Other: "pantryPage.catOther",
+};
 const CATEGORY_EMOJI = {
   Proteins: "🥩", Vegetables: "🥦", Dairy: "🧀", Grains: "🌾",
   Spices: "🌶️", Fruits: "🍎", Condiments: "🫙", Other: "📦",
 };
+const DIFF_KEY = { Easy: "pantryPage.diffEasy", Medium: "pantryPage.diffMedium", Hard: "pantryPage.diffHard" };
 
 const QUICK_ADD = [
-  "Chicken breast", "Pasta", "Eggs", "Garlic", "Onion", "Tomatoes",
-  "Butter", "Olive oil", "Parmesan", "Lemon", "Rice", "Potatoes",
+  { id: "Chicken breast", labelKey: "pantryPage.qaChickenBreast" },
+  { id: "Pasta",          labelKey: "pantryPage.qaPasta" },
+  { id: "Eggs",           labelKey: "pantryPage.qaEggs" },
+  { id: "Garlic",         labelKey: "pantryPage.qaGarlic" },
+  { id: "Onion",          labelKey: "pantryPage.qaOnion" },
+  { id: "Tomatoes",       labelKey: "pantryPage.qaTomatoes" },
+  { id: "Butter",         labelKey: "pantryPage.qaButter" },
+  { id: "Olive oil",      labelKey: "pantryPage.qaOliveOil" },
+  { id: "Parmesan",       labelKey: "pantryPage.qaParmesan" },
+  { id: "Lemon",          labelKey: "pantryPage.qaLemon" },
+  { id: "Rice",           labelKey: "pantryPage.qaRice" },
+  { id: "Potatoes",       labelKey: "pantryPage.qaPotatoes" },
 ];
 
 export default function PantryPage() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [matchedIngredients, setMatchedIngredients] = useState([]);
@@ -38,7 +57,7 @@ export default function PantryPage() {
       const data = await api.getPantry();
       setItems(data);
       if (data.length > 0) loadRecipes();
-    } catch (e) { setError(e.message || "Failed to load pantry."); }
+    } catch (e) { setError(e.message || t("pantryPage.errLoadPantry")); }
     finally { setLoading(false); }
   };
 
@@ -48,18 +67,17 @@ export default function PantryPage() {
       const data = await api.getPantryRecipes();
       setRecipes(data.recipes || []);
       setMatchedIngredients(data.matched_ingredients || []);
-    } catch (e) { setError(e.message || "Failed to load recipe matches."); }
+    } catch (e) { setError(e.message || t("pantryPage.errLoadRecipes")); }
     finally { setRecipeLoading(false); }
   };
 
   const addItem = async (ing = ingredient, qty = quantity, cat = category) => {
-    if (!ing.trim()) { setError("Enter an ingredient name."); return; }
+    if (!ing.trim()) { setError(t("pantryPage.errEnterName")); return; }
     setAdding(true); setError("");
     try {
       const item = await api.addPantryItem({ ingredient: ing.trim(), quantity: qty || null, category: cat });
       setItems((prev) => [item, ...prev]);
       setIngredient(""); setQuantity(""); setCategory("Other");
-      // Reload recipe matches whenever pantry changes
       loadRecipes();
     } catch (e) { setError(e.message); }
     finally { setAdding(false); }
@@ -70,23 +88,22 @@ export default function PantryPage() {
       await api.deletePantryItem(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
       loadRecipes();
-    } catch (e) { setError(e.message || "Failed to remove item."); }
+    } catch (e) { setError(e.message || t("pantryPage.errRemove")); }
   };
 
   const clearAll = () => {
     setConfirmDialog({
-      message: "Clear your entire pantry? All ingredients will be removed.",
+      message: t("pantryPage.clearConfirm"),
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
           await api.clearPantry();
           setItems([]); setRecipes([]); setMatchedIngredients([]);
-        } catch (e) { setError(e.message || "Failed to clear pantry."); }
+        } catch (e) { setError(e.message || t("pantryPage.errClear")); }
       },
     });
   };
 
-  // Group items by category
   const grouped = items.reduce((acc, item) => {
     const key = item.category || "Other";
     if (!acc[key]) acc[key] = [];
@@ -96,20 +113,26 @@ export default function PantryPage() {
 
   if (loading) return <LoadingSpinner />;
 
+  const matchedLine = matchedIngredients.length > 4
+    ? t("pantryPage.matchedOnExtra", { ingredients: matchedIngredients.slice(0, 4).join(", "), extra: matchedIngredients.length - 4 })
+    : matchedIngredients.slice(0, 4).join(", ");
+
   return (
     <div>
       {confirmDialog && <ConfirmDialog message={confirmDialog.message} onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog(null)} />}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">🧺 My Pantry</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("pantryPage.title")}</h1>
           <p className="text-gray-400 mt-1">
-            {items.length === 0 ? "Tell us what you have — we'll find recipes to match." : `${items.length} ingredient${items.length !== 1 ? "s" : ""} · recipes below`}
+            {items.length === 0
+              ? t("pantryPage.subtitleEmpty")
+              : t("pantryPage.subtitleCount", { count: items.length })}
           </p>
         </div>
         {items.length > 0 && (
           <button onClick={clearAll}
             className="text-xs text-red-400 hover:text-red-600 font-medium border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors">
-            Clear all
+            {t("pantryPage.clearAll")}
           </button>
         )}
       </div>
@@ -118,56 +141,56 @@ export default function PantryPage() {
         {/* Left: add + pantry list */}
         <div className="lg:col-span-1 space-y-6">
 
-          {/* Add item form */}
           <div className="bg-white rounded-2xl border border-consumer-200 p-5">
-            <h2 className="text-sm font-bold text-gray-900 mb-4">Add an ingredient</h2>
+            <h2 className="text-sm font-bold text-gray-900 mb-4">{t("pantryPage.addHeader")}</h2>
             {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{error}</p>}
             <div className="space-y-3">
               <input
                 value={ingredient} onChange={(e) => { setIngredient(e.target.value); setError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && addItem()}
-                placeholder="e.g. Chicken breast"
+                placeholder={t("pantryPage.ingredientPh")}
                 className="w-full border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
               />
               <div className="flex gap-2">
                 <input
                   value={quantity} onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="Qty (optional)"
+                  placeholder={t("pantryPage.qtyPh")}
                   className="flex-1 border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400"
                 />
                 <select value={category} onChange={(e) => setCategory(e.target.value)}
                   className="flex-1 border border-consumer-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400">
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{t(CATEGORY_KEY[c])}</option>)}
                 </select>
               </div>
               <button onClick={() => addItem()} disabled={adding}
                 className="w-full bg-consumer-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-consumer-700 disabled:opacity-60 transition-colors">
-                {adding ? "Adding…" : "+ Add to Pantry"}
+                {adding ? t("pantryPage.adding") : t("pantryPage.addBtn")}
               </button>
             </div>
 
-            {/* Quick-add chips */}
             <div className="mt-4 pt-4 border-t border-consumer-100">
-              <p className="text-xs font-semibold text-gray-400 mb-2">Quick add</p>
+              <p className="text-xs font-semibold text-gray-400 mb-2">{t("pantryPage.quickAdd")}</p>
               <div className="flex flex-wrap gap-1.5">
-                {QUICK_ADD.filter((q) => !items.some((i) => i.ingredient.toLowerCase() === q.toLowerCase())).slice(0, 8).map((q) => (
-                  <button key={q} onClick={() => addItem(q, "", "Other")}
-                    className="text-xs px-2.5 py-1 rounded-full border border-consumer-200 text-consumer-600 hover:bg-consumer-50 hover:border-consumer-400 transition-all">
-                    + {q}
-                  </button>
-                ))}
+                {QUICK_ADD
+                  .filter((q) => !items.some((i) => i.ingredient.toLowerCase() === q.id.toLowerCase()))
+                  .slice(0, 8)
+                  .map((q) => (
+                    <button key={q.id} onClick={() => addItem(q.id, "", "Other")}
+                      className="text-xs px-2.5 py-1 rounded-full border border-consumer-200 text-consumer-600 hover:bg-consumer-50 hover:border-consumer-400 transition-all">
+                      + {t(q.labelKey)}
+                    </button>
+                  ))}
               </div>
             </div>
           </div>
 
-          {/* Pantry list grouped by category */}
           {items.length > 0 ? (
             <div className="bg-white rounded-2xl border border-consumer-100 overflow-hidden">
               {Object.entries(grouped).map(([cat, catItems]) => (
                 <div key={cat}>
                   <div className="px-4 py-2 bg-consumer-50 border-b border-consumer-100">
                     <p className="text-xs font-bold text-consumer-700">
-                      {CATEGORY_EMOJI[cat] || "📦"} {cat}
+                      {CATEGORY_EMOJI[cat] || "📦"} {t(CATEGORY_KEY[cat] || "pantryPage.catOther")}
                     </p>
                   </div>
                   {catItems.map((item) => (
@@ -188,7 +211,7 @@ export default function PantryPage() {
           ) : (
             <div className="bg-consumer-50 rounded-2xl border border-consumer-100 p-6 text-center">
               <p className="text-3xl mb-2">🧺</p>
-              <p className="text-sm text-gray-500">Your pantry is empty. Add ingredients above and we'll find recipes you can cook right now.</p>
+              <p className="text-sm text-gray-500">{t("pantryPage.emptyPantryHint")}</p>
             </div>
           )}
         </div>
@@ -197,11 +220,11 @@ export default function PantryPage() {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-gray-900">
-              {items.length === 0 ? "Recipes" : "What you can cook tonight"}
+              {items.length === 0 ? t("pantryPage.recipesHeader") : t("pantryPage.recipesHeaderActive")}
             </h2>
             {matchedIngredients.length > 0 && (
               <p className="text-xs text-gray-400">
-                Matched on: {matchedIngredients.slice(0, 4).join(", ")}{matchedIngredients.length > 4 ? ` +${matchedIngredients.length - 4}` : ""}
+                {t("pantryPage.matchedOn", { ingredients: matchedLine })}
               </p>
             )}
           </div>
@@ -214,13 +237,11 @@ export default function PantryPage() {
             <div className="bg-white rounded-2xl border border-consumer-100 p-10 text-center">
               <p className="text-4xl mb-3">👨‍🍳</p>
               <p className="text-sm text-gray-500 mb-4">
-                {items.length === 0
-                  ? "Add ingredients to your pantry and we'll suggest recipes you can make right now."
-                  : "No recipes matched your pantry yet. Try adding more common ingredients."}
+                {items.length === 0 ? t("pantryPage.noRecipesEmptyPantry") : t("pantryPage.noRecipesWithPantry")}
               </p>
               <Link href="/consumer/explore"
                 className="inline-flex bg-consumer-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-                Browse all recipes →
+                {t("pantryPage.browseAll")}
               </Link>
             </div>
           ) : (
@@ -240,7 +261,7 @@ export default function PantryPage() {
                           r.difficulty === "Easy" ? "bg-green-100 text-green-700"
                           : r.difficulty === "Medium" ? "bg-amber-100 text-amber-700"
                           : "bg-red-100 text-red-700"}`}>
-                          {r.difficulty}
+                          {DIFF_KEY[r.difficulty] ? t(DIFF_KEY[r.difficulty]) : r.difficulty}
                         </span>
                       </div>
                     </div>
@@ -251,28 +272,21 @@ export default function PantryPage() {
           )}
         </div>
       </div>
-
-      {confirmDialog && (
-        <ConfirmDialog
-          message={confirmDialog.message}
-          confirmLabel={confirmDialog.confirmLabel}
-          onConfirm={confirmDialog.onConfirm}
-          onCancel={() => setConfirmDialog(null)}
-        />
-      )}
     </div>
   );
 }
 
 function RecipeDetail({ recipe: r, onBack }) {
+  const { t } = useTranslation();
   const ingredients = Array.isArray(r.ingredients) ? r.ingredients : [];
   const steps = Array.isArray(r.steps) ? r.steps : [];
+  const diffLabel = DIFF_KEY[r.difficulty] ? t(DIFF_KEY[r.difficulty]) : r.difficulty;
 
   return (
     <div className="bg-white rounded-3xl border border-consumer-200 p-6">
       <button onClick={onBack}
         className="flex items-center gap-1.5 text-sm text-consumer-600 font-semibold hover:text-consumer-800 mb-5">
-        ← Back to recipes
+        {t("pantryPage.backToRecipes")}
       </button>
       <div className="flex items-start gap-4 mb-6">
         <span className="text-5xl">{r.image_emoji}</span>
@@ -286,7 +300,7 @@ function RecipeDetail({ recipe: r, onBack }) {
               r.difficulty === "Easy" ? "bg-green-100 text-green-700"
               : r.difficulty === "Medium" ? "bg-amber-100 text-amber-700"
               : "bg-red-100 text-red-700"}`}>
-              {r.difficulty}
+              {diffLabel}
             </span>
           </div>
         </div>
@@ -294,7 +308,7 @@ function RecipeDetail({ recipe: r, onBack }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {ingredients.length > 0 && (
           <div>
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Ingredients</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-3">{t("pantryPage.ingredients")}</h3>
             <ul className="space-y-1.5">
               {ingredients.map((ing, i) => (
                 <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
@@ -307,7 +321,7 @@ function RecipeDetail({ recipe: r, onBack }) {
         )}
         {steps.length > 0 && (
           <div>
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Steps</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-3">{t("pantryPage.steps")}</h3>
             <ol className="space-y-2.5">
               {steps.map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm text-gray-700">
@@ -325,16 +339,16 @@ function RecipeDetail({ recipe: r, onBack }) {
         {r.id && (
           <Link href={`/consumer/guided-cooking?id=${r.id}`}
             className="bg-consumer-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-consumer-700 transition-colors">
-            👨‍🍳 Start Cooking
+            {t("pantryPage.startCooking")}
           </Link>
         )}
         <Link href="/consumer/wine"
           className="border border-consumer-200 text-consumer-700 text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-50 transition-colors">
-          🍷 Pair a wine
+          {t("pantryPage.pairWine")}
         </Link>
         <Link href="/consumer/music"
           className="border border-consumer-200 text-consumer-700 text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-consumer-50 transition-colors">
-          🎵 Set the mood
+          {t("pantryPage.setMood")}
         </Link>
       </div>
     </div>
