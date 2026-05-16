@@ -486,5 +486,51 @@
     "adjUsage": "Uso (vendido/usado)",
     "adjWaste": "Desperdício (partido/estragado)",
     "adjCount": "Correção de inventário"
+  },
+  "trendsPage": {
+    "title": "🚀 Alertas de tendências",
+    "subtitleStats": "{{items}} itens da ementa · {{reviews}} comentários analisados",
+    "tabMenu": "Tendências da tua ementa",
+    "tabGlobal": "Tendências gastronómicas globais",
+    "risingStars": "🚀 Estrelas emergentes",
+    "hiddenGems": "💎 Joias escondidas",
+    "atRisk": "⚠️ Em risco",
+    "risingEmpty": "Adiciona mais itens e comentários para descobrir estrelas emergentes.",
+    "hiddenEmpty": "Sem itens de alta margem com baixo desempenho — bom trabalho!",
+    "atRiskEmpty": "Todos os itens têm sentimento positivo — nada em risco.",
+    "itemStats": "{{category}} · {{orders}} pedidos · {{margin}}% margem · {{reviews}} comentários"
+  },
+  "marketingPage": {
+    "title": "💌 Marketing e clientes",
+    "subtitle": "Captação, retenção e fidelização de clientes",
+    "totalGuests": "Clientes totais",
+    "vipGuests": "Clientes VIP",
+    "retention": "Retenção",
+    "avgSpend": "Gasto médio",
+    "totalBookings": "Reservas totais",
+    "fillRate": "Taxa de ocupação",
+    "cancelRate": "Taxa de cancelamento",
+    "actionItems": "Ações a tomar",
+    "marketingTips": "Dicas de marketing"
+  },
+  "trainingPage": {
+    "loading": "A analisar dados da equipa...",
+    "loadFailed": "Não foi possível carregar os dados de formação.",
+    "title": "🎓 Formação com IA",
+    "subtitle": "Recomendações baseadas em dados: desperdício, tempos de cozinha e avaliações",
+    "totalRecs": "Recomendações",
+    "highPriority": "Prioridade alta",
+    "medLowPriority": "Prioridade média / baixa",
+    "priorityLabel": "prioridade {{priority}}",
+    "priorityHigh": "alta",
+    "priorityMedium": "média",
+    "priorityLow": "baixa",
+    "actionPlan": "Plano de ação",
+    "footer": "* Recomendações geradas a partir de registos de desperdício, tempos de cozinha e avaliações da equipa. Adiciona mais dados para melhorar a precisão.",
+    "typeWaste": "Redução de desperdício",
+    "typeSpeed": "Treino de velocidade",
+    "typePerf": "Avaliação de desempenho",
+    "typePunctual": "Pontualidade",
+    "typeGeneral": "Geral"
   }
 }

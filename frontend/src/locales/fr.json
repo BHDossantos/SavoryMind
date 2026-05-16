@@ -486,5 +486,51 @@
     "adjUsage": "Utilisation (vendu/utilisé)",
     "adjWaste": "Perte (cassé/avarié)",
     "adjCount": "Correction d'inventaire"
+  },
+  "trendsPage": {
+    "title": "🚀 Alertes de tendances",
+    "subtitleStats": "{{items}} plats · {{reviews}} avis analysés",
+    "tabMenu": "Tendances de votre menu",
+    "tabGlobal": "Tendances gastronomiques mondiales",
+    "risingStars": "🚀 Étoiles montantes",
+    "hiddenGems": "💎 Pépites cachées",
+    "atRisk": "⚠️ À risque",
+    "risingEmpty": "Ajoutez plus de plats et d'avis pour découvrir les étoiles montantes.",
+    "hiddenEmpty": "Aucun plat à forte marge sous-performant — beau travail !",
+    "atRiskEmpty": "Tous les plats ont un sentiment positif — rien à risque.",
+    "itemStats": "{{category}} · {{orders}} commandes · {{margin}}% marge · {{reviews}} avis"
+  },
+  "marketingPage": {
+    "title": "💌 Marketing & clients",
+    "subtitle": "Acquisition, fidélisation et insights de loyauté",
+    "totalGuests": "Clients totaux",
+    "vipGuests": "Clients VIP",
+    "retention": "Rétention",
+    "avgSpend": "Dépense moyenne",
+    "totalBookings": "Réservations totales",
+    "fillRate": "Taux de remplissage",
+    "cancelRate": "Taux d'annulation",
+    "actionItems": "Actions à mener",
+    "marketingTips": "Conseils marketing"
+  },
+  "trainingPage": {
+    "loading": "Analyse des données du personnel...",
+    "loadFailed": "Impossible de charger les données de formation.",
+    "title": "🎓 Formation IA du personnel",
+    "subtitle": "Recommandations basées sur les données : gaspillage, temps de cuisine et notes",
+    "totalRecs": "Recommandations",
+    "highPriority": "Priorité haute",
+    "medLowPriority": "Priorité moyenne / basse",
+    "priorityLabel": "priorité {{priority}}",
+    "priorityHigh": "haute",
+    "priorityMedium": "moyenne",
+    "priorityLow": "basse",
+    "actionPlan": "Plan d'action",
+    "footer": "* Recommandations générées à partir des journaux de gaspillage, des temps de cuisine et des notes du personnel. Ajoutez plus de données pour améliorer la précision.",
+    "typeWaste": "Réduction du gaspillage",
+    "typeSpeed": "Coaching vitesse",
+    "typePerf": "Évaluation de performance",
+    "typePunctual": "Ponctualité",
+    "typeGeneral": "Général"
   }
 }

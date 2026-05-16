@@ -486,5 +486,51 @@
     "adjUsage": "Uso (venduto/usato)",
     "adjWaste": "Spreco (rotto/scaduto)",
     "adjCount": "Correzione inventario"
+  },
+  "trendsPage": {
+    "title": "🚀 Avvisi tendenze",
+    "subtitleStats": "{{items}} voci di menù · {{reviews}} recensioni analizzate",
+    "tabMenu": "Tendenze del tuo menù",
+    "tabGlobal": "Tendenze gastronomiche globali",
+    "risingStars": "🚀 Stelle nascenti",
+    "hiddenGems": "💎 Gemme nascoste",
+    "atRisk": "⚠️ A rischio",
+    "risingEmpty": "Aggiungi più voci di menù e recensioni per scoprire le stelle nascenti.",
+    "hiddenEmpty": "Nessun piatto ad alto margine sotto-performante — ottimo lavoro!",
+    "atRiskEmpty": "Tutte le voci hanno sentiment positivo — nulla a rischio.",
+    "itemStats": "{{category}} · {{orders}} ordini · {{margin}}% margine · {{reviews}} recensioni"
+  },
+  "marketingPage": {
+    "title": "💌 Marketing e clienti",
+    "subtitle": "Acquisizione, fidelizzazione e loyalty insight",
+    "totalGuests": "Clienti totali",
+    "vipGuests": "Clienti VIP",
+    "retention": "Retention",
+    "avgSpend": "Scontrino medio",
+    "totalBookings": "Prenotazioni totali",
+    "fillRate": "Tasso di riempimento",
+    "cancelRate": "Tasso di cancellazione",
+    "actionItems": "Azioni da fare",
+    "marketingTips": "Consigli di marketing"
+  },
+  "trainingPage": {
+    "loading": "Analisi dei dati dello staff...",
+    "loadFailed": "Impossibile caricare i dati di formazione.",
+    "title": "🎓 Formazione AI",
+    "subtitle": "Raccomandazioni basate su sprechi, tempi di cucina e valutazioni",
+    "totalRecs": "Raccomandazioni",
+    "highPriority": "Priorità alta",
+    "medLowPriority": "Priorità media / bassa",
+    "priorityLabel": "priorità {{priority}}",
+    "priorityHigh": "alta",
+    "priorityMedium": "media",
+    "priorityLow": "bassa",
+    "actionPlan": "Piano d'azione",
+    "footer": "* Raccomandazioni generate da registri di sprechi, tempi di cucina e valutazioni dello staff. Aggiungi più dati per migliorare l'accuratezza.",
+    "typeWaste": "Riduzione sprechi",
+    "typeSpeed": "Coaching velocità",
+    "typePerf": "Valutazione performance",
+    "typePunctual": "Puntualità",
+    "typeGeneral": "Generale"
   }
 }
