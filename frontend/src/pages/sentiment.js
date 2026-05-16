@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -6,9 +7,10 @@ import { api } from "../services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 function SentimentBadge({ label }) {
-  if (label === "positive") return <span className="badge-positive">Positive</span>;
-  if (label === "negative") return <span className="badge-negative">Negative</span>;
-  return <span className="badge-neutral">Neutral</span>;
+  const { t } = useTranslation();
+  if (label === "positive") return <span className="badge-positive">{t("sentimentPage.badgePositive")}</span>;
+  if (label === "negative") return <span className="badge-negative">{t("sentimentPage.badgeNegative")}</span>;
+  return <span className="badge-neutral">{t("sentimentPage.badgeNeutral")}</span>;
 }
 
 function ScoreBar({ score }) {
@@ -25,6 +27,7 @@ function ScoreBar({ score }) {
 }
 
 export default function SentimentPage() {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState([]);
   const [summary, setSummary] = useState(null);
   // Claude-extracted top complaints / praise / themes / tone breakdown,
@@ -80,9 +83,9 @@ export default function SentimentPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.menu_item) { setFormError("Please select a menu item."); return; }
+    if (!form.menu_item) { setFormError(t("sentimentPage.selectMenuItem")); return; }
     const rating = parseInt(form.rating);
-    if (rating < 1 || rating > 5) { setFormError("Rating must be between 1 and 5."); return; }
+    if (rating < 1 || rating > 5) { setFormError(t("sentimentPage.ratingBetween")); return; }
     setSaving(true);
     setFormError(null);
     try {
@@ -99,7 +102,7 @@ export default function SentimentPage() {
 
   const handleDelete = (review) => {
     setConfirmDialog({
-      message: `Delete review by "${review.customer_name}"?`,
+      message: t("sentimentPage.deleteReviewPrompt", { name: review.customer_name }),
       onConfirm: async () => {
         setConfirmDialog(null);
         setDeletingId(review.id);
@@ -108,7 +111,7 @@ export default function SentimentPage() {
           await api.deleteReview(review.id);
           fetchData();
         } catch (err) {
-          setDeleteError(err.message || "Failed to delete review.");
+          setDeleteError(err.message || t("sentimentPage.deleteFailed"));
         } finally {
           setDeletingId(null);
         }
@@ -121,14 +124,14 @@ export default function SentimentPage() {
     if (formError) setFormError(null);
   };
 
-  if (loading) return <LoadingSpinner message="Loading reviews..." />;
+  if (loading) return <LoadingSpinner message={t("sentimentPage.loading")} />;
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
   const barData = summary
     ? [
-        { label: "Positive", count: summary.positive_count, fill: "#22c55e" },
-        { label: "Neutral", count: summary.neutral_count, fill: "#94a3b8" },
-        { label: "Negative", count: summary.negative_count, fill: "#ef4444" },
+        { label: t("sentimentPage.positive"), count: summary.positive_count, fill: "#22c55e" },
+        { label: t("sentimentPage.neutral"),  count: summary.neutral_count,  fill: "#94a3b8" },
+        { label: t("sentimentPage.negative"), count: summary.negative_count, fill: "#ef4444" },
       ]
     : [];
 
@@ -136,12 +139,12 @@ export default function SentimentPage() {
     <div>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customer Sentiment</h1>
-          <p className="text-gray-400 mt-1">Review analysis and sentiment scoring</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("sentimentPage.title")}</h1>
+          <p className="text-gray-400 mt-1">{t("sentimentPage.subtitle")}</p>
         </div>
         {activeTab === "internal" && (
           <button onClick={() => { setShowForm(!showForm); setFormError(null); }} className="btn-primary">
-            {showForm ? "Cancel" : "+ Add Review"}
+            {showForm ? t("sentimentPage.cancel") : t("sentimentPage.addReview")}
           </button>
         )}
       </div>
@@ -150,11 +153,11 @@ export default function SentimentPage() {
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
         <button onClick={() => setActiveTab("internal")}
           className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === "internal" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-          Internal Reviews {reviews.length > 0 && <span className="ml-1 text-xs text-gray-400">({reviews.length})</span>}
+          {t("sentimentPage.tabInternal")} {reviews.length > 0 && <span className="ml-1 text-xs text-gray-400">({reviews.length})</span>}
         </button>
         <button onClick={() => setActiveTab("platform")}
           className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === "platform" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-          Platform Reviews {dinerReviews.length > 0 && <span className="ml-1 text-xs text-gray-400">({dinerReviews.length})</span>}
+          {t("sentimentPage.tabPlatform")} {dinerReviews.length > 0 && <span className="ml-1 text-xs text-gray-400">({dinerReviews.length})</span>}
         </button>
       </div>
 
@@ -162,12 +165,12 @@ export default function SentimentPage() {
       {activeTab === "platform" && (
         <div>
           {dinerReviewsLoading ? (
-            <LoadingSpinner message="Loading platform reviews..." />
+            <LoadingSpinner message={t("sentimentPage.loadingPlatform")} />
           ) : dinerReviews.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-2xl">
               <p className="text-3xl mb-3">⭐</p>
-              <p className="text-gray-600 font-semibold">No platform reviews yet</p>
-              <p className="text-sm text-gray-400 mt-1">When diners book and rate your restaurant via SavoryMind, reviews appear here.</p>
+              <p className="text-gray-600 font-semibold">{t("sentimentPage.noPlatform")}</p>
+              <p className="text-sm text-gray-400 mt-1">{t("sentimentPage.noPlatformSub")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -176,7 +179,7 @@ export default function SentimentPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{r.diner_name || "Anonymous Diner"}</span>
+                        <span className="font-semibold text-gray-900">{r.diner_name || t("sentimentPage.anonymousDiner")}</span>
                         <span className="text-gray-300">·</span>
                         <span className="text-sm">{"⭐".repeat(Math.round(r.rating || 0))}</span>
                         <span className="text-xs text-gray-500">{r.rating?.toFixed(1)}</span>
@@ -199,29 +202,29 @@ export default function SentimentPage() {
       {/* Add Review Form */}
       {showForm && (
         <div className="card mb-6">
-          <h2 className="text-base font-semibold mb-4">Submit a Review</h2>
+          <h2 className="text-base font-semibold mb-4">{t("sentimentPage.submitReviewTitle")}</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("sentimentPage.customerName")}</label>
               <input required value={form.customer_name} onChange={(e) => handleFieldChange("customer_name", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Menu Item</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("sentimentPage.menuItem")}</label>
               <select required value={form.menu_item} onChange={(e) => handleFieldChange("menu_item", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400">
-                <option value="">Select item...</option>
+                <option value="">{t("sentimentPage.selectItem")}</option>
                 {menuItems.map((i) => <option key={i.id} value={i.name}>{i.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("sentimentPage.rating")}</label>
               <input type="number" min="1" max="5" required value={form.rating}
                 onChange={(e) => handleFieldChange("rating", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("sentimentPage.comment")}</label>
               <textarea required value={form.comment} onChange={(e) => handleFieldChange("comment", e.target.value)}
                 rows={2}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
@@ -233,7 +236,7 @@ export default function SentimentPage() {
             )}
             <div className="col-span-2 flex justify-end">
               <button type="submit" disabled={saving} className="btn-primary">
-                {saving ? "Analyzing..." : "Submit Review"}
+                {saving ? t("sentimentPage.analyzing") : t("sentimentPage.submitReview")}
               </button>
             </div>
           </form>
@@ -244,26 +247,26 @@ export default function SentimentPage() {
       {summary && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="card">
-            <h2 className="text-base font-semibold mb-4">Overview</h2>
+            <h2 className="text-base font-semibold mb-4">{t("sentimentPage.overview")}</h2>
             <div className="space-y-3">
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Total Reviews</span><span className="font-semibold">{summary.total_reviews}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Avg Rating</span><span className="font-semibold">⭐ {summary.avg_rating.toFixed(1)}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Avg Sentiment</span><span className="font-semibold">{summary.avg_sentiment.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-gray-500">{t("sentimentPage.totalReviews")}</span><span className="font-semibold">{summary.total_reviews}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-gray-500">{t("sentimentPage.avgRating")}</span><span className="font-semibold">⭐ {summary.avg_rating.toFixed(1)}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-gray-500">{t("sentimentPage.avgSentiment")}</span><span className="font-semibold">{summary.avg_sentiment.toFixed(2)}</span></div>
               <hr className="border-gray-100" />
-              <div className="flex justify-between"><span className="text-sm text-green-600">Positive</span><span className="font-semibold text-green-600">{summary.positive_count}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Neutral</span><span className="font-semibold">{summary.neutral_count}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-red-500">Negative</span><span className="font-semibold text-red-500">{summary.negative_count}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-green-600">{t("sentimentPage.positive")}</span><span className="font-semibold text-green-600">{summary.positive_count}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-gray-500">{t("sentimentPage.neutral")}</span><span className="font-semibold">{summary.neutral_count}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-red-500">{t("sentimentPage.negative")}</span><span className="font-semibold text-red-500">{summary.negative_count}</span></div>
             </div>
           </div>
           <div className="card lg:col-span-2">
-            <h2 className="text-base font-semibold mb-4">Sentiment Distribution</h2>
+            <h2 className="text-base font-semibold mb-4">{t("sentimentPage.sentimentDistribution")}</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={barData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="count" name="Reviews" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" name={t("sentimentPage.reviewsLegend")} radius={[4, 4, 0, 0]}>
                   {barData.map((entry, i) => (
                     <Cell key={i} fill={entry.fill} />
                   ))}
@@ -282,12 +285,12 @@ export default function SentimentPage() {
           - enriched reviews exist → render the populated panel. */}
       {themes && themes.total_reviews > 0 && themes.enriched_reviews === 0 && (
         <div className="card mb-6" data-testid="themes-empty">
-          <h2 className="text-base font-semibold mb-1">What guests are talking about</h2>
+          <h2 className="text-base font-semibold mb-1">{t("sentimentPage.whatGuestsTalking")}</h2>
           <p className="text-sm text-gray-600">
-            None of your {themes.total_reviews} reviews have been analysed yet.
+            {t("sentimentPage.noneAnalysed", { total: themes.total_reviews })}
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            New reviews are analysed automatically. To enrich existing reviews,
+            {t("sentimentPage.noneAnalysedHelp")}{" "}
             run <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">python -m scripts.backfill_themes</code>{" "}
             (requires <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">ANTHROPIC_API_KEY</code>).
           </p>
@@ -296,16 +299,16 @@ export default function SentimentPage() {
       {themes && themes.enriched_reviews > 0 && (
         <div className="card mb-6">
           <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-base font-semibold">What guests are talking about</h2>
+            <h2 className="text-base font-semibold">{t("sentimentPage.whatGuestsTalking")}</h2>
             <span className="text-xs text-gray-500">
-              From {themes.enriched_reviews} of {themes.total_reviews} reviews
+              {t("sentimentPage.fromOf", { enriched: themes.enriched_reviews, total: themes.total_reviews })}
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {themes.top_complaints && themes.top_complaints.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">
-                  Top complaints
+                  {t("sentimentPage.topComplaints")}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {themes.top_complaints.map((c) => (
@@ -320,7 +323,7 @@ export default function SentimentPage() {
             {themes.top_praise && themes.top_praise.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">
-                  Top praise
+                  {t("sentimentPage.topPraise")}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {themes.top_praise.map((p) => (
@@ -335,7 +338,7 @@ export default function SentimentPage() {
             {themes.top_themes && themes.top_themes.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">
-                  Themes
+                  {t("sentimentPage.themes")}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {themes.top_themes.map((t) => (
@@ -350,7 +353,7 @@ export default function SentimentPage() {
           </div>
           {themes.tone_breakdown && Object.keys(themes.tone_breakdown).length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-3 text-xs">
-              <span className="text-gray-500">Tone:</span>
+              <span className="text-gray-500">{t("sentimentPage.tone")}</span>
               {Object.entries(themes.tone_breakdown).map(([tone, count]) => (
                 <span key={tone} className="text-gray-700">
                   <span className="capitalize">{tone}</span>{" "}
@@ -373,20 +376,25 @@ export default function SentimentPage() {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <input
           type="text"
-          placeholder="Search by name or item..."
+          placeholder={t("sentimentPage.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 w-52"
         />
-        {["all", "positive", "neutral", "negative"].map((f) => (
+        {[
+          ["all", "filterAll"],
+          ["positive", "positive"],
+          ["neutral", "neutral"],
+          ["negative", "negative"],
+        ].map(([f, k]) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filter === f ? "bg-brand-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
             }`}
           >
-            {f === "all" ? "All" : f}
+            {t(`sentimentPage.${k}`)}
           </button>
         ))}
       </div>
@@ -416,7 +424,7 @@ export default function SentimentPage() {
                   onClick={() => handleDelete(review)}
                   disabled={deletingId === review.id}
                   className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
-                  title="Delete review"
+                  title={t("sentimentPage.deleteReview")}
                 >
                   🗑️
                 </button>
@@ -425,7 +433,7 @@ export default function SentimentPage() {
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="text-center text-gray-400 py-10">No reviews match your search.</p>
+          <p className="text-center text-gray-400 py-10">{t("sentimentPage.noReviewsMatch")}</p>
         )}
       </div>
 
