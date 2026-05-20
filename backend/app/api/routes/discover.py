@@ -45,7 +45,7 @@ def get_availability(
 
 class BookingRequest(BaseModel):
     restaurant_id: int
-    booking_date: str   # "YYYY-MM-DD"
+    booking_date: date  # parsed from "YYYY-MM-DD"; malformed input → 422
     booking_time: str   # "19:00"
     party_size: int = 2
     special_requests: str = ""
