@@ -210,7 +210,7 @@ def catalog_wines(db: Session = Depends(get_db), current_user: User = Depends(ge
     client-side for speed — the catalog is small enough that
     server-side filtering would just add round-trips."""
     _require_consumer(current_user)
-    from ..data import get_wines
+    from ...data import get_wines
     catalog = get_wines()
     # Return as a list with the slug attached so the UI can render
     # consistent keys without reshaping.
@@ -224,7 +224,7 @@ def catalog_wines(db: Session = Depends(get_db), current_user: User = Depends(ge
 def catalog_beers(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Full beer catalog."""
     _require_consumer(current_user)
-    from ..data import get_beers
+    from ...data import get_beers
     catalog = get_beers()
     return {"count": len(catalog), "beers": catalog}
 
@@ -233,7 +233,7 @@ def catalog_beers(db: Session = Depends(get_db), current_user: User = Depends(ge
 def catalog_spirits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Full spirits catalog."""
     _require_consumer(current_user)
-    from ..data import get_spirits
+    from ...data import get_spirits
     catalog = get_spirits()
     return {"count": len(catalog), "spirits": catalog}
 
