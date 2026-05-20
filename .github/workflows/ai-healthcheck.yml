@@ -1,11 +1,24 @@
 name: AI healthcheck
 
-# Manually triggered (Actions tab -> "AI healthcheck" -> "Run workflow").
 # Makes one real call to the Anthropic API with the ANTHROPIC_API_KEY
 # secret to verify the key, account, and model actually work. Use this
 # to diagnose Flavor / AI features failing in production.
+#
+# Triggers:
+#   - workflow_dispatch — run manually from the Actions tab.
+#   - pull_request touching this workflow/script — runs automatically and
+#     posts the result as a PR comment, so the outcome is visible without
+#     opening the Actions logs.
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/ai-healthcheck.yml"
+      - ".github/scripts/ai_healthcheck.py"
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   healthcheck:
@@ -24,4 +37,17 @@ jobs:
       - name: Call Claude
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python .github/scripts/ai_healthcheck.py
+        run: python .github/scripts/ai_healthcheck.py | tee result.txt
+
+      - name: Post result to the PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo '### AI healthcheck result'
+            echo '```'
+            cat result.txt 2>/dev/null || echo '(no output captured)'
+            echo '```'
+          } > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md
