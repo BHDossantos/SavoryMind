@@ -77,7 +77,7 @@ export default function DiscoverPage() {
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-semibold text-gray-500 mr-1">{t("discoverPage.occasionLabel")}</span>
           {MOODS.map((m) => (
-            <button key={m.id || "any"} onClick={() => setMood(m.id)}
+            <button key={m.id || "any"} onClick={() => { setMood(m.id); search(m.id, cuisine, city); }}
               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
                 mood === m.id ? "bg-diner-600 text-white" : "bg-white text-gray-600 border border-diner-200 hover:border-diner-400"
               }`}>
