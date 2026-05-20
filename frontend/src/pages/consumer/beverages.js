@@ -86,7 +86,7 @@ export default function Beverages() {
                 {tab === "wine" && (
                   <>
                     <h3 className="font-bold text-gray-900">{p.name}</h3>
-                    <p className="text-xs text-gray-500">{p.grape} · {p.region}</p>
+                    <p className="text-xs text-gray-500">{[p.flavor_profile, (p.regions || []).join(", ")].filter(Boolean).join(" · ")}</p>
                     <p className="text-xs text-consumer-600 mt-1">{p.style}</p>
                     <p className="mt-3 text-xs text-gray-600 leading-relaxed">{p.rationale || p.pairing_notes}</p>
                     <div className="mt-3 flex items-center gap-1">
