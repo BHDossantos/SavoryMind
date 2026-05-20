@@ -50,7 +50,7 @@ def request_booking(
     db: Session,
     diner_user_id: int,
     restaurant_user_id: int,
-    booking_date: str,
+    booking_date: date,
     booking_time: str,
     party_size: int,
     special_requests: str = "",

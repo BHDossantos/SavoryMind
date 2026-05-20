@@ -325,8 +325,10 @@ export const api = {
   deleteDinerVisit: (id) => request(`/api/diner/visits/${id}`, { method: 'DELETE' }),
   getDinerRecommendations: () => request('/api/diner/recommendations'),
 
-  // Diner — discovery
-  discoverRestaurants: (params) => request(`/api/diner/discover?${new URLSearchParams(params).toString()}`),
+  // Diner — discovery. Hits the DB-backed discover endpoint (the same one the
+  // web client uses) so registered restaurants show up. The older
+  // /api/diner/discover route returns hardcoded mock data.
+  discoverRestaurants: (params) => request(`/api/discover/restaurants?${new URLSearchParams(params).toString()}`),
   getExperiencePlan: (params) => request(`/api/diner/experience-plan?${new URLSearchParams(params).toString()}`),
 
   // Restaurant — trends & marketing
