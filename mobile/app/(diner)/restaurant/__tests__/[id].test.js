@@ -36,13 +36,13 @@ describe('Diner restaurant detail screen', () => {
   test('renders restaurant name + cuisine', async () => {
     api.getRestaurant.mockResolvedValue({
       id: 42,
-      restaurant_name: 'Osteria',
+      name: 'Osteria',
       city: 'London',
       country: 'UK',
-      restaurant_cuisine: 'Italian',
+      cuisine: ['Italian'],
       bio: 'Family-run since 1998.',
     });
-    api.getAvailability.mockResolvedValue({ available_slots: [] });
+    api.getAvailability.mockResolvedValue({ slots: [] });
     const { findByText } = render(<RestaurantDetail />);
     expect(await findByText('Osteria')).toBeDefined();
     expect(await findByText(/London/)).toBeDefined();
@@ -50,9 +50,13 @@ describe('Diner restaurant detail screen', () => {
   });
 
   test('renders available time slots', async () => {
-    api.getRestaurant.mockResolvedValue({ id: 42, restaurant_name: 'Osteria' });
+    api.getRestaurant.mockResolvedValue({ id: 42, name: 'Osteria' });
     api.getAvailability.mockResolvedValue({
-      available_slots: ['18:30', '19:00', '20:00'],
+      slots: [
+        { time: '18:30', remaining_covers: 10 },
+        { time: '19:00', remaining_covers: 8 },
+        { time: '20:00', remaining_covers: 4 },
+      ],
     });
     const { findByText } = render(<RestaurantDetail />);
     expect(await findByText('18:30')).toBeDefined();
@@ -61,8 +65,8 @@ describe('Diner restaurant detail screen', () => {
   });
 
   test('tapping a slot calls api.requestBooking with the right payload', async () => {
-    api.getRestaurant.mockResolvedValue({ id: 42, restaurant_name: 'Osteria' });
-    api.getAvailability.mockResolvedValue({ available_slots: ['19:30'] });
+    api.getRestaurant.mockResolvedValue({ id: 42, name: 'Osteria' });
+    api.getAvailability.mockResolvedValue({ slots: [{ time: '19:30', remaining_covers: 6 }] });
     api.requestBooking.mockResolvedValue({ id: 5, status: 'pending' });
 
     const { findByText } = render(<RestaurantDetail />);
@@ -75,7 +79,7 @@ describe('Diner restaurant detail screen', () => {
       expect(api.requestBooking).toHaveBeenCalledWith(
         expect.objectContaining({
           restaurant_id: 42,
-          time:          '19:30',
+          booking_time:  '19:30',
           party_size:    2,
         })
       );
@@ -83,8 +87,8 @@ describe('Diner restaurant detail screen', () => {
   });
 
   test('"No slots available" empty state when availability is empty', async () => {
-    api.getRestaurant.mockResolvedValue({ id: 42, restaurant_name: 'Osteria' });
-    api.getAvailability.mockResolvedValue({ available_slots: [] });
+    api.getRestaurant.mockResolvedValue({ id: 42, name: 'Osteria' });
+    api.getAvailability.mockResolvedValue({ slots: [] });
     const { findByText } = render(<RestaurantDetail />);
     expect(await findByText(/No slots available/i)).toBeDefined();
   });

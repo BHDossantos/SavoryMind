@@ -38,8 +38,8 @@ export default function DinerRestaurantDetail() {
     try {
       await api.requestBooking({
         restaurant_id: Number(id),
-        date,
-        time:  slot,
+        booking_date: date,
+        booking_time: slot,
         party_size: partySize,
       });
       Alert.alert('Booking requested', 'The restaurant will confirm shortly.', [
@@ -66,7 +66,7 @@ export default function DinerRestaurantDetail() {
     </SafeScreen>
   );
 
-  const slots = availability?.available_slots || [];
+  const slots = availability?.slots || [];
 
   return (
     <SafeScreen>
@@ -75,9 +75,11 @@ export default function DinerRestaurantDetail() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
             <Text style={styles.back}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{restaurant.restaurant_name || restaurant.display_name}</Text>
+          <Text style={styles.title}>{restaurant.name}</Text>
           {restaurant.city && <Text style={styles.sub}>{restaurant.city}{restaurant.country ? `, ${restaurant.country}` : ''}</Text>}
-          {restaurant.restaurant_cuisine && <Text style={styles.cuisine}>{restaurant.restaurant_cuisine}</Text>}
+          {(restaurant.cuisine || []).length > 0 && (
+            <Text style={styles.cuisine}>{restaurant.cuisine.join(' · ')}</Text>
+          )}
         </View>
 
         {restaurant.bio && (
@@ -122,12 +124,12 @@ export default function DinerRestaurantDetail() {
             <View style={styles.slotGrid}>
               {slots.map((s) => (
                 <TouchableOpacity
-                  key={s}
+                  key={s.time}
                   disabled={booking}
-                  onPress={() => handleBook(s)}
+                  onPress={() => handleBook(s.time)}
                   style={styles.slot}
                 >
-                  <Text style={styles.slotText}>{s}</Text>
+                  <Text style={styles.slotText}>{s.time}</Text>
                 </TouchableOpacity>
               ))}
             </View>

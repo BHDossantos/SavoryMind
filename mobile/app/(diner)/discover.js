@@ -6,16 +6,21 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 // Canonical filter values stay as English-keyed strings — the backend
 // reads these. Display labels go through t() inside the component.
 const MOODS = ['', 'romantic', 'adventurous', 'relaxed', 'celebratory', 'group', 'healthy', 'cozy'];
 const BUDGETS = ['budget', 'mid', 'luxury'];
 const PRICE_LABELS = { 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' };
+const STYLE_ICONS = {
+  fine_dining: '🕯️', casual_fine: '🍷', bistro: '🥖', casual: '🍔',
+  pub: '🍺', cafe: '☕', fast_casual: '🌯',
+};
 
 export default function Discover() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [mood, setMood]       = useState('');
   const [cuisine, setCuisine] = useState('');
   const [budget, setBudget]   = useState('mid');
@@ -50,10 +55,13 @@ export default function Discover() {
     setError(null);
     setShowPlan(false);
     try {
-      const params = { mood, max_price_level: maxPrice };
+      const params = {};
+      if (mood) params.mood = mood;
       if (cuisine.trim()) params.cuisine = cuisine.trim();
       const data = await api.discoverRestaurants(params);
-      setResults(data);
+      // The discover endpoint has no price filter, so apply the budget
+      // selection client-side against each restaurant's price_level.
+      setResults((data || []).filter((r) => (r.price_level || 2) <= maxPrice));
     } catch (e) { setError(e.message); }
     finally { setLoading(false); setRefreshing(false); }
   };
@@ -124,13 +132,21 @@ export default function Discover() {
       {showPlan && plan && (
         <View style={s.planCard}>
           <Text style={s.planTitle}>{plan.experience_title}</Text>
-          <View style={s.planRow}>
-            <Text style={s.planIcon}>{plan.restaurant.emoji}</Text>
-            <View style={s.planInfo}>
-              <Text style={s.planRestaurant}>{plan.restaurant.name}</Text>
-              <Text style={s.planDetail}>{plan.restaurant.standout_dish}</Text>
-            </View>
-          </View>
+          {plan.restaurant && (
+            <TouchableOpacity
+              style={s.planRow}
+              onPress={() => router.push(`/(diner)/restaurant/${plan.restaurant.id}`)}
+            >
+              <Text style={s.planIcon}>{STYLE_ICONS[plan.restaurant.dining_style] || '🍽️'}</Text>
+              <View style={s.planInfo}>
+                <Text style={s.planRestaurant}>{plan.restaurant.name}</Text>
+                <Text style={s.planDetail}>
+                  {[(plan.restaurant.cuisine || []).join(' · '), plan.restaurant.city]
+                    .filter(Boolean).join(' · ')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
           <View style={s.planMeta}>
             <PlanPill icon="🎵" label={plan.music.genre} />
             <PlanPill icon="🍷" label={plan.drink} />
@@ -145,7 +161,13 @@ export default function Discover() {
       {results.length > 0 && (
         <View>
           <Text style={s.resultsHeader}>{t('discoverScreen.placesFound', { count: results.length })}</Text>
-          {results.map((r) => <RestaurantCard key={r.id} r={r} t={t} />)}
+          {results.map((r) => (
+            <RestaurantCard
+              key={r.id}
+              r={r}
+              onPress={() => router.push(`/(diner)/restaurant/${r.id}`)}
+            />
+          ))}
         </View>
       )}
 
@@ -160,32 +182,29 @@ export default function Discover() {
   );
 }
 
-function RestaurantCard({ r, t }) {
+function RestaurantCard({ r, onPress }) {
+  const cuisines = (r.cuisine || []).join(' · ');
+  const subtitle = [cuisines, PRICE_LABELS[r.price_level] || '$$', r.city && `📍 ${r.city}`]
+    .filter(Boolean).join(' · ');
   return (
-    <View style={s.card}>
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.7}>
       <View style={s.cardHeader}>
-        <Text style={s.cardEmoji}>{r.emoji}</Text>
+        <Text style={s.cardEmoji}>{STYLE_ICONS[r.dining_style] || '🍽️'}</Text>
         <View style={s.cardInfo}>
           <Text style={s.cardName}>{r.name}</Text>
-          <Text style={s.cardCuisine}>{r.cuisine} · {PRICE_LABELS[r.price_level]}</Text>
-        </View>
-        <View style={s.ratingBadge}>
-          <Text style={s.ratingText}>⭐ {r.rating}</Text>
+          <Text style={s.cardCuisine} numberOfLines={1}>{subtitle}</Text>
         </View>
       </View>
-      <Text style={s.cardDesc} numberOfLines={2}>{r.description}</Text>
-      <View style={s.cardMeta}>
-        <Text style={s.cardMetaItem}>{t('discoverScreen.kmAway', { km: r.distance_km })}</Text>
-        {r.wait_minutes > 0 && <Text style={s.cardMetaItem}>{t('discoverScreen.minWait', { min: r.wait_minutes })}</Text>}
-        <Text style={[s.cardMetaItem, s.openNow]}>{r.open_now ? t('discoverScreen.open') : t('discoverScreen.closed')}</Text>
-      </View>
-      <Text style={s.standout}>⭐ {r.standout_dish}</Text>
+      {!!r.bio && <Text style={s.cardDesc} numberOfLines={2}>{r.bio}</Text>}
       <View style={s.tagRow}>
-        {(r.tags || []).slice(0, 3).map((tag) => (
-          <View key={tag} style={s.tag}><Text style={s.tagText}>{tag}</Text></View>
-        ))}
+        {!!r.dining_style && (
+          <View style={s.tag}><Text style={s.tagText}>{r.dining_style.replace('_', ' ')}</Text></View>
+        )}
+        {r.serves_wine && <View style={s.tag}><Text style={s.tagText}>🍷 Wine</Text></View>}
+        {r.serves_cocktails && <View style={s.tag}><Text style={s.tagText}>🍸 Cocktails</Text></View>}
+        {r.serves_beer && <View style={s.tag}><Text style={s.tagText}>🍺 Beer</Text></View>}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -242,13 +261,7 @@ const s = StyleSheet.create({
   cardInfo:       { flex: 1 },
   cardName:       { fontSize: 16, fontWeight: '700', color: C.gray[900] },
   cardCuisine:    { fontSize: 12, color: C.gray[500] },
-  ratingBadge:    { backgroundColor: '#fef9c3', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  ratingText:     { fontSize: 12, fontWeight: '700', color: '#854d0e' },
   cardDesc:       { fontSize: 13, color: C.gray[600], marginBottom: 8, lineHeight: 18 },
-  cardMeta:       { flexDirection: 'row', gap: 12, marginBottom: 8 },
-  cardMetaItem:   { fontSize: 12, color: C.gray[500] },
-  openNow:        { fontWeight: '600' },
-  standout:       { fontSize: 12, color: C.gray[700], fontStyle: 'italic', marginBottom: 8 },
   tagRow:         { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   tag:            { backgroundColor: C.gray[100], borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   tagText:        { fontSize: 11, color: C.gray[600] },
