@@ -1,0 +1,27 @@
+name: AI healthcheck
+
+# Manually triggered (Actions tab -> "AI healthcheck" -> "Run workflow").
+# Makes one real call to the Anthropic API with the ANTHROPIC_API_KEY
+# secret to verify the key, account, and model actually work. Use this
+# to diagnose Flavor / AI features failing in production.
+on:
+  workflow_dispatch:
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Anthropic SDK
+        run: pip install anthropic
+
+      - name: Call Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python .github/scripts/ai_healthcheck.py
