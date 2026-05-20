@@ -1,0 +1,59 @@
+name: Seed restaurants
+
+# Manually triggered (Actions tab -> "Seed restaurants" -> "Run workflow").
+# Idempotent: restaurants that already exist are skipped, so it is safe to
+# re-run. Populates the diner Discover screen with ~30 Boston + Rome
+# restaurant accounts.
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Cloud SQL Auth Proxy
+        run: |
+          curl -L -o cloud-sql-proxy \
+            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.13.0/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          ./cloud-sql-proxy --port 5432 savorymind:europe-west1:savorymind-db &
+          for i in $(seq 1 30); do
+            if (echo > /dev/tcp/localhost/5432) >/dev/null 2>&1; then
+              echo "Cloud SQL Auth Proxy ready on :5432"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Cloud SQL Auth Proxy did not start within 30s" >&2
+          exit 1
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Run seeder
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:${{ secrets.CLOUD_SQL_PASSWORD }}@localhost:5432/savorymind
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          SOCIAL_LOGIN_SECRET: ${{ secrets.SOCIAL_LOGIN_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m scripts.seed_restaurants
