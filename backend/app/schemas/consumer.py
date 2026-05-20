@@ -42,6 +42,7 @@ class MusicRecommendation(BaseModel):
     bpm_range: str
     vibe: str
     spotify_query: str
+    emoji: str = ""
 
 
 class MusicMoodResponse(BaseModel):
