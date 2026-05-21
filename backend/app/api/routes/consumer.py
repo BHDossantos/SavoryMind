@@ -32,6 +32,19 @@ def _require_consumer(user: User) -> User:
     return user
 
 
+def _require_premium(user: User) -> User:
+    # Gate a feature behind the SavoryMind Premium subscription. 402 Payment
+    # Required so the frontend can route the user to the upgrade screen
+    # rather than treating it as a generic auth failure. Mirrors the
+    # frontend <PremiumGate> — both must agree on which features are paid.
+    if (user.plan or "free") != "premium":
+        raise HTTPException(
+            status_code=402,
+            detail="This feature is part of SavoryMind Premium.",
+        )
+    return user
+
+
 def _log(db: Session, user_id: int, action_type: str, meta: dict | None = None) -> None:
     """Fire-and-forget behavior log. Silently swallows errors so it never breaks the main call."""
     try:
@@ -71,6 +84,7 @@ def create_wine_pairing(
     current_user: User = Depends(get_current_user),
 ):
     _require_consumer(current_user)
+    _require_premium(current_user)
     record = wine_service.save_pairing(db, current_user.id, body.dish_name, body.dish_description)
     _log(db, current_user.id, "wine_pairing", {"dish": body.dish_name})
     recs = [WineRecommendation(**r) for r in _safe_loads(record.recommendations, [])]
@@ -97,6 +111,7 @@ def create_music_mood(
     current_user: User = Depends(get_current_user),
 ):
     _require_consumer(current_user)
+    _require_premium(current_user)
     record = music_service.save_music_mood(db, current_user.id, body.mood, body.food_type, body.occasion)
     _log(db, current_user.id, "music_mood", {"mood": body.mood, "food_type": body.food_type})
     recs = MusicRecommendation(**_safe_loads(record.recommendations, _MUSIC_FALLBACK))
@@ -210,6 +225,7 @@ def catalog_wines(db: Session = Depends(get_db), current_user: User = Depends(ge
     client-side for speed — the catalog is small enough that
     server-side filtering would just add round-trips."""
     _require_consumer(current_user)
+    _require_premium(current_user)
     from ...data import get_wines
     catalog = get_wines()
     # Return as a list with the slug attached so the UI can render
@@ -224,6 +240,7 @@ def catalog_wines(db: Session = Depends(get_db), current_user: User = Depends(ge
 def catalog_beers(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Full beer catalog."""
     _require_consumer(current_user)
+    _require_premium(current_user)
     from ...data import get_beers
     catalog = get_beers()
     return {"count": len(catalog), "beers": catalog}
@@ -233,6 +250,7 @@ def catalog_beers(db: Session = Depends(get_db), current_user: User = Depends(ge
 def catalog_spirits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Full spirits catalog."""
     _require_consumer(current_user)
+    _require_premium(current_user)
     from ...data import get_spirits
     catalog = get_spirits()
     return {"count": len(catalog), "spirits": catalog}
@@ -241,6 +259,7 @@ def catalog_spirits(db: Session = Depends(get_db), current_user: User = Depends(
 @router.get("/beverages/beer")
 def beer_pairing(dish: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
+    _require_premium(current_user)
     if not dish or len(dish.strip()) < 2:
         raise HTTPException(status_code=422, detail="dish query param required.")
     _log(db, current_user.id, "beer_pairing", {"dish": dish.strip()})
@@ -250,6 +269,7 @@ def beer_pairing(dish: str, db: Session = Depends(get_db), current_user: User = 
 @router.get("/beverages/spirits")
 def spirits_pairing(dish: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_consumer(current_user)
+    _require_premium(current_user)
     if not dish or len(dish.strip()) < 2:
         raise HTTPException(status_code=422, detail="dish query param required.")
     _log(db, current_user.id, "spirits_pairing", {"dish": dish.strip()})
@@ -298,6 +318,7 @@ def get_meal_plan(
     current_user: User = Depends(get_current_user),
 ):
     _require_consumer(current_user)
+    _require_premium(current_user)
     _log(db, current_user.id, "meal_plan", {"dietary": dietary})
     return meal_plan_service.generate_meal_plan(dietary=dietary, max_cook_minutes=max_cook_minutes)
 
@@ -309,6 +330,7 @@ def get_shopping_list(
     current_user: User = Depends(get_current_user),
 ):
     _require_consumer(current_user)
+    _require_premium(current_user)
     _log(db, current_user.id, "shopping_list", {"dietary": dietary})
     return meal_plan_service.generate_shopping_list(dietary=dietary)
 

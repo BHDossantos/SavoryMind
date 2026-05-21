@@ -34,7 +34,7 @@ const QUICK_LINKS = [
 
 export default function ConsumerLayout({ children }) {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isPremium } = useAuth();
   const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const firstName = user?.first_name || user?.display_name?.split(" ")[0] || "Chef";
@@ -102,10 +102,19 @@ export default function ConsumerLayout({ children }) {
 
       {/* Footer */}
       <div className="p-4 border-t border-consumer-100 space-y-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-consumer-50">
-          <span className="text-xs text-consumer-600 font-medium">{t("nav.foodLover")}</span>
-          <span className="ml-auto text-xs bg-consumer-500 text-white px-2 py-0.5 rounded-full">Free</span>
-        </div>
+        <Link href="/consumer/upgrade"
+          onClick={() => setSidebarOpen(false)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-consumer-50 hover:bg-consumer-100 transition-colors">
+          <span className="text-xs text-consumer-600 font-medium">
+            {isPremium ? "SavoryMind Premium" : "Upgrade to Premium"}
+          </span>
+          <span className={clsx(
+            "ml-auto text-xs px-2 py-0.5 rounded-full text-white",
+            isPremium ? "bg-amber-500" : "bg-consumer-500"
+          )}>
+            {isPremium ? "Premium" : "Free"}
+          </span>
+        </Link>
         <div className="px-1">
           <LanguageSelector />
         </div>

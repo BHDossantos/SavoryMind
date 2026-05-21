@@ -88,6 +88,23 @@ class Settings(BaseSettings):
     # is required for iOS distribution. Web doesn't use Apple sign-in.
     apple_bundle_id: str = ""
 
+    # Stripe billing — powers the consumer Premium subscription. Billing is
+    # dormant until stripe_secret_key + stripe_price_id are set: checkout
+    # endpoints return 503 and paywalled pages show the upgrade screen with
+    # a "billing not available yet" message instead of a broken checkout.
+    #   stripe_secret_key     — server-side API key (sk_live_… / sk_test_…)
+    #   stripe_price_id       — recurring Price for the Premium plan, created
+    #                           in the Stripe dashboard (price_…)
+    #   stripe_webhook_secret — signing secret for POST /api/billing/webhook
+    #                           (whsec_…); without it the webhook rejects all
+    #                           events as unverified.
+    stripe_secret_key: str = ""
+    stripe_price_id: str = ""
+    stripe_webhook_secret: str = ""
+    # Where Stripe Checkout returns the user. Appended to frontend_url.
+    stripe_success_path: str = "/consumer/upgrade?status=success"
+    stripe_cancel_path: str = "/consumer/upgrade?status=cancel"
+
     class Config:
         env_file = ".env"
 

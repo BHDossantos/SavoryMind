@@ -149,8 +149,13 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  // Entitlement gate for the consumer Premium paywall. `plan` rides along on
+  // every /auth/me + /auth/refresh response, so this is accurate without an
+  // extra request — <PremiumGate> and the upgrade page both read it.
+  const isPremium = (user?.plan || "free") === "premium";
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, dashboardPath }}>
+    <AuthContext.Provider value={{ user, loading, isPremium, login, register, logout, updateUser, dashboardPath }}>
       {children}
     </AuthContext.Provider>
   );

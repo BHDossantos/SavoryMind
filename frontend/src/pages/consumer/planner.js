@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ErrorMessage from "../../components/ErrorMessage";
+import PremiumGate from "../../components/PremiumGate";
 
 // Backend-stored dietary IDs stay English; display labels via i18n.
 const DIETARY_DEFS = [
@@ -15,6 +16,17 @@ const DIETARY_DEFS = [
 ];
 
 export default function PlannerPage() {
+  return (
+    <PremiumGate
+      feature="Meal Planner"
+      blurb="Weekly meal plans and auto-built shopping lists are part of SavoryMind Premium."
+    >
+      <PlannerPageInner />
+    </PremiumGate>
+  );
+}
+
+function PlannerPageInner() {
   const { t } = useTranslation();
   const [tab, setTab]           = useState("plan");
   const [dietary, setDietary]   = useState("");

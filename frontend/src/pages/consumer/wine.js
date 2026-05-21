@@ -1,10 +1,22 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import PremiumGate from "../../components/PremiumGate";
 
 const CONFIDENCE_COLOR = (c) => c >= 0.85 ? "text-green-600" : c >= 0.70 ? "text-yellow-600" : "text-gray-500";
 
 export default function WinePairing() {
+  return (
+    <PremiumGate
+      feature="Wine Pairing"
+      blurb="Smart wine pairings for any dish are part of SavoryMind Premium."
+    >
+      <WinePairingInner />
+    </PremiumGate>
+  );
+}
+
+function WinePairingInner() {
   const { t } = useTranslation();
   const [form, setForm] = useState({ dish_name: "", dish_description: "" });
   const [result, setResult] = useState(null);

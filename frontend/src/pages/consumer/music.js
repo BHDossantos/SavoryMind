@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import PremiumGate from "../../components/PremiumGate";
 
 const MOODS = [
   { value: "romantic",    labelKey: "musicPage.moodRomantic",    descKey: "musicPage.moodRomanticDesc",    emoji: "🕯️" },
@@ -32,6 +33,17 @@ const OCCASIONS = [
 const MOOD_LABEL_KEY = Object.fromEntries(MOODS.map((m) => [m.value, m.labelKey]));
 
 export default function MusicMood() {
+  return (
+    <PremiumGate
+      feature="Music Moods"
+      blurb="Music moods matched to your meal are part of SavoryMind Premium."
+    >
+      <MusicMoodInner />
+    </PremiumGate>
+  );
+}
+
+function MusicMoodInner() {
   const { t } = useTranslation();
   const [form, setForm] = useState({ mood: "", food_type: "", occasion: "" });
   const [result, setResult] = useState(null);

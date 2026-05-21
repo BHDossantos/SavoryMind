@@ -134,6 +134,11 @@ export const api = {
   getMe: () => request("/api/auth/me"),
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
 
+  // Billing — consumer Premium subscription (Stripe)
+  getBillingStatus: () => request("/api/billing/status"),
+  createCheckout: () => request("/api/billing/checkout", { method: "POST" }),
+  createBillingPortal: () => request("/api/billing/portal", { method: "POST" }),
+
   // OAuth — Spotify (real Authorization Code flow)
   startSpotifyAuth: () => request("/api/oauth/spotify/start"),
   disconnectSpotify: () => request("/api/oauth/spotify/disconnect", { method: "POST" }),

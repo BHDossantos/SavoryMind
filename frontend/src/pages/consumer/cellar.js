@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import PremiumGate from "../../components/PremiumGate";
 
 // Phase 8 — browseable catalog of every wine / beer / spirit Flavor
 // can pair from. Three-tab layout (Wine | Beer | Spirits), each with
@@ -131,6 +132,17 @@ function SpiritCard({ s }) {
 }
 
 export default function CellarPage() {
+  return (
+    <PremiumGate
+      feature="The Cellar"
+      blurb="The full wine, beer and spirits catalog is part of SavoryMind Premium."
+    >
+      <CellarPageInner />
+    </PremiumGate>
+  );
+}
+
+function CellarPageInner() {
   const { t } = useTranslation();
   const [tab, setTab] = useState("wine");
   const [wines, setWines]     = useState([]);

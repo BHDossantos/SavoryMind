@@ -97,3 +97,12 @@ class User(Base):
     # (backfilled by the migration for pre-existing staff rows). Unique so a
     # scanned token resolves to exactly one employee.
     qr_token = Column(String(36), unique=True, nullable=True, index=True)
+
+    # Billing / subscription (Stripe). `plan` above is the entitlement gate
+    # ("free" | "premium") read by the paywall; the columns below mirror
+    # Stripe's state so the billing UI and webhook stay in sync. All null for
+    # users who never started a checkout.
+    stripe_customer_id      = Column(String(255), nullable=True, index=True)
+    stripe_subscription_id  = Column(String(255), nullable=True)
+    subscription_status     = Column(String(50),  nullable=True)  # active | trialing | past_due | canceled
+    subscription_period_end = Column(DateTime,    nullable=True)  # current period end (naive UTC)
