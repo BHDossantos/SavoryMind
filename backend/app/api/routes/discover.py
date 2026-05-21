@@ -57,8 +57,10 @@ def request_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.account_type != "diner":
-        raise HTTPException(status_code=403, detail="Diner account required.")
+    # Consumer + diner accounts are the unified "food person" — both can
+    # book. "diner" is legacy; new signups are always "consumer".
+    if current_user.account_type not in ("consumer", "diner"):
+        raise HTTPException(status_code=403, detail="Booking requires a food account.")
     diner_booking = booking_service.request_booking(
         db,
         diner_user_id=current_user.id,

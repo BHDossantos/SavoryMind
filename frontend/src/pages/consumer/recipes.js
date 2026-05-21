@@ -34,7 +34,10 @@ export default function Recipes() {
     setLoading(true); setSelected(null);
     try {
       const data = await api.getRecipes({ mood, cuisine, keywords });
-      setRecipes(data.recipes);
+      setRecipes(data.recipes || []);
+      setSearched(true);
+    } catch {
+      setRecipes([]);
       setSearched(true);
     } finally { setLoading(false); }
   };

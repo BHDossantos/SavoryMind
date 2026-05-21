@@ -42,6 +42,9 @@ class MusicRecommendation(BaseModel):
     bpm_range: str
     vibe: str
     spotify_query: str
+    # Optional + defaulted so legacy stored moods (saved before the field
+    # existed) still validate; music_service supplies it for new moods.
+    emoji: str = ""
 
 
 class MusicMoodResponse(BaseModel):

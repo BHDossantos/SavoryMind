@@ -13,8 +13,12 @@ router = APIRouter(prefix="/diner", tags=["diner"])
 
 
 def require_diner(user: User = Depends(get_current_user)) -> User:
-    if user.account_type != "diner":
-        raise HTTPException(status_code=403, detail="Diner accounts only.")
+    # Food Lover (consumer) and Food Explorer (diner) accounts were unified
+    # into one "food person" shell — both reach the discover/book/history
+    # screens, so both must be accepted here. New signups are always
+    # "consumer"; "diner" is legacy. Restaurant + staff stay gated out.
+    if user.account_type not in ("consumer", "diner"):
+        raise HTTPException(status_code=403, detail="Diner features require a food account.")
     return user
 
 
