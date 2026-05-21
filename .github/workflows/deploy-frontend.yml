@@ -35,6 +35,9 @@ jobs:
             --set-env-vars "NEXT_PUBLIC_API_URL=https://api.savorymind.net,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }},NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}"
 
       - name: Map savorymind.net to Cloud Run
+        # Best-effort — see deploy-backend.yml. Mappings already exist and the
+        # current gcloud SDK rejects `--region` here; the deploy above is done.
+        continue-on-error: true
         run: |
           for DOMAIN in savorymind.net www.savorymind.net; do
             if gcloud run domain-mappings describe \

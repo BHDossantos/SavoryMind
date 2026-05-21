@@ -21,6 +21,12 @@ jest.mock('../../../services/api', () => ({
   },
 }));
 
+// The Cellar page is wrapped in <PremiumGate>, which calls useAuth(). Mock a
+// premium user so the gate renders the page body (not the upgrade prompt).
+jest.mock('../../../context/AuthContext', () => ({
+  useAuth: () => ({ isPremium: true, user: { plan: 'premium' } }),
+}));
+
 const { api } = require('../../../services/api');
 const CellarPage = require('../../../pages/consumer/cellar').default;
 

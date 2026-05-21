@@ -109,6 +109,11 @@ jobs:
             --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|APPLE_BUNDLE_ID=${APPLE_BUNDLE_ID}|POSTHOG_API_KEY=${POSTHOG_API_KEY}|STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}|STRIPE_PRICE_ID=${STRIPE_PRICE_ID}|STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}"
 
       - name: Map api.savorymind.net to backend
+        # Best-effort: the api.savorymind.net mapping already exists, and the
+        # current gcloud SDK rejects `--region` on `run domain-mappings`. The
+        # actual deploy (the step above) is what matters — a one-time DNS
+        # step must not fail the whole deployment.
+        continue-on-error: true
         run: |
           if gcloud run domain-mappings describe \
               --domain api.savorymind.net \
