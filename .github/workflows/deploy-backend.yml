@@ -87,6 +87,13 @@ jobs:
           # PostHog product-analytics project key. Leave unset and
           # capture() / identify() across the backend become silent no-ops.
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          # Stripe billing — consumer Premium subscription. Leave these unset
+          # and billing stays dormant (checkout endpoints return 503, the
+          # paywall page still shows). STRIPE_PRICE_ID is the recurring Price
+          # id; STRIPE_WEBHOOK_SECRET signs POST /api/billing/webhook.
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
           DB_URL="postgresql://postgres:${DB_PASSWORD}@/savorymind?host=/cloudsql/savorymind:europe-west1:savorymind-db"
           gcloud run deploy savorymind-api \
@@ -99,7 +106,7 @@ jobs:
             --min-instances 1 \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|APPLE_BUNDLE_ID=${APPLE_BUNDLE_ID}|POSTHOG_API_KEY=${POSTHOG_API_KEY}"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|APPLE_BUNDLE_ID=${APPLE_BUNDLE_ID}|POSTHOG_API_KEY=${POSTHOG_API_KEY}|STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}|STRIPE_PRICE_ID=${STRIPE_PRICE_ID}|STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}"
 
       - name: Map api.savorymind.net to backend
         run: |
