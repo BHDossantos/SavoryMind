@@ -4,7 +4,7 @@ from ..models.restaurant_ext import Booking
 from ..models.diner import DinerBooking
 from ..models.user import User
 from ..schemas.restaurant_ext import BookingCreate, BookingUpdate
-from . import notification_service
+from . import notification_service, discover_service
 
 
 def get_bookings(db: Session, user_id: int, filter_date: date | None = None) -> list[Booking]:
@@ -56,41 +56,70 @@ def request_booking(
     special_requests: str = "",
 ) -> DinerBooking:
     """
-    Diner requests a booking at a registered restaurant.
-    Creates a DinerBooking (pending) + mirrors it into the restaurant's Booking queue.
+    Diner books a table at a registered restaurant.
+
+    Confirms instantly when the requested slot still has room for the party;
+    otherwise the booking is created as `pending` for the restaurant to review
+    (e.g. the slot filled up between page load and submit). Either way the
+    reservation is mirrored into the restaurant's Booking queue and the
+    restaurant is notified.
     """
     restaurant = db.query(User).filter(User.id == restaurant_user_id).first()
     diner = db.query(User).filter(User.id == diner_user_id).first()
+    diner_name = diner.display_name if diner else "Online Guest"
+    rest_name = restaurant.display_name if restaurant else "Restaurant"
 
-    # Create the restaurant-side booking (pending, source=online)
+    # Instant-confirm when the chosen slot still fits the party.
+    availability = discover_service.get_availability(db, restaurant_user_id, booking_date)
+    slot = next((s for s in availability["slots"] if s["time"] == booking_time), None)
+    confirmed = slot is not None and slot["remaining_covers"] >= party_size
+    status = "confirmed" if confirmed else "pending"
+
+    # Restaurant-side booking, mirrored into their queue.
     rest_booking = Booking(
         user_id=restaurant_user_id,
-        customer_name=diner.display_name if diner else "Online Guest",
+        customer_name=diner_name,
         customer_email=diner.email if diner else None,
         date=booking_date,
         time_slot=booking_time,
         party_size=party_size,
         notes=special_requests or None,
-        status="pending",
+        status=status,
         diner_user_id=diner_user_id,
         source="online",
     )
     db.add(rest_booking)
     db.flush()  # get rest_booking.id before committing
 
-    # Create the diner-side booking (pending, linked to restaurant)
+    # Diner-side booking, linked to the restaurant.
     diner_booking = DinerBooking(
         user_id=diner_user_id,
-        restaurant_name=restaurant.display_name if restaurant else "Restaurant",
+        restaurant_name=rest_name,
         booking_date=str(booking_date),
         booking_time=booking_time,
         party_size=party_size,
         special_requests=special_requests or "",
-        status="pending",
+        status=status,
         restaurant_user_id=restaurant_user_id,
         restaurant_booking_id=rest_booking.id,
     )
     db.add(diner_booking)
+
+    if confirmed:
+        notification_service.create(
+            db, restaurant_user_id,
+            f"📅 New booking: {diner_name}, party of {party_size}, "
+            f"{booking_date} at {booking_time}.",
+            link="/restaurant/bookings",
+        )
+    else:
+        notification_service.create(
+            db, restaurant_user_id,
+            f"📩 Booking request: {diner_name}, party of {party_size}, "
+            f"{booking_date} at {booking_time} — needs confirmation.",
+            link="/restaurant/bookings",
+        )
+
     db.commit()
     db.refresh(diner_booking)
     return diner_booking
