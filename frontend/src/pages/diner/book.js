@@ -86,14 +86,19 @@ export default function BookTable() {
 
     try {
       if (restaurantId) {
-        await api.requestBooking({
+        const booking = await api.requestBooking({
           restaurant_id: Number(restaurantId),
           booking_date: selectedDate,
           booking_time: selectedTime,
           party_size: partySize,
           special_requests: specialRequests,
         });
-        setSuccess(t("bookDinerPage.successRequest", { name: restaurantName }));
+        setSuccess(t(
+          booking?.status === "confirmed"
+            ? "bookDinerPage.successConfirmed"
+            : "bookDinerPage.successRequest",
+          { name: restaurantName },
+        ));
       } else {
         await api.createDinerBooking({
           restaurant_name: restaurantName,
@@ -261,7 +266,7 @@ export default function BookTable() {
 
             <button type="submit" disabled={loading || (isLinked && slotsLoading)}
               className="w-full bg-diner-600 text-white font-semibold py-2.5 rounded-xl hover:bg-diner-700 disabled:opacity-60 transition-colors">
-              {loading ? t("bookDinerPage.sending") : isLinked ? t("bookDinerPage.sendRequest") : t("bookDinerPage.confirmBooking")}
+              {loading ? t("bookDinerPage.sending") : t("bookDinerPage.confirmBooking")}
             </button>
           </form>
         </div>

@@ -39,6 +39,8 @@ BACKEND_ROOT = Path(__file__).resolve().parent.parent
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
+from sqlalchemy.orm import Session  # noqa: E402
+
 from app.core.database import SessionLocal  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.models.user import User  # noqa: E402
@@ -344,50 +346,54 @@ def _build_rows() -> list[dict]:
     return rows
 
 
-def seed() -> int:
-    db = SessionLocal()
+def seed_restaurants(db: Session) -> tuple[int, int]:
+    """Idempotently insert the seed restaurant accounts.
+
+    Skips any email that already exists, so it is safe to call repeatedly —
+    including on every app startup. Returns ``(created, skipped)``.
+    """
     created = 0
     skipped = 0
     password_hash = hash_password(DEFAULT_PASSWORD)
-    try:
-        for spec in _build_rows():
-            email = _email_for(spec["name"])
-            existing = db.query(User).filter(User.email == email).first()
-            if existing:
-                print(f"  skip   {email:<42} (id={existing.id}, exists)")
-                skipped += 1
-                continue
+    for spec in _build_rows():
+        email = _email_for(spec["name"])
+        if db.query(User).filter(User.email == email).first():
+            skipped += 1
+            continue
+        db.add(User(
+            email=email,
+            password_hash=password_hash,
+            account_type="restaurant",
+            display_name=spec["name"],
+            restaurant_name=spec["name"],
+            bio=spec["bio"],
+            avatar_url="",  # diner card falls back to a dining-style icon
+            city=spec["city"],
+            country=spec["country"],
+            business_type="Restaurant",
+            restaurant_cuisine=spec["cuisine"],
+            service_type="Dine-in",
+            dining_style=spec["dining_style"],
+            target_audience=spec["audience"],
+            seating_capacity=spec["seating_capacity"],
+            serves_wine=spec["wine"],
+            serves_cocktails=spec["cocktails"],
+            serves_beer=spec["beer"],
+            available_time_slots=spec["slots"],
+            onboarding_completed=True,
+        ))
+        db.commit()
+        created += 1
+    return created, skipped
 
-            user = User(
-                email=email,
-                password_hash=password_hash,
-                account_type="restaurant",
-                display_name=spec["name"],
-                restaurant_name=spec["name"],
-                bio=spec["bio"],
-                avatar_url="",  # diner card falls back to a dining-style icon
-                city=spec["city"],
-                country=spec["country"],
-                business_type="Restaurant",
-                restaurant_cuisine=spec["cuisine"],
-                service_type="Dine-in",
-                dining_style=spec["dining_style"],
-                target_audience=spec["audience"],
-                seating_capacity=spec["seating_capacity"],
-                serves_wine=spec["wine"],
-                serves_cocktails=spec["cocktails"],
-                serves_beer=spec["beer"],
-                available_time_slots=spec["slots"],
-                onboarding_completed=True,
-            )
-            db.add(user)
-            db.commit()
-            print(f"  create {email:<42} (id={user.id})")
-            created += 1
+
+def seed() -> int:
+    db = SessionLocal()
+    try:
+        created, skipped = seed_restaurants(db)
     finally:
         db.close()
-
-    print(f"\nDone. {created} created, {skipped} skipped.")
+    print(f"Done. {created} created, {skipped} skipped.")
     if created:
         print(f"Login password for created accounts: {DEFAULT_PASSWORD!r}")
     print("Remove all seeded restaurants later with:")

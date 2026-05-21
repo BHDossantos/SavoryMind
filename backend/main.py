@@ -63,6 +63,27 @@ def _run_alembic_migrations():
         alembic_command.upgrade(cfg, "head")
 
 
+def _seed_demo_restaurants():
+    """Populate the diner Discover directory with seed restaurant accounts.
+
+    Idempotent — skips restaurants that already exist, so it is safe to run
+    on every startup. Best-effort: any failure is logged and swallowed so a
+    seeding problem can never block the app from coming up.
+    """
+    try:
+        from app.core.database import SessionLocal
+        from scripts.seed_restaurants import seed_restaurants
+        db = SessionLocal()
+        try:
+            created, _ = seed_restaurants(db)
+            if created:
+                logger.info("Seeded %d demo restaurants into Discover.", created)
+        finally:
+            db.close()
+    except Exception:
+        logger.exception("Demo restaurant seeding skipped — Discover unchanged.")
+
+
 _DEFAULT_SECRET = "savorymind-super-secret-change-in-production-32chars"
 _DEFAULT_SOCIAL_SECRET = "dev-social-secret"
 _DEFAULT_TOKEN_ENCRYPTION_KEY = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
@@ -88,6 +109,8 @@ async def lifespan(app: FastAPI):
             "and set it as an env var before deploying to production."
         )
     _run_alembic_migrations()
+    if is_prod:
+        _seed_demo_restaurants()
     yield
 
 
