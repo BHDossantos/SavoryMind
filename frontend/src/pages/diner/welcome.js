@@ -7,6 +7,10 @@ import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
 const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const STYLE_ICONS = {
+  fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
+  pub: "🍺", cafe: "☕", fast_casual: "🌯",
+};
 
 function pj(val, fallback) {
   if (!val) return fallback;
@@ -166,14 +170,13 @@ export default function DinerWelcomePage() {
             {restaurants.map((r) => (
               <div key={r.id} className="bg-white rounded-2xl border border-diner-100 shadow-sm hover:shadow-md hover:border-diner-300 transition-all overflow-hidden group">
                 <div className="h-24 bg-gradient-to-br from-diner-100 to-diner-200 flex items-center justify-center text-4xl group-hover:scale-105 transition-transform">
-                  {r.emoji}
+                  {STYLE_ICONS[r.dining_style] || "🍽️"}
                 </div>
                 <div className="p-3">
-                  <div className="flex items-start justify-between gap-1 mb-1">
+                  <div className="mb-1">
                     <h3 className="font-bold text-gray-900 text-xs leading-tight">{r.name}</h3>
-                    <span className="text-xs bg-yellow-50 text-yellow-700 font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">⭐ {r.rating}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mb-2">{r.cuisine} · {PRICE_LABELS[r.price_level]}</p>
+                  <p className="text-xs text-gray-500 mb-2">{(r.cuisine || []).slice(0, 2).join(", ")} · {PRICE_LABELS[r.price_level] || "$$"}</p>
                   <button onClick={() => setReserving(r)}
                     className="w-full text-xs bg-diner-600 text-white font-semibold py-1.5 rounded-lg hover:bg-diner-700 transition-colors">
                     {t("dinerWelcomePage.reserve")}

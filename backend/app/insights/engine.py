@@ -526,7 +526,7 @@ def _build_diner_recommendations_rules(profile, insights) -> list[dict]:
             "title": f"Chase down the best {item}",
             "body": f"It's your most ordered dish — let's find who makes it best in your area.",
             "icon": "⭐",
-            "action": f"search?dish={item}",
+            "action": "discover",
             "confidence": 0.85,
         })
 
@@ -560,7 +560,7 @@ def _build_diner_recommendations_rules(profile, insights) -> list[dict]:
             "title": "Log your first restaurant visit",
             "body": "The more visits you track, the smarter your recommendations become. Start with last week.",
             "icon": "📝",
-            "action": "visits/new",
+            "action": "history",
             "confidence": 0.95,
         })
         if profile["cuisines"]:

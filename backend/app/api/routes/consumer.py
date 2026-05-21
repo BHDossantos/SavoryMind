@@ -71,7 +71,7 @@ def _safe_loads(raw: str | None, fallback):
 
 _MUSIC_FALLBACK = {
     "genres": [], "artists": [], "bpm_range": "", "vibe": "",
-    "spotify_query": "",
+    "spotify_query": "", "emoji": "",
 }
 
 
