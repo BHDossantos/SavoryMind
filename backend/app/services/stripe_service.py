@@ -52,10 +52,15 @@ def get_or_create_customer(user) -> str:
 
 
 def create_checkout_session(user, customer_id: str) -> str:
-    """Create a subscription Checkout Session, return its hosted URL."""
+    """Create a subscription Checkout Session, return its hosted URL.
+
+    When stripe_trial_days > 0 the subscription starts in a free trial: the
+    card is collected now, the first charge is deferred. Trial subscriptions
+    arrive with status "trialing", which the webhook treats as Premium.
+    """
     stripe = _client()
     base = settings.frontend_url.rstrip("/")
-    session = stripe.checkout.Session.create(
+    params = dict(
         mode="subscription",
         customer=customer_id,
         line_items=[{"price": settings.stripe_price_id, "quantity": 1}],
@@ -65,7 +70,22 @@ def create_checkout_session(user, customer_id: str) -> str:
         metadata={"user_id": str(user.id)},
         allow_promotion_codes=True,
     )
+    if settings.stripe_trial_days > 0:
+        params["subscription_data"] = {"trial_period_days": settings.stripe_trial_days}
+    session = stripe.checkout.Session.create(**params)
     return session.url
+
+
+def retrieve_subscription(subscription_id: str):
+    """Fetch a Stripe Subscription object, or None if it can't be retrieved."""
+    if not subscription_id:
+        return None
+    try:
+        stripe = _client()
+        return stripe.Subscription.retrieve(subscription_id)
+    except Exception:
+        logger.exception("Failed to retrieve Stripe subscription %s", subscription_id)
+        return None
 
 
 def create_portal_session(customer_id: str) -> str:

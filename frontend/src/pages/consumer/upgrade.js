@@ -92,6 +92,7 @@ export default function UpgradePage() {
 
   const premium = (status && status.is_premium) || isPremium;
   const billingLive = status?.billing_configured;
+  const trialDays = status?.trial_days || 0;
   const periodEnd = status?.current_period_end
     ? new Date(status.current_period_end).toLocaleDateString()
     : null;
@@ -137,10 +138,17 @@ export default function UpgradePage() {
             <div>
               <h2 className="text-lg font-bold text-gray-900">You're on Premium</h2>
               <p className="text-sm text-gray-500">
-                {status?.subscription_status === "trialing"
-                  ? "You're in your trial period."
-                  : "Your subscription is active."}
-                {periodEnd && ` Renews ${periodEnd}.`}
+                {status?.subscription_status === "trialing" ? (
+                  <>
+                    You&apos;re in your free trial.
+                    {periodEnd && ` It ends ${periodEnd} — first charge then.`}
+                  </>
+                ) : (
+                  <>
+                    Your subscription is active.
+                    {periodEnd && ` Renews ${periodEnd}.`}
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -161,6 +169,11 @@ export default function UpgradePage() {
             <p className="text-consumer-200 text-sm font-medium uppercase tracking-wide">
               Premium
             </p>
+            {trialDays > 0 && (
+              <p className="text-consumer-100 text-sm font-semibold mt-1">
+                {trialDays} days free, then
+              </p>
+            )}
             <p className="mt-1">
               <span className="text-4xl font-extrabold">{PRICE_LABEL}</span>
               <span className="text-consumer-200">{PRICE_PERIOD}</span>
@@ -184,7 +197,9 @@ export default function UpgradePage() {
             >
               {actionLoading
                 ? "Starting checkout…"
-                : `Upgrade — ${PRICE_LABEL}${PRICE_PERIOD}`}
+                : trialDays > 0
+                  ? `Start ${trialDays}-day free trial`
+                  : `Upgrade — ${PRICE_LABEL}${PRICE_PERIOD}`}
             </button>
 
             {!billingLive && (
@@ -193,6 +208,7 @@ export default function UpgradePage() {
               </p>
             )}
             <p className="text-xs text-gray-400 text-center">
+              {trialDays > 0 && `Then ${PRICE_LABEL}${PRICE_PERIOD} after your trial. `}
               Secure checkout by Stripe. Cancel any time.
             </p>
           </div>

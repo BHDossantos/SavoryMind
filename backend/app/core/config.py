@@ -101,6 +101,10 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_price_id: str = ""
     stripe_webhook_secret: str = ""
+    # Free-trial length for new Premium subscriptions, in days. The card is
+    # collected at checkout but the first charge is deferred this many days.
+    # Set to 0 to disable the trial (charge immediately).
+    stripe_trial_days: int = 7
     # Where Stripe Checkout returns the user. Appended to frontend_url.
     stripe_success_path: str = "/consumer/upgrade?status=success"
     stripe_cancel_path: str = "/consumer/upgrade?status=cancel"

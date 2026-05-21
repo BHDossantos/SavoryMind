@@ -15,6 +15,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from ...core.config import settings
 from ...core.database import get_db
 from ...core.rate_limit import limiter
 from ...core.security import get_current_user
@@ -47,6 +48,7 @@ def billing_status(current_user: User = Depends(get_current_user)):
             if current_user.subscription_period_end else None
         ),
         "billing_configured": stripe_service.is_configured(),
+        "trial_days": settings.stripe_trial_days,
     }
 
 
@@ -138,9 +140,24 @@ def _apply_event(db: Session, event) -> None:
             logger.warning("checkout.session.completed for unknown user")
             return
         user.stripe_customer_id = obj.get("customer") or user.stripe_customer_id
-        user.stripe_subscription_id = obj.get("subscription") or user.stripe_subscription_id
-        user.plan = "premium"
-        user.subscription_status = "active"
+        sub_id = obj.get("subscription")
+        user.stripe_subscription_id = sub_id or user.stripe_subscription_id
+        # Retrieve the subscription so trial vs. active status is accurate
+        # immediately, rather than depending on the customer.subscription.*
+        # event arriving first.
+        sub = stripe_service.retrieve_subscription(sub_id)
+        if sub is not None:
+            status = sub.get("status")
+            user.subscription_status = status
+            user.subscription_period_end = stripe_service.period_end_to_datetime(
+                sub.get("current_period_end")
+            )
+            user.plan = "premium" if status in _PREMIUM_STATUSES else "free"
+        else:
+            # Couldn't fetch — checkout succeeded, so grant access; the
+            # follow-up subscription event will correct status/period.
+            user.plan = "premium"
+            user.subscription_status = user.subscription_status or "active"
         db.commit()
 
     elif etype in ("customer.subscription.created", "customer.subscription.updated"):
