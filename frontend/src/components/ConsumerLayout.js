@@ -14,7 +14,8 @@ const NAV = [
   { href: "/consumer/explore",   label: "Explore",  icon: "✨",    match: ["/consumer/explore"] },
   { href: "/consumer/cook",      label: "Cook",     icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry", "/consumer/guided-cooking"] },
   { href: "/diner/discover",     label: "Dine Out", icon: "🍽️",   match: ["/diner/discover", "/diner/book", "/diner/history", "/diner/restaurant"] },
-  { href: "/consumer/order",     label: "Order",    icon: "🛵",    match: ["/consumer/order"] },
+  // "Order" (consumer/order) intentionally not linked — that flow is a
+  // simulation (no real delivery integration). Re-add when it's real.
   { href: "/consumer/profile",   label: "Profile",  icon: "👤",    match: ["/consumer/profile", "/consumer/social"] },
 ];
 
