@@ -33,10 +33,11 @@ const OCCASIONS = [
 const MOOD_LABEL_KEY = Object.fromEntries(MOODS.map((m) => [m.value, m.labelKey]));
 
 export default function MusicMood() {
+  const { t } = useTranslation();
   return (
     <PremiumGate
-      feature="Music Moods"
-      blurb="Music moods matched to your meal are part of SavoryMind Premium."
+      feature={t("premiumGate.musicFeature")}
+      blurb={t("premiumGate.musicBlurb")}
     >
       <MusicMoodInner />
     </PremiumGate>

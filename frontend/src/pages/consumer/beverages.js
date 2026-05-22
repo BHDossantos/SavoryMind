@@ -10,10 +10,11 @@ const TAB_LABEL_KEYS = { wine: "beveragesPage.tabWine", beer: "beveragesPage.tab
 const CONFIDENCE_COLOR = (c) => c >= 0.8 ? "text-green-600" : c >= 0.6 ? "text-amber-600" : "text-gray-500";
 
 export default function Beverages() {
+  const { t } = useTranslation();
   return (
     <PremiumGate
-      feature="Beverage Pairings"
-      blurb="Wine, beer and spirit pairings for any dish are part of SavoryMind Premium."
+      feature={t("premiumGate.beveragesFeature")}
+      blurb={t("premiumGate.beveragesBlurb")}
     >
       <BeveragesInner />
     </PremiumGate>

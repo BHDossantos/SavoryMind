@@ -6,10 +6,11 @@ import PremiumGate from "../../components/PremiumGate";
 const CONFIDENCE_COLOR = (c) => c >= 0.85 ? "text-green-600" : c >= 0.70 ? "text-yellow-600" : "text-gray-500";
 
 export default function WinePairing() {
+  const { t } = useTranslation();
   return (
     <PremiumGate
-      feature="Wine Pairing"
-      blurb="Smart wine pairings for any dish are part of SavoryMind Premium."
+      feature={t("premiumGate.wineFeature")}
+      blurb={t("premiumGate.wineBlurb")}
     >
       <WinePairingInner />
     </PremiumGate>

@@ -16,10 +16,11 @@ const DIETARY_DEFS = [
 ];
 
 export default function PlannerPage() {
+  const { t } = useTranslation();
   return (
     <PremiumGate
-      feature="Meal Planner"
-      blurb="Weekly meal plans and auto-built shopping lists are part of SavoryMind Premium."
+      feature={t("premiumGate.plannerFeature")}
+      blurb={t("premiumGate.plannerBlurb")}
     >
       <PlannerPageInner />
     </PremiumGate>

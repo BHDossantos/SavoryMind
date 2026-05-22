@@ -132,10 +132,11 @@ function SpiritCard({ s }) {
 }
 
 export default function CellarPage() {
+  const { t } = useTranslation();
   return (
     <PremiumGate
-      feature="The Cellar"
-      blurb="The full wine, beer and spirits catalog is part of SavoryMind Premium."
+      feature={t("premiumGate.cellarFeature")}
+      blurb={t("premiumGate.cellarBlurb")}
     >
       <CellarPageInner />
     </PremiumGate>
