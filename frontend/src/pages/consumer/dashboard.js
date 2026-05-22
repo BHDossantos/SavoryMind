@@ -19,6 +19,19 @@ function pj(val, fallback) {
   try { return JSON.parse(val); } catch { return fallback; }
 }
 
+// Maps a recommendation's deep-link `action` string (see insights/engine.py
+// schema) to the real consumer route. Query params are dropped — the target
+// pages don't read them — but the user still lands on the right tool.
+function recHref(action) {
+  const a = (action || "").toLowerCase();
+  if (a.startsWith("wine_pairing"))    return "/consumer/wine";
+  if (a.startsWith("pairings"))        return "/consumer/beverages";
+  if (a.startsWith("music"))           return "/consumer/music";
+  if (a.startsWith("explore_recipes")) return "/consumer/explore";
+  if (a.startsWith("connections"))     return "/consumer/social";
+  return "/consumer/explore";
+}
+
 // Mood chips' labelKey lookup happens inside the component so they
 // re-translate on language switch (the static export was English-only).
 const MOOD_CHIPS = [
@@ -169,6 +182,24 @@ export default function ConsumerDashboard() {
           </div>
         )}
       </div>
+
+      {/* ── Recommended for you — personalized from the onboarding profile,
+          behavior and pairing history (insights/engine.py). ── */}
+      {recs.length > 0 && (
+        <div>
+          <h2 className="font-semibold text-gray-800 mb-3">Recommended for you</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {recs.slice(0, 6).map((r, i) => (
+              <Link key={i} href={recHref(r.action)}
+                className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-4 hover:border-consumer-300 hover:shadow-md transition-all group">
+                <span className="text-2xl">{r.icon}</span>
+                <p className="font-semibold text-gray-900 text-sm mt-2 group-hover:text-consumer-700 transition-colors">{r.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{r.body}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

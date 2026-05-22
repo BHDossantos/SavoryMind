@@ -148,6 +148,16 @@ function BeveragesInner() {
         </div>
       )}
 
+      {/* Empty result — a search ran but matched nothing */}
+      {results && pairings.length === 0 && !loading && (
+        <div className="text-center py-12 bg-white rounded-2xl border border-consumer-100">
+          <p className="text-3xl mb-2">🔍</p>
+          <p className="text-sm text-gray-500">
+            No {tabLabel.toLowerCase()} pairings found for &quot;{results.dish || results.dish_name || dish}&quot;. Try another dish.
+          </p>
+        </div>
+      )}
+
       {/* Inspiration chips */}
       {!results && (
         <div className="mt-4">
