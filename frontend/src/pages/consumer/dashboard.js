@@ -175,7 +175,9 @@ export default function ConsumerDashboard() {
                 <span className="text-xs text-gray-400">⏱️ {suggestion.suggestion?.time_minutes} min</span>
               </div>
             </div>
-            <Link href={`/consumer/explore`}
+            <Link href={suggestion.suggestion?.title
+              ? { pathname: "/consumer/explore", query: { q: suggestion.suggestion.title } }
+              : "/consumer/explore"}
               className="flex-shrink-0 bg-consumer-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-consumer-700 transition-colors">
               {t("consumerDashboard.cookThis")}
             </Link>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
@@ -178,6 +179,7 @@ function RecipeDetail({ r, onBack }) {
 export default function ExplorePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const router = useRouter();
   const [mode,      setMode]      = useState("mood");
   const [selected,  setSelected]  = useState(null);
   const [recipes,   setRecipes]   = useState([]);
@@ -196,9 +198,17 @@ export default function ExplorePage() {
     finally { setLoading(false); }
   }, [t]);
 
+  // A `?q=` from the dashboard's "Cook this" suggestion seeds the initial
+  // search with that dish title; otherwise fall back to the user's top cuisine.
   useEffect(() => {
-    search({ cuisine: userCuisines[0] || "" });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!router.isReady) return;
+    const q = typeof router.query.q === "string" ? router.query.q.trim() : "";
+    if (q) {
+      search({ keywords: q });
+    } else {
+      search({ cuisine: userCuisines[0] || "" });
+    }
+  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // EFFORT IDs map to a max_time (minutes).
   const EFFORT_MAX_MIN = {

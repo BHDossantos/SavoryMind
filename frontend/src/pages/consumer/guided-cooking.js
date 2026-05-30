@@ -13,6 +13,34 @@ function formatTime(secs) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// Two short beeps via Web Audio. The user already clicked Start, which counts
+// as a gesture for the autoplay policy, so the AudioContext is allowed to
+// produce sound. Silent-fails on browsers without Web Audio.
+function playTimerBeep() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const beep = (offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain).connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      const t0 = ctx.currentTime + offset;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      osc.start(t0);
+      osc.stop(t0 + 0.55);
+    };
+    beep(0);
+    beep(0.35);
+  } catch {
+    // best-effort
+  }
+}
+
 function StepTimer() {
   const { t } = useTranslation();
   const [duration, setDuration] = useState(0);
@@ -45,6 +73,10 @@ function StepTimer() {
   }, [running]);
 
   const done = remaining === 0 && !running && duration > 0;
+
+  useEffect(() => {
+    if (done) playTimerBeep();
+  }, [done]);
 
   return (
     <div className="bg-consumer-50 border border-consumer-200 rounded-2xl p-4 mt-4">

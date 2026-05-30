@@ -1330,7 +1330,7 @@ export default function Onboarding() {
                 {t("onboardingPage.back")}
               </button>
             )}
-            {!current.isSummary && (
+            {!current.isSummary && current.id !== "name" && current.id !== "r_name" && (
               <button type="button" onClick={() => setStep((s) => s + 1)}
                 className="px-5 py-3 rounded-xl text-sm text-gray-400 hover:text-gray-600 transition-colors">
                 {t("onboardingPage.skip")}
