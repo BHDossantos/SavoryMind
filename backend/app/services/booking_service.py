@@ -1,10 +1,12 @@
 from datetime import date
+from html import escape
 from sqlalchemy.orm import Session
+from ..core.config import settings
 from ..models.restaurant_ext import Booking
 from ..models.diner import DinerBooking
 from ..models.user import User
 from ..schemas.restaurant_ext import BookingCreate, BookingUpdate
-from . import notification_service, discover_service
+from . import notification_service, discover_service, resend_client
 
 
 def get_bookings(db: Session, user_id: int, filter_date: date | None = None) -> list[Booking]:
@@ -120,9 +122,82 @@ def request_booking(
             link="/restaurant/bookings",
         )
 
+    # Out-of-app alert. The chime + toast on the restaurant dashboard only
+    # fires if they're already in the app — without an email they miss new
+    # bookings until they happen to refresh. Resend is no-op when unconfigured,
+    # so this is safe in dev/tests.
+    if restaurant and restaurant.email:
+        _send_new_booking_email(
+            restaurant.email,
+            diner_name=diner_name,
+            party_size=party_size,
+            booking_date=booking_date,
+            booking_time=booking_time,
+            special_requests=special_requests,
+            confirmed=confirmed,
+        )
+
     db.commit()
     db.refresh(diner_booking)
     return diner_booking
+
+
+def _send_new_booking_email(
+    to: str,
+    *,
+    diner_name: str,
+    party_size: int,
+    booking_date: date,
+    booking_time: str,
+    special_requests: str,
+    confirmed: bool,
+) -> None:
+    """Notify the restaurant by email that a new booking just landed.
+
+    HTML is built with `html.escape()` on every user-supplied field — the
+    diner name and special requests come straight from form input, so
+    inlining them raw would be an injection vector.
+    """
+    safe_name    = escape(diner_name or "Guest")
+    safe_date    = escape(str(booking_date))
+    safe_time    = escape(booking_time or "")
+    safe_party   = escape(str(party_size))
+    safe_special = escape(special_requests or "")
+    dashboard    = f"{settings.frontend_url.rstrip('/')}/restaurant/bookings"
+
+    if confirmed:
+        subject = f"New booking: {diner_name}, party of {party_size}"
+        intro = "You have a new confirmed booking on SavoryMind:"
+    else:
+        subject = f"Booking request — {diner_name}, party of {party_size} (action needed)"
+        intro = "A new booking request needs your confirmation:"
+
+    requests_row = (
+        f'<tr><td style="padding:8px 12px;color:#6b7280;"><strong>Special requests</strong></td>'
+        f'<td style="padding:8px 12px;color:#111827;">{safe_special}</td></tr>'
+        if safe_special else ""
+    )
+
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827;">
+      <h1 style="font-size:18px;margin:0 0 12px;">{escape(intro)}</h1>
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:12px;margin:16px 0;">
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Guest</strong></td><td style="padding:8px 12px;color:#111827;">{safe_name}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Party</strong></td><td style="padding:8px 12px;color:#111827;">{safe_party}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Date</strong></td><td style="padding:8px 12px;color:#111827;">{safe_date}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Time</strong></td><td style="padding:8px 12px;color:#111827;">{safe_time}</td></tr>
+        {requests_row}
+      </table>
+      <p style="margin:24px 0;">
+        <a href="{dashboard}" style="background:#ea580c;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Open dashboard</a>
+      </p>
+      <p style="font-size:12px;color:#9ca3af;margin-top:32px;">
+        Sent by SavoryMind. Manage your restaurant's bookings at <a href="{dashboard}" style="color:#9ca3af;">{dashboard}</a>.
+      </p>
+    </div>
+    """.strip()
+
+    resend_client.send_email(to, subject, html)
 
 
 def confirm_booking(db: Session, restaurant_user_id: int, booking_id: int) -> Booking | None:
