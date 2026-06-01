@@ -394,7 +394,9 @@
     "bookingWindowHint": "I clienti possono prenotare fino a {{days}} giorni in anticipo",
     "availSaved": "✓ Impostazioni di disponibilità salvate",
     "savingDots": "Salvataggio…",
-    "saveSettings": "Salva impostazioni"
+    "saveSettings": "Salva impostazioni",
+    "realtimeNew": "📅 Nuova prenotazione — {{name}}, tavolo da {{party}}",
+    "realtimeGuest": "Ospite"
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1499,7 +1501,9 @@
     "statusConfirmed": "✅ Confermata",
     "statusPending": "⏳ In attesa di conferma",
     "statusCancelled": "❌ Annullata",
-    "statusDeclined": "✗ Rifiutata"
+    "statusDeclined": "✗ Rifiutata",
+    "realtimeConfirmed": "✓ {{name}} ha appena confermato la tua prenotazione",
+    "realtimeDeclined": "La tua prenotazione da {{name}} è stata rifiutata"
   },
   "dinerWelcomePage": {
     "welcomeBadge": "Benvenuto su SavoryMind 🎉",

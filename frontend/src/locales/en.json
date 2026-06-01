@@ -394,7 +394,9 @@
     "bookingWindowHint": "Diners can book up to {{days}} days ahead",
     "availSaved": "✓ Availability settings saved",
     "savingDots": "Saving…",
-    "saveSettings": "Save Settings"
+    "saveSettings": "Save Settings",
+    "realtimeNew": "📅 New booking — {{name}}, party of {{party}}",
+    "realtimeGuest": "Guest"
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1499,7 +1501,9 @@
     "statusConfirmed": "✅ Confirmed",
     "statusPending": "⏳ Awaiting confirmation",
     "statusCancelled": "❌ Cancelled",
-    "statusDeclined": "✗ Declined"
+    "statusDeclined": "✗ Declined",
+    "realtimeConfirmed": "✓ {{name}} just confirmed your booking",
+    "realtimeDeclined": "Your booking at {{name}} was declined"
   },
   "dinerWelcomePage": {
     "welcomeBadge": "Welcome to SavoryMind 🎉",

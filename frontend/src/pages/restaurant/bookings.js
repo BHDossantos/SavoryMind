@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import usePolling from "../../hooks/usePolling";
+import { playChime } from "../../utils/chime";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUS_STYLES = {
@@ -72,6 +73,34 @@ export default function Bookings() {
     { intervalMs: 10000, enabled: true },
   );
 
+  // Detect newly-arrived bookings vs the previous tick — chime + toast
+  // so a restaurant operator doesn't have to keep eyes on the page. The
+  // first render skips (prevIdsRef empty) so we don't fire for every
+  // already-known booking on mount.
+  const prevIdsRef = useRef(null);
+  const [realtimeMsg, setRealtimeMsg] = useState(null);
+  useEffect(() => {
+    if (prevIdsRef.current === null) {
+      prevIdsRef.current = new Set(bookings.map((b) => b.id));
+      return;
+    }
+    const prev = prevIdsRef.current;
+    const newOne = bookings.find((b) => !prev.has(b.id));
+    if (newOne) {
+      playChime();
+      setRealtimeMsg(t("bookingsPage.realtimeNew", {
+        name: newOne.customer_name || t("bookingsPage.realtimeGuest"),
+        party: newOne.party_size,
+      }));
+    }
+    prevIdsRef.current = new Set(bookings.map((b) => b.id));
+  }, [bookings, t]);
+  useEffect(() => {
+    if (!realtimeMsg) return;
+    const timer = setTimeout(() => setRealtimeMsg(null), 5500);
+    return () => clearTimeout(timer);
+  }, [realtimeMsg]);
+
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!form.customer_name.trim()) { setError(t("bookingsPage.customerRequired")); return; }
@@ -136,6 +165,14 @@ export default function Bookings() {
 
   return (
     <div>
+      {realtimeMsg && (
+        <div
+          role="status"
+          className="fixed top-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-brand-600"
+        >
+          {realtimeMsg}
+        </div>
+      )}
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
           <span>{error}</span>

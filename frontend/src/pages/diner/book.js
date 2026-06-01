@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import usePolling from "../../hooks/usePolling";
+import { playChime } from "../../utils/chime";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUS_STYLES = {
@@ -71,6 +72,35 @@ export default function BookTable() {
     () => api.getDinerBookings().then(setBookings).catch(() => {}),
     { intervalMs: 5000, enabled: hasPending },
   );
+
+  // Detect pending → confirmed/declined transitions vs the previous tick
+  // and surface a chime + transient toast. Snapshot is per-id so a single
+  // status flip fires exactly once, even if other bookings change at the
+  // same time.
+  const prevStatusesRef = useRef(new Map());
+  const [realtimeMsg, setRealtimeMsg] = useState(null);
+  useEffect(() => {
+    const prev = prevStatusesRef.current;
+    for (const b of bookings) {
+      const previous = prev.get(b.id);
+      if (previous === "pending" && b.status === "confirmed") {
+        playChime();
+        setRealtimeMsg({ text: t("bookDinerPage.realtimeConfirmed", { name: b.restaurant_name }), kind: "success" });
+        break;
+      }
+      if (previous === "pending" && b.status === "declined") {
+        playChime();
+        setRealtimeMsg({ text: t("bookDinerPage.realtimeDeclined", { name: b.restaurant_name }), kind: "warning" });
+        break;
+      }
+    }
+    prevStatusesRef.current = new Map(bookings.map((b) => [b.id, b.status]));
+  }, [bookings, t]);
+  useEffect(() => {
+    if (!realtimeMsg) return;
+    const timer = setTimeout(() => setRealtimeMsg(null), 4500);
+    return () => clearTimeout(timer);
+  }, [realtimeMsg]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -169,6 +199,16 @@ export default function BookTable() {
 
   return (
     <div>
+      {realtimeMsg && (
+        <div
+          role="status"
+          className={`fixed top-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white ${
+            realtimeMsg.kind === "warning" ? "bg-amber-500" : "bg-green-500"
+          }`}
+        >
+          {realtimeMsg.text}
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">{t("bookDinerPage.title")}</h1>
         <p className="text-gray-400 mt-1">{t("bookDinerPage.subtitle")}</p>

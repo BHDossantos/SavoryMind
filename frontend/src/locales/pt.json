@@ -394,7 +394,9 @@
     "bookingWindowHint": "Os clientes podem reservar até {{days}} dias antes",
     "availSaved": "✓ Definições de disponibilidade guardadas",
     "savingDots": "A guardar…",
-    "saveSettings": "Guardar definições"
+    "saveSettings": "Guardar definições",
+    "realtimeNew": "📅 Nova reserva — {{name}}, mesa para {{party}}",
+    "realtimeGuest": "Cliente"
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1499,7 +1501,9 @@
     "statusConfirmed": "✅ Confirmada",
     "statusPending": "⏳ Aguarda confirmação",
     "statusCancelled": "❌ Cancelada",
-    "statusDeclined": "✗ Recusada"
+    "statusDeclined": "✗ Recusada",
+    "realtimeConfirmed": "✓ {{name}} acabou de confirmar sua reserva",
+    "realtimeDeclined": "Sua reserva em {{name}} foi recusada"
   },
   "dinerWelcomePage": {
     "welcomeBadge": "Bem-vindo à SavoryMind 🎉",
