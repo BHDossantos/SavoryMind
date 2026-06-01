@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import usePolling from "../../hooks/usePolling";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUS_STYLES = {
@@ -57,6 +58,19 @@ export default function Bookings() {
   };
 
   useEffect(() => { fetchAll(); }, [filterDate]);
+
+  // Poll silently while the bookings page is open so new arrivals and
+  // status changes (e.g. a diner cancelling, a pending request from the
+  // public flow) show up without the restaurant having to refresh.
+  usePolling(
+    () => Promise.all([
+      api.getBookings(filterDate || undefined),
+      api.getTodaySummary(),
+    ])
+      .then(([b, s]) => { setBookings(b); setSummary(s); })
+      .catch(() => {}),
+    { intervalMs: 10000, enabled: true },
+  );
 
   const handleCreate = async (e) => {
     e.preventDefault();

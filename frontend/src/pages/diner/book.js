@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import usePolling from "../../hooks/usePolling";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUS_STYLES = {
@@ -61,6 +62,15 @@ export default function BookTable() {
   };
 
   useEffect(() => { loadBookings(); }, []);
+
+  // While a booking is pending the restaurant's decision, poll for status
+  // updates so the diner sees "pending → confirmed/declined" without having
+  // to refresh. Stops automatically once nothing is pending.
+  const hasPending = bookings.some((b) => b.status === "pending");
+  usePolling(
+    () => api.getDinerBookings().then(setBookings).catch(() => {}),
+    { intervalMs: 5000, enabled: hasPending },
+  );
 
   useEffect(() => {
     if (!router.isReady) return;
