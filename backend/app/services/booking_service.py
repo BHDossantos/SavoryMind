@@ -6,7 +6,7 @@ from ..models.restaurant_ext import Booking
 from ..models.diner import DinerBooking
 from ..models.user import User
 from ..schemas.restaurant_ext import BookingCreate, BookingUpdate
-from . import notification_service, discover_service, resend_client
+from . import notification_service, discover_service, resend_client, twilio_client
 
 
 def get_bookings(db: Session, user_id: int, filter_date: date | None = None) -> list[Booking]:
@@ -122,10 +122,9 @@ def request_booking(
             link="/restaurant/bookings",
         )
 
-    # Out-of-app alert. The chime + toast on the restaurant dashboard only
-    # fires if they're already in the app — without an email they miss new
-    # bookings until they happen to refresh. Resend is no-op when unconfigured,
-    # so this is safe in dev/tests.
+    # Out-of-app alerts. The chime + toast on the restaurant dashboard only
+    # fires if they're already in the app — these channels cover the case
+    # where they aren't. Both no-op when their provider isn't configured.
     if restaurant and restaurant.email:
         _send_new_booking_email(
             restaurant.email,
@@ -134,6 +133,15 @@ def request_booking(
             booking_date=booking_date,
             booking_time=booking_time,
             special_requests=special_requests,
+            confirmed=confirmed,
+        )
+    if restaurant and restaurant.phone:
+        _send_new_booking_sms(
+            restaurant.phone,
+            diner_name=diner_name,
+            party_size=party_size,
+            booking_date=booking_date,
+            booking_time=booking_time,
             confirmed=confirmed,
         )
 
@@ -198,6 +206,33 @@ def _send_new_booking_email(
     """.strip()
 
     resend_client.send_email(to, subject, html)
+
+
+def _send_new_booking_sms(
+    to: str,
+    *,
+    diner_name: str,
+    party_size: int,
+    booking_date: date,
+    booking_time: str,
+    confirmed: bool,
+) -> None:
+    """Notify the restaurant by SMS that a new booking just landed.
+
+    Plain text only — the SMS is meant to be glanceable on a lock screen.
+    Full details are in the email and the in-app dashboard.
+    """
+    if confirmed:
+        body = (
+            f"SavoryMind: new booking — {diner_name}, party of {party_size}, "
+            f"{booking_date} at {booking_time}."
+        )
+    else:
+        body = (
+            f"SavoryMind: booking request — {diner_name}, party of {party_size}, "
+            f"{booking_date} at {booking_time}. Needs your confirmation."
+        )
+    twilio_client.send_sms(to, body)
 
 
 def confirm_booking(db: Session, restaurant_user_id: int, booking_id: int) -> Booking | None:

@@ -396,7 +396,13 @@
     "savingDots": "Saving…",
     "saveSettings": "Save Settings",
     "realtimeNew": "📅 New booking — {{name}}, party of {{party}}",
-    "realtimeGuest": "Guest"
+    "realtimeGuest": "Guest",
+    "smsHeadline": "Get SMS alerts for new bookings",
+    "smsSubtitle": "We'll text you when a booking lands. Standard SMS rates apply.",
+    "smsEnable": "Enable",
+    "smsAlertsActive": "SMS alerts active — {{phone}}",
+    "smsChange": "Change",
+    "smsPhoneInvalid": "Use international format, e.g. +15555550100"
   },
   "crmPage": {
     "title": "👥 CRM",

@@ -1,9 +1,84 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import usePolling from "../../hooks/usePolling";
 import { playChime } from "../../utils/chime";
 import ConfirmDialog from "../../components/ConfirmDialog";
+
+function SmsAlertWidget() {
+  const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [editing, setEditing] = useState(!user?.phone);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const save = async () => {
+    const trimmed = phone.trim();
+    // Loose client-side check — Twilio enforces E.164 server-side. Empty
+    // clears the phone (opt-out).
+    if (trimmed && !/^\+[1-9]\d{6,14}$/.test(trimmed)) {
+      setErr(t("bookingsPage.smsPhoneInvalid"));
+      return;
+    }
+    setSaving(true); setErr(null);
+    try {
+      await api.updateProfile({ phone: trimmed || null });
+      updateUser({ phone: trimmed || null });
+      setEditing(false);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing && user?.phone) {
+    return (
+      <div className="mb-4 flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+        <span className="text-green-800">
+          📱 {t("bookingsPage.smsAlertsActive", { phone: user.phone })}
+        </span>
+        <button onClick={() => setEditing(true)} className="text-green-700 underline text-xs font-medium">
+          {t("bookingsPage.smsChange")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-brand-900 mb-1">{t("bookingsPage.smsHeadline")}</p>
+      <p className="text-xs text-brand-700 mb-2">{t("bookingsPage.smsSubtitle")}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="+15555550100"
+          className="flex-1 min-w-[180px] border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="text-xs px-4 py-1.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-60"
+        >
+          {saving ? t("common.saving") : t("bookingsPage.smsEnable")}
+        </button>
+        {user?.phone && (
+          <button
+            onClick={() => { setPhone(user.phone); setEditing(false); setErr(null); }}
+            className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700"
+          >
+            {t("common.cancel")}
+          </button>
+        )}
+      </div>
+      {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+    </div>
+  );
+}
 
 const STATUS_STYLES = {
   confirmed: "bg-blue-100 text-blue-700",
@@ -173,6 +248,7 @@ export default function Bookings() {
           {realtimeMsg}
         </div>
       )}
+      <SmsAlertWidget />
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
           <span>{error}</span>

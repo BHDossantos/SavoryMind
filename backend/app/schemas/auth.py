@@ -112,6 +112,7 @@ class UserResponse(BaseModel):
     serves_wine:         Optional[bool] = None
     serves_cocktails:    Optional[bool] = None
     serves_beer:         Optional[bool] = None
+    phone:               Optional[str]  = None
     onboarding_completed: bool          = False
     # i18n preference; default 'en' so legacy clients without the column still work.
     language:            str             = "en"
@@ -175,6 +176,7 @@ class ProfileUpdate(BaseModel):
     serves_wine:         Optional[bool]  = None
     serves_cocktails:    Optional[bool]  = None
     serves_beer:         Optional[bool]  = None
+    phone:               Optional[str]   = None
     onboarding_completed: Optional[bool] = None
 
     # IANA timezone string for restaurant-local scheduling (inventory digest etc.)

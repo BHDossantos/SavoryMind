@@ -396,7 +396,13 @@
     "savingDots": "Salvataggio…",
     "saveSettings": "Salva impostazioni",
     "realtimeNew": "📅 Nuova prenotazione — {{name}}, tavolo da {{party}}",
-    "realtimeGuest": "Ospite"
+    "realtimeGuest": "Ospite",
+    "smsHeadline": "Ricevi avvisi SMS per le nuove prenotazioni",
+    "smsSubtitle": "Ti invieremo un SMS quando arriva una prenotazione. Tariffe SMS standard.",
+    "smsEnable": "Attiva",
+    "smsAlertsActive": "Avvisi SMS attivi — {{phone}}",
+    "smsChange": "Modifica",
+    "smsPhoneInvalid": "Usa il formato internazionale, es. +39555550100"
   },
   "crmPage": {
     "title": "👥 CRM",

@@ -89,6 +89,11 @@ class User(Base):
     # set: en, es, it. Validated at the schema layer.
     language = Column(String(10), nullable=False, server_default="en", default="en")
 
+    # Operator's mobile for SMS booking alerts (Twilio). Nullable — restaurants
+    # opt in by setting it via the bookings-page widget. Empty = no SMS sent,
+    # email alert still goes out.
+    phone = Column(String(32), nullable=True)
+
     # Staff account linkage — only set when account_type == "staff"
     employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)
 

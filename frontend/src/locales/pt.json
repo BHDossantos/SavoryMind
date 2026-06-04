@@ -396,7 +396,13 @@
     "savingDots": "A guardar…",
     "saveSettings": "Guardar definições",
     "realtimeNew": "📅 Nova reserva — {{name}}, mesa para {{party}}",
-    "realtimeGuest": "Cliente"
+    "realtimeGuest": "Cliente",
+    "smsHeadline": "Receba alertas por SMS para novas reservas",
+    "smsSubtitle": "Enviaremos um SMS quando uma reserva chegar. Tarifas SMS padrão.",
+    "smsEnable": "Ativar",
+    "smsAlertsActive": "Alertas SMS ativos — {{phone}}",
+    "smsChange": "Alterar",
+    "smsPhoneInvalid": "Use formato internacional, ex. +5511555550100"
   },
   "crmPage": {
     "title": "👥 CRM",

@@ -63,9 +63,14 @@ jobs:
           SOCIAL_LOGIN_SECRET: ${{ secrets.SOCIAL_LOGIN_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DB_PASSWORD: ${{ secrets.CLOUD_SQL_PASSWORD }}
-          # Optional — leave the secret unset and the app will simply skip Sentry / email sends.
+          # Optional — leave the secret unset and the app will simply skip Sentry / email / SMS sends.
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Twilio SMS — booking alerts to restaurants. All three required for SMS to send;
+          # send_sms is a no-op without them and the email channel still works.
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_PHONE: ${{ secrets.TWILIO_FROM_PHONE }}
           # Spotify OAuth — leave both secrets unset and the /api/oauth/spotify/* endpoints
           # respond with 503 so the UI cleanly shows "not configured".
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
@@ -106,7 +111,7 @@ jobs:
             --min-instances 1 \
             --add-cloudsql-instances=savorymind:europe-west1:savorymind-db \
             --project savorymind \
-            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|APPLE_BUNDLE_ID=${APPLE_BUNDLE_ID}|POSTHOG_API_KEY=${POSTHOG_API_KEY}|STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}|STRIPE_PRICE_ID=${STRIPE_PRICE_ID}|STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}"
+            --set-env-vars "^|^SECRET_KEY=${SECRET_KEY}|SOCIAL_LOGIN_SECRET=${SOCIAL_LOGIN_SECRET}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}|ACCESS_TOKEN_EXPIRE_MINUTES=30|REFRESH_TOKEN_EXPIRE_DAYS=30|COOKIE_DOMAIN=.savorymind.net|COOKIE_SECURE=true|COOKIE_SAMESITE=lax|DATABASE_URL=${DB_URL}|SENTRY_DSN=${SENTRY_DSN}|SENTRY_ENVIRONMENT=production|RESEND_API_KEY=${RESEND_API_KEY}|RESEND_FROM_EMAIL=noreply@savorymind.net|SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}|SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}|SPOTIFY_REDIRECT_URI=https://api.savorymind.net/api/oauth/spotify/callback|FRONTEND_URL=https://savorymind.net|TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|APPLE_BUNDLE_ID=${APPLE_BUNDLE_ID}|POSTHOG_API_KEY=${POSTHOG_API_KEY}|STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}|STRIPE_PRICE_ID=${STRIPE_PRICE_ID}|STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}|TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}|TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}|TWILIO_FROM_PHONE=${TWILIO_FROM_PHONE}"
 
       - name: Map api.savorymind.net to backend
         # Best-effort: the api.savorymind.net mapping already exists, and the

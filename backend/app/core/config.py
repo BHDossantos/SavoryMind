@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = "noreply@savorymind.net"
 
+    # SMS (Twilio) — booking alerts to restaurants. Dormant unless all three
+    # are set; without them send_sms is a no-op and the email channel still
+    # works.
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_phone: str = ""
+
     # Error tracking (Sentry). Empty string disables Sentry entirely.
     sentry_dsn: str = ""
     sentry_environment: str = "development"
