@@ -16,16 +16,23 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [sentimentSummary, setSentimentSummary] = useState(null);
+  const [todaySummary, setTodaySummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchData = () => {
     setLoading(true); setError(null);
-    Promise.all([api.getDashboardStats(), api.getMenuItems(), api.getSentimentSummary()])
-      .then(([s, items, sent]) => {
+    Promise.all([
+      api.getDashboardStats(),
+      api.getMenuItems(),
+      api.getSentimentSummary(),
+      api.getTodaySummary().catch(() => null),  // tolerated: a brand-new restaurant has no slots yet
+    ])
+      .then(([s, items, sent, today]) => {
         setStats(s);
         setMenuItems(items);
         setSentimentSummary(sent);
+        setTodaySummary(today);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -62,6 +69,39 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">{t("restaurantDashboard.title")}</h1>
         <p className="text-gray-400 mt-1">{t("restaurantDashboard.subtitle")}</p>
       </div>
+
+      {/* Today's bookings — the most actionable line on the dashboard for a
+          restaurant on a typical morning. Tolerates a null summary (brand-new
+          account with no bookings yet) by hiding the card. */}
+      {todaySummary && (
+        <Link
+          href="/restaurant/bookings"
+          className="mb-6 flex items-center gap-4 rounded-2xl bg-white border border-brand-100 shadow-sm p-5 hover:border-brand-300 hover:shadow-md transition-all"
+        >
+          <span className="text-4xl flex-shrink-0">📅</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold uppercase tracking-widest text-brand-500 mb-0.5">
+              {t("restaurantDashboard.todayBookings")}
+            </p>
+            <p className="text-xl font-extrabold text-gray-900">
+              {todaySummary.total_bookings === 0
+                ? t("restaurantDashboard.noBookingsToday")
+                : t("restaurantDashboard.bookingsToday", {
+                    count: todaySummary.total_bookings,
+                    covers: todaySummary.total_covers,
+                  })}
+            </p>
+            {todaySummary.pending > 0 && (
+              <p className="text-sm text-amber-700 font-semibold mt-1">
+                {t("restaurantDashboard.pendingCount", { count: todaySummary.pending })}
+              </p>
+            )}
+          </div>
+          <span className="text-xs px-4 py-2 rounded-xl bg-brand-600 text-white font-semibold flex-shrink-0">
+            {t("restaurantDashboard.manageBookings")}
+          </span>
+        </Link>
+      )}
 
       {/* Flavor — same AI assistant the consumer side has. Restaurant
           owners get the restaurant-side tool registry. */}

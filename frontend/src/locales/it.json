@@ -161,7 +161,12 @@
     "sentimentOverview": "Panoramica del sentiment dei clienti",
     "positive": "Positivi",
     "neutral": "Neutri",
-    "negative": "Negativi"
+    "negative": "Negativi",
+    "todayBookings": "Prenotazioni di oggi",
+    "noBookingsToday": "Nessuna prenotazione oggi",
+    "bookingsToday": "{{count}} prenotazioni · {{covers}} coperti",
+    "pendingCount": "{{count}} attendono la tua conferma",
+    "manageBookings": "Gestisci"
   },
   "consumerDashboard": {
     "loading": "Caricamento della tua dashboard...",

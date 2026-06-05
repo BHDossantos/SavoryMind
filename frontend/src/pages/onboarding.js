@@ -1123,6 +1123,12 @@ function StepRestSummary({ data }) {
         )}
       </div>
       <p className="text-sm text-gray-400">SavoryMind will now power your restaurant intelligence 🎉</p>
+      <div className="text-left bg-brand-50 border border-brand-200 rounded-xl p-4 mt-2">
+        <p className="text-sm font-semibold text-brand-900">📅 You&apos;re now discoverable for bookings</p>
+        <p className="text-xs text-brand-700 mt-1 leading-relaxed">
+          Diners in your city can book a table at {data.restaurant_name || "your restaurant"} as soon as you enter the dashboard. Set custom time slots and enable SMS alerts on the bookings page.
+        </p>
+      </div>
     </div>
   );
 }

@@ -297,6 +297,7 @@ def get_today_summary(db: Session, user_id: int) -> dict:
     return {
         "total_bookings": len(bookings),
         "confirmed": len(confirmed),
+        "pending":   sum(1 for b in bookings if b.status == "pending"),
         "cancelled": sum(1 for b in bookings if b.status == "cancelled"),
         "total_covers": total_covers,
         "upcoming": [

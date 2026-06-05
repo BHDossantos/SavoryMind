@@ -161,7 +161,12 @@
     "sentimentOverview": "Customer Sentiment Overview",
     "positive": "Positive",
     "neutral": "Neutral",
-    "negative": "Negative"
+    "negative": "Negative",
+    "todayBookings": "Today's bookings",
+    "noBookingsToday": "No bookings yet today",
+    "bookingsToday": "{{count}} bookings · {{covers}} covers",
+    "pendingCount": "{{count}} need your confirmation",
+    "manageBookings": "Manage"
   },
   "consumerDashboard": {
     "loading": "Loading your dashboard...",

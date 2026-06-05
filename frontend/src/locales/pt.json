@@ -161,7 +161,12 @@
     "sentimentOverview": "Resumo de opiniões de clientes",
     "positive": "Positivos",
     "neutral": "Neutros",
-    "negative": "Negativos"
+    "negative": "Negativos",
+    "todayBookings": "Reservas de hoje",
+    "noBookingsToday": "Sem reservas hoje",
+    "bookingsToday": "{{count}} reservas · {{covers}} pessoas",
+    "pendingCount": "{{count}} aguardam sua confirmação",
+    "manageBookings": "Gerenciar"
   },
   "consumerDashboard": {
     "loading": "A carregar o teu painel...",
