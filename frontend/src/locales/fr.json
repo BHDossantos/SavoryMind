@@ -411,7 +411,8 @@
     "shareLinkHeadline": "Votre lien de réservation",
     "shareLinkSubtitle": "Partagez-le avec vos clients — ils réservent sans compte.",
     "shareCopy": "Copier",
-    "shareCopied": "Copié !"
+    "shareCopied": "Copié !",
+    "statusNoShow": "Absent"
   },
   "crmPage": {
     "title": "👥 CRM",

@@ -128,6 +128,7 @@ const STATUS_STYLES = {
   completed: "bg-gray-100 text-gray-600",
   cancelled: "bg-red-100 text-red-600",
   declined:  "bg-red-100 text-red-600",
+  no_show:   "bg-red-200 text-red-800",
 };
 
 const ALL_SLOTS = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:00","19:30","20:00","20:30","21:00"];
@@ -426,6 +427,7 @@ export default function Bookings() {
                     <option value="confirmed">{t("bookingsPage.statusConfirmed")}</option>
                     <option value="seated">{t("bookingsPage.statusSeated")}</option>
                     <option value="completed">{t("bookingsPage.statusCompleted")}</option>
+                    <option value="no_show">{t("bookingsPage.statusNoShow")}</option>
                     <option value="cancelled">{t("bookingsPage.statusCancelled")}</option>
                   </select>
                 </td>

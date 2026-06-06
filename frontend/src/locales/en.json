@@ -411,7 +411,8 @@
     "shareLinkHeadline": "Your booking link",
     "shareLinkSubtitle": "Share this with your diners — they can book without an account.",
     "shareCopy": "Copy",
-    "shareCopied": "Copied!"
+    "shareCopied": "Copied!",
+    "statusNoShow": "No-show"
   },
   "crmPage": {
     "title": "👥 CRM",
