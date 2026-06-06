@@ -38,6 +38,7 @@ class NotificationKind(str, Enum):
     reminder_24h = "reminder_24h"
     reminder_2h = "reminder_2h"
     booking_cancelled = "booking_cancelled"
+    auto_fill_slot = "auto_fill_slot"
 
 
 class NotificationStatus(str, Enum):
@@ -141,10 +142,25 @@ class Payment(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class SearchLog(SQLModel, table=True):
+    """Records authenticated customer searches so freed slots can be broadcast to them.
+
+    Anonymous searches are not logged. One row per /search/providers call by a
+    logged-in customer. Used by Phase 07 auto-fill cancellations.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    category: str = Field(index=True)
+    city: str = Field(index=True)
+    neighborhood: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+
 class Notification(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
     appointment_id: Optional[int] = Field(default=None, foreign_key="appointment.id", index=True)
+    provider_id: Optional[int] = Field(default=None, foreign_key="provider.id", index=True)
     kind: NotificationKind
     channel: str = "email"  # only email for now
     to_address: str

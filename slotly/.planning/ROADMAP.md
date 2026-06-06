@@ -56,11 +56,11 @@ Phases shipped to date are reconstructed from the existing git history. v2 phase
 
 ### Phase 07 — Auto-fill cancellations
 
-**Status:** planned
-**Goal:** When a paid appointment is cancelled, broadcast the freed slot to customers who showed recent intent. This is the spec's "killer feature" tied to the brand promise.
+**Status:** done
+**Goal:** When a confirmed appointment is cancelled, broadcast the freed slot to customers who searched the same category recently. The spec's "killer feature" tied to the brand promise.
 **Requirements:** REQ-100..102
 **Dependencies:** Phase 05 (notification infra) ✅, Phase 03 (refund logic) ✅
-**Risks:** Spam — need a per-user rate limit and a clear opt-out.
+**Summary:** [`phases/07-SUMMARY.md`](phases/07-SUMMARY.md)
 
 ### Phase 08 — Real geosearch
 

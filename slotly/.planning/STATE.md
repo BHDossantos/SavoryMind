@@ -2,10 +2,10 @@
 
 ## Current position
 
-**Phase 06 — Slotly rebrand + GSD adoption** is in progress.
+**Phase 07 — Auto-fill cancellations** is done.
 
 Last shipped commit on `claude/appointment-booking-platform-FYizt`:
-- `96513b3 chore(slotly): update brand strings to Slotly`
+- `(this commit) feat(slotly): Phase 07 — auto-fill cancellations`
 
 ## What is live
 
@@ -29,6 +29,11 @@ Last shipped commit on `claude/appointment-booking-platform-FYizt`:
 - **D-11** APScheduler in-process for the notification tick. Move to a sidecar / cron when we outgrow a single instance. (Phase 05)
 - **D-12** Notification enqueue is **idempotent** by `(appointment_id, kind)`. Safe to call twice from the booking and payment paths. (Phase 05)
 - **D-13** Deposit bookings only enqueue the customer notifications **after** payment confirms, not at booking time. Avoids spamming customers whose deposit never lands. (Phase 05)
+- **D-14** Anonymous searches are NOT logged into `SearchLog`. Only authenticated customers get auto-fill broadcasts. Anonymous users have no contact channel anyway. (Phase 07)
+- **D-15** Auto-fill match key is `(category, city)`. Neighborhood-level matching is deferred until lat/lng + radius search lands. (Phase 07)
+- **D-16** Per-user rate limit is 24h between `auto_fill_slot` notifications. Protects against a chatty provider cancelling repeatedly. Configurable via `AUTO_FILL_USER_RATE_LIMIT_HOURS`. (Phase 07)
+- **D-17** Per-broadcast cap is 20 recipients, ordered by most-recent-search-first. Ensures the warmest leads win the race to book. Configurable via `AUTO_FILL_MAX_RECIPIENTS`. (Phase 07)
+- **D-18** Past-slot cancellations don't broadcast. Nothing to offer. (Phase 07)
 
 ## Open questions
 

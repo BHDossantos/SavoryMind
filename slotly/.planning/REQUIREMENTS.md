@@ -93,8 +93,8 @@ Requirement IDs are stable. Status uses: `done`, `in_progress`, `planned`, `defe
 
 | ID | Requirement | Status |
 |---|---|---|
-| REQ-100 | When a paid appointment is cancelled, find customers who searched the same category in the area in the last N days | planned |
-| REQ-101 | Notify those customers of the freed slot via their preferred channel | planned |
+| REQ-100 | When a confirmed appointment is cancelled, find customers who searched the same `(category, city)` in the last N days (default 14) | done |
+| REQ-101 | Notify those customers of the freed slot via email; cap at 20 recipients per broadcast; 24h per-user rate limit; exclude the canceller and anonymous searchers; skip past-dated slots | done |
 | REQ-102 | Provider can manually flash-promote an open slot ("free in 30 min, 20% off") | planned |
 
 ### Real geosearch

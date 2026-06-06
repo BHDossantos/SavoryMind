@@ -18,7 +18,7 @@ from ..models import (
     Service,
     User,
 )
-from ..notifications_service import enqueue_cancellation, enqueue_for_appointment
+from ..notifications_service import enqueue_auto_fill, enqueue_cancellation, enqueue_for_appointment
 from ..payments_client import create_checkout_session, refund_payment_intent
 from ..schemas import AppointmentOut, BookingIn, BookingOut
 from ..security import get_current_user
@@ -236,6 +236,8 @@ def cancel_appointment(
 
     session.add(appt)
     enqueue_cancellation(session, appt.id)
+    # Phase 07: broadcast the freed slot to recent searchers.
+    enqueue_auto_fill(session, appt.id)
     session.commit()
     session.refresh(appt)
     return _to_out(session, appt)

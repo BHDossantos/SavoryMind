@@ -54,6 +54,25 @@ def get_current_user(
     return user
 
 
+def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme),
+    session: Session = Depends(get_session),
+) -> Optional[User]:
+    """Returns the current user if a valid token is present, else None.
+
+    Used by /search/providers — search is public, but authenticated searches
+    get logged into SearchLog for Phase 07 auto-fill broadcasts.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        user_id = int(payload.get("sub"))
+    except (JWTError, ValueError, TypeError):
+        return None
+    return session.get(User, user_id)
+
+
 def require_role(*roles: Role):
     def _checker(user: User = Depends(get_current_user)) -> User:
         if user.role not in roles:

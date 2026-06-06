@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
+from typing import Iterable
 
 from sqlmodel import Session, select
 
+from .config import settings
 from .email_client import send_email
 from .models import (
     Appointment,
@@ -13,6 +15,8 @@ from .models import (
     NotificationKind,
     NotificationStatus,
     Provider,
+    Role,
+    SearchLog,
     Service,
     User,
 )
@@ -178,6 +182,137 @@ def enqueue_cancellation(session: Session, appointment_id: int) -> int | None:
     session.add(n)
     session.flush()
     return n.id
+
+
+# ─── Phase 07: auto-fill cancellations ──────────────────────────────────────
+
+
+def _render_auto_fill(
+    *,
+    recipient: User,
+    provider: Provider,
+    appt: Appointment,
+    service: Service,
+) -> tuple[str, str]:
+    when = _format_when(appt.start_at)
+    where = ", ".join(p for p in [provider.neighborhood, provider.city] if p)
+    return (
+        f"Just opened · {service.name} at {provider.display_name}",
+        (
+            f"Hi {recipient.first_name},\n\n"
+            f"A slot just opened up at {provider.display_name} ({where}). "
+            f"You searched for {provider.category} recently — book before someone else grabs it.\n\n"
+            f"Service: {service.name}\n"
+            f"When: {when}\n\n"
+            f"Open Slotly and tap the provider to book.\n\n— Slotly"
+        ),
+    )
+
+
+def _recent_searchers(
+    session: Session,
+    *,
+    category: str,
+    city: str,
+    lookback_days: int,
+    exclude_user_ids: Iterable[int],
+) -> list[int]:
+    """Distinct user_ids who searched (category, city) in the lookback window.
+
+    Ordered most-recent-search-first so when we cap at MAX_RECIPIENTS the
+    warmest leads survive.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=lookback_days)
+    rows = session.exec(
+        select(SearchLog)
+        .where(
+            SearchLog.category == category,
+            SearchLog.city == city,
+            SearchLog.created_at >= cutoff,
+        )
+        .order_by(SearchLog.created_at.desc())
+    ).all()
+    excluded = set(exclude_user_ids)
+    seen: set[int] = set()
+    out: list[int] = []
+    for row in rows:
+        if row.user_id in excluded or row.user_id in seen:
+            continue
+        seen.add(row.user_id)
+        out.append(row.user_id)
+    return out
+
+
+def _user_was_notified_recently(session: Session, user_id: int, hours: int) -> bool:
+    cutoff = datetime.utcnow() - timedelta(hours=hours)
+    return (
+        session.exec(
+            select(Notification).where(
+                Notification.user_id == user_id,
+                Notification.kind == NotificationKind.auto_fill_slot,
+                Notification.created_at >= cutoff,
+            )
+        ).first()
+        is not None
+    )
+
+
+def enqueue_auto_fill(session: Session, cancelled_appointment_id: int) -> list[int]:
+    """Broadcast a freed slot to customers who searched the same category recently.
+
+    Caps: lookback (settings.auto_fill_lookback_days, default 14),
+    per-broadcast recipients (settings.auto_fill_max_recipients, default 20),
+    per-user rate limit (settings.auto_fill_user_rate_limit_hours, default 24).
+
+    Skips:
+    - Past-dated cancelled slots (nothing to offer).
+    - The canceller themselves.
+    - Users who already received an auto_fill_slot inside the rate-limit window.
+    """
+    appt = session.get(Appointment, cancelled_appointment_id)
+    if not appt or appt.start_at <= datetime.utcnow():
+        return []
+    provider = session.get(Provider, appt.provider_id)
+    service = session.get(Service, appt.service_id)
+    if not (provider and service):
+        return []
+
+    candidate_ids = _recent_searchers(
+        session,
+        category=provider.category,
+        city=provider.city,
+        lookback_days=settings.auto_fill_lookback_days,
+        exclude_user_ids={appt.customer_id},
+    )
+
+    created: list[int] = []
+    for user_id in candidate_ids:
+        if len(created) >= settings.auto_fill_max_recipients:
+            break
+        recipient = session.get(User, user_id)
+        if not recipient or recipient.role != Role.customer:
+            continue
+        if _user_was_notified_recently(
+            session, user_id, hours=settings.auto_fill_user_rate_limit_hours
+        ):
+            continue
+        subject, body = _render_auto_fill(
+            recipient=recipient, provider=provider, appt=appt, service=service
+        )
+        n = Notification(
+            user_id=user_id,
+            appointment_id=None,  # the freed slot isn't THEIR appointment
+            provider_id=provider.id,
+            kind=NotificationKind.auto_fill_slot,
+            to_address=recipient.email,
+            subject=subject,
+            body=body,
+            scheduled_at=datetime.utcnow(),
+        )
+        session.add(n)
+        session.flush()
+        created.append(n.id)
+    return created
 
 
 def process_due(session: Session, now: datetime | None = None, limit: int = 100) -> int:

@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     notifications_from_email: str = "noreply@slotly.app"
     notifications_from_name: str = "Slotly"
     notifications_tick_seconds: int = 60
+    # Phase 07 — auto-fill cancellations
+    auto_fill_lookback_days: int = 14
+    auto_fill_max_recipients: int = 20
+    auto_fill_user_rate_limit_hours: int = 24
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

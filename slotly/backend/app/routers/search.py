@@ -6,8 +6,9 @@ from sqlmodel import Session, select
 
 from ..availability_engine import next_slot_for_provider
 from ..db import get_session
-from ..models import ApprovalStatus, Provider, Service
+from ..models import ApprovalStatus, Provider, Role, SearchLog, Service, User
 from ..schemas import ProviderSearchOut
+from ..security import get_current_user_optional
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -19,7 +20,14 @@ def search_providers(
     available_now: bool = Query(False),
     max_price_cents: Optional[int] = Query(None),
     session: Session = Depends(get_session),
+    user: Optional[User] = Depends(get_current_user_optional),
 ) -> list[ProviderSearchOut]:
+    # Phase 07: log authenticated customer searches so freed slots can be
+    # broadcast to them later. Anonymous + non-customer searches not logged.
+    if user and user.role == Role.customer and category and city:
+        session.add(SearchLog(user_id=user.id, category=category, city=city))
+        session.commit()
+
     stmt = select(Provider).where(Provider.approval_status == ApprovalStatus.approved)
     if category:
         stmt = stmt.where(Provider.category == category)
