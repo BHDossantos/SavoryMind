@@ -184,61 +184,74 @@ const DC = {
 // ─── Restaurant constants ─────────────────────────────────────────────────────
 
 const BUSINESS_TYPES = [
-  { id: "restaurant",  icon: "🍽️", label: "Restaurant" },
-  { id: "bar",         icon: "🍸", label: "Bar / Cocktail Lounge" },
-  { id: "cafe",        icon: "☕", label: "Café / Bistro" },
-  { id: "fine_dining", icon: "✨", label: "Fine Dining" },
-  { id: "fast_casual", icon: "⚡", label: "Fast Casual" },
-  { id: "food_truck",  icon: "🚚", label: "Food Truck / Pop-up" },
-  { id: "bakery",      icon: "🥐", label: "Bakery / Patisserie" },
-  { id: "wine_bar",    icon: "🍷", label: "Wine Bar / Winery" },
+  { id: "restaurant",  icon: "🍽️", labelKey: "onboardingPage.rest.bizRestaurant" },
+  { id: "bar",         icon: "🍸", labelKey: "onboardingPage.rest.bizBar" },
+  { id: "cafe",        icon: "☕", labelKey: "onboardingPage.rest.bizCafe" },
+  { id: "fine_dining", icon: "✨", labelKey: "onboardingPage.rest.bizFineDining" },
+  { id: "fast_casual", icon: "⚡", labelKey: "onboardingPage.rest.bizFastCasual" },
+  { id: "food_truck",  icon: "🚚", labelKey: "onboardingPage.rest.bizFoodTruck" },
+  { id: "bakery",      icon: "🥐", labelKey: "onboardingPage.rest.bizBakery" },
+  { id: "wine_bar",    icon: "🍷", labelKey: "onboardingPage.rest.bizWineBar" },
 ];
 
 const DINING_STYLES = [
-  { id: "fine_dining",  label: "✨ Fine Dining",    sub: "White-tablecloth, tasting menus" },
-  { id: "casual",       label: "😊 Casual Dining",  sub: "Relaxed, everyday experience" },
-  { id: "fast_casual",  label: "⚡ Fast Casual",    sub: "Quick service, quality food" },
-  { id: "tasting_menu", label: "🎭 Tasting Menu",   sub: "Chef-driven multi-course journey" },
-  { id: "family_style", label: "👨‍👩‍👧 Family Style",  sub: "Shared dishes, communal eating" },
-  { id: "bar_bites",    label: "🍺 Bar & Bites",    sub: "Drinks-first with great food" },
+  { id: "fine_dining",  labelKey: "onboardingPage.rest.styleFineDining",  subKey: "onboardingPage.rest.styleFineDiningSub" },
+  { id: "casual",       labelKey: "onboardingPage.rest.styleCasual",      subKey: "onboardingPage.rest.styleCasualSub" },
+  { id: "fast_casual",  labelKey: "onboardingPage.rest.styleFastCasual",  subKey: "onboardingPage.rest.styleFastCasualSub" },
+  { id: "tasting_menu", labelKey: "onboardingPage.rest.styleTasting",     subKey: "onboardingPage.rest.styleTastingSub" },
+  { id: "family_style", labelKey: "onboardingPage.rest.styleFamily",      subKey: "onboardingPage.rest.styleFamilySub" },
+  { id: "bar_bites",    labelKey: "onboardingPage.rest.styleBarBites",    subKey: "onboardingPage.rest.styleBarBitesSub" },
 ];
 
-const SERVICE_TYPES  = ["Dine-in","Takeout","Delivery","Catering","Private events"];
+// Note: the `id` is what gets persisted server-side, so it stays stable
+// across i18n. The chips render via t(labelKey).
+const SERVICE_TYPES = [
+  { id: "Dine-in",         labelKey: "onboardingPage.rest.serviceDineIn" },
+  { id: "Takeout",         labelKey: "onboardingPage.rest.serviceTakeout" },
+  { id: "Delivery",        labelKey: "onboardingPage.rest.serviceDelivery" },
+  { id: "Catering",        labelKey: "onboardingPage.rest.serviceCatering" },
+  { id: "Private events",  labelKey: "onboardingPage.rest.servicePrivate" },
+];
 
 const REST_AUDIENCE = [
-  { id: "couples",  label: "💑 Couples" },
-  { id: "families", label: "👨‍👩‍👧 Families" },
-  { id: "business", label: "💼 Business" },
-  { id: "tourists", label: "✈️ Tourists" },
-  { id: "foodies",  label: "🍴 Foodies" },
-  { id: "young",    label: "🎉 Young crowd" },
-  { id: "luxury",   label: "💎 Luxury seekers" },
-  { id: "locals",   label: "🏘️ Local regulars" },
+  { id: "couples",  labelKey: "onboardingPage.rest.audCouples" },
+  { id: "families", labelKey: "onboardingPage.rest.audFamilies" },
+  { id: "business", labelKey: "onboardingPage.rest.audBusiness" },
+  { id: "tourists", labelKey: "onboardingPage.rest.audTourists" },
+  { id: "foodies",  labelKey: "onboardingPage.rest.audFoodies" },
+  { id: "young",    labelKey: "onboardingPage.rest.audYoung" },
+  { id: "luxury",   labelKey: "onboardingPage.rest.audLuxury" },
+  { id: "locals",   labelKey: "onboardingPage.rest.audLocals" },
 ];
 
 const PEAK_HOURS = [
-  { id: "breakfast",  label: "🌅 Breakfast (7–10am)" },
-  { id: "brunch",     label: "🥐 Brunch (10am–1pm)" },
-  { id: "lunch",      label: "☀️ Lunch (12–3pm)" },
-  { id: "afternoon",  label: "🍵 Afternoon (3–6pm)" },
-  { id: "dinner",     label: "🌙 Dinner (6–10pm)" },
-  { id: "late_night", label: "🌃 Late Night (10pm+)" },
+  { id: "breakfast",  labelKey: "onboardingPage.rest.peakBreakfast" },
+  { id: "brunch",     labelKey: "onboardingPage.rest.peakBrunch" },
+  { id: "lunch",      labelKey: "onboardingPage.rest.peakLunch" },
+  { id: "afternoon",  labelKey: "onboardingPage.rest.peakAfternoon" },
+  { id: "dinner",     labelKey: "onboardingPage.rest.peakDinner" },
+  { id: "late_night", labelKey: "onboardingPage.rest.peakLateNight" },
 ];
 
 const REST_GOALS = [
-  { id: "reduce_waste", label: "♻️ Reduce food waste" },
-  { id: "loyalty",      label: "🔁 Build customer loyalty" },
-  { id: "upsell",       label: "📈 Increase average spend" },
-  { id: "staff",        label: "👥 Better staff management" },
-  { id: "reviews",      label: "⭐ Improve online reviews" },
-  { id: "menu_opt",     label: "🍽️ Optimise my menu" },
-  { id: "sentiment",    label: "💬 Understand customers" },
-  { id: "wine_pairing", label: "🍷 Elevate wine program" },
+  { id: "reduce_waste", labelKey: "onboardingPage.rest.goalWaste" },
+  { id: "loyalty",      labelKey: "onboardingPage.rest.goalLoyalty" },
+  { id: "upsell",       labelKey: "onboardingPage.rest.goalUpsell" },
+  { id: "staff",        labelKey: "onboardingPage.rest.goalStaff" },
+  { id: "reviews",      labelKey: "onboardingPage.rest.goalReviews" },
+  { id: "menu_opt",     labelKey: "onboardingPage.rest.goalMenu" },
+  { id: "sentiment",    labelKey: "onboardingPage.rest.goalSentiment" },
+  { id: "wine_pairing", labelKey: "onboardingPage.rest.goalWine" },
 ];
 
 const WINE_PROGRAM_OPTS = [
-  "Red wines","White wines","Rosé","Sparkling / Champagne",
-  "Natural wines","Orange wines","Dessert wines",
+  { id: "Red wines",              labelKey: "onboardingPage.rest.wineRed" },
+  { id: "White wines",            labelKey: "onboardingPage.rest.wineWhite" },
+  { id: "Rosé",                   labelKey: "onboardingPage.rest.wineRose" },
+  { id: "Sparkling / Champagne",  labelKey: "onboardingPage.rest.wineSparkling" },
+  { id: "Natural wines",          labelKey: "onboardingPage.rest.wineNatural" },
+  { id: "Orange wines",           labelKey: "onboardingPage.rest.wineOrange" },
+  { id: "Dessert wines",          labelKey: "onboardingPage.rest.wineDessert" },
 ];
 
 // Restaurant colour lookup
@@ -278,11 +291,14 @@ function pj(val, fallback) {
 // ─── Shared micro-components ──────────────────────────────────────────────────
 
 function ChipSelect({ items, selected, onToggle, activeClass = CC.chip, hoverClass = CC.chipHover }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => {
         const val   = typeof item === "string" ? item : item.id;
-        const label = typeof item === "string" ? item : item.label;
+        const label = typeof item === "string"
+          ? item
+          : (item.labelKey ? t(item.labelKey) : item.label);
         const on    = selected.includes(val);
         return (
           <button key={val} type="button" onClick={() => onToggle(val)}
@@ -914,38 +930,40 @@ const RESTAURANT_STEPS = [
 // ─── Restaurant step components ───────────────────────────────────────────────
 
 function StepRestName({ data, onChange }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your First Name</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.rest.firstNameLabel")}</label>
         <input value={data.first_name} onChange={(e) => onChange("first_name", e.target.value)}
-          placeholder="First name" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+          placeholder={t("onboardingPage.rest.firstNamePh")} className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Last Name</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.rest.lastNameLabel")}</label>
         <input value={data.last_name} onChange={(e) => onChange("last_name", e.target.value)}
-          placeholder="Last name" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+          placeholder={t("onboardingPage.rest.lastNamePh")} className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
       </div>
     </div>
   );
 }
 
 function StepRestDetails({ data, onChange }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Restaurant Name</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.rest.restNameLabel")}</label>
         <input value={data.restaurant_name} onChange={(e) => onChange("restaurant_name", e.target.value)}
-          placeholder="e.g. La Bella Cucina" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+          placeholder={t("onboardingPage.rest.restNamePh")} className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-2">Type of venue</p>
+        <p className="text-sm font-semibold text-gray-700 mb-2">{t("onboardingPage.rest.venueTypeHeader")}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {BUSINESS_TYPES.map((b) => (
             <button key={b.id} type="button" onClick={() => onChange("business_type", b.id)}
               className={`flex items-center gap-2 p-3 rounded-xl border-2 text-left transition-all text-sm ${data.business_type === b.id ? RC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
               <span className="text-lg">{b.icon}</span>
-              <span className="font-medium text-gray-800">{b.label}</span>
+              <span className="font-medium text-gray-800">{t(b.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -955,19 +973,20 @@ function StepRestDetails({ data, onChange }) {
 }
 
 function StepRestStyle({ data, onChange }) {
+  const { t } = useTranslation();
   const services = pj(data.service_type, []);
   const toggle   = (v) => onChange("service_type", JSON.stringify(services.includes(v) ? services.filter((x) => x !== v) : [...services, v]));
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">Dining style</p>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t("onboardingPage.rest.diningStyleHeader")}</p>
         <div className="grid grid-cols-1 gap-2">
           {DINING_STYLES.map((s) => (
             <button key={s.id} type="button" onClick={() => onChange("dining_style", s.id)}
               className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${data.dining_style === s.id ? RC.cardSel : "border-gray-200 bg-white hover:border-gray-300"}`}>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">{s.label}</p>
-                <p className="text-xs text-gray-400">{s.sub}</p>
+                <p className="text-sm font-semibold text-gray-900">{t(s.labelKey)}</p>
+                <p className="text-xs text-gray-400">{t(s.subKey)}</p>
               </div>
               {data.dining_style === s.id && <span className="text-brand-600 font-bold">✓</span>}
             </button>
@@ -975,7 +994,7 @@ function StepRestStyle({ data, onChange }) {
         </div>
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-2">Services offered <span className="font-normal text-gray-400">(pick all)</span></p>
+        <p className="text-sm font-semibold text-gray-700 mb-2">{t("onboardingPage.rest.servicesHeader")} <span className="font-normal text-gray-400">{t("onboardingPage.rest.pickAll")}</span></p>
         <ChipSelect items={SERVICE_TYPES} selected={services} onToggle={toggle} activeClass={RC.chip} hoverClass={RC.chipHover} />
       </div>
     </div>
@@ -983,6 +1002,7 @@ function StepRestStyle({ data, onChange }) {
 }
 
 function StepRestCuisine({ data, onChange }) {
+  const { t } = useTranslation();
   const cuisines  = pj(data.restaurant_cuisine, []);
   const audience  = pj(data.target_audience, []);
   const toggleC   = (v) => onChange("restaurant_cuisine", JSON.stringify(cuisines.includes(v) ? cuisines.filter((x) => x !== v) : [...cuisines, v]));
@@ -990,53 +1010,54 @@ function StepRestCuisine({ data, onChange }) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">Cuisines you serve</p>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t("onboardingPage.rest.cuisinesHeader")}</p>
         <ChipSelect items={CUISINES} selected={cuisines} onToggle={toggleC} activeClass={RC.chip} hoverClass={RC.chipHover} />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">Target audience <span className="font-normal text-gray-400">(pick all)</span></p>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t("onboardingPage.rest.audienceHeader")} <span className="font-normal text-gray-400">{t("onboardingPage.rest.pickAll")}</span></p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {REST_AUDIENCE.map((a) => (
             <button key={a.id} type="button" onClick={() => toggleA(a.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${audience.includes(a.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
-              {a.label}
+              {t(a.labelKey)}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Seating capacity <span className="font-normal text-gray-400">(optional)</span></label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("onboardingPage.rest.capacityLabel")} <span className="font-normal text-gray-400">{t("onboardingPage.rest.capacityOptional")}</span></label>
         <input type="number" min="1" value={data.seating_capacity || ""}
           onChange={(e) => onChange("seating_capacity", e.target.value ? parseInt(e.target.value) : "")}
-          placeholder="e.g. 80" className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
+          placeholder={t("onboardingPage.rest.capacityPh")} className={`w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${RC.ring}`} />
       </div>
     </div>
   );
 }
 
 function StepRestBeverage({ data, onChange }) {
+  const { t } = useTranslation();
   const wineList = pj(data.wine_program, []);
   const toggleW  = (v) => onChange("wine_program", JSON.stringify(wineList.includes(v) ? wineList.filter((x) => x !== v) : [...wineList, v]));
   return (
     <div className="space-y-5">
-      <p className="text-sm text-gray-500">Tell us what you pour — we'll match guests to your bar.</p>
+      <p className="text-sm text-gray-500">{t("onboardingPage.rest.bevIntro")}</p>
       <div className="space-y-3">
         {[
-          { key: "serves_wine",      icon: "🍷", label: "Wine" },
-          { key: "serves_cocktails", icon: "🍸", label: "Cocktails" },
-          { key: "serves_beer",      icon: "🍺", label: "Beer" },
-        ].map(({ key, icon, label }) => (
+          { key: "serves_wine",      icon: "🍷", labelKey: "onboardingPage.rest.bevWine" },
+          { key: "serves_cocktails", icon: "🍸", labelKey: "onboardingPage.rest.bevCocktails" },
+          { key: "serves_beer",      icon: "🍺", labelKey: "onboardingPage.rest.bevBeer" },
+        ].map(({ key, icon, labelKey }) => (
           <label key={key} className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 hover:bg-gray-50">
             <input type="checkbox" checked={!!data[key]} onChange={(e) => onChange(key, e.target.checked)}
               className="w-4 h-4 rounded border-gray-300" />
             <span className="text-lg">{icon}</span>
-            <span className="text-sm font-medium text-gray-800">{label}</span>
+            <span className="text-sm font-medium text-gray-800">{t(labelKey)}</span>
           </label>
         ))}
       </div>
       {data.serves_wine && (
         <div>
-          <p className="text-sm font-semibold text-gray-700 mb-2">Wine list highlights</p>
+          <p className="text-sm font-semibold text-gray-700 mb-2">{t("onboardingPage.rest.wineHighlights")}</p>
           <ChipSelect items={WINE_PROGRAM_OPTS} selected={wineList} onToggle={toggleW} activeClass={RC.chip} hoverClass={RC.chipHover} />
         </div>
       )}
@@ -1045,6 +1066,7 @@ function StepRestBeverage({ data, onChange }) {
 }
 
 function StepRestGoals({ data, onChange }) {
+  const { t } = useTranslation();
   const goals = pj(data.restaurant_goals, []);
   const hours = pj(data.peak_hours, []);
   const toggleG = (v) => onChange("restaurant_goals", JSON.stringify(goals.includes(v) ? goals.filter((x) => x !== v) : [...goals, v]));
@@ -1052,23 +1074,23 @@ function StepRestGoals({ data, onChange }) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">What do you want from SavoryMind? <span className="font-normal text-gray-400">(pick all)</span></p>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t("onboardingPage.rest.goalsHeader")} <span className="font-normal text-gray-400">{t("onboardingPage.rest.pickAll")}</span></p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {REST_GOALS.map((g) => (
             <button key={g.id} type="button" onClick={() => toggleG(g.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${goals.includes(g.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
-              {g.label}
+              {t(g.labelKey)}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">Peak service hours <span className="font-normal text-gray-400">(pick all)</span></p>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t("onboardingPage.rest.peakHoursHeader")} <span className="font-normal text-gray-400">{t("onboardingPage.rest.pickAll")}</span></p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PEAK_HOURS.map((h) => (
             <button key={h.id} type="button" onClick={() => toggleH(h.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium border text-left transition-colors ${hours.includes(h.id) ? RC.chip : `bg-white text-gray-600 border-gray-200 ${RC.chipHover}`}`}>
-              {h.label}
+              {t(h.labelKey)}
             </button>
           ))}
         </div>
@@ -1078,6 +1100,7 @@ function StepRestGoals({ data, onChange }) {
 }
 
 function StepRestSummary({ data }) {
+  const { t } = useTranslation();
   const btype    = BUSINESS_TYPES.find((b) => b.id === data.business_type);
   const cuisines = pj(data.restaurant_cuisine, []).slice(0, 4);
   const goals    = pj(data.restaurant_goals, []).slice(0, 3);
@@ -1087,46 +1110,46 @@ function StepRestSummary({ data }) {
         {btype?.icon || "🏪"}
       </div>
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-brand-500 mb-1">Your Restaurant Profile</p>
-        <h2 className="text-2xl font-extrabold text-gray-900">{data.restaurant_name || "Your Restaurant"}</h2>
-        <p className="text-gray-500 text-sm mt-1">{btype?.label || "Restaurant"}</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-500 mb-1">{t("onboardingPage.rest.summaryEyebrow")}</p>
+        <h2 className="text-2xl font-extrabold text-gray-900">{data.restaurant_name || t("onboardingPage.rest.summaryFallbackName")}</h2>
+        <p className="text-gray-500 text-sm mt-1">{btype ? t(btype.labelKey) : t("onboardingPage.rest.summaryFallbackType")}</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
         {data.city && (
           <div className="bg-brand-50 border border-brand-100 rounded-xl p-3">
-            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">Location</p>
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">{t("onboardingPage.rest.locationLabel")}</p>
             <p className="font-bold text-gray-800 mt-0.5">{data.city}{data.country ? `, ${data.country}` : ""}</p>
           </div>
         )}
         {data.seating_capacity && (
           <div className="bg-brand-50 border border-brand-100 rounded-xl p-3">
-            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">Capacity</p>
-            <p className="font-bold text-gray-800 mt-0.5">{data.seating_capacity} seats</p>
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide">{t("onboardingPage.rest.capacityHeader")}</p>
+            <p className="font-bold text-gray-800 mt-0.5">{t("onboardingPage.rest.seatsCount", { n: data.seating_capacity })}</p>
           </div>
         )}
         {cuisines.length > 0 && (
           <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 col-span-2">
-            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide mb-1">Cuisines</p>
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide mb-1">{t("onboardingPage.rest.cuisinesSummaryHeader")}</p>
             <p className="text-sm text-gray-700">{cuisines.join(" · ")}</p>
           </div>
         )}
         {goals.length > 0 && (
           <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 col-span-2">
-            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide mb-1">Goals</p>
+            <p className="text-xs text-brand-500 font-semibold uppercase tracking-wide mb-1">{t("onboardingPage.rest.goalsSummaryHeader")}</p>
             <div className="flex flex-wrap gap-1">
               {goals.map((g) => {
                 const found = REST_GOALS.find((x) => x.id === g);
-                return <span key={g} className="text-xs bg-white border border-brand-200 text-brand-700 px-2 py-0.5 rounded-full">{found?.label || g}</span>;
+                return <span key={g} className="text-xs bg-white border border-brand-200 text-brand-700 px-2 py-0.5 rounded-full">{found ? t(found.labelKey) : g}</span>;
               })}
             </div>
           </div>
         )}
       </div>
-      <p className="text-sm text-gray-400">SavoryMind will now power your restaurant intelligence 🎉</p>
+      <p className="text-sm text-gray-400">{t("onboardingPage.rest.powerNote")}</p>
       <div className="text-left bg-brand-50 border border-brand-200 rounded-xl p-4 mt-2">
-        <p className="text-sm font-semibold text-brand-900">📅 You&apos;re now discoverable for bookings</p>
+        <p className="text-sm font-semibold text-brand-900">{t("onboardingPage.rest.bookableTitle")}</p>
         <p className="text-xs text-brand-700 mt-1 leading-relaxed">
-          Diners in your city can book a table at {data.restaurant_name || "your restaurant"} as soon as you enter the dashboard. Set custom time slots and enable SMS alerts on the bookings page.
+          {t("onboardingPage.rest.bookableBody", { name: data.restaurant_name || t("onboardingPage.rest.bookableFallbackName") })}
         </p>
       </div>
     </div>
