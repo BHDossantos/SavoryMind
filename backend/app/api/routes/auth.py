@@ -326,6 +326,14 @@ def update_profile(
         if field not in ProfileUpdate.model_fields:
             continue
         setattr(current_user, field, value)
+
+    # Generate the public booking slug as soon as a restaurant has a name —
+    # idempotent and skipped for consumer/diner accounts. Restaurants share
+    # this link with their existing diners (savorymind.net/r/{slug}) so they
+    # can book without creating an account.
+    from ...services.slug_service import ensure_restaurant_slug
+    ensure_restaurant_slug(db, current_user)
+
     db.commit()
     db.refresh(current_user)
 

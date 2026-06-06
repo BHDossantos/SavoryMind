@@ -6,6 +6,47 @@ import usePolling from "../../hooks/usePolling";
 import { playChime } from "../../utils/chime";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
+function ShareLinkWidget() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [copied, setCopied] = useState(false);
+
+  if (!user?.slug) return null;
+
+  const base = (typeof window !== "undefined" ? window.location.origin : "https://savorymind.net");
+  const link = `${base}/r/${user.slug}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Older browsers / Safari without permission — best effort
+    }
+  };
+
+  return (
+    <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-brand-900 mb-1">
+        🔗 {t("bookingsPage.shareLinkHeadline")}
+      </p>
+      <p className="text-xs text-brand-700 mb-2">{t("bookingsPage.shareLinkSubtitle")}</p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 min-w-0 text-xs bg-white border border-brand-200 rounded-lg px-3 py-2 text-gray-700 font-mono truncate">
+          {link}
+        </code>
+        <button
+          onClick={copy}
+          className="flex-shrink-0 text-xs px-3 py-2 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700"
+        >
+          {copied ? t("bookingsPage.shareCopied") : t("bookingsPage.shareCopy")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SmsAlertWidget() {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
@@ -248,6 +289,7 @@ export default function Bookings() {
           {realtimeMsg}
         </div>
       )}
+      <ShareLinkWidget />
       <SmsAlertWidget />
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">

@@ -407,7 +407,11 @@
     "smsEnable": "Activar",
     "smsAlertsActive": "Alertas SMS activas — {{phone}}",
     "smsChange": "Cambiar",
-    "smsPhoneInvalid": "Usa el formato internacional, por ejemplo +34555555100"
+    "smsPhoneInvalid": "Usa el formato internacional, por ejemplo +34555555100",
+    "shareLinkHeadline": "Tu enlace de reservas",
+    "shareLinkSubtitle": "Compártelo con tus clientes — pueden reservar sin cuenta.",
+    "shareCopy": "Copiar",
+    "shareCopied": "¡Copiado!"
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1946,5 +1950,26 @@
     "musicBlurb": "Los ambientes musicales a juego con tu comida forman parte de SavoryMind Premium.",
     "cellarFeature": "La bodega",
     "cellarBlurb": "El catálogo completo de vinos, cervezas y licores forma parte de SavoryMind Premium."
+  },
+  "guestBookingPage": {
+    "notFound": "Restaurante no encontrado",
+    "notFoundHint": "Comprueba el enlace que el restaurante te envió.",
+    "dateLabel": "Elige el día",
+    "timeLabel": "Elige la hora",
+    "partyLabel": "Número de personas",
+    "partyHint": "personas",
+    "namePh": "Tu nombre",
+    "phonePh": "Teléfono (con prefijo país)",
+    "emailPh": "Email (opcional)",
+    "notesPh": "Peticiones especiales, alergias… (opcional)",
+    "submit": "Reservar mesa",
+    "submitting": "Enviando…",
+    "errMissingFields": "Elige fecha, hora y completa nombre y teléfono.",
+    "footnote": "El restaurante recibirá tu reserva al instante.",
+    "confirmedTitle": "¡Reserva confirmada!",
+    "confirmedMsg": "Te esperamos el {{date}} a las {{time}} en {{name}}.",
+    "pendingTitle": "Solicitud enviada",
+    "pendingMsg": "El equipo de {{name}} la confirmará en breve.",
+    "confirmationFootnote": "Recibirás una confirmación por mensaje o llamada si hace falta."
   }
 }

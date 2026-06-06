@@ -94,6 +94,12 @@ class User(Base):
     # email alert still goes out.
     phone = Column(String(32), nullable=True)
 
+    # Public URL slug for restaurants — backs savorymind.net/r/{slug} so a
+    # restaurant can share a no-signup booking link with their existing diners.
+    # Auto-generated on first profile update for restaurant accounts; null on
+    # consumer/diner rows.
+    slug = Column(String(80), unique=True, nullable=True, index=True)
+
     # Staff account linkage — only set when account_type == "staff"
     employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)
 

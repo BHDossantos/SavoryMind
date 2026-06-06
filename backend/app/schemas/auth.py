@@ -113,6 +113,8 @@ class UserResponse(BaseModel):
     serves_cocktails:    Optional[bool] = None
     serves_beer:         Optional[bool] = None
     phone:               Optional[str]  = None
+    # Public booking slug — restaurants only, server-assigned, read-only for the client.
+    slug:                Optional[str]  = None
     onboarding_completed: bool          = False
     # i18n preference; default 'en' so legacy clients without the column still work.
     language:            str             = "en"
@@ -134,6 +136,7 @@ class TokenResponse(BaseModel):
 
 class ProfileUpdate(BaseModel):
     display_name:        Optional[str]   = None
+    restaurant_name:     Optional[str]   = None
     bio:                 Optional[str]   = None
     account_type:        Optional[str]   = None
     first_name:          Optional[str]   = None

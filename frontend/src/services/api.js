@@ -353,4 +353,26 @@ export const api = {
     request(`/api/inventory/${id}/adjust`, { method: "POST", body: JSON.stringify(data) }),
   categorizeInventoryItem: (name) =>
     request("/api/inventory/categorize", { method: "POST", body: JSON.stringify({ name }) }),
+
+  // ── Public (no auth) ────────────────────────────────────────────────────
+  // Backs the guest booking page at /r/[slug]. Uses a raw fetch instead of
+  // the auth-aware `request` so an expired/missing token doesn't bounce the
+  // visitor to /login.
+  getPublicRestaurant: async (slug) => {
+    const res = await fetch(`${getBaseUrl()}/api/public/restaurants/${encodeURIComponent(slug)}`);
+    if (!res.ok) throw new Error(res.status === 404 ? "not_found" : `failed_${res.status}`);
+    return res.json();
+  },
+  createGuestBooking: async (slug, data) => {
+    const res = await fetch(
+      `${getBaseUrl()}/api/public/restaurants/${encodeURIComponent(slug)}/book`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) },
+    );
+    if (!res.ok) {
+      let detail = `Request failed (${res.status})`;
+      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  },
 };

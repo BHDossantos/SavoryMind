@@ -31,6 +31,9 @@ const PUBLIC_ROUTES = [
   // Public anonymous-feedback flow — a diner scans an employee's printed
   // QR code and lands here. No account required.
   "/scan/[token]",
+  // Public guest-booking page — what a restaurant shares with their
+  // existing diners over WhatsApp/Instagram. No account required.
+  "/r/[slug]",
 ];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 
