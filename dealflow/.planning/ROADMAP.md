@@ -60,11 +60,51 @@ pending the next discuss step.
 - **Delivers:** R26
 - **Tests:** 28 passing across 3 files (~600ms)
 
-## Phase 6 — TBD (awaiting discuss)
+## Phase 6 — Backend foundation (DB + auth + API)
 
-Pending `/gsd-discuss-phase 6`. Remaining candidates from the original list:
+- **Status:** Active
+- **Goal:** Replace localStorage with a real Postgres-backed multi-tenant API behind authentication. Foundation for billing, sharing, and every later phase.
+- **Plans:**
+  - 6-1 Drizzle ORM + Postgres schema + migrations + docker-compose for local dev
+  - 6-2 Auth (NextAuth credentials provider + signup/login pages + session middleware)
+  - 6-3 Deal API CRUD routes under `/api/deals` with workspace scoping
+- **Delivers:** R19 (real backend + auth)
+- **Authorization wall:** none — local Postgres in Docker, dev credentials only
 
-- **6A. Batch AI analysis** — R20. Small, ships in a day, big perceived value for portfolios.
-- **6B. Real backend (Postgres + auth)** — R19. Largest scope; unblocks R23, R24.
-- **6C. PDF LOI export** — R22. Mid-scope; user-visible win.
-- **6D. Marketplace scraping** — R21. Highest compliance + maintenance risk.
+## Phase 7 — Frontend migration to API
+
+- **Status:** Pending
+- **Goal:** Frontend reads/writes via the API instead of localStorage. One-time import flow lets existing users carry local deals in.
+
+## Phase 8 — Stripe billing
+
+- **Status:** Pending
+- **Goal:** Free / Pro €29 / Team €99-per-seat tiers with feature gating.
+- **Authorization wall:** **needs Stripe account + API keys**
+
+## Phase 9 — Production deployment + observability
+
+- **Status:** Pending
+- **Goal:** Vercel (app) + managed Postgres + Sentry + PostHog + status endpoint.
+- **Authorization wall:** **needs hosting/observability accounts**
+
+## Phase 10 — Marketing site + legal
+
+- **Status:** Pending
+- **Goal:** Landing page, pricing page, ToS + Privacy from template, waitlist capture.
+
+## Phase 11 — Search-funder ICP features
+
+- **Status:** Pending
+- **Goal:** Portfolio view (cross-target pipeline), IC memo generator, structured DD checklist tracking.
+
+## Phase 12 — Comp-database moat
+
+- **Status:** Pending
+- **Goal:** Anonymized aggregation of every analysis into an industry comp database surfaced as "how does your deal compare to the cohort".
+
+## Phase 13 — Sale prep + repo split
+
+- **Status:** Pending
+- **Goal:** Test coverage gates, runbooks, MRR/churn/CAC reports, codebase audit, migration plan for extracting `dealflow/` to its own repository.
+- **Authorization wall:** **user executes the actual `gh repo create`**

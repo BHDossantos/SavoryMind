@@ -1,28 +1,32 @@
-# SavoryMind
+# This repository
 
-SavoryMind is an AI-powered food intelligence platform designed to help restaurants optimize their menus, pricing, and customer satisfaction using real-time data, machine learning, and sentiment analysis.
+This repository contains two distinct projects. Active development is on **DealFlow AI**.
 
-## Core Features
-- Menu Performance Analysis
-- Profitability Insights & Cost Optimization
-- Customer Sentiment Analysis from Reviews
-- AI-Driven Menu Recommendations
-- Automated Reporting & Email Summaries
+## DealFlow AI (active) — `dealflow/`
 
-## Tech Stack
-- **Frontend:** Next.js, Tailwind CSS
-- **Backend:** FastAPI (Python), PostgreSQL
-- **AI/ML:** HuggingFace Transformers for Sentiment Analysis
-- **Infrastructure:** Docker Compose, AWS (optional for deployment)
+A web platform that helps small-business buyers find, analyze, score, negotiate, and track acquisitions (restaurants, gyms, bars, salons, retail, services). Turns raw financials into a deterministic deal score plus an AI-generated investment thesis and negotiation playbook in seconds.
 
-## Folder Structure
-- `/frontend`: Web UI and customer-facing application
-- `/backend`: API server, business logic, and AI models
-- `/database`: SQL scripts for database initialization
-- `/scripts`: Automation and helper scripts
+See `dealflow/README.md` for tech stack, run instructions, and feature list. Planning artifacts live under `dealflow/.planning/`.
 
-## Local Setup
-```bash
-git clone https://github.com/yourusername/savorymind.git
-cd savorymind
-Favicon, logo assets, static images (no code needed yet)
+**Status:** Active. Phase 5 (tested scoring engine) shipped; Phase 6 (backend foundation) in flight.
+
+## SavoryMind (legacy) — `frontend/`, `backend/`, `mobile/`, `database/`, `scripts/`
+
+An earlier AI-powered restaurant analytics product. Code remains in this repository for reference but is unmaintained. Do not develop against it. New work happens under `dealflow/`.
+
+The Cloud Build pipeline, Dockerfile, and `.github/workflows/deploy-*.yml` workflows at the repository root belong to SavoryMind and will be retired or replaced when DealFlow ships its own production infrastructure (Phase 9).
+
+## Repository layout
+
+```
+.
+├─ dealflow/                Active product (DealFlow AI)
+├─ frontend/                Legacy (SavoryMind)
+├─ backend/                 Legacy (SavoryMind)
+├─ mobile/                  Legacy (SavoryMind)
+├─ database/                Legacy (SavoryMind)
+├─ scripts/                 Legacy (SavoryMind)
+└─ .github/workflows/
+   ├─ dealflow-tests.yml    Active — DealFlow CI
+   └─ deploy-*.yml          Legacy — SavoryMind CI
+```

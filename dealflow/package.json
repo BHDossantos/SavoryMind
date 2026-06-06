@@ -9,22 +9,38 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx lib/db/migrate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
+    "@auth/drizzle-adapter": "^1.7.4",
+    "bcryptjs": "^2.4.3",
+    "drizzle-orm": "^0.36.4",
     "next": "14.2.5",
+    "next-auth": "5.0.0-beta.25",
+    "pg": "^8.13.1",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.2.14",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "20.12.7",
+    "@types/pg": "^8.11.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vitest/coverage-v8": "^2.1.0",
     "autoprefixer": "10.4.19",
+    "dotenv": "^16.4.5",
+    "drizzle-kit": "^0.28.1",
     "postcss": "8.4.38",
     "tailwindcss": "3.4.4",
+    "tsx": "^4.19.2",
     "typescript": "5.4.5",
     "vitest": "^2.1.0"
   }
