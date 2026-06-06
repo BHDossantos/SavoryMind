@@ -20,7 +20,10 @@ class Booking(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     # Online booking fields — set when a diner books through the platform
     diner_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    source = Column(String, default="manual")  # manual | online
+    source = Column(String, default="manual")  # manual | online | public
+    # Idempotency flag for the day-before reminder scheduler — non-null
+    # means the reminder has been delivered (or attempted), do not re-send.
+    reminder_sent_at = Column(DateTime, nullable=True)
 
 
 class CRMCustomer(Base):

@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from ...core.database import get_db
 from ...core.rate_limit import limiter
-from ...services import inventory_digest_service
+from ...services import inventory_digest_service, reminder_service
 
 logger = logging.getLogger(__name__)
 
@@ -90,4 +90,20 @@ def inventory_digest(
 ):
     stats = inventory_digest_service.run_digest(db)
     logger.info("inventory-digest stats: %s", stats)
+    return stats
+
+
+@router.post("/booking-reminders")
+@limiter.limit("60/minute")
+def booking_reminders(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook: send day-before reminders to diners with confirmed bookings.
+
+    Designed to be hit every 15 minutes by Cloud Scheduler. Idempotent
+    via Booking.reminder_sent_at, so overlapping ticks are safe."""
+    stats = reminder_service.send_due_reminders(db)
+    logger.info("booking-reminders stats: %s", stats)
     return stats
