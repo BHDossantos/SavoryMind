@@ -1,25 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { dealsRepo } from "@/lib/storage";
 import { analyzeDeal } from "@/lib/scoring";
-import type { Deal } from "@/lib/types";
 import DealCard from "@/components/DealCard";
 import Stat from "@/components/Stat";
 import { eur } from "@/lib/format";
 import { dealsToCsv, downloadCsv } from "@/lib/csv";
+import { useDealsSource } from "@/lib/client/use-deals";
 
 export default function DashboardPage() {
-  const [deals, setDeals] = useState<Deal[]>([]);
-
-  useEffect(() => {
-    dealsRepo.seedDemoIfEmpty();
-    const refresh = () => setDeals(dealsRepo.list());
-    refresh();
-    window.addEventListener("dealflow:change", refresh);
-    return () => window.removeEventListener("dealflow:change", refresh);
-  }, []);
+  const { deals, isLoading, error, authed } = useDealsSource();
 
   const analyses = deals.map((d) => ({ d, a: analyzeDeal(d) }));
   const avgScore =
@@ -39,6 +29,16 @@ export default function DashboardPage() {
           Instant analysis for small business acquisitions. Add a deal to score
           profitability, risk, ROI, and a fair offer in seconds.
         </p>
+        {!authed && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            You&rsquo;re using DealFlow without an account &mdash; deals live
+            only in this browser.{" "}
+            <Link href="/signup" className="underline">
+              Create an account
+            </Link>{" "}
+            to save them to the cloud.
+          </div>
+        )}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -46,7 +46,15 @@ export default function DashboardPage() {
         <Stat
           label="Average score"
           value={avgScore ? String(avgScore) : "—"}
-          tone={avgScore >= 75 ? "good" : avgScore >= 55 ? "warn" : avgScore ? "bad" : "default"}
+          tone={
+            avgScore >= 75
+              ? "good"
+              : avgScore >= 55
+                ? "warn"
+                : avgScore
+                  ? "bad"
+                  : "default"
+          }
         />
         <Stat label="Total asking" value={eur(totalAsking)} />
         <Stat
@@ -77,12 +85,27 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-        {deals.length === 0 ? (
+
+        {error && (
+          <div className="card border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+            Couldn&rsquo;t load deals: {error.message}
+          </div>
+        )}
+
+        {!error && isLoading && deals.length === 0 && (
+          <div className="card p-8 text-center text-sm text-slate-500">
+            Loading…
+          </div>
+        )}
+
+        {!error && !isLoading && deals.length === 0 && (
           <div className="card p-8 text-center text-sm text-slate-600">
             No deals yet. Click <span className="kbd">+ New Deal</span> to add
             one.
           </div>
-        ) : (
+        )}
+
+        {deals.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {deals.map((d) => (
               <DealCard key={d.id} deal={d} />

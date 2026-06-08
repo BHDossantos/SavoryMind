@@ -1,26 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { dealsRepo } from "@/lib/storage";
+import { useMemo, useState } from "react";
 import { analyzeDeal } from "@/lib/scoring";
 import { BUSINESS_TYPE_LABELS } from "@/lib/multiples";
 import { eur, pct, years } from "@/lib/format";
 import type { Deal } from "@/lib/types";
 import { scoreColor, scoreLabel } from "@/components/ScoreBadge";
+import { useDealsSource } from "@/lib/client/use-deals";
 
 const MAX_SELECT = 4;
 
 export default function ComparePage() {
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const { deals, isLoading, error } = useDealsSource();
   const [selected, setSelected] = useState<string[]>([]);
-
-  useEffect(() => {
-    const refresh = () => setDeals(dealsRepo.list());
-    refresh();
-    window.addEventListener("dealflow:change", refresh);
-    return () => window.removeEventListener("dealflow:change", refresh);
-  }, []);
 
   const chosen = useMemo(
     () =>
@@ -47,9 +40,17 @@ export default function ComparePage() {
         </p>
       </div>
 
+      {error && (
+        <div className="card border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          Couldn&rsquo;t load deals: {error.message}
+        </div>
+      )}
+
       <section className="card p-5">
         <h2 className="font-semibold mb-3">Select deals</h2>
-        {deals.length === 0 ? (
+        {isLoading && deals.length === 0 ? (
+          <div className="text-sm text-slate-500">Loading…</div>
+        ) : deals.length === 0 ? (
           <div className="text-sm text-slate-500">
             No deals yet.{" "}
             <Link href="/deals/new" className="text-brand-600 underline">

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { dealsRepo } from "@/lib/storage";
+import {
+  clearNarrativeAction,
+  setNarrativeAction,
+} from "@/lib/client/actions";
 import type { AINarrative, AIVerdict, Deal } from "@/lib/types";
 
 const VERDICT_STYLE: Record<
@@ -17,7 +20,13 @@ const VERDICT_STYLE: Record<
   pass: { bg: "bg-rose-100", text: "text-rose-800", label: "Pass" },
 };
 
-export default function AIAnalysis({ deal }: { deal: Deal }) {
+interface Props {
+  deal: Deal;
+  authed: boolean;
+  onChange: () => Promise<unknown> | void;
+}
+
+export default function AIAnalysis({ deal, authed, onChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const narrative = deal.aiNarrative;
@@ -35,11 +44,22 @@ export default function AIAnalysis({ deal }: { deal: Deal }) {
       if (!res.ok) {
         throw new Error(json.error || `Request failed (${res.status})`);
       }
-      dealsRepo.setNarrative(deal.id, json as AINarrative);
+      await setNarrativeAction(authed, deal.id, json as AINarrative);
+      await onChange();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function clear() {
+    setError(null);
+    try {
+      await clearNarrativeAction(authed, deal.id);
+      await onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to clear");
     }
   }
 
@@ -59,7 +79,8 @@ export default function AIAnalysis({ deal }: { deal: Deal }) {
             <button
               type="button"
               className="btn-ghost text-xs"
-              onClick={() => dealsRepo.clearNarrative(deal.id)}
+              onClick={clear}
+              disabled={loading}
             >
               Clear
             </button>

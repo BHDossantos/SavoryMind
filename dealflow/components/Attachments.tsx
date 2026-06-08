@@ -1,7 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { dealsRepo } from "@/lib/storage";
+import {
+  addAttachmentAction,
+  removeAttachmentAction,
+} from "@/lib/client/actions";
 import type { Attachment, Deal } from "@/lib/types";
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MB per file
@@ -29,9 +32,16 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export default function Attachments({ deal }: { deal: Deal }) {
+interface Props {
+  deal: Deal;
+  authed: boolean;
+  onChange: () => Promise<unknown> | void;
+}
+
+export default function Attachments({ deal, authed, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const attachments = deal.attachments ?? [];
   const totalBytes = attachments.reduce((s, a) => s + a.size, 0);
 
@@ -39,29 +49,52 @@ export default function Attachments({ deal }: { deal: Deal }) {
     setError(null);
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
+    setBusy(true);
+    let current = [...attachments];
     let runningTotal = totalBytes;
-    for (const file of files) {
-      if (file.size > MAX_FILE_BYTES) {
-        setError(`${file.name} exceeds the 2 MB per-file limit.`);
-        continue;
+    try {
+      for (const file of files) {
+        if (file.size > MAX_FILE_BYTES) {
+          setError(`${file.name} exceeds the 2 MB per-file limit.`);
+          continue;
+        }
+        if (runningTotal + file.size > MAX_TOTAL_BYTES) {
+          setError(
+            `Total attachments would exceed the 5 MB limit. Remove a file first.`,
+          );
+          break;
+        }
+        const dataUrl = await readAsDataUrl(file);
+        const a: Attachment = {
+          id: uid(),
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          dataUrl,
+          addedAt: new Date().toISOString(),
+        };
+        await addAttachmentAction(authed, deal.id, a, current);
+        current = [...current, a];
+        runningTotal += file.size;
       }
-      if (runningTotal + file.size > MAX_TOTAL_BYTES) {
-        setError(
-          `Total attachments would exceed the 5 MB limit. Remove a file first.`,
-        );
-        break;
-      }
-      const dataUrl = await readAsDataUrl(file);
-      const a: Attachment = {
-        id: uid(),
-        name: file.name,
-        type: file.type || "application/octet-stream",
-        size: file.size,
-        dataUrl,
-        addedAt: new Date().toISOString(),
-      };
-      dealsRepo.addAttachment(deal.id, a);
-      runningTotal += file.size;
+      await onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(a: Attachment) {
+    if (!confirm(`Remove ${a.name}?`)) return;
+    setBusy(true);
+    try {
+      await removeAttachmentAction(authed, deal.id, a.id, attachments);
+      await onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Remove failed");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -71,18 +104,20 @@ export default function Attachments({ deal }: { deal: Deal }) {
         <div>
           <h2 className="font-semibold">Documents</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Attach financials, leases, photos. Stored locally in your browser.
-            {totalBytes > 0 && (
-              <> · {formatSize(totalBytes)} of 5 MB used</>
-            )}
+            Attach financials, leases, photos.{" "}
+            {authed
+              ? "Stored on your account."
+              : "Stored locally in your browser."}
+            {totalBytes > 0 && <> · {formatSize(totalBytes)} of 5 MB used</>}
           </p>
         </div>
         <button
           type="button"
           className="btn-primary"
+          disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          + Upload
+          {busy ? "Uploading…" : "+ Upload"}
         </button>
         <input
           ref={inputRef}
@@ -123,11 +158,8 @@ export default function Attachments({ deal }: { deal: Deal }) {
               <button
                 type="button"
                 className="btn-ghost text-xs text-rose-700 hover:bg-rose-50"
-                onClick={() => {
-                  if (confirm(`Remove ${a.name}?`)) {
-                    dealsRepo.removeAttachment(deal.id, a.id);
-                  }
-                }}
+                disabled={busy}
+                onClick={() => remove(a)}
               >
                 Remove
               </button>

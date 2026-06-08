@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { dealsRepo } from "@/lib/storage";
 import { analyzeDeal } from "@/lib/scoring";
-import type { Deal, PipelineStatus, Priority } from "@/lib/types";
+import type { PipelineStatus, Priority } from "@/lib/types";
 import { BUSINESS_TYPE_LABELS } from "@/lib/multiples";
 import { eur, pct, years } from "@/lib/format";
 import ScoreBadge from "@/components/ScoreBadge";
@@ -14,6 +13,12 @@ import Stat from "@/components/Stat";
 import ScenarioSimulator from "@/components/ScenarioSimulator";
 import Attachments from "@/components/Attachments";
 import AIAnalysis from "@/components/AIAnalysis";
+import { useDealSource } from "@/lib/client/use-deals";
+import {
+  deleteDealAction,
+  setPriorityAction,
+  setStatusAction,
+} from "@/lib/client/actions";
 
 const STATUSES: PipelineStatus[] = [
   "lead",
@@ -28,16 +33,27 @@ export default function DealDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params.id as string;
-  const [deal, setDeal] = useState<Deal | undefined>();
-
-  useEffect(() => {
-    const refresh = () => setDeal(dealsRepo.get(id));
-    refresh();
-    window.addEventListener("dealflow:change", refresh);
-    return () => window.removeEventListener("dealflow:change", refresh);
-  }, [id]);
+  const { deal, isLoading, error, authed, refresh } = useDealSource(id);
+  const [mutating, setMutating] = useState(false);
 
   const analysis = useMemo(() => (deal ? analyzeDeal(deal) : null), [deal]);
+
+  if (isLoading && !deal) {
+    return (
+      <div className="card p-8 text-center text-sm text-slate-500">Loading…</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        Couldn&rsquo;t load deal: {error.message}.{" "}
+        <Link href="/" className="underline">
+          Back to dashboard
+        </Link>
+      </div>
+    );
+  }
 
   if (!deal || !analysis) {
     return (
@@ -61,7 +77,8 @@ export default function DealDetailPage() {
           </div>
           <h1 className="text-2xl font-semibold">{deal.name}</h1>
           <div className="mt-1 text-sm text-slate-600">
-            Asking price: <span className="font-medium">{eur(deal.askingPrice)}</span>
+            Asking price:{" "}
+            <span className="font-medium">{eur(deal.askingPrice)}</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -76,26 +93,52 @@ export default function DealDetailPage() {
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Net profit" value={eur(f.netProfit)} tone={f.netProfit > 0 ? "good" : "bad"} />
-        <Stat label="EBITDA" value={eur(f.ebitda)} hint={`Margin ${pct(f.margin)}`} />
+        <Stat
+          label="Net profit"
+          value={eur(f.netProfit)}
+          tone={f.netProfit > 0 ? "good" : "bad"}
+        />
+        <Stat
+          label="EBITDA"
+          value={eur(f.ebitda)}
+          hint={`Margin ${pct(f.margin)}`}
+        />
         <Stat
           label="Payback period"
           value={years(roi.paybackYears)}
           hint={`${pct(roi.yearlyReturnPct)} cash-on-cash`}
-          tone={roi.paybackYears <= 4 ? "good" : roi.paybackYears <= 6 ? "warn" : "bad"}
+          tone={
+            roi.paybackYears <= 4
+              ? "good"
+              : roi.paybackYears <= 6
+                ? "warn"
+                : "bad"
+          }
         />
-        <Stat label="Suggested offer" value={eur(offer.suggestedOffer)} hint={`Walk-away ${eur(offer.walkAwayPrice)}`} />
+        <Stat
+          label="Suggested offer"
+          value={eur(offer.suggestedOffer)}
+          hint={`Walk-away ${eur(offer.walkAwayPrice)}`}
+        />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="card p-5 lg:col-span-2">
           <h2 className="font-semibold">Score breakdown</h2>
           <div className="mt-4 space-y-3">
-            <ScoreBar label="Profitability" weight={30} value={score.profitability} />
+            <ScoreBar
+              label="Profitability"
+              weight={30}
+              value={score.profitability}
+            />
             <ScoreBar label="Risk" weight={25} value={score.risk} />
             <ScoreBar label="Location" weight={15} value={score.location} />
             <ScoreBar label="Growth" weight={15} value={score.growth} />
-            <ScoreBar label="Price fairness" weight={15} value={score.priceFairness} />
+            <ScoreBar
+              label="Price fairness"
+              weight={15}
+              value={score.priceFairness}
+            />
           </div>
         </div>
 
@@ -113,7 +156,10 @@ export default function DealDetailPage() {
           <dl className="mt-3 divide-y divide-slate-100 text-sm">
             <Row k="Revenue" v={eur(f.revenue)} />
             <Row k="Rent" v={`${eur(deal.rent)} (${pct(f.rentRatio)})`} />
-            <Row k="Labor" v={`${eur(deal.laborCost)} (${pct(f.laborRatio)})`} />
+            <Row
+              k="Labor"
+              v={`${eur(deal.laborCost)} (${pct(f.laborRatio)})`}
+            />
             <Row k="COGS" v={`${eur(deal.cogs)} (${pct(f.cogsRatio)})`} />
             <Row k="Utilities" v={eur(deal.utilities)} />
             <Row k="Other" v={eur(deal.otherExpenses)} />
@@ -126,15 +172,25 @@ export default function DealDetailPage() {
         <div className="card p-5">
           <h2 className="font-semibold">Negotiation strategy</h2>
           <dl className="mt-3 divide-y divide-slate-100 text-sm">
-            <Row k="Industry multiple" v={`${offer.industryMultiple.toFixed(2)}× EBITDA`} />
+            <Row
+              k="Industry multiple"
+              v={`${offer.industryMultiple.toFixed(2)}× EBITDA`}
+            />
             <Row k="Estimated fair value" v={eur(offer.fairValue)} />
-            <Row k="Suggested first offer" v={eur(offer.suggestedOffer)} bold />
+            <Row
+              k="Suggested first offer"
+              v={eur(offer.suggestedOffer)}
+              bold
+            />
             <Row k="Walk-away price" v={eur(offer.walkAwayPrice)} />
-            <Row k="Asking vs fair" v={
-              deal.askingPrice <= offer.fairValue
-                ? `${eur(offer.fairValue - deal.askingPrice)} below`
-                : `${eur(deal.askingPrice - offer.fairValue)} above`
-            } />
+            <Row
+              k="Asking vs fair"
+              v={
+                deal.askingPrice <= offer.fairValue
+                  ? `${eur(offer.fairValue - deal.askingPrice)} below`
+                  : `${eur(deal.askingPrice - offer.fairValue)} above`
+              }
+            />
           </dl>
           <p className="mt-3 text-xs text-slate-500">
             Open at the suggested offer. Justify with rent ratio, labor ratio,
@@ -145,9 +201,9 @@ export default function DealDetailPage() {
 
       <ScenarioSimulator deal={deal} />
 
-      <AIAnalysis deal={deal} />
+      <AIAnalysis deal={deal} authed={authed} onChange={refresh} />
 
-      <Attachments deal={deal} />
+      <Attachments deal={deal} authed={authed} onChange={refresh} />
 
       <section className="card p-5">
         <h2 className="font-semibold">Plain-English insights</h2>
@@ -169,9 +225,20 @@ export default function DealDetailPage() {
             <select
               className="select"
               value={deal.status}
-              onChange={(e) =>
-                dealsRepo.setStatus(deal.id, e.target.value as PipelineStatus)
-              }
+              disabled={mutating}
+              onChange={async (e) => {
+                setMutating(true);
+                try {
+                  await setStatusAction(
+                    authed,
+                    deal.id,
+                    e.target.value as PipelineStatus,
+                  );
+                  await refresh();
+                } finally {
+                  setMutating(false);
+                }
+              }}
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -185,9 +252,20 @@ export default function DealDetailPage() {
             <select
               className="select"
               value={deal.priority}
-              onChange={(e) =>
-                dealsRepo.setPriority(deal.id, e.target.value as Priority)
-              }
+              disabled={mutating}
+              onChange={async (e) => {
+                setMutating(true);
+                try {
+                  await setPriorityAction(
+                    authed,
+                    deal.id,
+                    e.target.value as Priority,
+                  );
+                  await refresh();
+                } finally {
+                  setMutating(false);
+                }
+              }}
             >
               <option value="low">low</option>
               <option value="medium">medium</option>
@@ -197,10 +275,18 @@ export default function DealDetailPage() {
           <div className="flex items-end">
             <button
               className="btn-ghost text-rose-700 hover:bg-rose-50"
-              onClick={() => {
-                if (confirm("Delete this deal?")) {
-                  dealsRepo.remove(deal.id);
+              disabled={mutating}
+              onClick={async () => {
+                if (!confirm("Delete this deal?")) return;
+                setMutating(true);
+                try {
+                  await deleteDealAction(authed, deal.id);
                   router.push("/");
+                } catch (e) {
+                  alert(
+                    e instanceof Error ? e.message : "Failed to delete deal",
+                  );
+                  setMutating(false);
                 }
               }}
             >
@@ -240,7 +326,11 @@ function ScoreBar({
   weight: number;
 }) {
   const color =
-    value >= 75 ? "bg-emerald-500" : value >= 55 ? "bg-amber-500" : "bg-rose-500";
+    value >= 75
+      ? "bg-emerald-500"
+      : value >= 55
+        ? "bg-amber-500"
+        : "bg-rose-500";
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs">

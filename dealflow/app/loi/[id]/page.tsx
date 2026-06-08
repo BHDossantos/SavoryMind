@@ -1,30 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { dealsRepo } from "@/lib/storage";
 import { analyzeDeal } from "@/lib/scoring";
 import { defaultLoiInput, generateLoi, type LoiInput } from "@/lib/loi";
-import type { Deal } from "@/lib/types";
+import { useDealSource } from "@/lib/client/use-deals";
 
 export default function LoiPage() {
   const params = useParams<{ id: string }>();
   const id = params.id as string;
-  const [deal, setDeal] = useState<Deal | undefined>();
+  const { deal, isLoading, error } = useDealSource(id);
   const [loi, setLoi] = useState<LoiInput>(defaultLoiInput());
-
-  useEffect(() => {
-    const refresh = () => setDeal(dealsRepo.get(id));
-    refresh();
-    window.addEventListener("dealflow:change", refresh);
-    return () => window.removeEventListener("dealflow:change", refresh);
-  }, [id]);
 
   const text = useMemo(() => {
     if (!deal) return "";
     return generateLoi(deal, analyzeDeal(deal), loi);
   }, [deal, loi]);
+
+  if (isLoading && !deal) {
+    return (
+      <div className="card p-8 text-center text-sm text-slate-500">Loading…</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        Couldn&rsquo;t load deal: {error.message}.{" "}
+        <Link href="/" className="underline">
+          Back to dashboard
+        </Link>
+      </div>
+    );
+  }
 
   if (!deal) {
     return (
