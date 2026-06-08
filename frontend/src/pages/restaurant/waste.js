@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../../services/api";
+import { fmtDateShort } from "../../utils/format";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 // Backend stores English IDs; the dropdown shows translated labels.
@@ -18,7 +19,7 @@ const REASON_LABEL_KEYS = {
 };
 
 export default function FoodWaste() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -165,7 +166,7 @@ export default function FoodWaste() {
                     <td className="px-4 py-3 text-right text-gray-600">{l.quantity_kg}</td>
                     <td className="px-4 py-3 text-right text-red-600 font-semibold">£{l.estimated_cost.toFixed(2)}</td>
                     <td className="px-4 py-3 text-gray-500">{reasonLabel}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{l.date}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{fmtDateShort(l.date, i18n.language)}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => handleDelete(l.id)} className="text-xs text-red-400 hover:text-red-600">✕</button>
                     </td>

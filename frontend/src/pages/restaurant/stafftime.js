@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import { fmtDateShort } from "../../utils/format";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function StaffTime() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -147,7 +148,7 @@ export default function StaffTime() {
               {logs.map((l) => (
                 <tr key={l.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 font-medium text-gray-900">{l.staff_name}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{l.date}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{fmtDateShort(l.date, i18n.language)}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{l.clock_in}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{l.clock_out}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{l.break_minutes}</td>

@@ -14,19 +14,11 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import { fmtDate } from "../../utils/format";
 
 function pj(val, fallback) {
   if (!val) return fallback;
   try { return JSON.parse(val); } catch { return fallback; }
-}
-
-// Localized date formatting — Italian/French/Spanish/Portuguese use DD/MM,
-// English uses MM/DD. Pull from the active i18n locale.
-function fmtDate(iso, locale) {
-  try {
-    const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
-  } catch { return iso; }
 }
 
 export default function GuestBookingPage() {

@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import usePolling from "../../hooks/usePolling";
 import { playChime } from "../../utils/chime";
+import { fmtDate, fmtDateShort } from "../../utils/format";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 function ShareLinkWidget() {
@@ -136,7 +137,7 @@ const ALL_SLOTS = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:0
 const today = () => new Date().toISOString().split("T")[0];
 
 export default function Bookings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [bookings, setBookings]     = useState([]);
   const [summary, setSummary]       = useState(null);
   const [filterDate, setFilterDate] = useState(today());
@@ -348,7 +349,7 @@ export default function Bookings() {
               <div key={b.id} className="px-5 py-4 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900">{b.customer_name}</p>
-                  <p className="text-sm text-gray-600">{b.date} · {b.time_slot} · {t("bookingsPage.guests", { count: b.party_size })}</p>
+                  <p className="text-sm text-gray-600">{fmtDate(b.date, i18n.language)} · {b.time_slot} · {t("bookingsPage.guests", { count: b.party_size })}</p>
                   {b.notes && <p className="text-xs text-gray-500 italic mt-0.5 truncate">{b.notes}</p>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
@@ -412,7 +413,7 @@ export default function Bookings() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-800">{b.date}</p>
+                  <p className="font-medium text-gray-800">{fmtDate(b.date, i18n.language)}</p>
                   <p className="text-xs text-gray-400">{b.time_slot}</p>
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800">{t("bookingsPage.pax", { n: b.party_size })}</td>

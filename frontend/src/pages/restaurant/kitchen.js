@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../../services/api";
+import { fmtDateShort } from "../../utils/format";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function KitchenTimes() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -177,7 +178,7 @@ export default function KitchenTimes() {
                   <td className="px-4 py-3 text-right">{l.prep_minutes}</td>
                   <td className="px-4 py-3 text-right">{l.cook_minutes}</td>
                   <td className="px-4 py-3 text-right font-bold text-brand-700">{(l.prep_minutes + l.cook_minutes).toFixed(0)}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{l.date}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{fmtDateShort(l.date, i18n.language)}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => handleDelete(l.id)} className="text-xs text-red-400 hover:text-red-600">✕</button>
                   </td>
