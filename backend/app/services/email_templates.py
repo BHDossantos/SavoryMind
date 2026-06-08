@@ -143,6 +143,38 @@ def reminder_email_close(lang: str) -> str:
     })
 
 
+# ── Morning briefing to the restaurant ──────────────────────────────────────
+
+def briefing_subject(lang: str, *, count: int, date: str) -> str:
+    return _pick(lang, {
+        "en": f"Today on SavoryMind: {count} bookings",
+        "it": f"Oggi su SavoryMind: {count} prenotazioni",
+        "es": f"Hoy en SavoryMind: {count} reservas",
+        "pt": f"Hoje no SavoryMind: {count} reservas",
+        "fr": f"Aujourd'hui sur SavoryMind : {count} réservations",
+    })
+
+
+def briefing_intro(lang: str, *, count: int, covers: int) -> str:
+    return _pick(lang, {
+        "en": f"Buongiorno — {count} bookings today, {covers} covers total. Here's the floor:",
+        "it": f"Buongiorno — {count} prenotazioni oggi, {covers} coperti totali. Ecco la sala:",
+        "es": f"Buenos días — {count} reservas hoy, {covers} comensales en total. Esta es la sala:",
+        "pt": f"Bom dia — {count} reservas hoje, {covers} pessoas no total. Esta é a sala:",
+        "fr": f"Bonjour — {count} réservations aujourd'hui, {covers} couverts au total. Voici la salle :",
+    })
+
+
+def briefing_labels(lang: str) -> dict:
+    return _pick(lang, {
+        "en": {"time": "Time",  "guest": "Guest",   "party": "Party",       "notes": "Notes"},
+        "it": {"time": "Ora",   "guest": "Cliente", "party": "Coperti",     "notes": "Note"},
+        "es": {"time": "Hora",  "guest": "Cliente", "party": "Comensales",  "notes": "Notas"},
+        "pt": {"time": "Hora",  "guest": "Cliente", "party": "Pessoas",     "notes": "Notas"},
+        "fr": {"time": "Heure", "guest": "Client",  "party": "Couverts",    "notes": "Notes"},
+    })
+
+
 def reminder_sms(lang: str, *, rest_label: str, party_size: int, booking_date: str, booking_time: str) -> str:
     return _pick(lang, {
         "en": (f"Reminder from SavoryMind: you have a booking at {rest_label} on {booking_date} at {booking_time}, "

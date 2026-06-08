@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from ...core.database import get_db
 from ...core.rate_limit import limiter
-from ...services import inventory_digest_service, reminder_service
+from ...services import inventory_digest_service, reminder_service, daily_briefing_service
 
 logger = logging.getLogger(__name__)
 
@@ -106,4 +106,21 @@ def booking_reminders(
     via Booking.reminder_sent_at, so overlapping ticks are safe."""
     stats = reminder_service.send_due_reminders(db)
     logger.info("booking-reminders stats: %s", stats)
+    return stats
+
+
+@router.post("/daily-briefing")
+@limiter.limit("60/minute")
+def daily_briefing(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook: send each restaurant a morning briefing of today's bookings.
+
+    Designed to be hit once per day by Cloud Scheduler — for the Italian
+    pilot, schedule it at 07:00 UTC (08:00–09:00 Rome). Restaurants with
+    no confirmed bookings today are skipped."""
+    stats = daily_briefing_service.send_daily_briefings(db)
+    logger.info("daily-briefing stats: %s", stats)
     return stats
