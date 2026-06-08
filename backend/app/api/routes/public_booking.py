@@ -24,7 +24,7 @@ from ...core.database import get_db
 from ...core.rate_limit import limiter
 from ...models.user import User
 from ...models.restaurant_ext import Booking
-from ...services import discover_service, notification_service, resend_client, twilio_client
+from ...services import discover_service, notification_service, resend_client, twilio_client, email_templates
 
 
 router = APIRouter(prefix="/public/restaurants", tags=["public"])
@@ -170,9 +170,11 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
 
     # Out-of-app alerts. Same code path as request_booking but inlined to
     # avoid pulling a DinerBooking parameter the helper expects.
+    lang = (restaurant.language or "en")
     if restaurant.email:
         _send_guest_booking_email(
             restaurant.email,
+            lang=lang,
             diner_name=booking.customer_name,
             party_size=body.party_size,
             booking_date=booking_date,
@@ -181,17 +183,14 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
             confirmed=confirmed,
         )
     if restaurant.phone:
-        if confirmed:
-            sms_body = (
-                f"SavoryMind: new booking — {booking.customer_name}, "
-                f"party of {body.party_size}, {booking_date} at {body.booking_time}."
-            )
-        else:
-            sms_body = (
-                f"SavoryMind: booking request — {booking.customer_name}, "
-                f"party of {body.party_size}, {booking_date} at {body.booking_time}. "
-                f"Needs your confirmation."
-            )
+        sms_body = email_templates.new_booking_sms(
+            lang,
+            diner_name=booking.customer_name,
+            party_size=body.party_size,
+            booking_date=str(booking_date),
+            booking_time=body.booking_time,
+            confirmed=confirmed,
+        )
         twilio_client.send_sms(restaurant.phone, sms_body)
 
     db.commit()
@@ -212,6 +211,7 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
 def _send_guest_booking_email(
     to: str,
     *,
+    lang: str,
     diner_name: str,
     party_size: int,
     booking_date: date_type,
@@ -221,7 +221,7 @@ def _send_guest_booking_email(
 ) -> None:
     """Restaurant alert for a guest-link booking. Mirrors the authenticated
     booking email shape so the operator sees the same UI/format regardless
-    of source."""
+    of source. Templates are localized via email_templates."""
     safe_name    = escape(diner_name or "Guest")
     safe_date    = escape(str(booking_date))
     safe_time    = escape(booking_time or "")
@@ -229,15 +229,16 @@ def _send_guest_booking_email(
     safe_special = escape(special_requests or "")
     dashboard    = f"{settings.frontend_url.rstrip('/')}/restaurant/bookings"
 
-    if confirmed:
-        subject = f"New booking: {diner_name}, party of {party_size}"
-        intro = "You have a new confirmed booking on SavoryMind:"
-    else:
-        subject = f"Booking request — {diner_name}, party of {party_size} (action needed)"
-        intro = "A new booking request needs your confirmation:"
+    subject = email_templates.new_booking_subject(
+        lang, diner_name=diner_name, party_size=party_size, confirmed=confirmed,
+    )
+    intro = email_templates.new_booking_intro(lang, confirmed=confirmed)
+    labels = email_templates.booking_table_labels(lang)
+    cta = email_templates.open_dashboard_cta(lang)
+    footer = email_templates.email_footer(lang, dashboard_url=dashboard)
 
     requests_row = (
-        f'<tr><td style="padding:8px 12px;color:#6b7280;"><strong>Special requests</strong></td>'
+        f'<tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["special"])}</strong></td>'
         f'<td style="padding:8px 12px;color:#111827;">{safe_special}</td></tr>'
         if safe_special else ""
     )
@@ -245,18 +246,16 @@ def _send_guest_booking_email(
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827;">
       <h1 style="font-size:18px;margin:0 0 12px;">{escape(intro)}</h1>
       <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:12px;margin:16px 0;">
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Guest</strong></td><td style="padding:8px 12px;color:#111827;">{safe_name}</td></tr>
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Party</strong></td><td style="padding:8px 12px;color:#111827;">{safe_party}</td></tr>
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Date</strong></td><td style="padding:8px 12px;color:#111827;">{safe_date}</td></tr>
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Time</strong></td><td style="padding:8px 12px;color:#111827;">{safe_time}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["guest"])}</strong></td><td style="padding:8px 12px;color:#111827;">{safe_name}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["party"])}</strong></td><td style="padding:8px 12px;color:#111827;">{safe_party}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["date"])}</strong></td><td style="padding:8px 12px;color:#111827;">{safe_date}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["time"])}</strong></td><td style="padding:8px 12px;color:#111827;">{safe_time}</td></tr>
         {requests_row}
       </table>
       <p style="margin:24px 0;">
-        <a href="{dashboard}" style="background:#ea580c;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Open dashboard</a>
+        <a href="{dashboard}" style="background:#ea580c;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">{escape(cta)}</a>
       </p>
-      <p style="font-size:12px;color:#9ca3af;margin-top:32px;">
-        Sent by SavoryMind. Manage your restaurant's bookings at <a href="{dashboard}" style="color:#9ca3af;">{dashboard}</a>.
-      </p>
+      <p style="font-size:12px;color:#9ca3af;margin-top:32px;">{footer}</p>
     </div>
     """.strip()
     resend_client.send_email(to, subject, html)

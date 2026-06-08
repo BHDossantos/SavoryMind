@@ -15,6 +15,7 @@ def test_confirmed_sms_body():
     with patch("app.services.booking_service.twilio_client.send_sms") as send:
         _send_new_booking_sms(
             "+15555550100",
+            lang="en",
             diner_name="Alice",
             party_size=3,
             booking_date=date(2026, 6, 15),
@@ -38,6 +39,7 @@ def test_pending_sms_signals_action_needed():
     with patch("app.services.booking_service.twilio_client.send_sms") as send:
         _send_new_booking_sms(
             "+15555550100",
+            lang="en",
             diner_name="Bob",
             party_size=2,
             booking_date=date(2026, 6, 15),

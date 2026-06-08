@@ -23,6 +23,7 @@ def test_confirmed_email_subject_and_body():
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="Alice Chen",
             party_size=4,
             booking_date=date(2026, 6, 15),
@@ -46,6 +47,7 @@ def test_pending_email_signals_action_needed():
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="Bob",
             party_size=2,
             booking_date=date(2026, 6, 15),
@@ -66,6 +68,7 @@ def test_html_escapes_diner_name_against_injection():
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="<script>alert(1)</script>",
             party_size=2,
             booking_date=date(2026, 6, 15),
@@ -82,6 +85,7 @@ def test_html_escapes_special_requests():
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="Alice",
             party_size=2,
             booking_date=date(2026, 6, 15),
@@ -100,6 +104,7 @@ def test_omits_special_requests_row_when_empty():
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="Alice",
             party_size=2,
             booking_date=date(2026, 6, 15),
@@ -117,6 +122,7 @@ def test_dashboard_link_uses_frontend_url(monkeypatch):
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="Alice",
             party_size=2,
             booking_date=date(2026, 6, 15),
@@ -136,6 +142,7 @@ def test_strips_trailing_slash_on_frontend_url(monkeypatch):
     with patch("app.services.booking_service.resend_client.send_email") as send:
         _send_new_booking_email(
             "owner@example.com",
+            lang="en",
             diner_name="Alice",
             party_size=2,
             booking_date=date(2026, 6, 15),

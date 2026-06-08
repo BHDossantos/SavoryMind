@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from ..core.config import settings
 from ..models.restaurant_ext import Booking
 from ..models.user import User
-from . import resend_client, twilio_client
+from . import resend_client, twilio_client, email_templates
 
 
 # Send a reminder when the booking start is between WINDOW_LO and WINDOW_HI
@@ -94,9 +94,14 @@ def send_due_reminders(db: Session, *, now: datetime | None = None) -> dict:
             continue
 
         rest_label = restaurant.restaurant_name or restaurant.display_name or "the restaurant"
+        # We don't collect the diner's language on guest bookings — proxy
+        # via the restaurant's language since diners are nearly always
+        # from the same locale as the restaurant they're booking.
+        lang = (restaurant.language or "en")
         if b.customer_email:
             _send_diner_reminder_email(
                 b.customer_email,
+                lang=lang,
                 rest_label=rest_label,
                 customer_name=b.customer_name,
                 party_size=b.party_size,
@@ -107,6 +112,7 @@ def send_due_reminders(db: Session, *, now: datetime | None = None) -> dict:
         if b.customer_phone:
             _send_diner_reminder_sms(
                 b.customer_phone,
+                lang=lang,
                 rest_label=rest_label,
                 party_size=b.party_size,
                 booking_date=str(b.date),
@@ -138,6 +144,7 @@ def send_due_reminders(db: Session, *, now: datetime | None = None) -> dict:
 def _send_diner_reminder_email(
     to: str,
     *,
+    lang: str,
     rest_label: str,
     customer_name: str,
     party_size: int,
@@ -150,17 +157,23 @@ def _send_diner_reminder_email(
     safe_time = escape(booking_time)
     safe_party = escape(str(party_size))
 
-    subject = f"Reminder: your booking at {rest_label} tomorrow at {booking_time}"
+    subject = email_templates.reminder_email_subject(
+        lang, rest_label=rest_label, booking_time=booking_time,
+    )
+    greeting = email_templates.reminder_email_greeting(lang, customer_name=customer_name or "")
+    labels = email_templates.reminder_email_labels(lang)
+    close = email_templates.reminder_email_close(lang)
+
     html = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827;">
-      <h1 style="font-size:18px;margin:0 0 12px;">Hi {safe_name}, just a reminder of your booking tomorrow:</h1>
+      <h1 style="font-size:18px;margin:0 0 12px;">{escape(greeting)}</h1>
       <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:12px;margin:16px 0;">
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Restaurant</strong></td><td style="padding:8px 12px;">{safe_rest}</td></tr>
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Date</strong></td><td style="padding:8px 12px;">{safe_date}</td></tr>
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Time</strong></td><td style="padding:8px 12px;">{safe_time}</td></tr>
-        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>Party</strong></td><td style="padding:8px 12px;">{safe_party}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["restaurant"])}</strong></td><td style="padding:8px 12px;">{safe_rest}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["date"])}</strong></td><td style="padding:8px 12px;">{safe_date}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["time"])}</strong></td><td style="padding:8px 12px;">{safe_time}</td></tr>
+        <tr><td style="padding:8px 12px;color:#6b7280;"><strong>{escape(labels["party"])}</strong></td><td style="padding:8px 12px;">{safe_party}</td></tr>
       </table>
-      <p style="font-size:13px;color:#4b5563;">If something changed, please let the restaurant know — they're counting on your table.</p>
+      <p style="font-size:13px;color:#4b5563;">{escape(close)}</p>
     </div>
     """.strip()
     resend_client.send_email(to, subject, html)
@@ -169,14 +182,17 @@ def _send_diner_reminder_email(
 def _send_diner_reminder_sms(
     to: str,
     *,
+    lang: str,
     rest_label: str,
     party_size: int,
     booking_date: str,
     booking_time: str,
 ) -> None:
-    body = (
-        f"Reminder from SavoryMind: you have a booking at {rest_label} "
-        f"on {booking_date} at {booking_time}, party of {party_size}. "
-        f"If something changed, please let the restaurant know."
+    body = email_templates.reminder_sms(
+        lang,
+        rest_label=rest_label,
+        party_size=party_size,
+        booking_date=booking_date,
+        booking_time=booking_time,
     )
     twilio_client.send_sms(to, body)
