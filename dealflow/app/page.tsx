@@ -4,6 +4,7 @@ import Link from "next/link";
 import { analyzeDeal } from "@/lib/scoring";
 import DealCard from "@/components/DealCard";
 import Stat from "@/components/Stat";
+import ImportLocalBanner from "@/components/ImportLocalBanner";
 import { eur } from "@/lib/format";
 import { dealsToCsv, downloadCsv } from "@/lib/csv";
 import { useDealsSource } from "@/lib/client/use-deals";
@@ -40,6 +41,8 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      <ImportLocalBanner />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Total deals" value={String(deals.length)} />
