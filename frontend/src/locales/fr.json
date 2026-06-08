@@ -412,7 +412,9 @@
     "shareLinkSubtitle": "Partagez-le avec vos clients — ils réservent sans compte.",
     "shareCopy": "Copier",
     "shareCopied": "Copié !",
-    "statusNoShow": "Absent"
+    "statusNoShow": "Absent",
+    "shareWhatsapp": "WhatsApp",
+    "shareWhatsappMessage": "Bonjour 👋 Nous avons une nouvelle façon de réserver — 30 secondes, sans application à télécharger. Réservez ici : {{link}}"
   },
   "crmPage": {
     "title": "👥 CRM",

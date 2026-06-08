@@ -412,7 +412,9 @@
     "shareLinkSubtitle": "Share this with your diners — they can book without an account.",
     "shareCopy": "Copy",
     "shareCopied": "Copied!",
-    "statusNoShow": "No-show"
+    "statusNoShow": "No-show",
+    "shareWhatsapp": "WhatsApp",
+    "shareWhatsappMessage": "Hi 👋 We've got a new way to book a table — 30 seconds, no app to download. Reserve here: {{link}}"
   },
   "crmPage": {
     "title": "👥 CRM",

@@ -322,6 +322,11 @@ def update_profile(
             detail="account_type cannot be changed after initial setup.",
         )
 
+    # Snapshot the pre-PATCH state so we can detect the
+    # onboarding-completed transition and fire the welcome email exactly
+    # once. `onboarding_completed` is nullable; treat None as False.
+    was_onboarding_complete = bool(current_user.onboarding_completed)
+
     for field, value in payload.items():
         if field not in ProfileUpdate.model_fields:
             continue
@@ -333,6 +338,17 @@ def update_profile(
     # can book without creating an account.
     from ...services.slug_service import ensure_restaurant_slug
     ensure_restaurant_slug(db, current_user)
+
+    # Welcome email — fires exactly when a restaurant transitions from
+    # incomplete → complete onboarding. The slug call above guarantees a
+    # link to put in the email.
+    if (
+        current_user.account_type == "restaurant"
+        and not was_onboarding_complete
+        and current_user.onboarding_completed
+    ):
+        from ...services.welcome_email import send_restaurant_welcome
+        send_restaurant_welcome(current_user)
 
     db.commit()
     db.refresh(current_user)

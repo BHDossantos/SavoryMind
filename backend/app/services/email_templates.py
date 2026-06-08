@@ -175,6 +175,69 @@ def briefing_labels(lang: str) -> dict:
     })
 
 
+# ── Welcome email on onboarding completion ──────────────────────────────────
+
+def welcome_subject(lang: str, *, rest_name: str) -> str:
+    return _pick(lang, {
+        "en": f"Welcome to SavoryMind, {rest_name} — your booking link is ready",
+        "it": f"Benvenuti su SavoryMind, {rest_name} — il vostro link di prenotazione è pronto",
+        "es": f"Bienvenidos a SavoryMind, {rest_name} — vuestro enlace de reservas está listo",
+        "pt": f"Bem-vindos ao SavoryMind, {rest_name} — o vosso link de reservas está pronto",
+        "fr": f"Bienvenue sur SavoryMind, {rest_name} — votre lien de réservation est prêt",
+    })
+
+
+def welcome_intro(lang: str, *, rest_name: str) -> str:
+    return _pick(lang, {
+        "en": f"Welcome aboard, {rest_name}. You're now discoverable for bookings.",
+        "it": f"Benvenuti a bordo, {rest_name}. Siete ora prenotabili.",
+        "es": f"Bienvenidos a bordo, {rest_name}. Ya sois reservables.",
+        "pt": f"Sejam bem-vindos, {rest_name}. Vocês já podem receber reservas.",
+        "fr": f"Bienvenue à bord, {rest_name}. Vous êtes désormais réservables.",
+    })
+
+
+def welcome_link_section(lang: str) -> str:
+    return _pick(lang, {
+        "en": "This is your public booking link. Share it on WhatsApp, Instagram, your newsletter — your diners book in 30 seconds, no account required:",
+        "it": "Ecco il vostro link pubblico di prenotazione. Condividetelo su WhatsApp, Instagram o nella newsletter — i clienti prenotano in 30 secondi, senza creare un account:",
+        "es": "Este es vuestro enlace público de reservas. Compartidlo en WhatsApp, Instagram o vuestra newsletter — vuestros clientes reservan en 30 segundos, sin cuenta:",
+        "pt": "Este é o vosso link público de reservas. Compartilhem no WhatsApp, Instagram ou na vossa newsletter — os clientes reservam em 30 segundos, sem precisar de conta:",
+        "fr": "Voici votre lien public de réservation. Partagez-le sur WhatsApp, Instagram ou dans votre newsletter — vos clients réservent en 30 secondes, sans compte :",
+    })
+
+
+def welcome_sample_message_heading(lang: str) -> str:
+    return _pick(lang, {
+        "en": "Sample WhatsApp message",
+        "it": "Esempio di messaggio WhatsApp",
+        "es": "Mensaje de WhatsApp de ejemplo",
+        "pt": "Exemplo de mensagem no WhatsApp",
+        "fr": "Exemple de message WhatsApp",
+    })
+
+
+def welcome_sample_message_body(lang: str, *, link: str) -> str:
+    """A copy-paste WhatsApp body the restaurant can send to their existing diners."""
+    return _pick(lang, {
+        "en": f"Hi 👋 We've got a new way to book a table — 30 seconds, no app to download. Reserve here: {link}",
+        "it": f"Ciao 👋 Abbiamo un nuovo modo per prenotare un tavolo — 30 secondi, senza scaricare app. Prenota qui: {link}",
+        "es": f"Hola 👋 Tenemos una nueva forma de reservar mesa — 30 segundos, sin instalar app. Reserva aquí: {link}",
+        "pt": f"Olá 👋 Temos uma nova forma de reservar mesa — 30 segundos, sem instalar app. Reserve aqui: {link}",
+        "fr": f"Bonjour 👋 Nous avons une nouvelle façon de réserver — 30 secondes, sans application à télécharger. Réservez ici : {link}",
+    })
+
+
+def welcome_what_next(lang: str) -> str:
+    return _pick(lang, {
+        "en": "When a booking arrives you'll get an in-app chime, an email, and (if you set your phone in the bookings page) an SMS — all in real time. We'll also email you a morning briefing with the day's reservations.",
+        "it": "Quando arriva una prenotazione riceverete un suono nell'app, un'email e (se impostate il telefono nella pagina prenotazioni) un SMS — tutto in tempo reale. Vi invieremo anche un riassunto mattutino delle prenotazioni del giorno.",
+        "es": "Cuando llegue una reserva, recibiréis un sonido en la app, un correo y (si configuráis el teléfono en la página de reservas) un SMS — todo en tiempo real. También os enviaremos un resumen matutino de las reservas del día.",
+        "pt": "Quando uma reserva chegar, vocês receberão um som no app, um e-mail e (se configurarem o telefone na página de reservas) um SMS — tudo em tempo real. Também enviaremos um resumo matinal das reservas do dia.",
+        "fr": "Lorsqu'une réservation arrive, vous recevrez un son dans l'app, un e-mail et (si vous renseignez le numéro dans la page des réservations) un SMS — tout en temps réel. Nous vous enverrons aussi un briefing matinal des réservations du jour.",
+    })
+
+
 def reminder_sms(lang: str, *, rest_label: str, party_size: int, booking_date: str, booking_time: str) -> str:
     return _pick(lang, {
         "en": (f"Reminder from SavoryMind: you have a booking at {rest_label} on {booking_date} at {booking_time}, "

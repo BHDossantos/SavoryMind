@@ -412,7 +412,9 @@
     "shareLinkSubtitle": "Compartilhe com seus clientes — eles reservam sem conta.",
     "shareCopy": "Copiar",
     "shareCopied": "Copiado!",
-    "statusNoShow": "Não compareceu"
+    "statusNoShow": "Não compareceu",
+    "shareWhatsapp": "WhatsApp",
+    "shareWhatsappMessage": "Olá 👋 Temos uma nova forma de reservar mesa — 30 segundos, sem instalar app. Reserve aqui: {{link}}"
   },
   "crmPage": {
     "title": "👥 CRM",

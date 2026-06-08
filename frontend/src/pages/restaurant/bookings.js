@@ -16,6 +16,8 @@ function ShareLinkWidget() {
 
   const base = (typeof window !== "undefined" ? window.location.origin : "https://savorymind.net");
   const link = `${base}/r/${user.slug}`;
+  const waMessage = t("bookingsPage.shareWhatsappMessage", { link });
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
 
   const copy = async () => {
     try {
@@ -33,8 +35,8 @@ function ShareLinkWidget() {
         🔗 {t("bookingsPage.shareLinkHeadline")}
       </p>
       <p className="text-xs text-brand-700 mb-2">{t("bookingsPage.shareLinkSubtitle")}</p>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 min-w-0 text-xs bg-white border border-brand-200 rounded-lg px-3 py-2 text-gray-700 font-mono truncate">
+      <div className="flex items-center gap-2 flex-wrap">
+        <code className="flex-1 min-w-[180px] text-xs bg-white border border-brand-200 rounded-lg px-3 py-2 text-gray-700 font-mono truncate">
           {link}
         </code>
         <button
@@ -43,6 +45,14 @@ function ShareLinkWidget() {
         >
           {copied ? t("bookingsPage.shareCopied") : t("bookingsPage.shareCopy")}
         </button>
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex-shrink-0 inline-flex items-center gap-1 text-xs px-3 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+        >
+          💬 {t("bookingsPage.shareWhatsapp")}
+        </a>
       </div>
     </div>
   );

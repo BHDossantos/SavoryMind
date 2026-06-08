@@ -412,7 +412,9 @@
     "shareLinkSubtitle": "Condividilo con i tuoi clienti — possono prenotare senza account.",
     "shareCopy": "Copia",
     "shareCopied": "Copiato!",
-    "statusNoShow": "Non si è presentato"
+    "statusNoShow": "Non si è presentato",
+    "shareWhatsapp": "WhatsApp",
+    "shareWhatsappMessage": "Ciao 👋 Abbiamo un nuovo modo per prenotare un tavolo — 30 secondi, senza scaricare app. Prenota qui: {{link}}"
   },
   "crmPage": {
     "title": "👥 CRM",
