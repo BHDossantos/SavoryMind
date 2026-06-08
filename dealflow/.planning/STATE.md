@@ -3,11 +3,11 @@
 ## Current position
 
 - **Branch:** `claude/dealflow-ai-setup-WTRdF`
-- **Phases done:** 1, 2, 3, 4, 5, 6
-- **Build:** ✅ `npm run build` clean, 12 routes
-- **Tests:** ✅ 51 passing across 6 files via `npm test` (Vitest + PGlite)
-- **CI:** GitHub Actions workflow on `claude/dealflow-**` and PRs (added Phase 5)
-- **Next gate:** Start Phase 7 (frontend migrates from localStorage to the new API)
+- **Phases done:** 1, 2, 3, 4, 5, 6, 7
+- **Build:** ✅ `npm run build` clean, 14 routes (every page + 5 API routes + auth + middleware)
+- **Tests:** ✅ 63 passing across 8 files via `npm test` (Vitest + PGlite + jsdom)
+- **CI:** GitHub Actions workflow on `claude/dealflow-**` and PRs
+- **Next gate:** Start Phase 8 — Stripe billing. **Authorization wall: needs Stripe account + API keys** from the user.
 
 ## Active sellability roadmap
 
@@ -33,6 +33,9 @@ Phase 13. Authorization walls at Phases 8 (Stripe), 9 (hosting/observability),
 - **D13.** **PGlite in-process Postgres for tests** — keeps the test suite Docker-free in CI; the production driver is `pg` against Docker locally and managed Postgres in production.
 - **D14.** **ICP locked: search funders / micro-PE** — drives Phase 11 design.
 - **D15.** **Repo strategy: monorepo + legacy disclaimer** (Strategy ii) — top-level README clarifies SavoryMind is unmaintained; Phase 13 plans the split.
+- **D16.** **Client cache library is SWR 2.x** — small, suspense-friendly, native revalidation. SWRConfig at the root sets `revalidateOnFocus`, `dedupingInterval: 2000`, `shouldRetryOnError: false`.
+- **D17.** **Branch-on-authed action layer** (`lib/client/actions.ts`) is the single integration point between UI and the dual-mode data layer. Pages never call `apiX` or `dealsRepo` directly.
+- **D18.** **localStorage stays as the unauth fallback** in Phase 7. The marketing/demo path still works without an account; the import banner moves local deals into the workspace on first login.
 
 ## Open blockers
 
@@ -52,6 +55,9 @@ None within the current authorization scope.
 - **T3.** Decide caching strategy for AI narratives — cache by deal hash on the server so re-clicks are free.
 - **T4.** Email verification + password reset (Phase 8 — needs email provider).
 - **T5.** Rate limiting on auth endpoints (Phase 9).
+- **T6.** Fix the `storage.ts.list()` comparator — currently `(a.createdAt < b.createdAt ? 1 : -1)` violates strict weak ordering for equal values. Replace with `b.createdAt.localeCompare(a.createdAt)`. Surfaced by Phase 7-3 import test.
+- **T7.** Add a bulk-import endpoint so first-login import is one round trip instead of N.
+- **T8.** Carry `aiNarrative` + `attachments` over during import. `apiCreateDeal` currently accepts only `DealInput`; needs a follow-up PUT or an extended POST.
 
 ## Seeds (forward-looking, low-priority)
 

@@ -71,10 +71,16 @@ pending the next discuss step.
 - **Delivers:** R19 (real backend + auth)
 - **Authorization wall:** none — local Postgres in Docker, dev credentials only
 
-## Phase 7 — Frontend migration to API
+## Phase 7 — Frontend migration to API ✅
 
-- **Status:** Pending
+- **Status:** Shipped
 - **Goal:** Frontend reads/writes via the API instead of localStorage. One-time import flow lets existing users carry local deals in.
+- **Plans:**
+  - 7-1 SWR + typed API client + branch-on-authed action layer + `useDealsSource` / `useDealSource` hooks
+  - 7-2 Migrate every page and the AIAnalysis + Attachments components to the new client
+  - 7-3 First-login import banner moves localStorage deals into the workspace
+- **Delivers:** Sellability prerequisite — every UI now lives behind auth for paying users.
+- **Tests:** 63 passing across 8 files
 
 ## Phase 8 — Stripe billing
 
