@@ -1,14 +1,47 @@
 from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ...core.database import get_db
+from ...core.rate_limit import limiter
 from ...core.security import get_current_user
 from ...models.user import User
-from ...services import discover_service, booking_service
+from ...services import discover_service, booking_service, mood_to_meal_service
 
 router = APIRouter(prefix="/discover", tags=["discover"])
+
+
+def _maybe_user(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """Soft-auth dependency: returns the current user if the request has a
+    valid bearer token, else None. Lets a public endpoint personalise
+    when there's a logged-in caller and still answer guests."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    try:
+        from ...core.security import decode_token, ACCESS_TOKEN_TYPE
+        token = authorization.split(" ", 1)[1].strip()
+        payload = decode_token(token, ACCESS_TOKEN_TYPE)
+        uid = payload.get("sub")
+        if not uid:
+            return None
+        return db.query(User).filter(User.id == int(uid)).first()
+    except Exception:
+        return None
+
+
+def _pj(s, fallback):
+    if not s:
+        return fallback
+    try:
+        import json
+        v = json.loads(s)
+        return v if isinstance(v, list) else fallback
+    except Exception:
+        return fallback
 
 
 # ── Public discovery ──────────────────────────────────────────────────────────
@@ -109,3 +142,84 @@ def update_my_availability(
     db.commit()
     db.refresh(current_user)
     return {"time_slots": body.time_slots, "booking_window_days": body.booking_window_days}
+
+
+# ── Mood-to-Meal: the consumer wedge ─────────────────────────────────────────
+# "Tell us how you feel. We'll tell you what to eat."
+#
+# Public endpoint so a fresh visitor can try once without signing up — the
+# whole acquisition flow rests on this being a 5-second tap-and-share moment.
+# Logged-in users get their stored taste profile mixed in for sharper
+# personalisation; guests pass an inline taste mini-profile in the body.
+
+class MoodToMealRequest(BaseModel):
+    mood:        str = Field(..., min_length=1, max_length=40)
+    experience:  str = Field(..., min_length=1, max_length=40)
+    budget:      str = Field(..., min_length=1, max_length=20)  # "low" | "medium" | "high"
+    location:    Optional[str] = Field(default=None, max_length=120)
+    at_home:     bool = False
+    language:    Optional[str] = Field(default=None, max_length=5)
+    # Inline taste profile for guest visitors (signed-in users get the real one)
+    cuisines:    Optional[list[str]]  = None
+    dietary:     Optional[list[str]]  = None
+    spice:       Optional[str]        = Field(default=None, max_length=20)
+
+
+@router.post("/mood-to-meal", status_code=200)
+@limiter.limit("20/minute")
+def mood_to_meal(
+    body: MoodToMealRequest,
+    request: Request,
+    user: Optional[User] = Depends(_maybe_user),
+):
+    """The Magic Moment endpoint. Always returns 200 with either a
+    recommendation or a stub when Claude isn't configured, so the UI can
+    render something sensible during local dev / outages."""
+    # If signed in, the user's stored profile wins over inline taste fields
+    # (richer data, allergies, dislikes the guest form doesn't capture).
+    if user:
+        cuisines = body.cuisines or _pj(user.cuisine_preferences, [])
+        dietary  = body.dietary  or _pj(user.dietary_preferences, [])
+        dislikes = _pj(user.cuisine_dislikes, [])
+        language = body.language or user.language or "en"
+        non_alc  = bool(user.non_alcoholic_ok)
+    else:
+        cuisines = body.cuisines or []
+        dietary  = body.dietary  or []
+        dislikes = []
+        language = body.language or "en"
+        non_alc  = "non_alcoholic" in dietary or "alcohol_free" in dietary
+
+    result = mood_to_meal_service.recommend(
+        mood=body.mood,
+        experience=body.experience,
+        budget=body.budget,
+        location=body.location,
+        at_home=body.at_home,
+        language=language,
+        cuisines=cuisines,
+        dietary=dietary,
+        dislikes=dislikes,
+        spice=body.spice,
+        non_alcoholic=non_alc,
+    )
+
+    if result is None:
+        # Dev fallback when ANTHROPIC_API_KEY isn't set, so the UI is
+        # still demoable. Honest about the source so we never claim AI
+        # output when we don't have it.
+        return {
+            "ok":          True,
+            "source":      "stub",
+            "recommendation": {
+                "dish":           "Cacio e pepe",
+                "dish_desc":      "A Roman classic — cracked pepper and pecorino, comfort in three ingredients.",
+                "drink":          "Frascati Superiore",
+                "drink_desc":     "Bright Lazio white that gets out of the way.",
+                "music_vibe":     "vinyl jazz, late evening",
+                "dessert":        "Maritozzo con panna",
+                "share_title":    "Tonight you are: cacio e pepe, Frascati, jazz on vinyl",
+                "share_subtitle": "Cozy mood, medium budget, Roman soul",
+            },
+        }
+    return {"ok": True, "source": "ai", "recommendation": result}

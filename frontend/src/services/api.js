@@ -375,4 +375,21 @@ export const api = {
     }
     return res.json();
   },
+
+  // Mood-to-Meal. Public — works without an account. If we have an access
+  // token in memory (a returning logged-in user), forward it so the backend
+  // can mix in their stored taste profile for sharper personalisation.
+  moodToMeal: async (data) => {
+    const headers = { "Content-Type": "application/json" };
+    if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
+    const res = await fetch(`${getBaseUrl()}/api/discover/mood-to-meal`, {
+      method: "POST", headers, body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      let detail = `Request failed (${res.status})`;
+      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  },
 };

@@ -34,6 +34,10 @@ const PUBLIC_ROUTES = [
   // Public guest-booking page — what a restaurant shares with their
   // existing diners over WhatsApp/Instagram. No account required.
   "/r/[slug]",
+  // Mood-to-Meal — the consumer wedge ("Tell us how you feel. We'll
+  // tell you what to eat."). Public so a fresh visitor can try once
+  // without signing up; signed-in users get personalised results.
+  "/discover/mood",
 ];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 
