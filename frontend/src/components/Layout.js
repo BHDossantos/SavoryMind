@@ -44,6 +44,7 @@ export default function Layout({ children }) {
     <aside className={clsx(
       "fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm transition-transform duration-200",
       "md:relative md:translate-x-0 md:z-auto",
+      "print:hidden",
       sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
     )}>
       <div className="p-5 border-b border-gray-100 bg-gradient-to-br from-brand-500 to-brand-700">
@@ -108,7 +109,7 @@ export default function Layout({ children }) {
       {/* Main content */}
       <main className="flex-1 overflow-auto min-h-screen flex flex-col">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-20">
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-20 print:hidden">
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

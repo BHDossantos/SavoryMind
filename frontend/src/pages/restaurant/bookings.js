@@ -148,6 +148,7 @@ const today = () => new Date().toISOString().split("T")[0];
 
 export default function Bookings() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [bookings, setBookings]     = useState([]);
   const [summary, setSummary]       = useState(null);
   const [filterDate, setFilterDate] = useState(today());
@@ -296,25 +297,42 @@ export default function Bookings() {
       {realtimeMsg && (
         <div
           role="status"
-          className="fixed top-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-brand-600"
+          className="fixed top-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-brand-600 print:hidden"
         >
           {realtimeMsg}
         </div>
       )}
-      <ShareLinkWidget />
-      <SmsAlertWidget />
+      <div className="print:hidden">
+        <ShareLinkWidget />
+        <SmsAlertWidget />
+      </div>
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between print:hidden">
           <span>{error}</span>
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-3">✕</button>
         </div>
       )}
-      <div className="flex items-center justify-between mb-8">
+
+      {/* Print-only header — shows on paper instead of the screen chrome. */}
+      <div className="hidden print:block mb-4">
+        <h1 className="text-2xl font-bold">
+          {user?.restaurant_name || user?.display_name}
+        </h1>
+        <p className="text-sm text-gray-600">
+          {t("bookingsPage.printHeader", { date: fmtDate(filterDate || today(), i18n.language) })}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between mb-8 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t("bookingsPage.title")}</h1>
           <p className="text-gray-400 mt-1">{t("bookingsPage.subtitle")}</p>
         </div>
         <div className="flex gap-3">
+          <button onClick={() => { setFilterDate(today()); setTimeout(() => window.print(), 300); }}
+            className="border border-gray-200 text-gray-700 font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+            🖨 {t("bookingsPage.printToday")}
+          </button>
           <button onClick={() => { setShowAvail(true); loadAvailability(); }}
             className="border border-gray-200 text-gray-700 font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
             {t("bookingsPage.availabilityBtn")}
@@ -328,7 +346,7 @@ export default function Bookings() {
 
       {/* Today summary */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 print:hidden">
           {[
             { label: t("bookingsPage.todayBookings"), value: summary.total_bookings, icon: "📅" },
             { label: t("bookingsPage.confirmed"),     value: summary.confirmed,      icon: "✅" },
@@ -379,7 +397,7 @@ export default function Bookings() {
       )}
 
       {/* Filter */}
-      <div className="flex items-center gap-4 mb-5">
+      <div className="flex items-center gap-4 mb-5 print:hidden">
         <label className="text-sm font-medium text-gray-700">{t("bookingsPage.dateFilter")}</label>
         <input
           type="date"
@@ -399,8 +417,8 @@ export default function Bookings() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colDateTime")}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colParty")}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colTable")}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colStatus")}</th>
-              <th className="px-4 py-3" />
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider print:hidden">{t("bookingsPage.colStatus")}</th>
+              <th className="px-4 py-3 print:hidden" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -428,7 +446,7 @@ export default function Bookings() {
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800">{t("bookingsPage.pax", { n: b.party_size })}</td>
                 <td className="px-4 py-3 text-gray-600">{b.table_number ? `T${b.table_number}` : "—"}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 print:hidden">
                   <select
                     value={b.status}
                     onChange={(e) => updateStatus(b.id, e.target.value)}
@@ -442,7 +460,7 @@ export default function Bookings() {
                     <option value="cancelled">{t("bookingsPage.statusCancelled")}</option>
                   </select>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 print:hidden">
                   <button onClick={() => handleDelete(b.id)} className="text-xs text-red-500 hover:text-red-700">{t("bookingsPage.delete")}</button>
                 </td>
               </tr>

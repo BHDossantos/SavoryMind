@@ -414,7 +414,9 @@
     "shareCopied": "Copiato!",
     "statusNoShow": "Non si è presentato",
     "shareWhatsapp": "WhatsApp",
-    "shareWhatsappMessage": "Ciao 👋 Abbiamo un nuovo modo per prenotare un tavolo — 30 secondi, senza scaricare app. Prenota qui: {{link}}"
+    "shareWhatsappMessage": "Ciao 👋 Abbiamo un nuovo modo per prenotare un tavolo — 30 secondi, senza scaricare app. Prenota qui: {{link}}",
+    "printToday": "Stampa oggi",
+    "printHeader": "Oggi — {{date}}"
   },
   "crmPage": {
     "title": "👥 CRM",

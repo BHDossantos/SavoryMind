@@ -414,7 +414,9 @@
     "shareCopied": "Copied!",
     "statusNoShow": "No-show",
     "shareWhatsapp": "WhatsApp",
-    "shareWhatsappMessage": "Hi 👋 We've got a new way to book a table — 30 seconds, no app to download. Reserve here: {{link}}"
+    "shareWhatsappMessage": "Hi 👋 We've got a new way to book a table — 30 seconds, no app to download. Reserve here: {{link}}",
+    "printToday": "Print today",
+    "printHeader": "Today — {{date}}"
   },
   "crmPage": {
     "title": "👥 CRM",
