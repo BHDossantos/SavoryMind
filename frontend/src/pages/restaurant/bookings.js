@@ -323,22 +323,22 @@ export default function Bookings() {
         </p>
       </div>
 
-      <div className="flex items-center justify-between mb-8 print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t("bookingsPage.title")}</h1>
           <p className="text-gray-400 mt-1">{t("bookingsPage.subtitle")}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => { setFilterDate(today()); setTimeout(() => window.print(), 300); }}
-            className="border border-gray-200 text-gray-700 font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+            className="border border-gray-200 text-gray-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
             🖨 {t("bookingsPage.printToday")}
           </button>
           <button onClick={() => { setShowAvail(true); loadAvailability(); }}
-            className="border border-gray-200 text-gray-700 font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+            className="border border-gray-200 text-gray-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
             {t("bookingsPage.availabilityBtn")}
           </button>
           <button onClick={() => setShowForm(true)}
-            className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors">
+            className="bg-brand-500 text-white font-semibold px-4 sm:px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors text-sm">
             {t("bookingsPage.newBooking")}
           </button>
         </div>
@@ -408,9 +408,10 @@ export default function Bookings() {
         <button onClick={() => setFilterDate("")} className="text-xs text-gray-400 hover:text-gray-700">{t("bookingsPage.showAll")}</button>
       </div>
 
-      {/* Bookings table */}
-      <div className="card overflow-hidden p-0">
-        <table className="w-full text-sm">
+      {/* Bookings table — horizontal scroll on narrow screens so the
+          status column doesn't get clipped on phones */}
+      <div className="card overflow-x-auto p-0 print:overflow-visible">
+        <table className="w-full text-sm min-w-[640px] print:min-w-0">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colCustomer")}</th>
