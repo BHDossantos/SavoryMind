@@ -38,6 +38,9 @@ const PUBLIC_ROUTES = [
   // tell you what to eat."). Public so a fresh visitor can try once
   // without signing up; signed-in users get personalised results.
   "/discover/mood",
+  // Snap-a-Menu — sister surface to Mood-to-Meal. "Order like a local,
+  // anywhere." Tourist snaps an unfamiliar menu, AI picks one dish.
+  "/discover/menu",
 ];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 

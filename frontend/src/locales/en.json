@@ -2118,5 +2118,33 @@
     "saveSubtitle": "Sign up free — keep your taste history and unlock smarter picks.",
     "saveCta": "Create your free account",
     "footer": "AI food intelligence"
+  },
+  "menuSnapPage": {
+    "title": "Snap a menu",
+    "tagline": "Order like a local, anywhere.",
+    "subtagline": "Snap any menu. AI picks the one dish you should order.",
+    "tap": "Tap to snap or upload",
+    "tapSub": "Works with any restaurant menu, any language.",
+    "retake": "Choose a different photo",
+    "q4a": "Cuisines you love",
+    "q4b": "Any restrictions?",
+    "dietVeg": "Vegetarian",
+    "dietVegan": "Vegan",
+    "dietGF": "Gluten-free",
+    "dietNoAlc": "No alcohol",
+    "tellMe": "Tell me what to order ✨",
+    "thinking": "Reading the menu…",
+    "whyHeader": "Why this",
+    "alsoConsider": "Or consider",
+    "heads": "Heads-up",
+    "share": "Share this pick",
+    "another": "Snap another",
+    "copied": "Copied to clipboard",
+    "saveTitle": "Save your picks",
+    "saveSubtitle": "Sign up free — track your taste history across cities.",
+    "saveCta": "Create your free account",
+    "errCompress": "Couldn't process that image. Try another?",
+    "errGeneric": "Something went wrong. Try again?",
+    "footer": "AI food intelligence"
   }
 }

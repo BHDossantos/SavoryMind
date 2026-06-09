@@ -1,13 +1,13 @@
 from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Header, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.rate_limit import limiter
 from ...core.security import get_current_user
 from ...models.user import User
-from ...services import discover_service, booking_service, mood_to_meal_service
+from ...services import discover_service, booking_service, mood_to_meal_service, menu_snap_service
 
 router = APIRouter(prefix="/discover", tags=["discover"])
 
@@ -220,6 +220,79 @@ def mood_to_meal(
                 "dessert":        "Maritozzo con panna",
                 "share_title":    "Tonight you are: cacio e pepe, Frascati, jazz on vinyl",
                 "share_subtitle": "Cozy mood, medium budget, Roman soul",
+            },
+        }
+    return {"ok": True, "source": "ai", "recommendation": result}
+
+
+# ── Snap-a-Menu: "Order like a local, anywhere." ────────────────────────────
+# Same engine, image input. Tourist takes a photo of a menu they can't read,
+# gets back the one dish they should order with reasoning.
+
+@router.post("/snap-menu", status_code=200)
+@limiter.limit("10/minute")
+async def snap_menu(
+    request: Request,
+    image: UploadFile = File(...),
+    language: Optional[str] = Form(default=None),
+    cuisines: Optional[str] = Form(default=None),    # comma-separated
+    dietary: Optional[str]  = Form(default=None),    # comma-separated
+    spice: Optional[str]    = Form(default=None),
+    budget: Optional[str]   = Form(default=None),
+    user: Optional[User]    = Depends(_maybe_user),
+):
+    """Accept a menu photo (multipart) and return the AI's pick.
+
+    Public — anyone can try once without an account. Signed-in users get
+    their stored taste profile mixed in (richer signal than the inline
+    form fields). Strict ~5MB image size limit; clients should compress
+    to <1MB before upload.
+    """
+    media_type = (image.content_type or "image/jpeg").lower()
+    if media_type not in menu_snap_service.ALLOWED_MEDIA_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+
+    data = await image.read()
+    if len(data) > menu_snap_service.MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image too large (max 5MB)")
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image")
+
+    if user:
+        eff_cuisines = _pj(user.cuisine_preferences, [])
+        eff_dietary  = _pj(user.dietary_preferences, [])
+        eff_dislikes = _pj(user.cuisine_dislikes, [])
+        eff_language = language or user.language or "en"
+        eff_non_alc  = bool(user.non_alcoholic_ok)
+    else:
+        eff_cuisines = [s.strip() for s in (cuisines or "").split(",") if s.strip()]
+        eff_dietary  = [s.strip() for s in (dietary or "").split(",")  if s.strip()]
+        eff_dislikes = []
+        eff_language = language or "en"
+        eff_non_alc  = "non_alcoholic" in eff_dietary
+
+    result = menu_snap_service.recommend_from_image(
+        image_bytes=data,
+        media_type=media_type,
+        language=eff_language,
+        cuisines=eff_cuisines,
+        dietary=eff_dietary,
+        dislikes=eff_dislikes,
+        spice=spice,
+        budget=budget,
+        non_alcoholic=eff_non_alc,
+    )
+
+    if result is None:
+        return {
+            "ok":     True,
+            "source": "stub",
+            "recommendation": {
+                "dish":         "Tagliata di manzo",
+                "why":          "A safe, satisfying pick — rare beef matches savoury preferences and is usually the menu's best value at a steakhouse.",
+                "alternatives": ["Risotto ai funghi"],
+                "warnings":     [],
+                "share_title":  "Tonight: Tagliata di manzo. The menu's best value.",
             },
         }
     return {"ok": True, "source": "ai", "recommendation": result}

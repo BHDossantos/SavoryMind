@@ -392,4 +392,28 @@ export const api = {
     }
     return res.json();
   },
+
+  // Snap-a-Menu. Multipart: image blob + taste profile fields. Image is
+  // already downscaled client-side (see utils/image.js) so the request
+  // typically stays under 1MB even on phone photos.
+  snapMenu: async (imageBlob, { language, cuisines, dietary, spice, budget } = {}) => {
+    const form = new FormData();
+    form.append("image", imageBlob, "menu.jpg");
+    if (language) form.append("language", language);
+    if (cuisines && cuisines.length) form.append("cuisines", cuisines.join(","));
+    if (dietary && dietary.length)   form.append("dietary",  dietary.join(","));
+    if (spice)  form.append("spice",  spice);
+    if (budget) form.append("budget", budget);
+    const headers = {};
+    if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
+    const res = await fetch(`${getBaseUrl()}/api/discover/snap-menu`, {
+      method: "POST", headers, body: form,
+    });
+    if (!res.ok) {
+      let detail = `Request failed (${res.status})`;
+      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  },
 };

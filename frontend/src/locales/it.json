@@ -2118,5 +2118,33 @@
     "saveSubtitle": "Registrati gratis — salva la tua storia di gusto e ottieni scelte più intelligenti.",
     "saveCta": "Crea un account gratuito",
     "footer": "Intelligenza AI sul cibo"
+  },
+  "menuSnapPage": {
+    "title": "Fotografa il menu",
+    "tagline": "Ordina come un locale, ovunque.",
+    "subtagline": "Fotografa qualsiasi menu. L'AI sceglie il piatto giusto per te.",
+    "tap": "Tocca per fotografare o caricare",
+    "tapSub": "Funziona con qualsiasi menu, in qualsiasi lingua.",
+    "retake": "Scegli un'altra foto",
+    "q4a": "Cucine che ami",
+    "q4b": "Restrizioni?",
+    "dietVeg": "Vegetariano",
+    "dietVegan": "Vegano",
+    "dietGF": "Senza glutine",
+    "dietNoAlc": "Senza alcol",
+    "tellMe": "Dimmi cosa ordinare ✨",
+    "thinking": "Sto leggendo il menu…",
+    "whyHeader": "Perché questo",
+    "alsoConsider": "Oppure considera",
+    "heads": "Attenzione",
+    "share": "Condividi la scelta",
+    "another": "Fotografa un altro",
+    "copied": "Copiato",
+    "saveTitle": "Salva le tue scelte",
+    "saveSubtitle": "Registrati gratis — segui la tua storia di gusto in giro per il mondo.",
+    "saveCta": "Crea un account gratuito",
+    "errCompress": "Non sono riuscito a elaborare quella foto. Prova un'altra?",
+    "errGeneric": "Qualcosa è andato storto. Riprova?",
+    "footer": "Intelligenza AI sul cibo"
   }
 }
