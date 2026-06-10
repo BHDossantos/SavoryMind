@@ -3,6 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import AuthMenu from "@/components/AuthMenu";
+import PlanBadge from "@/components/PlanBadge";
 
 export const metadata: Metadata = {
   title: "DealFlow AI",
@@ -47,6 +48,10 @@ export default function RootLayout({
                 <Link className="btn-ghost" href="/deals/new">
                   + New Deal
                 </Link>
+                <Link className="btn-ghost" href="/pricing">
+                  Pricing
+                </Link>
+                <PlanBadge />
                 <AuthMenu />
               </nav>
             </div>

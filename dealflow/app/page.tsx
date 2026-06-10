@@ -5,12 +5,19 @@ import { analyzeDeal } from "@/lib/scoring";
 import DealCard from "@/components/DealCard";
 import Stat from "@/components/Stat";
 import ImportLocalBanner from "@/components/ImportLocalBanner";
+import UpgradePrompt from "@/components/UpgradePrompt";
 import { eur } from "@/lib/format";
 import { dealsToCsv, downloadCsv } from "@/lib/csv";
 import { useDealsSource } from "@/lib/client/use-deals";
+import { useBillingSource } from "@/lib/client/use-billing";
 
 export default function DashboardPage() {
   const { deals, isLoading, error, authed } = useDealsSource();
+  const { data: billing } = useBillingSource();
+  const atOrOverLimit =
+    authed &&
+    billing.limits.maxDeals !== null &&
+    deals.length >= billing.limits.maxDeals;
 
   const analyses = deals.map((d) => ({ d, a: analyzeDeal(d) }));
   const avgScore =
@@ -43,6 +50,14 @@ export default function DashboardPage() {
       </section>
 
       <ImportLocalBanner />
+
+      {atOrOverLimit && (
+        <UpgradePrompt
+          title={`You've hit the ${billing.limits.maxDeals}-deal limit on Free`}
+          body="Upgrade to Pro for unlimited deals + Claude-generated analysis."
+          source="dashboard_limit"
+        />
+      )}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Total deals" value={String(deals.length)} />

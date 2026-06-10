@@ -5,6 +5,8 @@ import {
   clearNarrativeAction,
   setNarrativeAction,
 } from "@/lib/client/actions";
+import UpgradePrompt from "@/components/UpgradePrompt";
+import { useBillingSource } from "@/lib/client/use-billing";
 import type { AINarrative, AIVerdict, Deal } from "@/lib/types";
 
 const VERDICT_STYLE: Record<
@@ -27,6 +29,8 @@ interface Props {
 }
 
 export default function AIAnalysis({ deal, authed, onChange }: Props) {
+  const { data: billing } = useBillingSource();
+  const aiAllowed = billing.limits.aiAnalysis;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const narrative = deal.aiNarrative;
@@ -89,13 +93,15 @@ export default function AIAnalysis({ deal, authed, onChange }: Props) {
             type="button"
             className="btn-primary"
             onClick={generate}
-            disabled={loading}
+            disabled={loading || !aiAllowed}
           >
             {loading
               ? "Analyzing…"
-              : narrative
-                ? "Regenerate"
-                : "Generate AI analysis"}
+              : !aiAllowed
+                ? "Pro feature"
+                : narrative
+                  ? "Regenerate"
+                  : "Generate AI analysis"}
           </button>
         </div>
       </div>
@@ -106,7 +112,18 @@ export default function AIAnalysis({ deal, authed, onChange }: Props) {
         </div>
       )}
 
-      {!narrative && !loading && !error && (
+      {!narrative && !loading && !error && !aiAllowed && (
+        <div className="mt-4">
+          <UpgradePrompt
+            title="AI analysis is a Pro feature"
+            body="Upgrade to Pro to generate a Claude-written investment thesis, key concerns, negotiation playbook, and due-diligence checklist for this deal."
+            source={authed ? "ai_analysis_gate" : "ai_analysis_unauth"}
+            variant="inline"
+          />
+        </div>
+      )}
+
+      {!narrative && !loading && !error && aiAllowed && (
         <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
           No AI analysis yet. Click &ldquo;Generate AI analysis&rdquo; to
           produce one.
