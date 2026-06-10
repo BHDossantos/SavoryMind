@@ -5,10 +5,12 @@ locally without external dependencies. In production, set the env vars below.
 """
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
-from typing import Optional
+from dataclasses import dataclass
+from typing import Iterable, Optional
 
 import httpx
 from sqlalchemy.orm import Session
@@ -25,6 +27,19 @@ TWILIO_FROM_WHATSAPP = os.getenv("NOCTURNA_TWILIO_FROM_WHATSAPP", "whatsapp:+141
 SENDGRID_KEY = os.getenv("NOCTURNA_SENDGRID_KEY")
 SENDGRID_FROM = os.getenv("NOCTURNA_SENDGRID_FROM", "no-reply@nocturna.app")
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+
+
+@dataclass
+class EmailAttachment:
+    """A single attachment for send_email.
+
+    `content` is raw bytes — we base64-encode it when building the
+    SendGrid payload, and just note its presence in the console fallback.
+    """
+    filename: str
+    content: bytes
+    mime_type: str = "application/octet-stream"
+    disposition: str = "attachment"
 
 
 def _record(
@@ -63,18 +78,43 @@ def _record(
     return row
 
 
-def send_email(db: Session, to: str, subject: str, body: str, **ctx) -> NotificationLog:
+def send_email(
+    db: Session,
+    to: str,
+    subject: str,
+    body: str,
+    *,
+    attachments: Optional[Iterable[EmailAttachment]] = None,
+    **ctx,
+) -> NotificationLog:
+    """Send an email through SendGrid (or console-fallback). Attachments
+    are passed straight through to SendGrid's `attachments` array; the
+    console fallback logs their filenames + sizes.
+    """
+    atts = list(attachments) if attachments else []
+
     if SENDGRID_KEY:
+        payload: dict = {
+            "personalizations": [{"to": [{"email": to}]}],
+            "from": {"email": SENDGRID_FROM},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": body}],
+        }
+        if atts:
+            payload["attachments"] = [
+                {
+                    "filename": a.filename,
+                    "content": base64.b64encode(a.content).decode("ascii"),
+                    "type": a.mime_type,
+                    "disposition": a.disposition,
+                }
+                for a in atts
+            ]
         try:
             r = httpx.post(
                 "https://api.sendgrid.com/v3/mail/send",
                 headers={"Authorization": f"Bearer {SENDGRID_KEY}", "Content-Type": "application/json"},
-                json={
-                    "personalizations": [{"to": [{"email": to}]}],
-                    "from": {"email": SENDGRID_FROM},
-                    "subject": subject,
-                    "content": [{"type": "text/plain", "value": body}],
-                },
+                json=payload,
                 timeout=10.0,
             )
             return _record(
@@ -91,6 +131,23 @@ def send_email(db: Session, to: str, subject: str, body: str, **ctx) -> Notifica
         except Exception as e:
             log.exception("sendgrid send failed")
             return _record(db, channel="email", recipient=to, subject=subject, body=body, provider="sendgrid", status="failed", error=str(e), **ctx)
+
+    if atts:
+        att_summary = ", ".join(f"{a.filename} ({len(a.content)}B)" for a in atts)
+        log.info("[email->%s] %s\n%s\n[attachments: %s]", to, subject, body, att_summary)
+        # Record attachment info into payload so the admin notifications log
+        # can render it for debugging.
+        return _record(
+            db,
+            channel="email",
+            recipient=to,
+            subject=subject,
+            body=body,
+            payload={"attachments": [{"filename": a.filename, "size": len(a.content), "type": a.mime_type} for a in atts]},
+            provider="console",
+            status="sent",
+            **ctx,
+        )
     log.info("[email->%s] %s\n%s", to, subject, body)
     return _record(db, channel="email", recipient=to, subject=subject, body=body, provider="console", status="sent", **ctx)
 
@@ -180,15 +237,39 @@ def notify_booking_status_change(db: Session, booking, venue, *, user_email: Opt
     """Send the right templated email/SMS/push when a booking transitions.
 
     Called after admin or partner updates a booking status. No-op for
-    intermediate states (new -> pending) or unknown transitions.
+    intermediate states (new -> pending) or unknown transitions. On a
+    `confirmed` transition the email gets an .ics calendar attachment
+    so users can add the booking to their phone calendar with one tap.
     """
+    from app.services import calendar as ics
     from app.services import templates as tpl
     status = booking.status
+    email_attachments: list[EmailAttachment] = []
+
     if status == "confirmed":
         subject, body = tpl.booking_confirmed(
             venue.name, booking.date, booking.time, booking.group_size,
             venue.dress_code, booking.venue_response, booking.id,
         )
+        try:
+            ics_text = ics.build_ics(
+                booking_id=booking.id,
+                venue_name=venue.name,
+                venue_address=venue.address,
+                booking_date=booking.date,
+                booking_time=booking.time,
+                group_size=booking.group_size,
+                request_type=booking.request_type,
+                dress_code=venue.dress_code,
+                plan_label=None,  # plan label is fetched lazily — keep this hot path cheap
+            )
+            email_attachments.append(EmailAttachment(
+                filename=f"nocturna-booking-{booking.id}.ics",
+                content=ics_text.encode("utf-8"),
+                mime_type="text/calendar; charset=utf-8; method=PUBLISH",
+            ))
+        except ValueError as e:
+            log.warning("could not build ICS for booking %s: %s", booking.id, e)
     elif status == "rejected":
         subject, body = tpl.booking_rejected(venue.name, booking.venue_response, booking.id)
     elif status == "cancelled":
@@ -196,7 +277,11 @@ def notify_booking_status_change(db: Session, booking, venue, *, user_email: Opt
     else:
         return
     if user_email:
-        send_email(db, user_email, subject, body, user_id=booking.user_id, booking_id=booking.id)
+        send_email(
+            db, user_email, subject, body,
+            attachments=email_attachments or None,
+            user_id=booking.user_id, booking_id=booking.id,
+        )
     if user_phone:
         send_sms(db, user_phone, body, user_id=booking.user_id, booking_id=booking.id)
     if expo_token:
