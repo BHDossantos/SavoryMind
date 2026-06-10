@@ -82,11 +82,17 @@ pending the next discuss step.
 - **Delivers:** Sellability prerequisite — every UI now lives behind auth for paying users.
 - **Tests:** 63 passing across 8 files
 
-## Phase 8 — Stripe billing
+## Phase 8 — Stripe billing ✅
 
-- **Status:** Pending
-- **Goal:** Free / Pro €29 / Team €99-per-seat tiers with feature gating.
-- **Authorization wall:** **needs Stripe account + API keys**
+- **Status:** Shipped (code-complete; activation needs user-side keys)
+- **Goal:** Free / Pro €29 / Team €99-per-seat tiers with server-side feature gating.
+- **Plans:**
+  - 8-1 Billing schema (workspaces +6 columns), Stripe wrapper, idempotent seed script, plan-gate helpers, runbook
+  - 8-2 Checkout / Portal / Webhook / Workspace API routes; gates wired into /api/deals POST + /api/ai-analysis POST
+  - 8-3 Pricing / Success / Settings UI; PlanBadge + UpgradePrompt; gates rendered on dashboard, new-deal, and AI analysis
+- **Delivers:** Monetization plumbing — billing ships ready to flip on; user pastes keys + runs `npm run stripe:seed` to activate.
+- **Tests:** 88 passing across 12 files
+- **Authorization wall:** **needs Stripe account + keys to actually charge**. Code-complete without them.
 
 ## Phase 9 — Production deployment + observability
 

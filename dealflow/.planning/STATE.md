@@ -3,11 +3,12 @@
 ## Current position
 
 - **Branch:** `claude/dealflow-ai-setup-WTRdF`
-- **Phases done:** 1, 2, 3, 4, 5, 6, 7
-- **Build:** ✅ `npm run build` clean, 14 routes (every page + 5 API routes + auth + middleware)
-- **Tests:** ✅ 63 passing across 8 files via `npm test` (Vitest + PGlite + jsdom)
+- **Phases done:** 1, 2, 3, 4, 5, 6, 7, 8 (code-complete; activation needs Stripe keys)
+- **Build:** ✅ `npm run build` clean, **17 routes** (every page + 9 API routes including 4 billing + auth + middleware)
+- **Tests:** ✅ **88 passing across 12 files** via `npm test` (Vitest + PGlite + jsdom)
 - **CI:** GitHub Actions workflow on `claude/dealflow-**` and PRs
-- **Next gate:** Start Phase 8 — Stripe billing. **Authorization wall: needs Stripe account + API keys** from the user.
+- **Active authorization wall:** **Stripe account + keys + one seed run** to actually charge. See `STRIPE-SETUP.md`.
+- **Next gate:** Phase 9 — production deployment + observability. **Authorization wall: needs Vercel + managed Postgres + Sentry + PostHog accounts.**
 
 ## Active sellability roadmap
 
@@ -36,6 +37,11 @@ Phase 13. Authorization walls at Phases 8 (Stripe), 9 (hosting/observability),
 - **D16.** **Client cache library is SWR 2.x** — small, suspense-friendly, native revalidation. SWRConfig at the root sets `revalidateOnFocus`, `dedupingInterval: 2000`, `shouldRetryOnError: false`.
 - **D17.** **Branch-on-authed action layer** (`lib/client/actions.ts`) is the single integration point between UI and the dual-mode data layer. Pages never call `apiX` or `dealsRepo` directly.
 - **D18.** **localStorage stays as the unauth fallback** in Phase 7. The marketing/demo path still works without an account; the import banner moves local deals into the workspace on first login.
+- **D19.** **Subscription lives on the workspace, not the user.** Aligns with D12 — Team tier is a data-only change. `workspaces.plan_tier` is the source of truth; the webhook writes, all gates and UI read.
+- **D20.** **Stripe Checkout + Customer Portal (hosted).** Lowest compliance surface, ships fastest, and gives us proration / dunning / billing portal for free. Hosted upgrade UI deferred until we have real conversion data (Phase 11+).
+- **D21.** **Server-side gates are authoritative.** UI hides/dims buttons but the API is the final word — `/api/deals` POST and `/api/ai-analysis` POST both 402 if the plan disallows. Prevents trivial client-side bypass via direct API calls.
+- **D22.** **past_due preserves access until period end.** Aligns with Stripe's default dunning grace period. We surface a banner ("update payment method") but keep gates open until Stripe actually transitions to `canceled`.
+- **D23.** **prices.json is committed.** It contains Stripe Price + Product IDs only — public values, not secrets. Committing keeps prod env aligned with dev without a side-channel sync step.
 
 ## Open blockers
 
@@ -58,6 +64,11 @@ None within the current authorization scope.
 - **T6.** Fix the `storage.ts.list()` comparator — currently `(a.createdAt < b.createdAt ? 1 : -1)` violates strict weak ordering for equal values. Replace with `b.createdAt.localeCompare(a.createdAt)`. Surfaced by Phase 7-3 import test.
 - **T7.** Add a bulk-import endpoint so first-login import is one round trip instead of N.
 - **T8.** Carry `aiNarrative` + `attachments` over during import. `apiCreateDeal` currently accepts only `DealInput`; needs a follow-up PUT or an extended POST.
+- **T9.** Test-mode vs live-mode `prices.json` are a single file today. Production deploy will need an env-specific resolution — either two committed files keyed by `STRIPE_SECRET_KEY` prefix, or per-environment build-time copy. Cheap fix; defer until first prod deploy.
+- **T10.** Branded transactional email (welcome, receipt, dunning) — needs an email provider. Phase 9.
+- **T11.** Annual-billing toggle on `/pricing` once we have churn data to justify the discount.
+- **T12.** Team-tier UX: invite member, role management, seat-count slider in the portal. Phase 11.
+- **T13.** Quota widget — "X / 3 deals used" — minor UX polish. Belongs with the dashboard refresh.
 
 ## Seeds (forward-looking, low-priority)
 

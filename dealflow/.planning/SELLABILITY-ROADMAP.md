@@ -15,10 +15,10 @@ Sellable SaaS with:
 | Phase | Goal                                | Status   | Authorization wall          |
 | ----- | ----------------------------------- | -------- | --------------------------- |
 | 1–5   | MVP foundation through tested logic | ✅ Done   | —                           |
-| 6     | Backend foundation (DB + auth + API)| Active   | None — local Postgres + dev creds |
-| 7     | Frontend migration to API           | Pending  | None                        |
-| 8     | Stripe billing                      | Pending  | **Needs Stripe account + keys** |
-| 9     | Production deployment + observability | Pending | **Needs Vercel + Neon/Supabase + Sentry + PostHog accounts** |
+| 6     | Backend foundation (DB + auth + API)| ✅ Done   | None — local Postgres + dev creds |
+| 7     | Frontend migration to API           | ✅ Done   | None                        |
+| 8     | Stripe billing                      | ✅ Code-complete | **Activation needs Stripe account + keys + seed run** |
+| 9     | Production deployment + observability | Active | **Needs Vercel + Neon/Supabase + Sentry + PostHog accounts** |
 | 10    | Marketing site + legal              | Pending  | Legal pages from template; user reviews before publish |
 | 11    | Search-funder ICP features          | Pending  | None                        |
 | 12    | Comp-database moat                  | Pending  | None                        |
