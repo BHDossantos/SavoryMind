@@ -3,6 +3,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { analyze } from "@/lib/scoring";
 import { BUSINESS_TYPE_LABELS } from "@/lib/multiples";
 import type { AINarrative, Deal } from "@/lib/types";
+import { auth } from "@/auth";
+import { db } from "@/lib/db/client";
+import { getBillingState } from "@/lib/billing/workspace-repo";
+import { canRunAIAnalysis } from "@/lib/billing/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -136,6 +140,37 @@ export async function POST(req: NextRequest) {
           "AI analysis is not configured. Set ANTHROPIC_API_KEY in your environment.",
       },
       { status: 503 },
+    );
+  }
+
+  // Plan gate. Anonymous callers don't have a workspace, so they're free-tier
+  // by definition and the gate trips immediately.
+  const session = await auth();
+  if (session?.user?.workspaceId) {
+    const state = await getBillingState(db(), session.user.workspaceId);
+    if (state) {
+      const gate = canRunAIAnalysis(state);
+      if (!gate.ok) {
+        return NextResponse.json(
+          {
+            error: gate.reason,
+            code: gate.code,
+            upgrade: true,
+            currentTier: gate.currentTier,
+          },
+          { status: 402 },
+        );
+      }
+    }
+  } else {
+    return NextResponse.json(
+      {
+        error: "AI analysis requires a paid plan. Sign in and upgrade to Pro.",
+        code: "ai_not_in_plan",
+        upgrade: true,
+        currentTier: "free",
+      },
+      { status: 402 },
     );
   }
 

@@ -3,6 +3,11 @@ import { db } from "@/lib/db/client";
 import { createDeal, listForWorkspace } from "@/lib/db/deals-repo";
 import { AuthError, jsonError, requireSession } from "@/lib/auth/server";
 import { validateDealInput, validateStatusPatch } from "@/lib/api/validation";
+import {
+  countDealsForWorkspace,
+  getBillingState,
+} from "@/lib/billing/workspace-repo";
+import { canCreateDeal } from "@/lib/billing/plan";
 import type { DealInput } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -48,6 +53,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Invalid status/priority", fields: statusPatch.errors },
         { status: 400 },
+      );
+    }
+
+    // Plan gate — checked here so the import flow also gets enforcement.
+    const state = await getBillingState(db(), ctx.workspaceId);
+    if (!state) {
+      return NextResponse.json(
+        { error: "Workspace not found" },
+        { status: 404 },
+      );
+    }
+    const count = await countDealsForWorkspace(db(), ctx.workspaceId);
+    const gate = canCreateDeal(state, count);
+    if (!gate.ok) {
+      return NextResponse.json(
+        {
+          error: gate.reason,
+          code: gate.code,
+          upgrade: true,
+          currentTier: gate.currentTier,
+          limit: gate.limit ?? null,
+        },
+        { status: 402 },
       );
     }
 
