@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { PhotoManager } from '@/components/admin/PhotoManager';
 
 export default function AdminVenues() {
   const [rows, setRows] = useState<any[]>([]);
@@ -97,6 +98,11 @@ function VenueModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSav
         </div>
         <Field k="quality_score" data={data} set={set} type="number" />
         <Field k="partner_status" data={data} set={set} />
+        <PhotoManager
+          venueId={data.id ?? null}
+          photos={data.photos || []}
+          onChange={(photos) => set('photos', photos)}
+        />
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="btn btn-ghost">Cancel</button>
           <button onClick={() => onSave(data)} className="btn btn-primary">Save</button>

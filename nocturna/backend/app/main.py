@@ -1,7 +1,9 @@
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.db import Base, SessionLocal, engine
@@ -22,6 +24,7 @@ from app.api.routes import (
     admin_export,
     admin_import,
     admin_notifications,
+    admin_uploads,
     cron,
 )
 from app.seed.load_data import bootstrap_admin, seed_cities, seed_venues
@@ -81,6 +84,16 @@ for r in (
     admin_export.router,
     admin_import.router,
     admin_notifications.router,
+    admin_uploads.router,
     cron.router,
 ):
     app.include_router(r)
+
+
+# Serve local photo uploads when running with the LocalStorage backend.
+# GCS backend doesn't need this — URLs point to storage.googleapis.com.
+_storage_backend = (os.getenv("NOCTURNA_STORAGE_BACKEND") or "local").lower()
+if _storage_backend == "local":
+    _upload_dir = os.getenv("NOCTURNA_UPLOAD_DIR", "./uploads")
+    os.makedirs(_upload_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=_upload_dir), name="uploads")
