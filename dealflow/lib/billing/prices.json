@@ -1,0 +1,16 @@
+{
+  "pro": {
+    "productId": "",
+    "priceId": "",
+    "amount": 2900,
+    "currency": "eur",
+    "interval": "month"
+  },
+  "team": {
+    "productId": "",
+    "priceId": "",
+    "amount": 9900,
+    "currency": "eur",
+    "interval": "month"
+  }
+}

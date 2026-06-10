@@ -83,16 +83,38 @@ export const verificationTokens = pgTable(
 
 // ---------- DealFlow tables ----------
 
-export const workspaces = pgTable("workspaces", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull(),
-  ownerId: text("owner_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
-});
+export const workspaces = pgTable(
+  "workspaces",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+
+    // Billing (Phase 8). Default to free / active so existing rows behave correctly.
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    planTier: text("plan_tier", { enum: ["free", "pro", "team"] })
+      .notNull()
+      .default("free"),
+    planStatus: text("plan_status", {
+      enum: ["active", "past_due", "canceled", "trialing", "incomplete"],
+    })
+      .notNull()
+      .default("active"),
+    seatCount: integer("seat_count").notNull().default(1),
+    currentPeriodEnd: timestamp("current_period_end", { mode: "date" }),
+  },
+  (t) => ({
+    stripeCustomerIdx: index("workspaces_stripe_customer_idx").on(
+      t.stripeCustomerId,
+    ),
+  }),
+);
 
 export const workspaceMembers = pgTable(
   "workspace_members",
