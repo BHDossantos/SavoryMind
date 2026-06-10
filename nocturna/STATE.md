@@ -9,9 +9,9 @@
 
 ## Last shipped
 
-- **Commit:** `67cd4fa`
-- **Title:** feat(nocturna): GSD t-ics-attachment — .ics calendar invite on booking confirmation
-- **Phase:** 10 · UX polish
+- **Commit:** `7650490`
+- **Title:** feat(nocturna): GSD t-photo-upload — real photo upload pipeline (admin)
+- **Phase:** 11 · Photo upload pipeline
 
 ## In flight
 
@@ -21,9 +21,9 @@ None. Working tree clean.
 
 | Check | Status | Notes |
 |---|---|---|
-| `pytest tests` (backend) | **45 passed** | bcrypt 4.0.1 pinned; +8 new in test_calendar.py |
-| `tsc --noEmit` (frontend) | **clean** (last verified at `a322acf`) | |
-| `next build` (frontend) | **clean** (last verified at `a322acf`) | 39 routes; sitemap + robots static; OG routes ƒ |
+| `pytest tests` (backend) | **57 passed** | bcrypt 4.0.1 pinned; +12 new in test_uploads.py |
+| `tsc --noEmit` (frontend) | **clean** | |
+| `next build` (frontend) | **clean** | 39 routes; sitemap + robots static; OG routes ƒ |
 | `playwright test --list` | **3 specs** | Browser binary not installed in this sandbox |
 
 ## Production health
@@ -51,19 +51,20 @@ _APP_BASE_URL=https://placeholder.example
 - **PostHog key unset in dev** — silent no-op by design.
 - **In-memory rate limiter resets on cold-start** — acceptable for MVP
   launch; switch to Redis when traffic warrants (`t-rate-limit-redis`).
-- **Seeded venues have empty `photos`** — Trending cards show letter
-  fallback. `t-real-photos` in ROADMAP addresses this.
+- **Seeded venues still have empty `photos`** — admins can now upload
+  via the editor (Phase 11), but the 60 Rome venues from the seed CSVs
+  haven't been backfilled yet. `t-real-photos` is still open and needs
+  a human curation pass.
 
 ## Available task IDs
 
-From `ROADMAP.md` Phase 11:
+From `ROADMAP.md` Phase 12:
 
-- `t-photo-upload` — admin photo upload (Cloud Storage)
 - `t-email-verify` — verification on signup
 - `t-streaming-chat` — stream AI concierge tokens
 - `t-rate-limit-redis` — distributed rate limiter
 - `t-real-photos` — curate real photos for the 60 Rome venues (needs
-  human curation pass)
+  human curation pass; upload tooling shipped in Phase 11)
 
 ## How to update this file
 

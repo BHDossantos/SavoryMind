@@ -67,41 +67,22 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   ICS wired into the `confirmed` branch of `notify_booking_status_change`.
   8 new pytest cases (5 structure + 3 wiring); total now 45.
 
-## Phase 11 · Open
+## Phase 11 · Photo upload pipeline [shipped — `7650490`]
+
+- `7650490` — task **`t-photo-upload`** shipped: admins can upload + delete
+  venue photos through the venue editor. New `services/storage.py` with
+  pluggable Local + GCS backends (selected via `NOCTURNA_STORAGE_BACKEND`);
+  `/api/admin/venues/{id}/photos` POST + DELETE with 415 / 413 / 404 /
+  403 / dedup behaviours; drag-or-click `PhotoManager` in the admin UI;
+  `api.del` upgraded to accept a JSON body. 12 new pytest cases; total 57.
+
+## Phase 12 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and
 update `STATE.md`.
 
 ```xml
-<task id="t-photo-upload" type="auto">
-  <name>Real photo upload pipeline (admin)</name>
-  <files>
-    backend/app/api/routes/admin_uploads.py (new)
-    backend/app/services/storage.py (new)
-    frontend/src/app/admin/venues/page.tsx
-  </files>
-  <action>
-    Backend: storage.py abstracts a pluggable backend — local disk under
-    /uploads in dev, Google Cloud Storage in prod (selected via env).
-    Returns signed URLs. New POST /api/admin/venues/{id}/photos accepts
-    multipart upload (images only, ≤5 MB), saves, appends URL to
-    venue.photos. New DELETE removes by URL.
-    Frontend: in the venue editor, replace the "photos (comma-sep)"
-    textarea with a drop-zone uploader showing thumbnails with X-to-delete.
-  </action>
-  <verify>
-    pytest covers: storage local backend round-trip, photos array append
-    is unique, oversize/wrong-mime rejected. tsc + next build clean.
-    Manual: drop 3 images on a venue, see them on /venues/{slug}, OG
-    image at /og/venue/{slug} now uses the first one.
-  </verify>
-  <done>
-    Admin can upload + delete photos without hand-typing URLs; venue
-    detail + OG image consume them.
-  </done>
-</task>
-
 <task id="t-email-verify" type="auto">
   <name>Email verification on signup</name>
   <files>
@@ -199,7 +180,7 @@ update `STATE.md`.
 
 ```
 
-## Phase 11 · Beyond MVP (sketches, not yet specced)
+## Phase 13 · Beyond MVP (sketches, not yet specced)
 
 - Real-time booking status push (WebSocket / Server-Sent Events) so the
   status board updates without manual refresh.
