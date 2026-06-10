@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { downscaleImage } from "../../utils/image";
+import { stashWedgeTaste } from "../../utils/wedgeTaste";
 
 const POPULAR_CUISINES = ["Italian", "Japanese", "Mexican", "Indian", "French", "Mediterranean", "Thai"];
 const DIETARY = [
@@ -223,6 +224,7 @@ export default function MenuSnapPage() {
                 <p className="text-sm text-amber-900 font-semibold">{t("menuSnapPage.saveTitle")}</p>
                 <p className="text-xs text-amber-700 mt-1">{t("menuSnapPage.saveSubtitle")}</p>
                 <Link href="/signup"
+                  onClick={() => stashWedgeTaste({ cuisines, dietary })}
                   className="inline-block mt-3 text-xs px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700">
                   {t("menuSnapPage.saveCta")}
                 </Link>

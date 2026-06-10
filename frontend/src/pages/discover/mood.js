@@ -17,6 +17,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import { stashWedgeTaste } from "../../utils/wedgeTaste";
 
 const MOODS = [
   { id: "cozy",          emoji: "🕯️", labelKey: "moodPage.moodCozy" },
@@ -318,6 +319,7 @@ export default function MoodToMealPage() {
                 <p className="text-sm text-amber-900 font-semibold">{t("moodPage.saveTitle")}</p>
                 <p className="text-xs text-amber-700 mt-1">{t("moodPage.saveSubtitle")}</p>
                 <Link href="/signup"
+                  onClick={() => stashWedgeTaste({ cuisines, dietary })}
                   className="inline-block mt-3 text-xs px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700">
                   {t("moodPage.saveCta")}
                 </Link>

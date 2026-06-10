@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
+import { consumeWedgeTaste } from "../utils/wedgeTaste";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1200,6 +1201,28 @@ export default function Onboarding() {
   });
 
   const onChange = (key, val) => setData((d) => ({ ...d, [key]: val }));
+
+  // Pre-fill from the public wedge pages (/discover/mood, /discover/menu).
+  // A guest who just told us their cuisines + dietary there shouldn't be
+  // asked the same questions again two minutes later — that's the #1
+  // drop-off point in the wedge → signup funnel. consumeWedgeTaste()
+  // clears the stash so a later visit starts clean.
+  useEffect(() => {
+    const stash = consumeWedgeTaste();
+    if (!stash) return;
+    // Only keep values our chip lists actually render — stale or
+    // tampered localStorage shouldn't inject arbitrary strings.
+    const cuisines = stash.cuisines.filter((c) => CUISINES.includes(c));
+    const dietaryIds = new Set(DIETARY.map((d) => d.id));
+    const dietary = stash.dietary.filter((d) => dietaryIds.has(d));
+    const nonAlc = stash.dietary.includes("non_alcoholic");
+    setData((d) => ({
+      ...d,
+      ...(cuisines.length ? { cuisine_preferences: JSON.stringify(cuisines) } : {}),
+      ...(dietary.length  ? { dietary_preferences: JSON.stringify(dietary) }  : {}),
+      ...(nonAlc ? { non_alcoholic_ok: true } : {}),
+    }));
+  }, []);
 
   const acType = data.account_type;
   const steps  = acType === "consumer"   ? CONSUMER_STEPS
