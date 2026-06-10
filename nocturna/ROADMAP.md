@@ -58,7 +58,16 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   describe-or-update pattern. No-op when `_CRON_TOKEN` is unset (so
   PR-trigger builds without the secret keep working).
 
-## Phase 10 · Open
+## Phase 10 · UX polish [shipped — `67cd4fa`]
+
+- `67cd4fa` — task **`t-ics-attachment`** shipped: confirmed bookings
+  now ship a .ics calendar invite alongside the email. New
+  dependency-free RFC-5545 builder in `services/calendar.py`, EmailAttachment
+  dataclass + SendGrid attachment path in `notifications.send_email`,
+  ICS wired into the `confirmed` branch of `notify_booking_status_change`.
+  8 new pytest cases (5 structure + 3 wiring); total now 45.
+
+## Phase 11 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and
@@ -116,30 +125,6 @@ update `STATE.md`.
   <done>
     No production accounts go live without a verified email; admin/partner
     role acquisition gated behind verification.
-  </done>
-</task>
-
-<task id="t-ics-attachment" type="auto">
-  <name>ICS calendar attachment on booking confirmation</name>
-  <files>
-    backend/app/services/templates.py
-    backend/app/services/notifications.py
-    backend/app/services/calendar.py (new)
-  </files>
-  <action>
-    calendar.py builds an .ics VEVENT for a booking (DTSTART from date+time,
-    SUMMARY = "Nocturna · {venue}", LOCATION, DESCRIPTION includes plan
-    label + dress code). On status-change to confirmed, attach to the
-    SendGrid email payload. SMS body unchanged.
-  </action>
-  <verify>
-    pytest validates the .ics output parses as valid VCALENDAR; existing
-    notifications tests remain green. Manual: confirm a booking, open
-    the email in Apple Mail / Gmail, "Add to Calendar" works.
-  </verify>
-  <done>
-    User-facing booking confirmation emails carry an .ics file users can
-    add with one tap.
   </done>
 </task>
 

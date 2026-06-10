@@ -9,9 +9,9 @@
 
 ## Last shipped
 
-- **Commit:** `7c5ed6c`
-- **Title:** feat(deploy): GSD t-cloud-scheduler-job — auto-provision reminder Scheduler
-- **Phase:** 9 · Operations automation
+- **Commit:** `67cd4fa`
+- **Title:** feat(nocturna): GSD t-ics-attachment — .ics calendar invite on booking confirmation
+- **Phase:** 10 · UX polish
 
 ## In flight
 
@@ -21,9 +21,9 @@ None. Working tree clean.
 
 | Check | Status | Notes |
 |---|---|---|
-| `pytest tests` (backend) | **37 passed** | bcrypt 4.0.1 pinned; passlib pre-init |
-| `tsc --noEmit` (frontend) | **clean** | |
-| `next build` (frontend) | **clean** | 39 routes; sitemap + robots static; OG routes ƒ |
+| `pytest tests` (backend) | **45 passed** | bcrypt 4.0.1 pinned; +8 new in test_calendar.py |
+| `tsc --noEmit` (frontend) | **clean** (last verified at `a322acf`) | |
+| `next build` (frontend) | **clean** (last verified at `a322acf`) | 39 routes; sitemap + robots static; OG routes ƒ |
 | `playwright test --list` | **3 specs** | Browser binary not installed in this sandbox |
 
 ## Production health
@@ -56,11 +56,10 @@ _APP_BASE_URL=https://placeholder.example
 
 ## Available task IDs
 
-From `ROADMAP.md` Phase 10:
+From `ROADMAP.md` Phase 11:
 
 - `t-photo-upload` — admin photo upload (Cloud Storage)
 - `t-email-verify` — verification on signup
-- `t-ics-attachment` — calendar invite on booking confirm
 - `t-streaming-chat` — stream AI concierge tokens
 - `t-rate-limit-redis` — distributed rate limiter
 - `t-real-photos` — curate real photos for the 60 Rome venues (needs
