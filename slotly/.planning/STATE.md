@@ -2,10 +2,9 @@
 
 ## Current position
 
-**Phase 07 — Auto-fill cancellations** is done.
+**Phase 07.1 — pytest harness + CI** is done (after Phase 07 auto-fill cancellations, `4fe2501`).
 
-Last shipped commit on `claude/appointment-booking-platform-FYizt`:
-- `(this commit) feat(slotly): Phase 07 — auto-fill cancellations`
+33 backend tests under `backend/tests/` covering booking, the slot engine, the notification lifecycle, and the Phase 07 auto-fill scenarios. CI runs on every PR touching `slotly/` (root-level `slotly-tests.yml` while parked in SavoryMind; `slotly/.github/workflows/test.yml` activates post-migration).
 
 ## What is live
 

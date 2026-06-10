@@ -99,13 +99,20 @@ Currently SQLModel auto-creates tables on startup (`init_db()`). When we move to
 
 ## Tests
 
-There is no automated test suite yet — every feature was verified by an end-to-end smoke script invoked manually. The smoke scripts live in commit messages and in `phases/*-SUMMARY.md`. **Adding a real `pytest` harness is the most overdue piece of housekeeping** (likely Phase 09 or 10 candidate).
+`pytest` suite under `backend/tests/` (landed in Phase 07.1). Run with:
 
-When tests do land, the conventions will be:
-- `pytest` + `httpx.AsyncClient` for the backend.
-- One file per router (`tests/routers/test_appointments.py` etc.).
-- Database fixture creates a fresh in-memory SQLite per test.
-- No real Stripe / Resend in tests — stub mode is the test mode.
+```bash
+cd backend && python -m pytest
+```
+
+Conventions:
+- `pytest` + FastAPI `TestClient` for the backend. The plain (non-context-manager) `TestClient` is deliberate — it skips startup hooks so the APScheduler tick never runs during tests.
+- Fresh **in-memory SQLite** per test (`StaticPool` so all sessions share one connection); `get_session` is dependency-overridden in `conftest.py`.
+- API-level factories in `conftest.py`: `signup(...)`, `make_provider(...)` (provider + service + all-week availability), `tomorrow_at(...)` / `days_ahead_at(...)`.
+- One file per behaviour area: `test_booking.py`, `test_slot_engine.py`, `test_notifications.py`, `test_auto_fill.py`.
+- No real Stripe / Resend in tests — **stub mode is the test mode** (no API keys set).
+- Timing gotcha: a booking "tomorrow" makes its 24h reminder due immediately. Tests asserting on due counts must book ≥3 days out (`days_ahead_at`).
+- CI: `.github/workflows/test.yml` (active post-migration); mirrored at the SavoryMind root as `slotly-tests.yml` while parked.
 
 ## Documentation
 

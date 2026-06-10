@@ -62,6 +62,12 @@ Phases shipped to date are reconstructed from the existing git history. v2 phase
 **Dependencies:** Phase 05 (notification infra) ✅, Phase 03 (refund logic) ✅
 **Summary:** [`phases/07-SUMMARY.md`](phases/07-SUMMARY.md)
 
+### Phase 07.1 — pytest harness + CI (maintenance)
+
+**Status:** done
+**Goal:** Pay down the testing debt flagged since Phase 01. 33 tests over booking, slot engine, notification lifecycle, and the Phase 07 auto-fill scenarios; CI on every PR touching `slotly/`.
+**Summary:** [`phases/07.1-SUMMARY.md`](phases/07.1-SUMMARY.md)
+
 ### Phase 08 — Real geosearch
 
 **Status:** planned

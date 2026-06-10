@@ -54,7 +54,7 @@ Full versions and run/build commands: [`.planning/codebase/STACK.md`](.planning/
 - Subject ≤ 72 chars; body explains the *why*.
 
 **Tests**
-- No automated suite yet — every feature was verified via an end-to-end smoke script (recorded in commit messages and `.planning/phases/*-SUMMARY.md`). **`pytest` harness is the most overdue piece of housekeeping.**
+- `pytest` suite under `backend/tests/` — run `cd backend && python -m pytest`. Fresh in-memory SQLite per test; stub mode is the test mode (no API keys). Plain `TestClient` (no context manager) so the APScheduler tick never starts. Booking-time gotcha: use `days_ahead_at(3, ...)` when asserting on due-notification counts.
 
 Full conventions: [`.planning/codebase/CONVENTIONS.md`](.planning/codebase/CONVENTIONS.md).
 <!-- GSD:conventions-end -->

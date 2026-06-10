@@ -34,6 +34,18 @@ npm run dev                # http://localhost:3001
 
 The frontend reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8001`).
 
+## Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest          # 33 tests: booking, slot engine, notifications, auto-fill
+```
+
+Tests run against a fresh in-memory SQLite per test with Stripe + Resend in
+stub mode — no API keys or running server needed. CI runs them on every PR
+touching `slotly/`.
+
 ## Demo logins
 
 - Customer: `demo@slotly.app` / `password123`
