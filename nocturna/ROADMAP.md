@@ -76,39 +76,23 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   403 / dedup behaviours; drag-or-click `PhotoManager` in the admin UI;
   `api.del` upgraded to accept a JSON body. 12 new pytest cases; total 57.
 
-## Phase 12 · Open
+## Phase 12 · Auth hardening [shipped — `7ba9b1c`]
+
+- `7ba9b1c` — task **`t-email-verify`** shipped: signup now requires
+  email verification before role-elevated endpoints (admin, partner)
+  can be used. New `User.email_verified` + token columns; templated
+  verify email; `GET /api/auth/verify/{token}` flips the flag; resend
+  endpoint with 30s frontend cooldown; soft banner on `/me/*`; new
+  `/verify/[token]` page. Bootstrap admin auto-verified so dev login
+  keeps working. 11 new pytest cases; total 68.
+
+## Phase 13 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and
 update `STATE.md`.
 
 ```xml
-<task id="t-email-verify" type="auto">
-  <name>Email verification on signup</name>
-  <files>
-    backend/app/models/user.py
-    backend/app/api/routes/auth.py
-    backend/app/services/templates.py
-    frontend/src/app/verify/[token]/page.tsx (new)
-  </files>
-  <action>
-    Add User.email_verified bool + email_verify_token. On signup, generate
-    token + send templated email with link to /verify/{token}. On verify,
-    flip the flag + clear the token. Block /api/admin and partner endpoints
-    when role>user and not verified. Show banner on /me/* until verified.
-  </action>
-  <verify>
-    pytest: signup leaves email_verified=False; /verify/{token} flips it;
-    expired/invalid token returns 400; admin endpoints reject unverified.
-    Manual: signup → check console-fallback email log → click link → flag
-    flips.
-  </verify>
-  <done>
-    No production accounts go live without a verified email; admin/partner
-    role acquisition gated behind verification.
-  </done>
-</task>
-
 <task id="t-streaming-chat" type="auto">
   <name>Streaming AI concierge chat</name>
   <files>

@@ -9,9 +9,9 @@
 
 ## Last shipped
 
-- **Commit:** `7650490`
-- **Title:** feat(nocturna): GSD t-photo-upload — real photo upload pipeline (admin)
-- **Phase:** 11 · Photo upload pipeline
+- **Commit:** `7ba9b1c`
+- **Title:** feat(nocturna): GSD t-email-verify — email verification on signup
+- **Phase:** 12 · Auth hardening
 
 ## In flight
 
@@ -21,9 +21,9 @@ None. Working tree clean.
 
 | Check | Status | Notes |
 |---|---|---|
-| `pytest tests` (backend) | **57 passed** | bcrypt 4.0.1 pinned; +12 new in test_uploads.py |
+| `pytest tests` (backend) | **68 passed** | bcrypt 4.0.1 pinned; +11 new in test_email_verify.py |
 | `tsc --noEmit` (frontend) | **clean** | |
-| `next build` (frontend) | **clean** | 39 routes; sitemap + robots static; OG routes ƒ |
+| `next build` (frontend) | **clean** | 40 routes; new /verify/[token] ƒ; sitemap + robots static |
 | `playwright test --list` | **3 specs** | Browser binary not installed in this sandbox |
 
 ## Production health
@@ -58,9 +58,8 @@ _APP_BASE_URL=https://placeholder.example
 
 ## Available task IDs
 
-From `ROADMAP.md` Phase 12:
+From `ROADMAP.md` Phase 13:
 
-- `t-email-verify` — verification on signup
 - `t-streaming-chat` — stream AI concierge tokens
 - `t-rate-limit-redis` — distributed rate limiter
 - `t-real-photos` — curate real photos for the 60 Rome venues (needs
