@@ -68,7 +68,9 @@
     "sentiment": "Sentiment",
     "insights": "Insights",
     "connect": "Connect",
-    "order": "Order"
+    "order": "Order",
+    "moodToMeal": "Mood to Meal",
+    "menuSnap": "Snap a Menu"
   },
   "profile": {
     "title": "Profile",
@@ -488,5 +490,57 @@
       "title": "Staff Portal",
       "subtitle": "Clock in/out + your shift"
     }
+  },
+  "moodScreen": {
+    "tagline": "Tell us how you feel. We'll tell you what to eat.",
+    "subtagline": "Four taps. One perfect dish, drink, dessert and soundtrack.",
+    "q1": "How are you feeling?",
+    "q2": "What experience do you want?",
+    "q3": "What's the budget?",
+    "q5": "Where are you eating?",
+    "mood_cozy": "Cozy",
+    "mood_adventurous": "Adventurous",
+    "mood_romantic": "Romantic",
+    "mood_celebrating": "Celebrating",
+    "mood_stressed": "Stressed",
+    "mood_energized": "Energized",
+    "mood_curious": "Curious",
+    "mood_comfort": "Comfort",
+    "exp_fast": "Fast",
+    "exp_healthy": "Healthy",
+    "exp_indulgent": "Indulgent",
+    "exp_luxury": "Luxury",
+    "exp_social": "Social",
+    "exp_date": "Date night",
+    "budget_low": "Casual",
+    "budget_medium": "Comfortable",
+    "budget_high": "Special",
+    "goingOut": "Going out",
+    "atHome": "At home",
+    "locationPh": "City (optional)",
+    "tellMe": "Tell me what to eat ✨",
+    "errGeneric": "Something went wrong. Try again?",
+    "cardDish": "What to eat",
+    "cardDrink": "What to drink",
+    "cardMusic": "Music vibe",
+    "cardDessert": "Dessert",
+    "share": "Share this vibe",
+    "again": "Try again"
+  },
+  "menuSnapScreen": {
+    "tagline": "Order like a local, anywhere.",
+    "subtagline": "Snap any menu, any language. AI picks the one dish you should order.",
+    "camera": "Open camera",
+    "library": "Pick from library",
+    "retake": "Choose a different photo",
+    "permTitle": "Camera access needed",
+    "permBody": "Allow camera access in Settings to snap a menu.",
+    "tellMe": "Tell me what to order ✨",
+    "errGeneric": "Something went wrong. Try again?",
+    "whyHeader": "Why this",
+    "alsoConsider": "Or consider",
+    "heads": "Heads-up",
+    "share": "Share this pick",
+    "another": "Snap another"
   }
 }

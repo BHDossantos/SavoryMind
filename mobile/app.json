@@ -36,7 +36,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "SavoryMind uses the camera to photograph restaurant menus so the AI can recommend what to order.",
+          "photosPermission": "SavoryMind accesses your photos so you can pick an existing menu photo for AI recommendations."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

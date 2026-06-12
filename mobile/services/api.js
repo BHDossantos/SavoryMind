@@ -408,4 +408,47 @@ export const api = {
     request(`/api/inventory/${id}/adjust`, { method: 'POST', body: JSON.stringify(data) }),
   categorizeInventoryItem: (name) =>
     request('/api/inventory/categorize', { method: 'POST', body: JSON.stringify({ name }) }),
+
+  // ── Wedge features (public — work logged-out, personalised when a token exists) ──
+
+  // Mood-to-Meal: "Tell us how you feel. We'll tell you what to eat."
+  moodToMeal: async (data) => {
+    const token = await tokenStore.getAccess();
+    const res = await fetch(`${BASE_URL}/api/discover/mood-to-meal`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Type': 'mobile',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.detail || `HTTP ${res.status}`);
+    return out;
+  },
+
+  // Snap-a-Menu: photograph any menu, AI picks one dish. `imageUri` is a
+  // local file:// uri from expo-image-picker; RN's fetch FormData handles
+  // the multipart streaming natively (no base64 round-trip needed).
+  snapMenu: async (imageUri, { language, cuisines, dietary } = {}) => {
+    const token = await tokenStore.getAccess();
+    const form = new FormData();
+    form.append('image', { uri: imageUri, name: 'menu.jpg', type: 'image/jpeg' });
+    if (language) form.append('language', language);
+    if (cuisines && cuisines.length) form.append('cuisines', cuisines.join(','));
+    if (dietary && dietary.length) form.append('dietary', dietary.join(','));
+    const res = await fetch(`${BASE_URL}/api/discover/snap-menu`, {
+      method: 'POST',
+      headers: {
+        // No Content-Type — fetch sets the multipart boundary itself.
+        'X-Client-Type': 'mobile',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: form,
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.detail || `HTTP ${res.status}`);
+    return out;
+  },
 };

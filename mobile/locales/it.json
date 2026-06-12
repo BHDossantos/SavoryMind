@@ -68,7 +68,9 @@
     "sentiment": "Recensioni",
     "insights": "Insights",
     "connect": "Connetti",
-    "order": "Ordina"
+    "order": "Ordina",
+    "moodToMeal": "Dal mood al piatto",
+    "menuSnap": "Fotografa il menu"
   },
   "profile": {
     "title": "Profilo",
@@ -488,5 +490,57 @@
       "title": "Portale staff",
       "subtitle": "Timbratura + il tuo turno"
     }
+  },
+  "moodScreen": {
+    "tagline": "Dicci come ti senti. Ti diciamo cosa mangiare.",
+    "subtagline": "Quattro tocchi. Un piatto perfetto, un drink, un dessert e la colonna sonora.",
+    "q1": "Come ti senti?",
+    "q2": "Che esperienza vuoi?",
+    "q3": "Qual è il budget?",
+    "q5": "Dove mangi?",
+    "mood_cozy": "Intimo",
+    "mood_adventurous": "Avventuroso",
+    "mood_romantic": "Romantico",
+    "mood_celebrating": "Festa",
+    "mood_stressed": "Stressato",
+    "mood_energized": "Carico",
+    "mood_curious": "Curioso",
+    "mood_comfort": "Comfort",
+    "exp_fast": "Veloce",
+    "exp_healthy": "Sano",
+    "exp_indulgent": "Goloso",
+    "exp_luxury": "Lusso",
+    "exp_social": "In compagnia",
+    "exp_date": "Serata romantica",
+    "budget_low": "Casual",
+    "budget_medium": "Comodo",
+    "budget_high": "Speciale",
+    "goingOut": "Esco a cena",
+    "atHome": "A casa",
+    "locationPh": "Città (facoltativo)",
+    "tellMe": "Dimmi cosa mangiare ✨",
+    "errGeneric": "Qualcosa non ha funzionato. Riprova?",
+    "cardDish": "Cosa mangiare",
+    "cardDrink": "Cosa bere",
+    "cardMusic": "Atmosfera musicale",
+    "cardDessert": "Dessert",
+    "share": "Condividi il vibe",
+    "again": "Riprova"
+  },
+  "menuSnapScreen": {
+    "tagline": "Ordina come un locale, ovunque.",
+    "subtagline": "Fotografa qualsiasi menu, in qualsiasi lingua. L'AI sceglie il piatto giusto.",
+    "camera": "Apri la fotocamera",
+    "library": "Scegli dalla galleria",
+    "retake": "Scegli un'altra foto",
+    "permTitle": "Serve la fotocamera",
+    "permBody": "Consenti la fotocamera nelle Impostazioni per fotografare un menu.",
+    "tellMe": "Dimmi cosa ordinare ✨",
+    "errGeneric": "Qualcosa è andato storto. Riprova?",
+    "whyHeader": "Perché questo",
+    "alsoConsider": "Oppure considera",
+    "heads": "Attenzione",
+    "share": "Condividi la scelta",
+    "another": "Fotografa un altro"
   }
 }

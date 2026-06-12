@@ -68,7 +68,9 @@
     "sentiment": "Opiniões",
     "insights": "Insights",
     "connect": "Ligar",
-    "order": "Pedir"
+    "order": "Pedir",
+    "moodToMeal": "Do humor ao prato",
+    "menuSnap": "Fotografar o menu"
   },
   "profile": {
     "title": "Perfil",
@@ -488,5 +490,57 @@
       "title": "Portal do pessoal",
       "subtitle": "Picagem + o teu turno"
     }
+  },
+  "moodScreen": {
+    "tagline": "Diga como você se sente. A gente diz o que comer.",
+    "subtagline": "Quatro toques. Um prato perfeito, uma bebida, uma sobremesa e a trilha sonora.",
+    "q1": "Como você está se sentindo?",
+    "q2": "Que experiência você quer?",
+    "q3": "Qual o orçamento?",
+    "q5": "Onde você vai comer?",
+    "mood_cozy": "Aconchegante",
+    "mood_adventurous": "Aventureiro",
+    "mood_romantic": "Romântico",
+    "mood_celebrating": "Comemorando",
+    "mood_stressed": "Estressado",
+    "mood_energized": "Com energia",
+    "mood_curious": "Curioso",
+    "mood_comfort": "Conforto",
+    "exp_fast": "Rápido",
+    "exp_healthy": "Saudável",
+    "exp_indulgent": "Indulgente",
+    "exp_luxury": "Luxo",
+    "exp_social": "Social",
+    "exp_date": "Encontro",
+    "budget_low": "Casual",
+    "budget_medium": "Confortável",
+    "budget_high": "Especial",
+    "goingOut": "Vou sair",
+    "atHome": "Em casa",
+    "locationPh": "Cidade (opcional)",
+    "tellMe": "Me diga o que comer ✨",
+    "errGeneric": "Algo deu errado. Tentar de novo?",
+    "cardDish": "O que comer",
+    "cardDrink": "O que beber",
+    "cardMusic": "Clima musical",
+    "cardDessert": "Sobremesa",
+    "share": "Compartilhar",
+    "again": "Tentar de novo"
+  },
+  "menuSnapScreen": {
+    "tagline": "Peça como um local, em qualquer lugar.",
+    "subtagline": "Fotografe qualquer menu, em qualquer idioma. A IA escolhe o prato.",
+    "camera": "Abrir câmera",
+    "library": "Escolher da galeria",
+    "retake": "Escolher outra foto",
+    "permTitle": "Câmera necessária",
+    "permBody": "Permita o acesso à câmera nos Ajustes para fotografar um menu.",
+    "tellMe": "Me diga o que pedir ✨",
+    "errGeneric": "Algo deu errado. Tentar de novo?",
+    "whyHeader": "Por que este",
+    "alsoConsider": "Ou considere",
+    "heads": "Atenção",
+    "share": "Compartilhar escolha",
+    "another": "Fotografar outro"
   }
 }

@@ -68,7 +68,9 @@
     "sentiment": "Opiniones",
     "insights": "Insights",
     "connect": "Conectar",
-    "order": "Pedir"
+    "order": "Pedir",
+    "moodToMeal": "Del ánimo al plato",
+    "menuSnap": "Fotografía el menú"
   },
   "profile": {
     "title": "Perfil",
@@ -488,5 +490,57 @@
       "title": "Portal del personal",
       "subtitle": "Fichaje + tu turno"
     }
+  },
+  "moodScreen": {
+    "tagline": "Dinos cómo te sientes. Te diremos qué comer.",
+    "subtagline": "Cuatro toques. Un plato perfecto, una bebida, un postre y la banda sonora.",
+    "q1": "¿Cómo te sientes?",
+    "q2": "¿Qué experiencia quieres?",
+    "q3": "¿Cuál es el presupuesto?",
+    "q5": "¿Dónde vas a comer?",
+    "mood_cozy": "Acogedor",
+    "mood_adventurous": "Aventurero",
+    "mood_romantic": "Romántico",
+    "mood_celebrating": "Celebrando",
+    "mood_stressed": "Estresado",
+    "mood_energized": "Con energía",
+    "mood_curious": "Curioso",
+    "mood_comfort": "Comfort",
+    "exp_fast": "Rápido",
+    "exp_healthy": "Saludable",
+    "exp_indulgent": "Indulgente",
+    "exp_luxury": "Lujo",
+    "exp_social": "Social",
+    "exp_date": "Cita",
+    "budget_low": "Casual",
+    "budget_medium": "Cómodo",
+    "budget_high": "Especial",
+    "goingOut": "Salgo a cenar",
+    "atHome": "En casa",
+    "locationPh": "Ciudad (opcional)",
+    "tellMe": "Dime qué comer ✨",
+    "errGeneric": "Algo salió mal. ¿Reintentar?",
+    "cardDish": "Qué comer",
+    "cardDrink": "Qué beber",
+    "cardMusic": "Ambiente musical",
+    "cardDessert": "Postre",
+    "share": "Comparte el vibe",
+    "again": "Reintentar"
+  },
+  "menuSnapScreen": {
+    "tagline": "Pide como un local, en cualquier lugar.",
+    "subtagline": "Fotografía cualquier menú, en cualquier idioma. La IA elige el plato.",
+    "camera": "Abrir cámara",
+    "library": "Elegir de la galería",
+    "retake": "Elegir otra foto",
+    "permTitle": "Se necesita la cámara",
+    "permBody": "Permite el acceso a la cámara en Ajustes para fotografiar un menú.",
+    "tellMe": "Dime qué pedir ✨",
+    "errGeneric": "Algo salió mal. ¿Reintentar?",
+    "whyHeader": "Por qué este",
+    "alsoConsider": "O considera",
+    "heads": "Atención",
+    "share": "Comparte tu elección",
+    "another": "Fotografía otro"
   }
 }

@@ -68,7 +68,9 @@
     "sentiment": "Avis",
     "insights": "Analyses",
     "connect": "Connecter",
-    "order": "Commander"
+    "order": "Commander",
+    "moodToMeal": "De l'humeur au plat",
+    "menuSnap": "Photographier le menu"
   },
   "profile": {
     "title": "Profil",
@@ -350,13 +352,38 @@
     "anonymousNote": "Vos réponses sont anonymes. Aucun compte requis."
   },
   "screens": {
-    "recipes": { "title": "Recettes", "subtitle": "Ce que vous avez cuisiné + idées pour la prochaine fois", "empty": "Rien ici pour l'instant — lancez-vous." },
-    "pantry": { "title": "🥫 Garde-manger", "subtitle": "Qu'y a-t-il dans le frigo ?", "empty": "Ajoutez des ingrédients et on vous suggère des plats." },
-    "journal": { "title": "📓 Journal des repas", "subtitle": "Suivez ce que vous cuisinez et mangez", "empty": "Votre histoire culinaire commence ici." },
-    "social": { "title": "🔗 Connecter la musique", "subtitle": "Connectez-vous avec Spotify pour des recommandations personnalisées" },
-    "planner": { "title": "Planificateur de repas", "subtitle": "Votre plan hebdomadaire personnalisé", "todaysPick": "Choix du jour — {{day}}" },
-    "music": { "title": "Ambiance musicale", "subtitle": "La bonne bande-son pour l'instant" },
-    "order": { "title": "🛵 Commander", "subtitle": "Recommandez vos favoris ou essayez du nouveau" },
+    "recipes": {
+      "title": "Recettes",
+      "subtitle": "Ce que vous avez cuisiné + idées pour la prochaine fois",
+      "empty": "Rien ici pour l'instant — lancez-vous."
+    },
+    "pantry": {
+      "title": "🥫 Garde-manger",
+      "subtitle": "Qu'y a-t-il dans le frigo ?",
+      "empty": "Ajoutez des ingrédients et on vous suggère des plats."
+    },
+    "journal": {
+      "title": "📓 Journal des repas",
+      "subtitle": "Suivez ce que vous cuisinez et mangez",
+      "empty": "Votre histoire culinaire commence ici."
+    },
+    "social": {
+      "title": "🔗 Connecter la musique",
+      "subtitle": "Connectez-vous avec Spotify pour des recommandations personnalisées"
+    },
+    "planner": {
+      "title": "Planificateur de repas",
+      "subtitle": "Votre plan hebdomadaire personnalisé",
+      "todaysPick": "Choix du jour — {{day}}"
+    },
+    "music": {
+      "title": "Ambiance musicale",
+      "subtitle": "La bonne bande-son pour l'instant"
+    },
+    "order": {
+      "title": "🛵 Commander",
+      "subtitle": "Recommandez vos favoris ou essayez du nouveau"
+    },
     "guidedCooking": {
       "stepOf": "Étape {{current}} sur {{total}}",
       "pause": "Pause",
@@ -392,23 +419,128 @@
       "notesPlaceholder": "C'était délicieux ! La sauce a parfaitement pris…",
       "changePlaceholder": "Moins de sel, plus d'ail…"
     },
-    "recommendations": { "title": "Analyses", "empty": "Aucune recommandation pour ce filtre." },
-    "bookings": { "title": "Réservations", "subtitle": "Gérer les réservations" },
-    "crm": { "title": "CRM", "subtitle": "Fidélité et historique client" },
-    "employees": { "title": "👥 Employés", "subtitle": "Comptes portail du personnel" },
-    "marketing": { "title": "Marketing", "subtitle": "Acquisition et fidélisation", "actionItems": "À faire", "marketingTips": "Conseils marketing" },
-    "inventory": { "title": "Inventaire", "subtitle": "Stocks + synthèse hebdo des produits faibles" },
-    "kitchen": { "title": "Temps cuisine", "subtitle": "Suivi des temps de préparation et cuisson" },
-    "predictions": { "title": "Prévisions des ventes", "subtitle": "Prévision sur 4 heures" },
-    "reports": { "title": "Rapports", "subtitle": "Analyses et export" },
-    "staff": { "title": "Personnel", "subtitle": "Pointage et services" },
-    "staffTime": { "title": "Heures personnel", "subtitle": "Heures de service et heures supplémentaires" },
-    "training": { "title": "Formation du personnel", "subtitle": "Coaching basé sur la performance" },
-    "trends": { "title": "Alertes tendances", "subtitle": "Tendances menu et plats émergents" },
-    "waste": { "title": "Gaspillage alimentaire", "subtitle": "Suivi des déchets et des coûts" },
-    "book": { "title": "Réserver", "subtitle": "Réservez votre prochaine table" },
-    "history": { "title": "Historique des visites", "subtitle": "Vos repas passés" },
+    "recommendations": {
+      "title": "Analyses",
+      "empty": "Aucune recommandation pour ce filtre."
+    },
+    "bookings": {
+      "title": "Réservations",
+      "subtitle": "Gérer les réservations"
+    },
+    "crm": {
+      "title": "CRM",
+      "subtitle": "Fidélité et historique client"
+    },
+    "employees": {
+      "title": "👥 Employés",
+      "subtitle": "Comptes portail du personnel"
+    },
+    "marketing": {
+      "title": "Marketing",
+      "subtitle": "Acquisition et fidélisation",
+      "actionItems": "À faire",
+      "marketingTips": "Conseils marketing"
+    },
+    "inventory": {
+      "title": "Inventaire",
+      "subtitle": "Stocks + synthèse hebdo des produits faibles"
+    },
+    "kitchen": {
+      "title": "Temps cuisine",
+      "subtitle": "Suivi des temps de préparation et cuisson"
+    },
+    "predictions": {
+      "title": "Prévisions des ventes",
+      "subtitle": "Prévision sur 4 heures"
+    },
+    "reports": {
+      "title": "Rapports",
+      "subtitle": "Analyses et export"
+    },
+    "staff": {
+      "title": "Personnel",
+      "subtitle": "Pointage et services"
+    },
+    "staffTime": {
+      "title": "Heures personnel",
+      "subtitle": "Heures de service et heures supplémentaires"
+    },
+    "training": {
+      "title": "Formation du personnel",
+      "subtitle": "Coaching basé sur la performance"
+    },
+    "trends": {
+      "title": "Alertes tendances",
+      "subtitle": "Tendances menu et plats émergents"
+    },
+    "waste": {
+      "title": "Gaspillage alimentaire",
+      "subtitle": "Suivi des déchets et des coûts"
+    },
+    "book": {
+      "title": "Réserver",
+      "subtitle": "Réservez votre prochaine table"
+    },
+    "history": {
+      "title": "Historique des visites",
+      "subtitle": "Vos repas passés"
+    },
     "restaurantNotFound": "Restaurant introuvable",
-    "staffPortal": { "title": "Portail du personnel", "subtitle": "Pointage + votre service" }
+    "staffPortal": {
+      "title": "Portail du personnel",
+      "subtitle": "Pointage + votre service"
+    }
+  },
+  "moodScreen": {
+    "tagline": "Dites-nous comment vous vous sentez. On vous dit quoi manger.",
+    "subtagline": "Quatre touches. Un plat parfait, une boisson, un dessert et la bande-son.",
+    "q1": "Comment vous sentez-vous ?",
+    "q2": "Quelle expérience voulez-vous ?",
+    "q3": "Quel budget ?",
+    "q5": "Où mangez-vous ?",
+    "mood_cozy": "Cocon",
+    "mood_adventurous": "Aventurier",
+    "mood_romantic": "Romantique",
+    "mood_celebrating": "Je fête",
+    "mood_stressed": "Stressé",
+    "mood_energized": "Énergisé",
+    "mood_curious": "Curieux",
+    "mood_comfort": "Réconfort",
+    "exp_fast": "Rapide",
+    "exp_healthy": "Sain",
+    "exp_indulgent": "Gourmand",
+    "exp_luxury": "Luxe",
+    "exp_social": "En groupe",
+    "exp_date": "Rendez-vous",
+    "budget_low": "Décontracté",
+    "budget_medium": "Confortable",
+    "budget_high": "Spécial",
+    "goingOut": "Je sors",
+    "atHome": "À la maison",
+    "locationPh": "Ville (facultatif)",
+    "tellMe": "Dites-moi quoi manger ✨",
+    "errGeneric": "Quelque chose a échoué. Réessayer ?",
+    "cardDish": "Quoi manger",
+    "cardDrink": "Quoi boire",
+    "cardMusic": "Ambiance musicale",
+    "cardDessert": "Dessert",
+    "share": "Partager",
+    "again": "Réessayer"
+  },
+  "menuSnapScreen": {
+    "tagline": "Commandez comme un local, partout.",
+    "subtagline": "Photographiez n'importe quel menu, dans n'importe quelle langue. L'IA choisit le plat.",
+    "camera": "Ouvrir la caméra",
+    "library": "Choisir dans la galerie",
+    "retake": "Choisir une autre photo",
+    "permTitle": "Caméra requise",
+    "permBody": "Autorisez l'accès à la caméra dans Réglages pour photographier un menu.",
+    "tellMe": "Dites-moi quoi commander ✨",
+    "errGeneric": "Quelque chose a échoué. Réessayer ?",
+    "whyHeader": "Pourquoi celui-ci",
+    "alsoConsider": "Ou envisager",
+    "heads": "À noter",
+    "share": "Partager le choix",
+    "another": "Photographier un autre"
   }
 }

@@ -23,6 +23,10 @@ export default function ConsumerDashboard() {
   // buried below the grid where users had to scroll to reach it.
   const QUICK = [
     { icon: '👨‍🍳', label: t('nav.assistant'),   route: '/(consumer)/assistant', flavor: true },
+    // The two wedge features lead the grid — they're the shareable
+    // magic moments and the reason a new user opens the app at all.
+    { icon: '🪄',   label: t('nav.moodToMeal'),  route: '/(consumer)/mood' },
+    { icon: '📸',   label: t('nav.menuSnap'),    route: '/(consumer)/menu-snap' },
     { icon: '🥂',   label: 'Cellar',             route: '/(consumer)/cellar' },
     { icon: '🍷',   label: t('nav.pairings'),    route: '/(consumer)/pairings' },
     { icon: '🎵',   label: t('nav.musicMood'),   route: '/(consumer)/music' },
@@ -30,7 +34,8 @@ export default function ConsumerDashboard() {
     { icon: '🥫',   label: t('nav.pantry'),      route: '/(consumer)/pantry' },
     { icon: '📓',   label: t('nav.journal'),     route: '/(consumer)/journal' },
     { icon: '🔗',   label: t('nav.connect'),     route: '/(consumer)/social' },
-    { icon: '🛵', label: t('nav.order'),     route: '/(consumer)/order' },
+    // "Order" (simulated delivery flow) intentionally removed — same
+    // trust call as the web nav. Re-add when delivery is real.
   ];
 
   const load = async () => {
