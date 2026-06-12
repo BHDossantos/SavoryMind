@@ -18,6 +18,8 @@ def _ensure_partner(user: User, db: Session) -> PartnerProfile:
     p = db.query(PartnerProfile).filter(PartnerProfile.user_id == user.id).first()
     if not p:
         raise HTTPException(403, "No partner profile. Contact admin.")
+    if not getattr(user, "email_verified", False):
+        raise HTTPException(403, "Email not verified")
     return p
 
 

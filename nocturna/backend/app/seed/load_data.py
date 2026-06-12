@@ -54,13 +54,20 @@ def seed_venues(db: Session):
 
 
 def bootstrap_admin(db: Session, email: str, password: str):
-    if db.query(User).filter(User.email == email).first():
+    existing = db.query(User).filter(User.email == email).first()
+    if existing:
+        # Keep an existing bootstrap admin verified so dev login keeps
+        # working after the verification flag is introduced.
+        if not getattr(existing, "email_verified", False):
+            existing.email_verified = True
+            db.commit()
         return
     db.add(User(
         email=email,
         password_hash=hash_password(password),
         name="Nocturna Admin",
         role="admin",
+        email_verified=True,
     ))
     db.commit()
     log.info("Bootstrapped admin user %s", email)

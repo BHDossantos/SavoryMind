@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, getToken } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { VerifyBanner } from '@/components/me/VerifyBanner';
 
 interface SavedVenue {
   id: number; slug: string; name: string; type: string;
@@ -34,6 +35,7 @@ export default function MyPlans() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
+      <VerifyBanner />
       <section>
         <h1 className="font-display text-3xl mb-4">{t('myplans.h')}</h1>
         {!plans.length ? <p className="text-gold-400/60">{t('myplans.empty')} <Link href="/plan/new" className="underline">{t('myplans.plan_one')} →</Link></p> : (

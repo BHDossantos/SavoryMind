@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { VerifyBanner } from '@/components/me/VerifyBanner';
 import { CITIES, BUDGET_BANDS, STYLES } from '../../../../../shared/constants/options';
 
 export default function Profile() {
@@ -20,7 +21,9 @@ export default function Profile() {
   const prefs = me.prefs || {};
 
   return (
-    <div className="max-w-xl mx-auto card space-y-3">
+    <div className="max-w-xl mx-auto space-y-3">
+      <VerifyBanner />
+      <div className="card space-y-3">
       <h1 className="font-display text-3xl">{t('profile.h')}</h1>
       <input placeholder={t('profile.name')} value={me.name || ''} onChange={(e) => setMe({ ...me, name: e.target.value })}
         className="w-full bg-night-900 border border-white/10 rounded-lg px-3 py-2" />
@@ -42,6 +45,7 @@ export default function Profile() {
       </select>
       <button onClick={save} className="btn btn-primary">{t('common.save')}</button>
       {saved && <p className="text-gold-400">{t('common.saved')}</p>}
+      </div>
     </div>
   );
 }

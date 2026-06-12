@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, JSON
 
 from app.core.db import Base
 
@@ -23,4 +23,12 @@ class User(Base):
     #   music: [], cuisines: [], budget_band: "50-100",
     #   neighborhoods: [], style: "elegant", saved_venues: []
     # }
+
+    # Email verification — flipped True via /api/auth/verify/{token}.
+    # `server_default` keeps existing pre-migration rows behaving as
+    # unverified after the column is added.
+    email_verified = Column(Boolean, default=False, server_default="0", nullable=False)
+    email_verify_token = Column(String, unique=True, index=True, nullable=True)
+    email_verify_token_expires_at = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

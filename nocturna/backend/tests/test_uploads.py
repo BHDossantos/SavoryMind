@@ -111,7 +111,7 @@ def app_client(tmp_path, monkeypatch):
         d.query(User).delete()
         d.commit()
         d.add(User(email="admin@nocturna.app", password_hash=hash_password("pw"),
-                   role="admin", name="A"))
+                   role="admin", name="A", email_verified=True))
         _venue(d)
         d.commit()
         d.close()

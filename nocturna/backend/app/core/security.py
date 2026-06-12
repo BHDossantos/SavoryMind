@@ -73,7 +73,20 @@ def get_current_user(
     return user
 
 
+def require_verified(user=Depends(get_current_user)):
+    """Reject any authenticated user whose email isn't verified.
+
+    Used to gate role-elevated endpoints (admin, partner) so unverified
+    accounts can't operate at scale even if someone gets a JWT.
+    """
+    if not getattr(user, "email_verified", False):
+        raise HTTPException(status_code=403, detail="Email not verified")
+    return user
+
+
 def require_admin(user=Depends(get_current_user)):
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
+    if not getattr(user, "email_verified", False):
+        raise HTTPException(status_code=403, detail="Email not verified")
     return user

@@ -114,3 +114,32 @@ def subscription_active(tier: str, period_end: Optional[str]) -> tuple[str, str]
         body += f"Renews on {period_end}.\n"
     body += "\nEnjoy your nights.\nNocturna"
     return subject, body
+
+
+def email_verify(name: Optional[str], verify_url: str) -> tuple[str, str]:
+    """Email sent right after signup. The link points at the frontend
+    /verify/{token} page which calls /api/auth/verify/{token} on click.
+    """
+    hello = name.split()[0] if name else "there"
+    subject = "Nocturna · confirm your email"
+    body = (
+        f"Hi {hello},\n\n"
+        f"Welcome to Nocturna. Click the link below to confirm this email so "
+        f"we can send you booking confirmations + reminders:\n\n"
+        f"  {verify_url}\n\n"
+        f"The link expires in 24 hours. If you didn't sign up for Nocturna "
+        f"you can ignore this message.\n\n"
+        f"Nocturna"
+    )
+    return subject, body
+
+
+def email_verified_ack() -> tuple[str, str]:
+    """Optional ack right after a user clicks verify."""
+    subject = "Nocturna · you're verified"
+    body = (
+        "Email confirmed. You'll now get booking confirmations + reminders "
+        "without anything bouncing.\n\n"
+        "Have a great night.\nNocturna"
+    )
+    return subject, body
