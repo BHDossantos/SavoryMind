@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { downscaleImage } from "../../utils/image";
 import { stashWedgeTaste } from "../../utils/wedgeTaste";
+import { track } from "../../lib/analytics";
 
 const POPULAR_CUISINES = ["Italian", "Japanese", "Mexican", "Indian", "French", "Mediterranean", "Thai"];
 const DIETARY = [
@@ -45,8 +46,10 @@ export default function MenuSnapPage() {
       setBlob(downscaled);
       setPreview(URL.createObjectURL(downscaled));
       setResult(null);
+      track("wedge_menu_photo_picked", { size_kb: Math.round(downscaled.size / 1024) });
     } catch (err) {
       setError(t("menuSnapPage.errCompress"));
+      track("wedge_menu_photo_failed");
     }
   };
 
@@ -60,8 +63,10 @@ export default function MenuSnapPage() {
         dietary,
       });
       setResult(res.recommendation);
+      track("wedge_menu_completed", { source: res.source, language: i18n.language });
     } catch (e) {
       setError(e.message || t("menuSnapPage.errGeneric"));
+      track("wedge_menu_failed");
     } finally {
       setLoading(false);
     }
@@ -74,8 +79,10 @@ export default function MenuSnapPage() {
     try {
       if (navigator.share) {
         await navigator.share({ title: "SavoryMind", text, url });
+        track("wedge_menu_shared", { method: "native" });
       } else {
         await navigator.clipboard.writeText(`${text}\n${url}`);
+        track("wedge_menu_shared", { method: "clipboard" });
         alert(t("menuSnapPage.copied"));
       }
     } catch {}
@@ -224,7 +231,7 @@ export default function MenuSnapPage() {
                 <p className="text-sm text-amber-900 font-semibold">{t("menuSnapPage.saveTitle")}</p>
                 <p className="text-xs text-amber-700 mt-1">{t("menuSnapPage.saveSubtitle")}</p>
                 <Link href="/signup"
-                  onClick={() => stashWedgeTaste({ cuisines, dietary })}
+                  onClick={() => { stashWedgeTaste({ cuisines, dietary }); track("wedge_signup_clicked", { surface: "menu" }); }}
                   className="inline-block mt-3 text-xs px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700">
                   {t("menuSnapPage.saveCta")}
                 </Link>

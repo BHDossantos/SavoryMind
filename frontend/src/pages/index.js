@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import LanguageSelector from "../components/LanguageSelector";
+import { track } from "../lib/analytics";
 
 // Cook-at-home + dine-out features live in one unified Food Person
 // experience now. Listed together so the landing page reflects what
@@ -86,6 +87,7 @@ export default function Landing() {
         {/* Wedge doors — instant, no account required. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-20">
           <Link href="/discover/mood"
+            onClick={() => track("landing_wedge_click", { target: "mood" })}
             className="group bg-gradient-to-br from-consumer-600 to-consumer-800 text-white rounded-3xl p-6 text-left hover:shadow-xl hover:shadow-consumer-200 transition-all">
             <div className="text-4xl mb-3">🪄</div>
             <h2 className="text-lg font-bold mb-1">{t("landing.wedgeMoodTitle")}</h2>
@@ -95,6 +97,7 @@ export default function Landing() {
             </span>
           </Link>
           <Link href="/discover/menu"
+            onClick={() => track("landing_wedge_click", { target: "menu" })}
             className="group bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-3xl p-6 text-left hover:shadow-xl hover:shadow-amber-200 transition-all">
             <div className="text-4xl mb-3">📸</div>
             <h2 className="text-lg font-bold mb-1">{t("landing.wedgeMenuTitle")}</h2>

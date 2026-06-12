@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { stashWedgeTaste } from "../../utils/wedgeTaste";
+import { track } from "../../lib/analytics";
 
 const MOODS = [
   { id: "cozy",          emoji: "🕯️", labelKey: "moodPage.moodCozy" },
@@ -86,8 +87,10 @@ export default function MoodToMealPage() {
         dietary,
       });
       setResult(res.recommendation);
+      track("wedge_mood_completed", { source: res.source, mood, experience: exp, budget, at_home: atHome, language: i18n.language });
     } catch (e) {
       setError(e.message || t("moodPage.errGeneric"));
+      track("wedge_mood_failed", { mood, experience: exp });
     } finally {
       setLoading(false);
     }
@@ -100,8 +103,10 @@ export default function MoodToMealPage() {
     try {
       if (navigator.share) {
         await navigator.share({ title: "SavoryMind", text, url });
+        track("wedge_mood_shared", { method: "native" });
       } else {
         await navigator.clipboard.writeText(`${text}\n${url}`);
+        track("wedge_mood_shared", { method: "clipboard" });
         // Caller surfaces a toast; for now just visual-confirm
         alert(t("moodPage.copied"));
       }
@@ -157,7 +162,7 @@ export default function MoodToMealPage() {
                     <p className="text-sm font-semibold text-gray-800 mb-4">{t("moodPage.q1")}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {MOODS.map((m) => (
-                        <button key={m.id} onClick={() => { setMood(m.id); setStep(1); }}
+                        <button key={m.id} onClick={() => { if (step === 0 && !mood) track("wedge_mood_started", { mood: m.id }); setMood(m.id); setStep(1); }}
                           className={`p-3 rounded-xl border-2 text-left transition-all ${mood === m.id ? "border-consumer-500 bg-consumer-50" : "border-gray-200 hover:border-consumer-300"}`}>
                           <div className="text-2xl">{m.emoji}</div>
                           <div className="text-xs font-semibold text-gray-800 mt-1">{t(m.labelKey)}</div>
@@ -319,7 +324,7 @@ export default function MoodToMealPage() {
                 <p className="text-sm text-amber-900 font-semibold">{t("moodPage.saveTitle")}</p>
                 <p className="text-xs text-amber-700 mt-1">{t("moodPage.saveSubtitle")}</p>
                 <Link href="/signup"
-                  onClick={() => stashWedgeTaste({ cuisines, dietary })}
+                  onClick={() => { stashWedgeTaste({ cuisines, dietary }); track("wedge_signup_clicked", { surface: "mood" }); }}
                   className="inline-block mt-3 text-xs px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700">
                   {t("moodPage.saveCta")}
                 </Link>
