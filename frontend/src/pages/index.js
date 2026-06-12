@@ -64,21 +64,48 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero — leads with the North Star and two zero-friction doors
+          into the wedge experiences. A visitor who saw a shared card
+          should be able to try the product in one tap, no signup.
+          The account cards (deeper commitment) come after. */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
           <span>✨</span> {t("landing.heroBadge")}
         </div>
         <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
-          {t("landing.heroTitle1")}
+          {t("landing.northStar1")}
           <br />
           <span className="bg-gradient-to-r from-brand-500 via-diner-500 to-consumer-500 bg-clip-text text-transparent">
-            {t("landing.heroTitle2")}
+            {t("landing.northStar2")}
           </span>
         </h1>
-        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-16">
-          {t("landing.heroSub")}
+        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
+          {t("landing.northStarSub")}
         </p>
+
+        {/* Wedge doors — instant, no account required. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-20">
+          <Link href="/discover/mood"
+            className="group bg-gradient-to-br from-consumer-600 to-consumer-800 text-white rounded-3xl p-6 text-left hover:shadow-xl hover:shadow-consumer-200 transition-all">
+            <div className="text-4xl mb-3">🪄</div>
+            <h2 className="text-lg font-bold mb-1">{t("landing.wedgeMoodTitle")}</h2>
+            <p className="text-consumer-100 text-sm leading-relaxed mb-4">{t("landing.wedgeMoodSub")}</p>
+            <span className="inline-flex items-center gap-1 text-sm font-bold">
+              {t("landing.wedgeTryFree")} <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </span>
+          </Link>
+          <Link href="/discover/menu"
+            className="group bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-3xl p-6 text-left hover:shadow-xl hover:shadow-amber-200 transition-all">
+            <div className="text-4xl mb-3">📸</div>
+            <h2 className="text-lg font-bold mb-1">{t("landing.wedgeMenuTitle")}</h2>
+            <p className="text-amber-100 text-sm leading-relaxed mb-4">{t("landing.wedgeMenuSub")}</p>
+            <span className="inline-flex items-center gap-1 text-sm font-bold">
+              {t("landing.wedgeTryFree")} <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </span>
+          </Link>
+        </div>
+
+        <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-8">{t("landing.orGoDeeper")}</p>
 
         {/* Two mode cards — the old Food Lover / Food Explorer split
             was unified into one consumer experience that hosts both

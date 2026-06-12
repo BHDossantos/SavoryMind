@@ -80,7 +80,16 @@
     "finalCtaSub": "Gratuit au démarrage. Choisissez votre chemin et nous nous occupons du reste.",
     "finalCtaConsumer": "🍴 J'aime la nourriture",
     "finalCtaRestaurant": "🏪 Je tiens un restaurant",
-    "footerTagline": "Cuisine. Boisson. À table."
+    "footerTagline": "Cuisine. Boisson. À table.",
+    "northStar1": "Dites-nous comment vous vous sentez.",
+    "northStar2": "On vous dit quoi manger.",
+    "northStarSub": "Une intelligence AI culinaire qui lit votre humeur, vos goûts et n'importe quel menu au monde — puis vous donne une réponse sûre.",
+    "wedgeMoodTitle": "De l'humeur au plat",
+    "wedgeMoodSub": "Quatre touches. Un plat parfait, une boisson, un dessert et la bande-son de ce soir.",
+    "wedgeMenuTitle": "Photographiez n'importe quel menu",
+    "wedgeMenuSub": "Photographiez un menu dans n'importe quelle langue. On vous dit exactement quoi commander.",
+    "wedgeTryFree": "Essayez gratuitement — sans inscription",
+    "orGoDeeper": "Ou allez plus loin"
   },
   "auth": {
     "signInTitle": "Bon retour",

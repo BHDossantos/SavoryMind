@@ -80,7 +80,16 @@
     "finalCtaSub": "Gratis per iniziare. Scegli il tuo percorso e al resto pensiamo noi.",
     "finalCtaConsumer": "🍴 Amo il cibo",
     "finalCtaRestaurant": "🏪 Gestisco un ristorante",
-    "footerTagline": "Cibo. Bevande. A tavola."
+    "footerTagline": "Cibo. Bevande. A tavola.",
+    "northStar1": "Dicci come ti senti.",
+    "northStar2": "Ti diciamo cosa mangiare.",
+    "northStarSub": "Intelligenza AI sul cibo che legge il tuo mood, i tuoi gusti e qualsiasi menu al mondo — e ti dà una risposta sicura.",
+    "wedgeMoodTitle": "Dal mood al piatto",
+    "wedgeMoodSub": "Quattro tocchi. Un piatto perfetto, un drink, un dessert e la colonna sonora per stasera.",
+    "wedgeMenuTitle": "Fotografa qualsiasi menu",
+    "wedgeMenuSub": "Fotografa un menu in qualsiasi lingua. Ti diciamo esattamente cosa ordinare.",
+    "wedgeTryFree": "Provalo gratis — senza registrazione",
+    "orGoDeeper": "Oppure vai oltre"
   },
   "auth": {
     "signInTitle": "Bentornato",

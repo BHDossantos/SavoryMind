@@ -80,7 +80,16 @@
     "finalCtaSub": "Free to start. Pick your path and we'll do the rest.",
     "finalCtaConsumer": "🍴 I love food",
     "finalCtaRestaurant": "🏪 I Run a Restaurant",
-    "footerTagline": "Food. Drink. Dining."
+    "footerTagline": "Food. Drink. Dining.",
+    "northStar1": "Tell us how you feel.",
+    "northStar2": "We'll tell you what to eat.",
+    "northStarSub": "AI food intelligence that reads your mood, your taste, and any menu on earth — then gives you one confident answer.",
+    "wedgeMoodTitle": "Mood to meal",
+    "wedgeMoodSub": "Four taps. One perfect dish, drink, dessert and soundtrack for tonight.",
+    "wedgeMenuTitle": "Snap any menu",
+    "wedgeMenuSub": "Photograph a menu in any language. We'll tell you exactly what to order.",
+    "wedgeTryFree": "Try it free — no signup",
+    "orGoDeeper": "Or go deeper"
   },
   "auth": {
     "signInTitle": "Welcome back",
