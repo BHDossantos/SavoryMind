@@ -2126,7 +2126,10 @@
     "saveTitle": "Save this for later",
     "saveSubtitle": "Sign up free — keep your taste history and unlock smarter picks.",
     "saveCta": "Create your free account",
-    "footer": "AI food intelligence"
+    "footer": "AI food intelligence",
+    "bookTitle": "Book a table that serves it",
+    "bookSubtitle": "Real restaurants near you that match the dish.",
+    "bookCta": "Reserve"
   },
   "menuSnapPage": {
     "title": "Snap a menu",

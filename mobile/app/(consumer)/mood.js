@@ -11,6 +11,7 @@
  */
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Share } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
@@ -40,7 +41,8 @@ const EXPERIENCES = [
 const BUDGETS = ['low', 'medium', 'high'];
 
 export default function MoodToMealScreen() {
-  const { t, i18n } = useTranslation();
+  const router         = useRouter();
+  const { t, i18n }    = useTranslation();
   const [mood, setMood]         = useState('');
   const [exp, setExp]           = useState('');
   const [budget, setBudget]     = useState('');
@@ -49,6 +51,7 @@ export default function MoodToMealScreen() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
   const [result, setResult]     = useState(null);
+  const [restaurants, setRestaurants] = useState([]);
 
   const ready = mood && exp && budget;
 
@@ -62,7 +65,8 @@ export default function MoodToMealScreen() {
         language: i18n.language,
       });
       setResult(res.recommendation);
-      track('wedge_mood_completed', { source: res.source, mood, experience: exp, budget, platform: 'mobile' });
+      setRestaurants(Array.isArray(res.restaurants) ? res.restaurants : []);
+      track('wedge_mood_completed', { source: res.source, mood, experience: exp, budget, platform: 'mobile', restaurants_count: (res.restaurants || []).length });
     } catch (e) {
       setError(e.message || t('moodScreen.errGeneric'));
       track('wedge_mood_failed', { platform: 'mobile' });
@@ -84,6 +88,16 @@ export default function MoodToMealScreen() {
   const reset = () => {
     setMood(''); setExp(''); setBudget('');
     setAtHome(false); setLocation(''); setResult(null); setError(null);
+    setRestaurants([]);
+  };
+
+  const bookAt = (r) => {
+    track('wedge_mood_restaurant_click', { slug: r.slug, platform: 'mobile' });
+    // The guest-booking page lives on the web — open it in a browser
+    // so a non-account-holder can complete the reservation. expo-web-
+    // browser would be tighter UX but isn't a dependency of this screen
+    // yet; native Linking handles the universal-link gracefully.
+    require('react-native').Linking.openURL(`https://savorymind.net/r/${r.slug}`);
   };
 
   if (result) {
@@ -124,6 +138,33 @@ export default function MoodToMealScreen() {
             <Text style={styles.againBtnText}>🔄 {t('moodScreen.again')}</Text>
           </TouchableOpacity>
         </View>
+
+        {restaurants.length > 0 && (
+          <View style={styles.restCard} testID="restaurant-matches">
+            <View style={styles.restHeader}>
+              <Text style={styles.restEyebrow}>{t('moodScreen.bookTitle')}</Text>
+              <Text style={styles.restSubtitle}>{t('moodScreen.bookSubtitle')}</Text>
+            </View>
+            {restaurants.map((r, i) => (
+              <TouchableOpacity
+                key={r.slug}
+                onPress={() => bookAt(r)}
+                activeOpacity={0.8}
+                style={[styles.restRow, i < restaurants.length - 1 && styles.restRowBorder]}
+              >
+                <Text style={styles.restEmoji}>🍽️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.restName} numberOfLines={1}>{r.restaurant_name}</Text>
+                  <Text style={styles.restMeta} numberOfLines={1}>
+                    {[r.city, r.country].filter(Boolean).join(', ')}
+                    {r.dining_style ? ` · ${r.dining_style}` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.restCta}>{t('moodScreen.bookCta')}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </SafeScreen>
     );
   }
@@ -267,4 +308,15 @@ const styles = StyleSheet.create({
   shareBtnText:  { color: '#fff', fontSize: 14, fontWeight: '800' },
   againBtn:      { flex: 1, borderWidth: 1.5, borderColor: C.gray[200], paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#fff' },
   againBtnText:  { color: C.gray[700], fontSize: 14, fontWeight: '700' },
+
+  restCard:      { marginTop: 20, borderRadius: 20, borderWidth: 1, borderColor: C.consumer.border, backgroundColor: '#fff', overflow: 'hidden' },
+  restHeader:    { padding: 16, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
+  restEyebrow:   { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase', color: C.consumer.primary, marginBottom: 4 },
+  restSubtitle:  { fontSize: 13, color: C.gray[500] },
+  restRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  restRowBorder: { borderBottomWidth: 1, borderBottomColor: C.gray[100] },
+  restEmoji:     { fontSize: 22 },
+  restName:      { fontSize: 14, fontWeight: '700', color: C.gray[900] },
+  restMeta:      { fontSize: 12, color: C.gray[500], marginTop: 2 },
+  restCta:       { fontSize: 12, fontWeight: '800', color: '#fff', backgroundColor: C.consumer.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, overflow: 'hidden' },
 });

@@ -525,7 +525,10 @@
     "cardMusic": "Atmosfera musicale",
     "cardDessert": "Dessert",
     "share": "Condividi il vibe",
-    "again": "Riprova"
+    "again": "Riprova",
+    "bookTitle": "Prenota un tavolo dove la fanno",
+    "bookSubtitle": "Ristoranti reali vicino a te che servono questo piatto.",
+    "bookCta": "Prenota"
   },
   "menuSnapScreen": {
     "tagline": "Ordina come un locale, ovunque.",

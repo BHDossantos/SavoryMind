@@ -525,7 +525,10 @@
     "cardMusic": "Ambiance musicale",
     "cardDessert": "Dessert",
     "share": "Partager",
-    "again": "Réessayer"
+    "again": "Réessayer",
+    "bookTitle": "Réservez une table qui le sert",
+    "bookSubtitle": "Vrais restaurants près de chez vous qui servent ce plat.",
+    "bookCta": "Réserver"
   },
   "menuSnapScreen": {
     "tagline": "Commandez comme un local, partout.",

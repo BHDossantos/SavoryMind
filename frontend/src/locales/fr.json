@@ -2126,7 +2126,10 @@
     "saveTitle": "Sauvegarder pour plus tard",
     "saveSubtitle": "Inscription gratuite — sauvegardez votre historique de goût pour des choix plus précis.",
     "saveCta": "Créer un compte gratuit",
-    "footer": "Intelligence AI culinaire"
+    "footer": "Intelligence AI culinaire",
+    "bookTitle": "Réservez une table qui le sert",
+    "bookSubtitle": "Vrais restaurants près de chez vous qui servent ce plat.",
+    "bookCta": "Réserver"
   },
   "menuSnapPage": {
     "title": "Photographier le menu",

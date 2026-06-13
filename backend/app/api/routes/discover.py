@@ -7,7 +7,7 @@ from ...core.database import get_db
 from ...core.rate_limit import limiter
 from ...core.security import get_current_user
 from ...models.user import User
-from ...services import discover_service, booking_service, mood_to_meal_service, menu_snap_service
+from ...services import discover_service, booking_service, mood_to_meal_service, menu_snap_service, restaurant_matcher
 
 router = APIRouter(prefix="/discover", tags=["discover"])
 
@@ -170,6 +170,7 @@ class MoodToMealRequest(BaseModel):
 def mood_to_meal(
     body: MoodToMealRequest,
     request: Request,
+    db: Session = Depends(get_db),
     user: Optional[User] = Depends(_maybe_user),
 ):
     """The Magic Moment endpoint. Always returns 200 with either a
@@ -208,21 +209,38 @@ def mood_to_meal(
         # Dev fallback when ANTHROPIC_API_KEY isn't set, so the UI is
         # still demoable. Honest about the source so we never claim AI
         # output when we don't have it.
-        return {
-            "ok":          True,
-            "source":      "stub",
-            "recommendation": {
-                "dish":           "Cacio e pepe",
-                "dish_desc":      "A Roman classic — cracked pepper and pecorino, comfort in three ingredients.",
-                "drink":          "Frascati Superiore",
-                "drink_desc":     "Bright Lazio white that gets out of the way.",
-                "music_vibe":     "vinyl jazz, late evening",
-                "dessert":        "Maritozzo con panna",
-                "share_title":    "Tonight you are: cacio e pepe, Frascati, jazz on vinyl",
-                "share_subtitle": "Cozy mood, medium budget, Roman soul",
-            },
+        result = {
+            "dish":           "Cacio e pepe",
+            "dish_desc":      "A Roman classic — cracked pepper and pecorino, comfort in three ingredients.",
+            "drink":          "Frascati Superiore",
+            "drink_desc":     "Bright Lazio white that gets out of the way.",
+            "music_vibe":     "vinyl jazz, late evening",
+            "dessert":        "Maritozzo con panna",
+            "share_title":    "Tonight you are: cacio e pepe, Frascati, jazz on vinyl",
+            "share_subtitle": "Cozy mood, medium budget, Roman soul",
+            "cuisine":        "Italian",
         }
-    return {"ok": True, "source": "ai", "recommendation": result}
+        source = "stub"
+    else:
+        source = "ai"
+
+    # When the user is going out, surface up to 3 onboarded restaurants
+    # that serve this dish's cuisine — same-city first, then nationally.
+    # Empty list when no signed-up restaurants fit; consumer UI hides
+    # the section gracefully.
+    restaurants: list[dict] = []
+    if not body.at_home:
+        restaurants = restaurant_matcher.find_matches(
+            db,
+            cuisine=result.get("cuisine"),
+            city=body.location,
+        )
+    return {
+        "ok":              True,
+        "source":          source,
+        "recommendation":  result,
+        "restaurants":     restaurants,
+    }
 
 
 # ── Snap-a-Menu: "Order like a local, anywhere." ────────────────────────────

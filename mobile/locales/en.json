@@ -525,7 +525,10 @@
     "cardMusic": "Music vibe",
     "cardDessert": "Dessert",
     "share": "Share this vibe",
-    "again": "Try again"
+    "again": "Try again",
+    "bookTitle": "Book a table that serves it",
+    "bookSubtitle": "Real restaurants near you that match the dish.",
+    "bookCta": "Reserve"
   },
   "menuSnapScreen": {
     "tagline": "Order like a local, anywhere.",

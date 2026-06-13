@@ -525,7 +525,10 @@
     "cardMusic": "Clima musical",
     "cardDessert": "Sobremesa",
     "share": "Compartilhar",
-    "again": "Tentar de novo"
+    "again": "Tentar de novo",
+    "bookTitle": "Reserve uma mesa onde servem",
+    "bookSubtitle": "Restaurantes reais perto de você que servem este prato.",
+    "bookCta": "Reservar"
   },
   "menuSnapScreen": {
     "tagline": "Peça como um local, em qualquer lugar.",

@@ -525,7 +525,10 @@
     "cardMusic": "Ambiente musical",
     "cardDessert": "Postre",
     "share": "Comparte el vibe",
-    "again": "Reintentar"
+    "again": "Reintentar",
+    "bookTitle": "Reserva mesa donde lo sirven",
+    "bookSubtitle": "Restaurantes reales cerca de ti que sirven este plato.",
+    "bookCta": "Reservar"
   },
   "menuSnapScreen": {
     "tagline": "Pide como un local, en cualquier lugar.",

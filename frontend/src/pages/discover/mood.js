@@ -68,9 +68,10 @@ export default function MoodToMealPage() {
   const [cuisines, setCuisines] = useState([]);
   const [dietary, setDietary]   = useState([]);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
-  const [result, setResult]   = useState(null);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
+  const [result, setResult]           = useState(null);
+  const [restaurants, setRestaurants] = useState([]);
 
   const toggleCuisine = (c) => setCuisines((cs) => cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]);
   const toggleDietary = (d) => setDietary((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d]);
@@ -87,7 +88,8 @@ export default function MoodToMealPage() {
         dietary,
       });
       setResult(res.recommendation);
-      track("wedge_mood_completed", { source: res.source, mood, experience: exp, budget, at_home: atHome, language: i18n.language });
+      setRestaurants(Array.isArray(res.restaurants) ? res.restaurants : []);
+      track("wedge_mood_completed", { source: res.source, mood, experience: exp, budget, at_home: atHome, language: i18n.language, restaurants_count: (res.restaurants || []).length });
     } catch (e) {
       setError(e.message || t("moodPage.errGeneric"));
       track("wedge_mood_failed", { mood, experience: exp });
@@ -118,6 +120,7 @@ export default function MoodToMealPage() {
   const reset = () => {
     setStep(0); setMood(""); setExp(""); setBudget("");
     setLocation(""); setAtHome(false); setResult(null); setError(null);
+    setRestaurants([]);
   };
 
   // Steps: 0 mood → 1 experience → 2 budget → 3 cuisines/dietary → 4 location → submit → result
@@ -319,6 +322,36 @@ export default function MoodToMealPage() {
                   🔄 {t("moodPage.again")}
                 </button>
               </div>
+
+              {restaurants.length > 0 && (
+                <div className="mt-6 bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
+                  <div className="p-5 border-b border-gray-100">
+                    <p className="text-xs font-bold uppercase tracking-widest text-consumer-600 mb-1">
+                      {t("moodPage.bookTitle")}
+                    </p>
+                    <p className="text-sm text-gray-500">{t("moodPage.bookSubtitle")}</p>
+                  </div>
+                  <ul className="divide-y divide-gray-100">
+                    {restaurants.map((r) => (
+                      <li key={r.slug} className="flex items-center gap-3 p-4">
+                        <span className="text-2xl flex-shrink-0">🍽️</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 truncate">{r.restaurant_name}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {[r.city, r.country].filter(Boolean).join(", ")}
+                            {r.dining_style ? ` · ${r.dining_style}` : ""}
+                          </p>
+                        </div>
+                        <Link href={`/r/${r.slug}`}
+                          onClick={() => track("wedge_mood_restaurant_click", { slug: r.slug })}
+                          className="flex-shrink-0 text-xs px-3 py-2 bg-consumer-600 text-white rounded-xl font-semibold hover:bg-consumer-700">
+                          {t("moodPage.bookCta")}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
                 <p className="text-sm text-amber-900 font-semibold">{t("moodPage.saveTitle")}</p>

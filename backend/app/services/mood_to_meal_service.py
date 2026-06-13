@@ -31,8 +31,9 @@ _SCHEMA = {
         "dessert":        {"type": "string", "description": "A specific dessert."},
         "share_title":    {"type": "string", "description": "A poetic one-line summary the user shares socially (e.g. 'Tonight you are: truffle pasta, Chianti, jazz at midnight')."},
         "share_subtitle": {"type": "string", "description": "Short context line (e.g. 'cozy mood, medium budget, Italian soul')."},
+        "cuisine":        {"type": "string", "description": "The cuisine family this dish belongs to (e.g. 'Italian', 'Japanese'). Used to match the dish to onboarded restaurants — keep it canonical."},
     },
-    "required": ["dish", "dish_desc", "drink", "drink_desc", "music_vibe", "dessert", "share_title", "share_subtitle"],
+    "required": ["dish", "dish_desc", "drink", "drink_desc", "music_vibe", "dessert", "share_title", "share_subtitle", "cuisine"],
 }
 
 
@@ -51,6 +52,8 @@ ONE confident recommendation as JSON:
   - a dessert
   - a poetic share_title summarising the whole vibe in one line
   - a one-line share_subtitle giving the context
+  - the dish's canonical cuisine family (Italian, Japanese, Mexican, etc.)
+    so we can match the user with restaurants that serve it
 
 Rules:
   - Match the user's dietary restrictions strictly. Never recommend
