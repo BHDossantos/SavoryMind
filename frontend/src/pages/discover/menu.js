@@ -102,6 +102,9 @@ export default function MenuSnapPage() {
         <title>{t("menuSnapPage.title")} · SavoryMind</title>
         <meta name="description" content={t("menuSnapPage.tagline")} />
         <meta property="og:title" content={t("menuSnapPage.tagline")} />
+        <meta property="og:image" content="https://savorymind.net/api/og/wedge" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://savorymind.net/api/og/wedge" />
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-consumer-50">
         <div className="max-w-xl mx-auto px-4 py-8 sm:py-12">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Head from "next/head";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
@@ -46,6 +47,15 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      <Head>
+        <title>SavoryMind — {t("landing.northStar1")} {t("landing.northStar2")}</title>
+        <meta name="description" content={t("landing.northStarSub")} />
+        <meta property="og:title" content={`${t("landing.northStar1")} ${t("landing.northStar2")}`} />
+        <meta property="og:description" content={t("landing.northStarSub")} />
+        <meta property="og:image" content="https://savorymind.net/api/og/wedge" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://savorymind.net/api/og/wedge" />
+      </Head>
       {/* Nav */}
       <header className="border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur z-20">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
