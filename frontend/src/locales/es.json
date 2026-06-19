@@ -176,7 +176,11 @@
     "noBookingsToday": "Aún no hay reservas hoy",
     "bookingsToday": "{{count}} reservas · {{covers}} comensales",
     "pendingCount": "{{count}} esperan tu confirmación",
-    "manageBookings": "Gestionar"
+    "manageBookings": "Gestionar",
+    "billingPastDue": "Pago fallido — tu suscripción está vencida",
+    "billingLapsed": "Tu suscripción ha terminado",
+    "billingNudgeSub": "Actualiza la facturación para mantener reservas en tiempo real, alertas e inteligencia AI.",
+    "billingNudgeCta": "Arreglar facturación"
   },
   "consumerDashboard": {
     "loading": "Cargando tu panel...",

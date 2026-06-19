@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [menuItems, setMenuItems] = useState([]);
   const [sentimentSummary, setSentimentSummary] = useState(null);
   const [todaySummary, setTodaySummary] = useState(null);
+  const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,12 +28,14 @@ export default function Dashboard() {
       api.getMenuItems(),
       api.getSentimentSummary(),
       api.getTodaySummary().catch(() => null),  // tolerated: a brand-new restaurant has no slots yet
+      api.getRestaurantBillingStatus().catch(() => null),  // tolerated: billing dormant in dev
     ])
-      .then(([s, items, sent, today]) => {
+      .then(([s, items, sent, today, bill]) => {
         setStats(s);
         setMenuItems(items);
         setSentimentSummary(sent);
         setTodaySummary(today);
+        setBilling(bill);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -63,8 +66,34 @@ export default function Dashboard() {
       ]
     : [];
 
+  // Renew nudge: only when the restaurant HAD a subscription that lapsed
+  // (past_due / canceled) — never nag a free-pilot restaurant that simply
+  // hasn't subscribed yet. Soft banner, never a hard gate.
+  const subStatus = billing?.subscription_status;
+  const lapsed = !billing?.is_pro && (subStatus === "past_due" || subStatus === "canceled");
+
   return (
     <div>
+      {lapsed && (
+        <Link
+          href="/restaurant/billing"
+          className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 hover:bg-amber-100 transition-colors"
+        >
+          <span className="text-2xl flex-shrink-0">⚠️</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-amber-900 text-sm">
+              {subStatus === "past_due"
+                ? t("restaurantDashboard.billingPastDue")
+                : t("restaurantDashboard.billingLapsed")}
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">{t("restaurantDashboard.billingNudgeSub")}</p>
+          </div>
+          <span className="text-xs px-3 py-2 rounded-xl bg-amber-600 text-white font-semibold flex-shrink-0">
+            {t("restaurantDashboard.billingNudgeCta")}
+          </span>
+        </Link>
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">{t("restaurantDashboard.title")}</h1>
         <p className="text-gray-400 mt-1">{t("restaurantDashboard.subtitle")}</p>

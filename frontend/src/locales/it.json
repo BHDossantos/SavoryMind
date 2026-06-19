@@ -176,7 +176,11 @@
     "noBookingsToday": "Nessuna prenotazione oggi",
     "bookingsToday": "{{count}} prenotazioni · {{covers}} coperti",
     "pendingCount": "{{count}} attendono la tua conferma",
-    "manageBookings": "Gestisci"
+    "manageBookings": "Gestisci",
+    "billingPastDue": "Pagamento fallito — il tuo abbonamento è scaduto",
+    "billingLapsed": "Il tuo abbonamento è terminato",
+    "billingNudgeSub": "Aggiorna la fatturazione per mantenere prenotazioni in tempo reale, avvisi e intelligenza AI.",
+    "billingNudgeCta": "Sistema la fatturazione"
   },
   "consumerDashboard": {
     "loading": "Caricamento della tua dashboard...",

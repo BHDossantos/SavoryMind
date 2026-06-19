@@ -176,7 +176,11 @@
     "noBookingsToday": "No bookings yet today",
     "bookingsToday": "{{count}} bookings · {{covers}} covers",
     "pendingCount": "{{count}} need your confirmation",
-    "manageBookings": "Manage"
+    "manageBookings": "Manage",
+    "billingPastDue": "Payment failed — your subscription is past due",
+    "billingLapsed": "Your subscription has ended",
+    "billingNudgeSub": "Update your billing to keep real-time bookings, alerts, and AI intelligence.",
+    "billingNudgeCta": "Fix billing"
   },
   "consumerDashboard": {
     "loading": "Loading your dashboard...",

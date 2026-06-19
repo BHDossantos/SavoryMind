@@ -176,7 +176,11 @@
     "noBookingsToday": "Aucune réservation aujourd'hui",
     "bookingsToday": "{{count}} réservations · {{covers}} couverts",
     "pendingCount": "{{count}} attendent votre confirmation",
-    "manageBookings": "Gérer"
+    "manageBookings": "Gérer",
+    "billingPastDue": "Paiement échoué — votre abonnement est en retard",
+    "billingLapsed": "Votre abonnement a pris fin",
+    "billingNudgeSub": "Mettez à jour la facturation pour garder les réservations en temps réel, alertes et intelligence AI.",
+    "billingNudgeCta": "Corriger la facturation"
   },
   "consumerDashboard": {
     "loading": "Chargement de votre tableau de bord...",
