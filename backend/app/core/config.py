@@ -1,4 +1,5 @@
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -115,6 +116,31 @@ class Settings(BaseSettings):
     # Where Stripe Checkout returns the user. Appended to frontend_url.
     stripe_success_path: str = "/consumer/upgrade?status=success"
     stripe_cancel_path: str = "/consumer/upgrade?status=cancel"
+
+    # Restaurant subscription (€99/mo pilot conversion). Separate recurring
+    # Price from the consumer plan so the two products bill independently.
+    # Dormant until stripe_restaurant_price_id is set — restaurant billing
+    # endpoints respond 503 and the billing page shows "not available yet".
+    #   stripe_restaurant_price_id — recurring Price for the restaurant plan
+    # The shared stripe_secret_key + stripe_webhook_secret above also gate it.
+    stripe_restaurant_price_id: str = ""
+    # Free-trial length for new restaurant subscriptions, in days. Set to 60
+    # to run the pilot as "card now, first charge after 60 days"; 0 charges
+    # immediately. Hand-managed pilots can leave this 0 and convert manually.
+    stripe_restaurant_trial_days: int = 0
+    # Where restaurant Checkout returns the owner. Appended to frontend_url.
+    stripe_restaurant_success_path: str = "/restaurant/billing?status=success"
+    stripe_restaurant_cancel_path: str = "/restaurant/billing?status=cancel"
+
+    @field_validator("stripe_trial_days", "stripe_restaurant_trial_days", mode="before")
+    @classmethod
+    def _blank_int_to_zero(cls, v):
+        """The deploy passes these as env vars; an unset GitHub secret renders
+        as an empty string, which pydantic would reject when coercing to int and
+        crash startup. Treat blank as 0 (charge immediately / no trial)."""
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return 0
+        return v
 
     class Config:
         env_file = ".env"

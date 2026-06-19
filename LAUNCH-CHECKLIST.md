@@ -35,7 +35,8 @@ silently no-ops in production.
 
 | Secret | Used by | Notes |
 | --- | --- | --- |
-| `STRIPE_RESTAURANT_PRICE_ID` | Restaurant €99/mo subscription | Not yet wired — comes when self-serve billing ships |
+| `STRIPE_RESTAURANT_PRICE_ID` | Restaurant €99/mo subscription | **Shipped.** Set this (a recurring €99/mo Price id from the Stripe dashboard) to turn on the `/restaurant/billing` checkout. Leave unset and the page shows "billing not available yet". |
+| `STRIPE_RESTAURANT_TRIAL_DAYS` | Restaurant trial length | Optional. Set to `60` to run the pilot as "card now, first charge after 60 days"; leave unset/`0` to charge immediately (hand-managed conversion). |
 
 ---
 
@@ -132,14 +133,28 @@ dashboards for the actual API response.
 
 ## 7. After pilot — convert to paid
 
-Day 60 plan:
-1. Configure `STRIPE_RESTAURANT_PRICE_ID` (a recurring €99/mo Price
-   in the Stripe dashboard).
-2. Ship the restaurant billing flow (currently deferred, not in code).
-3. Email pilot restaurants: "Trial ends in 7 days, here's the
-   checkout link."
-4. Auto-flip `plan` on the restaurant User row when the Stripe webhook
-   fires `customer.subscription.created`.
+The restaurant billing flow is **shipped** (`/restaurant/billing`,
+`/api/billing/restaurant/*`). Day 60 plan:
+
+1. In the Stripe dashboard, create a recurring **€99/mo** Price for the
+   restaurant product. Copy its `price_…` id.
+2. Set the `STRIPE_RESTAURANT_PRICE_ID` GitHub secret to that id (and
+   re-run the backend deploy). The existing `STRIPE_SECRET_KEY` +
+   `STRIPE_WEBHOOK_SECRET` are reused — one webhook serves both products.
+3. Add the restaurant product to the **same** Stripe webhook endpoint
+   (`/api/billing/webhook`) — it already handles `checkout.session.completed`
+   and `customer.subscription.*` for both plans. No new endpoint needed.
+4. Email pilot restaurants: "Trial ends soon — subscribe here:
+   savorymind.net/restaurant/billing". They check out, the webhook flips
+   their `plan` to `pro`, and the billing page shows "You're subscribed".
+5. (Optional) Set `STRIPE_RESTAURANT_TRIAL_DAYS=60` *before* onboarding a
+   cohort if you'd rather collect the card on day 1 with the first charge
+   deferred — Stripe then auto-converts, no day-60 email needed.
+
+Entitlement note: a restaurant's `plan` becomes `pro` while the
+subscription is active/trialing, `free` when canceled. The dashboard is
+**not** hard-gated on `pro` — a lapsed subscription shows a renew nudge
+rather than bricking the restaurant mid-service. Tighten later if needed.
 
 ---
 

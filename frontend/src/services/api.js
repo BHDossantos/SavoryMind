@@ -139,6 +139,11 @@ export const api = {
   createCheckout: () => request("/api/billing/checkout", { method: "POST" }),
   createBillingPortal: () => request("/api/billing/portal", { method: "POST" }),
 
+  // Restaurant €99/mo subscription
+  getRestaurantBillingStatus: () => request("/api/billing/restaurant/status"),
+  createRestaurantCheckout: () => request("/api/billing/restaurant/checkout", { method: "POST" }),
+  createRestaurantPortal: () => request("/api/billing/restaurant/portal", { method: "POST" }),
+
   // OAuth — Spotify (real Authorization Code flow)
   startSpotifyAuth: () => request("/api/oauth/spotify/start"),
   disconnectSpotify: () => request("/api/oauth/spotify/disconnect", { method: "POST" }),

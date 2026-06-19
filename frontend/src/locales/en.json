@@ -24,7 +24,8 @@
     "restaurantMode": "Restaurant Mode",
     "foodLover": "Food Lover",
     "foodExplorer": "Food Explorer",
-    "flavor": "Flavor"
+    "flavor": "Flavor",
+    "billing": "Billing"
   },
   "common": {
     "loading": "Loading…",
@@ -2158,5 +2159,36 @@
     "errCompress": "Couldn't process that image. Try another?",
     "errGeneric": "Something went wrong. Try again?",
     "footer": "AI food intelligence"
+  },
+  "restaurantBillingPage": {
+    "title": "SavoryMind for Restaurants",
+    "subtitle": "Real-time bookings, alerts, and AI intelligence — €99/month.",
+    "successActive": "🎉 You're subscribed — everything's unlocked. Thank you!",
+    "successActivating": "Payment received — activating your subscription, one moment…",
+    "successPending": "Payment received. If it's not active yet, refresh in a few seconds.",
+    "canceled": "Checkout canceled — no charge was made. You can subscribe any time.",
+    "onPlan": "You're subscribed",
+    "trialActive": "You're in your free trial.",
+    "trialEnds": "It ends {{date}} — first charge then.",
+    "subActive": "Your subscription is active.",
+    "renews": "Renews {{date}}.",
+    "opening": "Opening…",
+    "manageSub": "Manage subscription",
+    "manageHint": "Update your card or cancel any time in the billing portal.",
+    "planLabel": "Restaurant plan",
+    "trialThen": "{{days}} days free, then",
+    "startingCheckout": "Starting checkout…",
+    "startTrial": "Start {{days}}-day free trial",
+    "subscribeCta": "Subscribe — {{price}}{{period}}",
+    "billingOff": "Billing isn't switched on yet — check back soon.",
+    "secureFootnote": "Secure checkout by Stripe. Cancel any time.",
+    "feat_bookings": "Real-time bookings",
+    "feat_bookings_desc": "Live booking queue, instant confirmation, no-show tracking.",
+    "feat_alerts": "Instant alerts",
+    "feat_alerts_desc": "Email + SMS the moment a booking arrives, in your language.",
+    "feat_intelligence": "AI restaurant intelligence",
+    "feat_intelligence_desc": "Sentiment, predictions, inventory, staff insights, Ask Flavor.",
+    "feat_link": "Your booking link",
+    "feat_link_desc": "Share one link — your diners book without an account."
   }
 }

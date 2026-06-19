@@ -36,6 +36,13 @@ def _is_premium(user: User) -> bool:
     return (user.plan or "free") == "premium"
 
 
+def _entitled_plan(user: User) -> str:
+    """The plan value an active subscription grants this user. Restaurants
+    get "pro" (the €99/mo plan); everyone else gets "premium". Keyed on
+    account_type so one webhook handles both products."""
+    return "pro" if user.account_type == "restaurant" else "premium"
+
+
 @router.get("/status")
 def billing_status(current_user: User = Depends(get_current_user)):
     """Plan + subscription snapshot for the billing UI."""
@@ -114,6 +121,99 @@ def create_portal(
     return {"url": url}
 
 
+# ── Restaurant subscription (€99/mo) ─────────────────────────────────────────
+# Separate Price + entitlement ("pro") from the consumer Premium plan, but the
+# same Stripe customer/subscription columns and the same webhook. A restaurant
+# is "pro" while its subscription is active/trialing.
+
+def _is_pro(user: User) -> bool:
+    return (user.plan or "free") == "pro"
+
+
+def _require_restaurant(user: User) -> None:
+    if user.account_type != "restaurant":
+        raise HTTPException(status_code=403, detail="Restaurant accounts only.")
+
+
+@router.get("/restaurant/status")
+def restaurant_billing_status(current_user: User = Depends(get_current_user)):
+    """Plan + subscription snapshot for the restaurant billing page."""
+    _require_restaurant(current_user)
+    return {
+        "plan": current_user.plan or "free",
+        "is_pro": _is_pro(current_user),
+        "subscription_status": current_user.subscription_status,
+        "current_period_end": (
+            current_user.subscription_period_end.isoformat()
+            if current_user.subscription_period_end else None
+        ),
+        "billing_configured": stripe_service.is_restaurant_configured(),
+        "trial_days": settings.stripe_restaurant_trial_days,
+    }
+
+
+@router.post("/restaurant/checkout")
+@limiter.limit("10/minute")
+def create_restaurant_checkout(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Start the restaurant €99/mo subscription. Returns a Stripe-hosted URL."""
+    _require_restaurant(current_user)
+    if not stripe_service.is_restaurant_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Billing isn't available yet. Please check back soon.",
+        )
+    if _is_pro(current_user):
+        raise HTTPException(
+            status_code=409,
+            detail="You already have an active subscription.",
+        )
+    try:
+        customer_id = stripe_service.get_or_create_customer(current_user)
+        if current_user.stripe_customer_id != customer_id:
+            current_user.stripe_customer_id = customer_id
+            db.commit()
+        url = stripe_service.create_restaurant_checkout_session(current_user, customer_id)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Stripe restaurant checkout session creation failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not start checkout. Please try again.",
+        )
+    return {"url": url}
+
+
+@router.post("/restaurant/portal")
+@limiter.limit("10/minute")
+def create_restaurant_portal(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Open the Stripe billing portal for a restaurant to manage / cancel."""
+    _require_restaurant(current_user)
+    if not current_user.stripe_customer_id:
+        raise HTTPException(
+            status_code=409,
+            detail="No billing account found. Start a subscription first.",
+        )
+    try:
+        url = stripe_service.create_portal_session(
+            current_user.stripe_customer_id, return_path="/restaurant/billing"
+        )
+    except Exception:
+        logger.exception("Stripe restaurant portal session creation failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not open the billing portal. Please try again.",
+        )
+    return {"url": url}
+
+
 def _find_user(db: Session, customer_id, user_id) -> User | None:
     """Resolve the webhook event's user — by Stripe customer id first
     (set at checkout time), falling back to our own user_id metadata."""
@@ -152,11 +252,11 @@ def _apply_event(db: Session, event) -> None:
             user.subscription_period_end = stripe_service.period_end_to_datetime(
                 sub.get("current_period_end")
             )
-            user.plan = "premium" if status in _PREMIUM_STATUSES else "free"
+            user.plan = _entitled_plan(user) if status in _PREMIUM_STATUSES else "free"
         else:
             # Couldn't fetch — checkout succeeded, so grant access; the
             # follow-up subscription event will correct status/period.
-            user.plan = "premium"
+            user.plan = _entitled_plan(user)
             user.subscription_status = user.subscription_status or "active"
         db.commit()
 
@@ -170,7 +270,7 @@ def _apply_event(db: Session, event) -> None:
         user.subscription_period_end = stripe_service.period_end_to_datetime(
             obj.get("current_period_end")
         )
-        user.plan = "premium" if status in _PREMIUM_STATUSES else "free"
+        user.plan = _entitled_plan(user) if status in _PREMIUM_STATUSES else "free"
         db.commit()
 
     elif etype == "customer.subscription.deleted":
@@ -188,8 +288,12 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     The raw body is signature-verified against STRIPE_WEBHOOK_SECRET — an
     unverified or malformed event is rejected 400 and never touches the DB.
+
+    Accepts events when *either* product (consumer Premium or restaurant)
+    is configured — one webhook serves both; the per-user entitlement is
+    chosen by account_type in _apply_event.
     """
-    if not stripe_service.is_configured():
+    if not (stripe_service.is_configured() or stripe_service.is_restaurant_configured()):
         raise HTTPException(status_code=503, detail="Billing is not configured.")
     payload = await request.body()
     signature = request.headers.get("stripe-signature", "")

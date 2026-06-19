@@ -24,7 +24,8 @@
     "restaurantMode": "Modalità Ristorante",
     "foodLover": "Appassionato di cucina",
     "foodExplorer": "Esploratore gastronomico",
-    "flavor": "Flavor"
+    "flavor": "Flavor",
+    "billing": "Fatturazione"
   },
   "common": {
     "loading": "Caricamento…",
@@ -2158,5 +2159,36 @@
     "errCompress": "Non sono riuscito a elaborare quella foto. Prova un'altra?",
     "errGeneric": "Qualcosa è andato storto. Riprova?",
     "footer": "Intelligenza AI sul cibo"
+  },
+  "restaurantBillingPage": {
+    "title": "SavoryMind per Ristoranti",
+    "subtitle": "Prenotazioni in tempo reale, avvisi e intelligenza AI — €99/mese.",
+    "successActive": "🎉 Abbonamento attivo — tutto sbloccato. Grazie!",
+    "successActivating": "Pagamento ricevuto — attivazione in corso, un momento…",
+    "successPending": "Pagamento ricevuto. Se non è ancora attivo, aggiorna tra qualche secondo.",
+    "canceled": "Pagamento annullato — nessun addebito. Puoi abbonarti quando vuoi.",
+    "onPlan": "Sei abbonato",
+    "trialActive": "Sei nella tua prova gratuita.",
+    "trialEnds": "Termina il {{date}} — primo addebito allora.",
+    "subActive": "Il tuo abbonamento è attivo.",
+    "renews": "Si rinnova il {{date}}.",
+    "opening": "Apertura…",
+    "manageSub": "Gestisci abbonamento",
+    "manageHint": "Aggiorna la carta o annulla quando vuoi nel portale di fatturazione.",
+    "planLabel": "Piano ristorante",
+    "trialThen": "{{days}} giorni gratis, poi",
+    "startingCheckout": "Avvio del pagamento…",
+    "startTrial": "Inizia la prova di {{days}} giorni",
+    "subscribeCta": "Abbonati — {{price}}{{period}}",
+    "billingOff": "La fatturazione non è ancora attiva — torna presto.",
+    "secureFootnote": "Pagamento sicuro con Stripe. Annulla quando vuoi.",
+    "feat_bookings": "Prenotazioni in tempo reale",
+    "feat_bookings_desc": "Coda prenotazioni live, conferma istantanea, tracciamento no-show.",
+    "feat_alerts": "Avvisi istantanei",
+    "feat_alerts_desc": "Email + SMS appena arriva una prenotazione, nella tua lingua.",
+    "feat_intelligence": "Intelligenza AI per il ristorante",
+    "feat_intelligence_desc": "Sentiment, previsioni, inventario, analisi staff, Chiedi a Flavor.",
+    "feat_link": "Il tuo link prenotazioni",
+    "feat_link_desc": "Condividi un link — i clienti prenotano senza account."
   }
 }

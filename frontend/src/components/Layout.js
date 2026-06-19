@@ -30,6 +30,7 @@ function useNavLinks() {
     { href: "/restaurant/training",     labelKey: "nav.training",        icon: "🎓" },
     { href: "/restaurant/employees",    labelKey: "nav.employees",       icon: "👔" },
     { href: "/restaurant/employee-qr-codes", labelKey: "nav.qrCodes",   icon: "🔳" },
+    { href: "/restaurant/billing",      labelKey: "nav.billing",         icon: "💳" },
   ].map((l) => ({ ...l, label: t(l.labelKey) }));
 }
 
