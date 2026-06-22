@@ -101,7 +101,10 @@ export default function MoodToMealPage() {
   const share = async () => {
     if (!result) return;
     const text = `${result.share_title}\n${result.share_subtitle}\n\n— SavoryMind`;
-    const url = typeof window !== "undefined" ? `${window.location.origin}/discover/mood` : "";
+    // Per-result share permalink — when a friend opens this URL their
+    // link unfurler renders an OG image carrying *this* share_title.
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/s?t=${encodeURIComponent(result.share_title || "")}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "SavoryMind", text, url });

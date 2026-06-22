@@ -74,7 +74,7 @@ export default function MenuSnapScreen() {
     if (!result) return;
     try {
       await Share.share({
-        message: `${result.share_title}\n\n— SavoryMind\nhttps://savorymind.net/discover/menu`,
+        message: `${result.share_title}\n\n— SavoryMind\nhttps://savorymind.net/s?t=${encodeURIComponent(result.share_title || "")}`,
       });
       track('wedge_menu_shared', { method: 'native', platform: 'mobile' });
     } catch {}

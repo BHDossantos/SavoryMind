@@ -75,7 +75,8 @@ export default function MenuSnapPage() {
   const share = async () => {
     if (!result) return;
     const text = `${result.share_title}\n\n— SavoryMind`;
-    const url = typeof window !== "undefined" ? `${window.location.origin}/discover/menu` : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/s?t=${encodeURIComponent(result.share_title || "")}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "SavoryMind", text, url });

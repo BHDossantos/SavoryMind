@@ -2194,5 +2194,8 @@
     "feat_intelligence_desc": "Sentimiento, predicciones, inventario, análisis de personal, Pregunta a Flavor.",
     "feat_link": "Tu enlace de reservas",
     "feat_link_desc": "Comparte un enlace — tus clientes reservan sin cuenta."
+  },
+  "sharePage": {
+    "fromFriend": "El vibe SavoryMind de un amigo. ¿Quieres descubrir el tuyo?"
   }
 }

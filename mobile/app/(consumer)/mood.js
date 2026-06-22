@@ -79,7 +79,7 @@ export default function MoodToMealScreen() {
     if (!result) return;
     try {
       await Share.share({
-        message: `${result.share_title}\n${result.share_subtitle}\n\n— SavoryMind\nhttps://savorymind.net/discover/mood`,
+        message: `${result.share_title}\n${result.share_subtitle}\n\n— SavoryMind\nhttps://savorymind.net/s?t=${encodeURIComponent(result.share_title || "")}`,
       });
       track('wedge_mood_shared', { method: 'native', platform: 'mobile' });
     } catch {}

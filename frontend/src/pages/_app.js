@@ -41,6 +41,11 @@ const PUBLIC_ROUTES = [
   // Snap-a-Menu — sister surface to Mood-to-Meal. "Order like a local,
   // anywhere." Tourist snaps an unfamiliar menu, AI picks one dish.
   "/discover/menu",
+  // Per-result share permalink. Renders a custom OG card carrying the
+  // shared title, server-side via getServerSideProps. Public so a
+  // recipient who doesn't yet have an account lands on something
+  // meaningful, not a login wall.
+  "/s",
 ];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 
@@ -159,6 +164,16 @@ function AppContent({ Component, pageProps }) {
     }
   }, [user, loading, isPublic, isOnboarding, isConsumerRoute, isDinerRoute, router]);
 
+  // Public routes never wait for the auth context to hydrate — they're
+  // public by definition, so a logged-out (or pre-hydration) visitor must
+  // get rendered HTML immediately. This also lets link-scrapers see each
+  // page's <Head>: previously a generic loading spinner SSR'd in place of
+  // the page, so og:image / og:title via next/head never reached scrapers
+  // like WhatsApp, iMessage, Slack, Twitter (none run client JS).
+  if (isPublic) {
+    return <Component {...pageProps} />;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -170,7 +185,7 @@ function AppContent({ Component, pageProps }) {
     );
   }
 
-  if (isPublic || isOnboarding) {
+  if (isOnboarding) {
     return <Component {...pageProps} />;
   }
 

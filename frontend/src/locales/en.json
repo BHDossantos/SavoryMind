@@ -2194,5 +2194,8 @@
     "feat_intelligence_desc": "Sentiment, predictions, inventory, staff insights, Ask Flavor.",
     "feat_link": "Your booking link",
     "feat_link_desc": "Share one link — your diners book without an account."
+  },
+  "sharePage": {
+    "fromFriend": "A friend's SavoryMind vibe. Want to discover yours?"
   }
 }
