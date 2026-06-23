@@ -110,6 +110,45 @@ Sample WhatsApp text they can copy (for you to share with them):
 
 ## 6. Smoke test before going live
 
+### 6a. One-URL readiness check (do this first)
+
+After you've set the secrets above and the backend has redeployed, log
+in once and hit `GET https://api.savorymind.net/health/deep` from your
+browser's devtools (or `curl -H "Authorization: Bearer <token>"`).
+
+You'll get a JSON snapshot of every pilot integration with one of three
+states per item:
+
+  - `enabled` — configured and ready
+  - `misconfigured` — partially set (e.g. Twilio SID without auth token,
+    Stripe secret without webhook). **Real bug; fix before launch.**
+  - `dormant` — not configured (feature stays off, the rest of the app
+    still works)
+
+For a full pilot launch, every one of these should read `enabled`:
+
+```
+integrations:
+  resend            (booking emails, reminders, briefings)
+  twilio            (SMS alerts to restaurants)
+  stripe_consumer   ($9.99/mo Premium)
+  stripe_restaurant (€99/mo restaurant plan)
+  anthropic         (Flavor, Mood-to-Meal, Snap-a-Menu)
+  google_signin     (mobile native sign-in)
+  apple_signin      (mobile native sign-in — required for iOS)
+  posthog           (funnel analytics)
+  sentry            (error tracking)
+  cloud_scheduler   (reminder + briefing crons)
+  token_encryption  (Fernet key, must NOT be `dev_key` in prod)
+```
+
+A single `misconfigured` is the only reading worth blocking the
+launch on. `dormant` is fine if you've explicitly decided to skip a
+feature for the pilot. The response never includes secret VALUES — it
+only reports presence — so it's safe to paste in slack while debugging.
+
+### 6b. End-to-end smoke
+
 In production, on the deployed app:
 
 1. ☐ Sign up a test restaurant (e.g. `pilot-smoketest@savorymind.net`).

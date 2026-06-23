@@ -234,6 +234,69 @@ def health_deep(current_user=Depends(get_current_user_dep)):
 
     sentry_state = "enabled" if _settings.sentry_dsn else "dormant"
 
+    # Resend (transactional email — booking alerts, reminders, daily briefing,
+    # welcome). Single API key.
+    resend_state = "enabled" if _settings.resend_api_key else "dormant"
+
+    # Twilio (SMS booking alerts to restaurants). All three values needed for
+    # SMS to actually send; partial config is a real bug worth flagging.
+    twilio_sid    = bool(os.getenv("TWILIO_ACCOUNT_SID"))
+    twilio_token  = bool(os.getenv("TWILIO_AUTH_TOKEN"))
+    twilio_from   = bool(os.getenv("TWILIO_FROM_PHONE"))
+    twilio_all    = twilio_sid and twilio_token and twilio_from
+    twilio_some   = twilio_sid or twilio_token or twilio_from
+    if twilio_all:
+        twilio_state = "enabled"
+    elif twilio_some:
+        twilio_state = "misconfigured"  # any-but-not-all = SMS won't send
+    else:
+        twilio_state = "dormant"
+
+    # Stripe consumer Premium ($9.99/mo). All three (secret + price + webhook)
+    # needed for the full checkout-to-entitlement loop.
+    stripe_secret_set  = bool(_settings.stripe_secret_key)
+    stripe_price_set   = bool(_settings.stripe_price_id)
+    stripe_webhook_set = bool(_settings.stripe_webhook_secret)
+    if stripe_secret_set and stripe_price_set and stripe_webhook_set:
+        stripe_consumer_state = "enabled"
+    elif stripe_secret_set or stripe_price_set or stripe_webhook_set:
+        stripe_consumer_state = "misconfigured"
+    else:
+        stripe_consumer_state = "dormant"
+
+    # Stripe restaurant €99/mo plan — needs the shared secret + webhook plus
+    # its own Price id. Re-uses stripe_secret/webhook flags above.
+    stripe_rest_price_set = bool(_settings.stripe_restaurant_price_id)
+    if stripe_secret_set and stripe_rest_price_set and stripe_webhook_set:
+        stripe_restaurant_state = "enabled"
+    elif stripe_rest_price_set or (stripe_secret_set and not stripe_consumer_state == "enabled"):
+        # Restaurant price set but other halves missing → misconfigured.
+        # Plain secret-set without any price is "dormant" via the consumer arm.
+        stripe_restaurant_state = "misconfigured" if stripe_rest_price_set else "dormant"
+    else:
+        stripe_restaurant_state = "dormant"
+
+    # PostHog product analytics — single secret on backend; the frontend's own
+    # NEXT_PUBLIC_POSTHOG_KEY is a different env that won't reach this process,
+    # so this flag only confirms the backend half is set.
+    posthog_state = "enabled" if os.getenv("POSTHOG_API_KEY") else "dormant"
+
+    # Apple Sign-In bundle id (audience claim verification). Required by App
+    # Store review for any iOS build offering Google sign-in.
+    apple_state = "enabled" if _settings.apple_bundle_id else "dormant"
+
+    # Cloud Scheduler OIDC gate (booking reminders, daily briefing, inventory
+    # digest, AI healthcheck). Both env vars needed for the cron endpoints to
+    # accept requests; without them every /internal/jobs/* returns 503.
+    scheduler_sa  = bool(os.getenv("SCHEDULER_SERVICE_ACCOUNT"))
+    scheduler_aud = bool(os.getenv("SCHEDULER_AUDIENCE"))
+    if scheduler_sa and scheduler_aud:
+        scheduler_state = "enabled"
+    elif scheduler_sa or scheduler_aud:
+        scheduler_state = "misconfigured"
+    else:
+        scheduler_state = "dormant"
+
     # Token encryption key — flag if it matches the dev default. This
     # would have failed lifespan in prod, so seeing "misconfigured" here
     # means we're on a SQLite/dev deploy. Useful info, not blocking.
@@ -247,8 +310,15 @@ def health_deep(current_user=Depends(get_current_user_dep)):
             "anthropic":         anthropic_state,
             "spotify":           spotify_state,
             "google_signin":     google_state,
+            "apple_signin":      apple_state,
             "sentry":            sentry_state,
             "token_encryption":  encryption_state,
+            "resend":            resend_state,
+            "twilio":            twilio_state,
+            "stripe_consumer":   stripe_consumer_state,
+            "stripe_restaurant": stripe_restaurant_state,
+            "posthog":           posthog_state,
+            "cloud_scheduler":   scheduler_state,
         },
         # Cookie + token policy — verifies the env-var plumbing reached
         # the container. Boolean / numeric only, no secrets.
