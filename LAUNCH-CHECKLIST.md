@@ -197,6 +197,22 @@ rather than bricking the restaurant mid-service. Tighten later if needed.
 
 ---
 
+## 8. Mobile — iOS App Store + Google Play
+
+See **`MOBILE-DEPLOY.md`** at the repo root for the full ordered
+walkthrough. The short version:
+
+1. Apple Developer ($99/yr) + Google Play ($25 one-time) — start here, Apple takes 1–2 days.
+2. iOS: ASC API key → 3 GitHub secrets → `eas credentials` → `eas build` → `eas submit` → TestFlight.
+3. Android: manual first AAB upload (Google's one-time gate) → service account JSON → 1 GitHub secret → `eas submit`.
+4. Privacy URL + reviewer demo account → submit for review → Apple ~48h, Google ~few hours.
+
+Codebase is fully ready — Expo SDK 55, EAS pipeline lives, iOS submit
+config exists, Android submit config now exists too. Everything left is
+accounts and credentials.
+
+---
+
 ## Quick reference — endpoints
 
 | Endpoint | Method | Auth | Purpose |
