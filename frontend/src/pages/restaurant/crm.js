@@ -11,7 +11,7 @@ export default function CRM() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "", menu_sms_opt_in: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -25,8 +25,22 @@ export default function CRM() {
 
   useEffect(() => { fetch(); }, [search]);
 
-  const openNew = () => { setEditCustomer(null); setForm({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "" }); setShowForm(true); };
-  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", favorite_items: c.favorite_items || "", notes: c.notes || "", tags: c.tags || "" }); setShowForm(true); };
+  const openNew = () => { setEditCustomer(null); setForm({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "", menu_sms_opt_in: false }); setShowForm(true); };
+  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", favorite_items: c.favorite_items || "", notes: c.notes || "", tags: c.tags || "", menu_sms_opt_in: !!c.menu_sms_opt_in }); setShowForm(true); };
+
+  // Inline toggle from the table cell — single PATCH that flips just the
+  // opt-in flag, no form roundtrip. Optimistic so the checkbox feels snappy.
+  const toggleMenuSms = async (c) => {
+    const next = !c.menu_sms_opt_in;
+    setCustomers((prev) => prev.map((x) => x.id === c.id ? { ...x, menu_sms_opt_in: next } : x));
+    try {
+      await api.updateCustomer(c.id, { menu_sms_opt_in: next });
+    } catch (err) {
+      // Roll back on failure.
+      setCustomers((prev) => prev.map((x) => x.id === c.id ? { ...x, menu_sms_opt_in: !next } : x));
+      setError(err.message);
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -110,12 +124,13 @@ export default function CRM() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colTotalSpend")}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colLastVisit")}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colTags")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colMenuSms")}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">{t("crmPage.loading")}</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400">{t("crmPage.loading")}</td></tr>
             ) : customers.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-3">
@@ -132,6 +147,21 @@ export default function CRM() {
                       <span key={t} className={`text-xs px-2 py-0.5 rounded-full font-medium ${tagColor(t.trim())}`}>{t.trim()}</span>
                     ))}
                   </div>
+                </td>
+                <td className="px-4 py-3">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!c.menu_sms_opt_in}
+                      onChange={() => toggleMenuSms(c)}
+                      disabled={!c.phone}
+                      className="rounded text-brand-500 focus:ring-brand-400 disabled:opacity-50"
+                      title={c.phone ? "" : t("crmPage.colMenuSms")}
+                    />
+                    <span className="text-xs text-gray-600">
+                      {c.menu_sms_opt_in ? t("crmPage.menuSmsOn") : t("crmPage.menuSmsOff")}
+                    </span>
+                  </label>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
@@ -175,6 +205,20 @@ export default function CRM() {
                 <label className="text-xs font-medium text-gray-700 mb-1 block">{t("crmPage.notes")}</label>
                 <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={2}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none" />
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!form.menu_sms_opt_in}
+                    onChange={(e) => setForm((f) => ({ ...f, menu_sms_opt_in: e.target.checked }))}
+                    className="mt-0.5 rounded text-brand-500 focus:ring-brand-400"
+                  />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-amber-900">{t("crmPage.menuSmsOptIn")}</span>
+                    <span className="block text-xs text-amber-700 mt-0.5">{t("crmPage.menuSmsOptInHint")}</span>
+                  </span>
+                </label>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving} className="flex-1 bg-brand-500 text-white font-semibold py-2.5 rounded-xl hover:bg-brand-600 disabled:opacity-60">

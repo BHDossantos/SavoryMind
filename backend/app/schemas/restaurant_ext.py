@@ -50,6 +50,7 @@ class CRMCustomerCreate(BaseModel):
     favorite_items: Optional[str] = None
     notes: Optional[str] = None
     tags: Optional[str] = None
+    menu_sms_opt_in: Optional[bool] = None
 
 
 class CRMCustomerUpdate(BaseModel):
@@ -61,6 +62,9 @@ class CRMCustomerUpdate(BaseModel):
     favorite_items: Optional[str] = None
     notes: Optional[str] = None
     tags: Optional[str] = None
+    # Toggle for the daily menu-of-the-day SMS broadcast. Per-customer
+    # opt-in — the cron skips anyone without it explicitly set to True.
+    menu_sms_opt_in: Optional[bool] = None
 
 
 class CRMCustomerResponse(BaseModel):
@@ -74,6 +78,7 @@ class CRMCustomerResponse(BaseModel):
     favorite_items: Optional[str]
     notes: Optional[str]
     tags: Optional[str]
+    menu_sms_opt_in: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

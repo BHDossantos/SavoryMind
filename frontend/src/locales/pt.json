@@ -430,7 +430,15 @@
     "shareWhatsapp": "WhatsApp",
     "shareWhatsappMessage": "Olá 👋 Temos uma nova forma de reservar mesa — 30 segundos, sem instalar app. Reserve aqui: {{link}}",
     "printToday": "Imprimir hoje",
-    "printHeader": "Hoje — {{date}}"
+    "printHeader": "Hoje — {{date}}",
+    "menuHeadline": "Menu do dia",
+    "menuSubtitle": "Publique o menu de hoje e enviaremos por SMS às 11h a todos os clientes do CRM que aderiram.",
+    "menuPlaceholder": "ex. Tagliatelle al ragù — €14\nTiramisù — €6",
+    "menuSave": "Publicar menu",
+    "menuClear": "Limpar",
+    "menuSaved": "Menu publicado — clientes inscritos receberão às 11h hora local.",
+    "menuSentToday": "Já enviado hoje",
+    "menuCharCount": "{{n}} / 300 caracteres"
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -464,7 +472,12 @@
     "cancel": "Cancelar",
     "nameRequired": "O nome é obrigatório.",
     "removePrompt": "Remover este cliente? O histórico de visitas será perdido.",
-    "removeBtn": "Remover"
+    "removeBtn": "Remover",
+    "colMenuSms": "SMS menu",
+    "menuSmsOptIn": "Recebe o menu do dia por SMS",
+    "menuSmsOptInHint": "Enviaremos o menu de hoje por volta das 11h. O cliente pode cancelar a qualquer momento.",
+    "menuSmsOn": "Sim",
+    "menuSmsOff": "Não"
   },
   "inventoryPage": {
     "title": "Inventário",

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Float
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Float, Date
 from datetime import datetime
 from ..core.database import Base
 
@@ -99,6 +99,14 @@ class User(Base):
     # Auto-generated on first profile update for restaurant accounts; null on
     # consumer/diner rows.
     slug = Column(String(80), unique=True, nullable=True, index=True)
+
+    # Menu broadcast — restaurant publishes today's menu, the daily cron
+    # SMS's it to opted-in CRM customers at ~11am restaurant-local. Empty =
+    # nothing to broadcast; the cron skips this restaurant. last_sent_date
+    # is the idempotency flag so re-runs of the cron on the same calendar
+    # day are no-ops.
+    menu_of_the_day = Column(Text, nullable=True)
+    menu_sms_last_sent_date = Column(Date, nullable=True)
 
     # Staff account linkage — only set when account_type == "staff"
     employer_id = Column(Integer, nullable=True)   # FK → users.id (the restaurant owner)

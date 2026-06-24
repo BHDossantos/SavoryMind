@@ -17,7 +17,12 @@ from sqlalchemy.orm import Session
 
 from ...core.database import get_db
 from ...core.rate_limit import limiter
-from ...services import inventory_digest_service, reminder_service, daily_briefing_service
+from ...services import (
+    daily_briefing_service,
+    inventory_digest_service,
+    menu_sms_service,
+    reminder_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -123,4 +128,21 @@ def daily_briefing(
     no confirmed bookings today are skipped."""
     stats = daily_briefing_service.send_daily_briefings(db)
     logger.info("daily-briefing stats: %s", stats)
+    return stats
+
+
+@router.post("/menu-of-the-day")
+@limiter.limit("60/minute")
+def menu_of_the_day(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook: broadcast each restaurant's published menu to opted-in
+    CRM customers via SMS, once per local day around lunch decision time.
+
+    Designed to be hit hourly by Cloud Scheduler. Idempotent via
+    User.menu_sms_last_sent_date so overlapping ticks are safe."""
+    stats = menu_sms_service.send_due_menus(db)
+    logger.info("menu-of-the-day stats: %s", stats)
     return stats

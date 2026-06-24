@@ -132,6 +132,109 @@ function SmsAlertWidget() {
   );
 }
 
+function TodaysMenuWidget() {
+  const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
+  const [menu, setMenu] = useState(user?.menu_of_the_day || "");
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
+  const [err, setErr] = useState(null);
+
+  // Same opt-in gate as SMS alert widget — only show to restaurant accounts.
+  // Hidden until the operator clicks expand so it doesn't clutter the page
+  // on days they're not changing the menu.
+  const [expanded, setExpanded] = useState(false);
+
+  const remaining = 300 - menu.length;
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    try {
+      // Server truncates the body before sending the SMS anyway, but capping
+      // input keeps the textarea honest to the operator about what diners see.
+      const trimmed = menu.trim().slice(0, 300);
+      await api.updateProfile({ menu_of_the_day: trimmed });
+      updateUser({ menu_of_the_day: trimmed });
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 4000);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clear = async () => {
+    setSaving(true); setErr(null);
+    try {
+      await api.updateProfile({ menu_of_the_day: "" });
+      updateUser({ menu_of_the_day: "" });
+      setMenu("");
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-left flex items-center justify-between gap-2"
+      >
+        <div>
+          <p className="text-sm font-semibold text-amber-900">
+            🍽 {t("bookingsPage.menuHeadline")}
+          </p>
+          <p className="text-xs text-amber-700 mt-0.5">{t("bookingsPage.menuSubtitle")}</p>
+        </div>
+        <span className="text-amber-700 text-sm flex-shrink-0">{expanded ? "▾" : "▸"}</span>
+      </button>
+      {expanded && (
+        <div className="mt-3">
+          <textarea
+            value={menu}
+            onChange={(e) => setMenu(e.target.value.slice(0, 300))}
+            rows={4}
+            placeholder={t("bookingsPage.menuPlaceholder")}
+            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none bg-white"
+          />
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs text-amber-700">{t("bookingsPage.menuCharCount", { n: menu.length })}</span>
+            {user?.menu_sms_last_sent_date === new Date().toISOString().split("T")[0] && (
+              <span className="text-xs text-amber-700 italic">{t("bookingsPage.menuSentToday")}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="text-xs px-4 py-1.5 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-60"
+            >
+              {saving ? t("common.saving") : t("bookingsPage.menuSave")}
+            </button>
+            {menu && (
+              <button
+                onClick={clear}
+                disabled={saving}
+                className="text-xs px-3 py-1.5 text-amber-700 hover:text-amber-900"
+              >
+                {t("bookingsPage.menuClear")}
+              </button>
+            )}
+            {savedMsg && (
+              <span className="text-xs text-green-700 font-medium">✓ {t("bookingsPage.menuSaved")}</span>
+            )}
+          </div>
+          {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 const STATUS_STYLES = {
   confirmed: "bg-blue-100 text-blue-700",
   pending:   "bg-amber-100 text-amber-700",
@@ -305,6 +408,7 @@ export default function Bookings() {
       <div className="print:hidden">
         <ShareLinkWidget />
         <SmsAlertWidget />
+        <TodaysMenuWidget />
       </div>
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between print:hidden">

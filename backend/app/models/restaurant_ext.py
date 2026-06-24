@@ -40,6 +40,9 @@ class CRMCustomer(Base):
     favorite_items = Column(Text, nullable=True)   # comma-separated
     notes = Column(Text, nullable=True)
     tags = Column(String, nullable=True)            # "vip,regular,birthday"
+    # Opt-in flag for the daily menu-of-the-day SMS broadcast. Default
+    # False = the cron never SMSs a customer who didn't explicitly say yes.
+    menu_sms_opt_in = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

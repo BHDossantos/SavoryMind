@@ -238,6 +238,35 @@ def welcome_what_next(lang: str) -> str:
     })
 
 
+def menu_of_the_day_sms(
+    lang: str,
+    *,
+    rest_label: str,
+    menu_body: str,
+    booking_url: str | None = None,
+) -> str:
+    """Daily menu broadcast — kept short so it fits in a few SMS segments
+    even when the menu is verbose. Caller is responsible for length-clamping
+    `menu_body` before passing it in (Twilio bills per segment)."""
+    book_line = ""
+    if booking_url:
+        book_line = _pick(lang, {
+            "en": f"\nBook: {booking_url}",
+            "it": f"\nPrenota: {booking_url}",
+            "es": f"\nReserva: {booking_url}",
+            "pt": f"\nReserve: {booking_url}",
+            "fr": f"\nRéservez : {booking_url}",
+        })
+    intro = _pick(lang, {
+        "en": f"Today at {rest_label}:",
+        "it": f"Oggi da {rest_label}:",
+        "es": f"Hoy en {rest_label}:",
+        "pt": f"Hoje em {rest_label}:",
+        "fr": f"Aujourd'hui chez {rest_label} :",
+    })
+    return f"{intro}\n{menu_body}{book_line}"
+
+
 def reminder_sms(lang: str, *, rest_label: str, party_size: int, booking_date: str, booking_time: str) -> str:
     return _pick(lang, {
         "en": (f"Reminder from SavoryMind: you have a booking at {rest_label} on {booking_date} at {booking_time}, "
