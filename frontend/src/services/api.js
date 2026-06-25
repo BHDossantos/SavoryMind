@@ -133,6 +133,7 @@ export const api = {
   logout: () => request("/api/auth/logout", { method: "POST" }),
   getMe: () => request("/api/auth/me"),
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
+  getMenuBroadcastStats: () => request("/api/restaurant/menu-broadcasts/stats"),
 
   // Billing — consumer Premium subscription (Stripe)
   getBillingStatus: () => request("/api/billing/status"),
@@ -367,6 +368,14 @@ export const api = {
     const res = await fetch(`${getBaseUrl()}/api/public/restaurants/${encodeURIComponent(slug)}`);
     if (!res.ok) throw new Error(res.status === 404 ? "not_found" : `failed_${res.status}`);
     return res.json();
+  },
+  // Fire-and-forget click tracker for the /r/{slug}?b={id} link in the daily
+  // menu SMS. Caller ignores the result — the page render must not block on it.
+  trackMenuBroadcastClick: async (broadcastId) => {
+    await fetch(
+      `${getBaseUrl()}/api/public/restaurants/menu-broadcasts/${broadcastId}/click`,
+      { method: "POST" },
+    ).catch(() => {});
   },
   createGuestBooking: async (slug, data) => {
     const res = await fetch(

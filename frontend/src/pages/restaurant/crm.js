@@ -131,6 +131,24 @@ export default function CRM() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr><td colSpan={7} className="text-center py-10 text-gray-400">{t("crmPage.loading")}</td></tr>
+            ) : customers.length === 0 && !search ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-12">
+                  <div className="text-center max-w-md mx-auto">
+                    <div className="text-4xl mb-3">👋</div>
+                    <p className="font-semibold text-gray-800 mb-1">{t("crmPage.emptyTitle")}</p>
+                    <p className="text-sm text-gray-500 mb-4">{t("crmPage.emptyBody")}</p>
+                    <button
+                      onClick={openNew}
+                      className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600"
+                    >
+                      {t("crmPage.addCustomer")}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ) : customers.length === 0 ? (
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400">{t("crmPage.noResults")}</td></tr>
             ) : customers.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-3">

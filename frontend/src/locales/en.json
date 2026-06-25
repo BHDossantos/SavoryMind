@@ -438,7 +438,12 @@
     "menuClear": "Clear",
     "menuSaved": "Menu published — opted-in customers will get it at 11am local.",
     "menuSentToday": "Already broadcast today",
-    "menuCharCount": "{{n}} / 300 chars"
+    "menuCharCount": "{{n}} / 300 chars",
+    "menuStatsSent": "SMS sent",
+    "menuStatsClicks": "Clicks",
+    "menuStatsBookings": "Bookings",
+    "menuSmsBadge": "Menu SMS",
+    "menuSmsBadgeHint": "Booking came from today's menu SMS broadcast."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -477,7 +482,10 @@
     "menuSmsOptIn": "Receive daily menu by SMS",
     "menuSmsOptInHint": "We'll text today's menu around 11am. Customer can opt out anytime.",
     "menuSmsOn": "On",
-    "menuSmsOff": "Off"
+    "menuSmsOff": "Off",
+    "emptyTitle": "No customers yet",
+    "emptyBody": "Add your regulars so you can text them today's menu and remember what they love.",
+    "noResults": "No matches for that search."
   },
   "inventoryPage": {
     "title": "Inventory",

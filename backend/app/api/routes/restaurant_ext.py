@@ -1,11 +1,13 @@
 from typing import Optional
-from datetime import date
+from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
 from ...models.diner import DinerReview
+from ...models.restaurant_ext import Booking, MenuBroadcast
 from ...schemas.restaurant_ext import (
     BookingCreate, BookingUpdate, BookingResponse,
     CRMCustomerCreate, CRMCustomerUpdate, CRMCustomerResponse,
@@ -266,4 +268,52 @@ def get_diner_reviews(db: Session = Depends(get_db), current_user: User = Depend
             }
             for r, u in rows
         ],
+    }
+
+
+
+# --- Menu broadcast attribution ---
+
+@router.get("/menu-broadcasts/stats")
+def menu_broadcast_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Rolling 7-day rollup of the daily menu SMS broadcast: how many
+    customers were messaged, how many tapped the link, and how many
+    bookings were attributed back. The number the operator looks at
+    before deciding whether €99/mo is worth it."""
+    _require_restaurant(current_user)
+    cutoff = date.today() - timedelta(days=6)  # inclusive 7-day window
+
+    totals = (
+        db.query(
+            func.coalesce(func.sum(MenuBroadcast.sms_count), 0).label("sms"),
+            func.coalesce(func.sum(MenuBroadcast.click_count), 0).label("clicks"),
+            func.count(MenuBroadcast.id).label("rounds"),
+        )
+        .filter(
+            MenuBroadcast.user_id == current_user.id,
+            MenuBroadcast.local_date >= cutoff,
+        )
+        .one()
+    )
+
+    bookings_count = (
+        db.query(func.count(Booking.id))
+        .join(MenuBroadcast, MenuBroadcast.id == Booking.menu_broadcast_id)
+        .filter(
+            MenuBroadcast.user_id == current_user.id,
+            MenuBroadcast.local_date >= cutoff,
+        )
+        .scalar()
+        or 0
+    )
+
+    return {
+        "window_days":  7,
+        "rounds":       int(totals.rounds or 0),
+        "sms_sent":     int(totals.sms or 0),
+        "clicks":       int(totals.clicks or 0),
+        "bookings":     int(bookings_count),
     }

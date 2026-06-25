@@ -63,6 +63,17 @@ def booking_table_labels(lang: str) -> dict:
     })
 
 
+def menu_broadcast_summary_labels(lang: str) -> dict[str, str]:
+    """Labels for the 7-day menu broadcast rollup block in the daily briefing."""
+    return _pick(lang, {
+        "en": {"heading": "Last 7 days · menu SMS", "sms": "messages sent", "clicks": "clicks", "bookings": "bookings"},
+        "it": {"heading": "Ultimi 7 giorni · SMS menù", "sms": "messaggi inviati", "clicks": "click", "bookings": "prenotazioni"},
+        "es": {"heading": "Últimos 7 días · SMS menú", "sms": "mensajes enviados", "clicks": "clics", "bookings": "reservas"},
+        "pt": {"heading": "Últimos 7 dias · SMS menu", "sms": "mensagens enviadas", "clicks": "cliques", "bookings": "reservas"},
+        "fr": {"heading": "7 derniers jours · SMS menu", "sms": "messages envoyés", "clicks": "clics", "bookings": "réservations"},
+    })
+
+
 def open_dashboard_cta(lang: str) -> str:
     return _pick(lang, {
         "en": "Open dashboard",

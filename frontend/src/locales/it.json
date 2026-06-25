@@ -438,7 +438,12 @@
     "menuClear": "Cancella",
     "menuSaved": "Menù pubblicato — i clienti iscritti lo riceveranno alle 11 ora locale.",
     "menuSentToday": "Già inviato oggi",
-    "menuCharCount": "{{n}} / 300 caratteri"
+    "menuCharCount": "{{n}} / 300 caratteri",
+    "menuStatsSent": "SMS inviati",
+    "menuStatsClicks": "Click",
+    "menuStatsBookings": "Prenotazioni",
+    "menuSmsBadge": "SMS menù",
+    "menuSmsBadgeHint": "Prenotazione arrivata dall'SMS del menù di oggi."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -477,7 +482,10 @@
     "menuSmsOptIn": "Riceve il menù del giorno via SMS",
     "menuSmsOptInHint": "Invieremo il menù di oggi intorno alle 11. Il cliente può disiscriversi quando vuole.",
     "menuSmsOn": "Sì",
-    "menuSmsOff": "No"
+    "menuSmsOff": "No",
+    "emptyTitle": "Ancora nessun cliente",
+    "emptyBody": "Aggiungi i tuoi clienti abituali per inviare loro il menù di oggi via SMS e ricordare cosa amano.",
+    "noResults": "Nessun risultato per questa ricerca."
   },
   "inventoryPage": {
     "title": "Magazzino",

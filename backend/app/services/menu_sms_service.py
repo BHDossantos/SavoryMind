@@ -24,7 +24,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
-from ..models.restaurant_ext import CRMCustomer
+from ..models.restaurant_ext import CRMCustomer, MenuBroadcast
 from ..models.user import User
 from . import email_templates, twilio_client
 
@@ -113,9 +113,26 @@ def send_due_menus(db: Session, *, now: datetime | None = None) -> dict:
             or "the restaurant"
         )
         lang = restaurant.language or "en"
+
+        # Create the broadcast row first so the SMS can carry its id for
+        # attribution. Flushed (not committed) so we get the autoincrement
+        # PK without holding open a transaction for the SMS round.
+        broadcast = MenuBroadcast(
+            user_id=restaurant.id,
+            sent_at=now,
+            local_date=today_local,
+            menu_snapshot=restaurant.menu_of_the_day,
+        )
+        db.add(broadcast)
+        db.flush()
+
         booking_url = None
         if restaurant.slug:
-            booking_url = f"{settings.frontend_url.rstrip('/')}/r/{restaurant.slug}"
+            # ?b={id} is the attribution token; /r/{slug} bumps click_count
+            # and drops the cookie that the public booking endpoint reads.
+            booking_url = (
+                f"{settings.frontend_url.rstrip('/')}/r/{restaurant.slug}?b={broadcast.id}"
+            )
         body = email_templates.menu_of_the_day_sms(
             lang,
             rest_label=rest_label,
@@ -143,6 +160,7 @@ def send_due_menus(db: Session, *, now: datetime | None = None) -> dict:
             if twilio_client.send_sms(c.phone, body):
                 sent_for_this_restaurant += 1
 
+        broadcast.sms_count = sent_for_this_restaurant
         sms_sent += sent_for_this_restaurant
         restaurants_broadcast += 1
         # Mark sent even if 0 customers were opted in — the restaurant has

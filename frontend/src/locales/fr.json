@@ -438,7 +438,12 @@
     "menuClear": "Effacer",
     "menuSaved": "Menu publié — les clients inscrits le recevront à 11h heure locale.",
     "menuSentToday": "Déjà envoyé aujourd'hui",
-    "menuCharCount": "{{n}} / 300 caractères"
+    "menuCharCount": "{{n}} / 300 caractères",
+    "menuStatsSent": "SMS envoyés",
+    "menuStatsClicks": "Clics",
+    "menuStatsBookings": "Réservations",
+    "menuSmsBadge": "SMS menu",
+    "menuSmsBadgeHint": "Réservation venue du SMS du menu du jour."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -477,7 +482,10 @@
     "menuSmsOptIn": "Reçoit le menu du jour par SMS",
     "menuSmsOptInHint": "Nous enverrons le menu du jour vers 11h. Le client peut se désinscrire à tout moment.",
     "menuSmsOn": "Oui",
-    "menuSmsOff": "Non"
+    "menuSmsOff": "Non",
+    "emptyTitle": "Aucun client pour le moment",
+    "emptyBody": "Ajoutez vos habitués pour leur envoyer le menu du jour par SMS et vous souvenir de ce qu'ils aiment.",
+    "noResults": "Aucun résultat pour cette recherche."
   },
   "inventoryPage": {
     "title": "Inventaire",

@@ -24,6 +24,29 @@ class Booking(Base):
     # Idempotency flag for the day-before reminder scheduler — non-null
     # means the reminder has been delivered (or attempted), do not re-send.
     reminder_sent_at = Column(DateTime, nullable=True)
+    # Attribution back to the daily menu broadcast that drove this booking,
+    # if any. Stamped by the public booking endpoint from a short-lived
+    # cookie set when the diner taps a /r/{slug}?b={id} link in the SMS.
+    menu_broadcast_id = Column(Integer, ForeignKey("menu_broadcasts.id"), nullable=True)
+
+
+class MenuBroadcast(Base):
+    """One row per restaurant per daily menu-of-the-day SMS round.
+
+    Created when the cron dispatches the round; click_count increments on
+    /r/{slug}?b={id} hits. Bookings carry menu_broadcast_id when the diner
+    converts within the attribution window. The restaurant dashboard rolls
+    this up into "X SMSs, Y clicks, Z bookings — €99/mo earned."
+    """
+    __tablename__ = "menu_broadcasts"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    sent_at       = Column(DateTime, nullable=False, default=datetime.utcnow)
+    local_date    = Column(Date, nullable=False)   # restaurant-local calendar day
+    sms_count     = Column(Integer, nullable=False, default=0)
+    click_count   = Column(Integer, nullable=False, default=0)
+    menu_snapshot = Column(Text, nullable=True)    # what was sent, for the dashboard
 
 
 class CRMCustomer(Base):
