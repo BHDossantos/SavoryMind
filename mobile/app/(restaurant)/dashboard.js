@@ -26,12 +26,14 @@ export default function Dashboard() {
   const [error, setError]         = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [billingStatus, setBillingStatus] = useState(null);
+  const [actionPlan, setActionPlan] = useState([]);
 
   // Pull the billing status so we can surface a renew nudge when the
   // subscription lapses. Silent on failure — billing being off is fine.
   useEffect(() => {
     if (user?.account_type !== 'restaurant') return;
     api.getRestaurantBillingStatus().then(setBillingStatus).catch(() => {});
+    api.getActionPlan().then((r) => setActionPlan(r?.actions || [])).catch(() => {});
   }, [user?.account_type]);
 
   // Quick actions strip. Per-render so labels re-translate on language
@@ -90,6 +92,44 @@ export default function Dashboard() {
         </TouchableOpacity>
       )}
 
+      {/* Today's AI Action Plan — the operator's first decision surface. */}
+      {actionPlan.length > 0 && (
+        <View style={actionStyles.section}>
+          <View style={actionStyles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={actionStyles.eyebrow}>{t('restaurantDashboard.actionPlanEyebrow')}</Text>
+              <Text style={actionStyles.title}>{t('restaurantDashboard.actionPlanTitle')}</Text>
+            </View>
+            <Text style={{ fontSize: 22 }}>🎯</Text>
+          </View>
+          {actionPlan.map((a, idx) => {
+            const sev = a.severity || 'medium';
+            const bg = sev === 'high' ? '#fef2f2' : sev === 'low' ? '#f0fdf4' : '#fffbeb';
+            const bd = sev === 'high' ? '#fecaca' : sev === 'low' ? '#86efac' : '#fde68a';
+            return (
+              <TouchableOpacity
+                key={`${a.kind}-${idx}`}
+                style={[actionStyles.card, { backgroundColor: bg, borderColor: bd }]}
+                onPress={() => router.push(a.cta_route.replace('/restaurant', ''))}
+                activeOpacity={0.85}
+              >
+                <Text style={actionStyles.icon}>{a.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={actionStyles.cardTitle}>{a.title}</Text>
+                  <Text style={actionStyles.cardBody} numberOfLines={2}>{a.body}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  {a.estimated_gain > 0 && (
+                    <Text style={actionStyles.gain}>+${a.estimated_gain.toFixed(0)}</Text>
+                  )}
+                  <Text style={actionStyles.cta}>{a.cta_label} →</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
       {/* Quick actions grid */}
       <View style={styles.quickGrid}>
         {QUICK_ACTIONS.map((q) => (
@@ -146,6 +186,19 @@ const styles = StyleSheet.create({
   quickIcon:  { fontSize: 22, marginBottom: 4 },
   quickLabel: { fontSize: 10, fontWeight: '700', color: C.gray[600], textAlign: 'center' },
   section:    { fontSize: 13, fontWeight: '600', color: C.gray[500], marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+});
+
+const actionStyles = StyleSheet.create({
+  section:    { backgroundColor: '#fff7ed', borderColor: '#fed7aa', borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 16 },
+  header:     { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  eyebrow:    { fontSize: 10, fontWeight: '700', color: '#c2410c', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title:      { fontSize: 16, fontWeight: '800', color: '#1f2937', marginTop: 2 },
+  card:       { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, marginBottom: 6 },
+  icon:       { fontSize: 20 },
+  cardTitle:  { fontSize: 13, fontWeight: '700', color: C.gray[900] },
+  cardBody:   { fontSize: 11, color: C.gray[600], marginTop: 2 },
+  gain:       { fontSize: 11, fontWeight: '800', color: '#15803d' },
+  cta:        { fontSize: 10, fontWeight: '700', color: C.restaurant.primary, marginTop: 2 },
 });
 
 const lapsedStyles = StyleSheet.create({

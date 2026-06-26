@@ -726,7 +726,9 @@
   },
   "restaurantDashboard": {
     "lapsedTitle": "Sua assinatura expirou",
-    "lapsedSub": "Renove para manter ativos SMS menu, alertas e inteligência."
+    "lapsedSub": "Renove para manter ativos SMS menu, alertas e inteligência.",
+    "actionPlanEyebrow": "Plano de ação IA de hoje",
+    "actionPlanTitle": "Faça isto hoje"
   },
   "upgradePage": {
     "title": "SavoryMind Premium",
@@ -848,5 +850,14 @@
     "musicBlurb": "Os climas musicais combinados com sua refeição fazem parte do SavoryMind Premium.",
     "cellarFeature": "A adega",
     "cellarBlurb": "O catálogo completo de vinhos, cervejas e destilados faz parte do SavoryMind Premium."
+  },
+  "consumerDashboard": {
+    "primaryPrompt": "O que você quer agora?",
+    "primaryAskFlavor": "Pergunte ao Flavor",
+    "primaryAskFlavorSub": "Comida, bebida ou restaurantes",
+    "primaryDineOut": "Jantar fora",
+    "primaryDineOutSub": "Encontre um restaurante esta noite",
+    "primaryCook": "Cozinhe algo",
+    "primaryCookSub": "Ideias de receita da sua despensa"
   }
 }

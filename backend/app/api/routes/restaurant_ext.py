@@ -14,7 +14,10 @@ from ...schemas.restaurant_ext import (
     StaffCreate, StaffUpdate, StaffResponse,
     SalesPrediction,
 )
-from ...services import booking_service, crm_service, staff_service, prediction_service, trends_service
+from ...services import (
+    booking_service, crm_service, staff_service, prediction_service,
+    trends_service, action_plan_service,
+)
 
 router = APIRouter(prefix="/restaurant", tags=["restaurant"])
 
@@ -317,3 +320,18 @@ def menu_broadcast_stats(
         "clicks":       int(totals.clicks or 0),
         "bookings":     int(bookings_count),
     }
+
+
+# --- Today's AI Action Plan ---
+
+@router.get("/action-plan")
+def action_plan(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Returns the short list of "do these today" cards rolled up from
+    menu recommendations, the booking calendar, food waste, and menu
+    broadcast attribution. The dashboard renders these as the operator's
+    first surface."""
+    _require_restaurant(current_user)
+    return {"actions": action_plan_service.build_action_plan(db, current_user)}

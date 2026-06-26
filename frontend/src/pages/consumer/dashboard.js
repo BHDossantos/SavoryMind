@@ -122,22 +122,37 @@ export default function ConsumerDashboard() {
         <div className="absolute right-6 top-6 text-6xl opacity-20">{persona?.icon || "🍽️"}</div>
       </div>
 
-      {/* ── Flavor — SavoryMind's AI voice. Promoted above every other
-          dashboard module so it's the first thing users see; previously
-          buried in the sidebar quick-links as "Culinary Help". */}
-      <Link
-        href="/consumer/assistant"
-        className="group flex items-center gap-4 rounded-2xl bg-gradient-to-r from-consumer-600 to-consumer-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
-      >
-        <span className="text-4xl flex-shrink-0">👨‍🍳</span>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-base">{t("consumerDashboard.askFlavor")}</p>
-          <p className="text-xs text-white/80 mt-0.5 leading-relaxed">
-            {t("consumerDashboard.askFlavorSub")}
-          </p>
+      {/* ── Three primary actions — "What do you want right now?"
+          Makes the app instantly explainable. Same idea on mobile. */}
+      <div>
+        <p className="text-sm font-bold text-gray-900 mb-2">{t("consumerDashboard.primaryPrompt")}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link
+            href="/consumer/assistant"
+            className="group flex flex-col gap-1 rounded-2xl bg-gradient-to-br from-consumer-600 to-consumer-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
+          >
+            <span className="text-3xl mb-1">👨‍🍳</span>
+            <p className="font-bold text-base">{t("consumerDashboard.primaryAskFlavor")}</p>
+            <p className="text-xs text-white/80">{t("consumerDashboard.primaryAskFlavorSub")}</p>
+          </Link>
+          <Link
+            href="/diner/discover"
+            className="group flex flex-col gap-1 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-sm hover:shadow-md transition-all"
+          >
+            <span className="text-3xl mb-1">🍽️</span>
+            <p className="font-bold text-base">{t("consumerDashboard.primaryDineOut")}</p>
+            <p className="text-xs text-white/80">{t("consumerDashboard.primaryDineOutSub")}</p>
+          </Link>
+          <Link
+            href="/consumer/recipes"
+            className="group flex flex-col gap-1 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-sm hover:shadow-md transition-all"
+          >
+            <span className="text-3xl mb-1">🥘</span>
+            <p className="font-bold text-base">{t("consumerDashboard.primaryCook")}</p>
+            <p className="text-xs text-white/80">{t("consumerDashboard.primaryCookSub")}</p>
+          </Link>
         </div>
-        <span className="text-2xl flex-shrink-0 group-hover:translate-x-1 transition-transform">→</span>
-      </Link>
+      </div>
 
       {/* ── Mood entry widget ── */}
       <div className="bg-white rounded-2xl border border-consumer-100 shadow-sm p-5">

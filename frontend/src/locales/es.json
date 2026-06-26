@@ -180,7 +180,9 @@
     "billingPastDue": "Pago fallido — tu suscripción está vencida",
     "billingLapsed": "Tu suscripción ha terminado",
     "billingNudgeSub": "Actualiza la facturación para mantener reservas en tiempo real, alertas e inteligencia AI.",
-    "billingNudgeCta": "Arreglar facturación"
+    "billingNudgeCta": "Arreglar facturación",
+    "actionPlanEyebrow": "Plan de acción IA de hoy",
+    "actionPlanTitle": "Haz esto hoy"
   },
   "consumerDashboard": {
     "loading": "Cargando tu panel...",
@@ -232,7 +234,14 @@
     "moodAdventurous": "Aventurero",
     "moodIndulgent": "Indulgente",
     "moodQuick": "Rápido",
-    "moodBrunch": "Brunch"
+    "moodBrunch": "Brunch",
+    "primaryPrompt": "¿Qué quieres ahora?",
+    "primaryAskFlavor": "Pregunta a Flavor",
+    "primaryAskFlavorSub": "Comida, bebida o restaurantes",
+    "primaryDineOut": "Salir a comer",
+    "primaryDineOutSub": "Encuentra un restaurante esta noche",
+    "primaryCook": "Cocina algo",
+    "primaryCookSub": "Ideas de receta de tu despensa"
   },
   "sentimentPage": {
     "title": "Opiniones de clientes",
@@ -656,7 +665,11 @@
     "gainLine": "💵 Ganancia potencial: +${{amount}}/mes",
     "priorityHigh": "ALTA",
     "priorityMedium": "MEDIA",
-    "priorityLow": "BAJA"
+    "priorityLow": "BAJA",
+    "actionUpdatePrice": "Actualizar precio",
+    "actionCreateCampaign": "Crear campaña",
+    "actionOpenMenu": "Abrir menú",
+    "actionFeature": "Destacar"
   },
   "staffPage": {
     "title": "🧑‍🍳 Personal",

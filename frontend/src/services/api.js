@@ -134,6 +134,7 @@ export const api = {
   getMe: () => request("/api/auth/me"),
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
   getMenuBroadcastStats: () => request("/api/restaurant/menu-broadcasts/stats"),
+  getActionPlan: () => request("/api/restaurant/action-plan"),
 
   // Billing — consumer Premium subscription (Stripe)
   getBillingStatus: () => request("/api/billing/status"),

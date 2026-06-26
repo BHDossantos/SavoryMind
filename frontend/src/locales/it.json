@@ -180,7 +180,9 @@
     "billingPastDue": "Pagamento fallito — il tuo abbonamento è scaduto",
     "billingLapsed": "Il tuo abbonamento è terminato",
     "billingNudgeSub": "Aggiorna la fatturazione per mantenere prenotazioni in tempo reale, avvisi e intelligenza AI.",
-    "billingNudgeCta": "Sistema la fatturazione"
+    "billingNudgeCta": "Sistema la fatturazione",
+    "actionPlanEyebrow": "Piano d'azione AI di oggi",
+    "actionPlanTitle": "Fai questo oggi"
   },
   "consumerDashboard": {
     "loading": "Caricamento della tua dashboard...",
@@ -232,7 +234,14 @@
     "moodAdventurous": "Avventuroso",
     "moodIndulgent": "Indulgente",
     "moodQuick": "Veloce",
-    "moodBrunch": "Brunch"
+    "moodBrunch": "Brunch",
+    "primaryPrompt": "Cosa vuoi adesso?",
+    "primaryAskFlavor": "Chiedi a Flavor",
+    "primaryAskFlavorSub": "Tutto su cibo, bevande, ristoranti",
+    "primaryDineOut": "Mangia fuori",
+    "primaryDineOutSub": "Trova un ristorante stasera",
+    "primaryCook": "Cucina qualcosa",
+    "primaryCookSub": "Idee ricette dalla tua dispensa"
   },
   "sentimentPage": {
     "title": "Sentiment dei clienti",
@@ -656,7 +665,11 @@
     "gainLine": "💵 Guadagno potenziale: +${{amount}}/mese",
     "priorityHigh": "ALTA",
     "priorityMedium": "MEDIA",
-    "priorityLow": "BASSA"
+    "priorityLow": "BASSA",
+    "actionUpdatePrice": "Aggiorna prezzo",
+    "actionCreateCampaign": "Crea campagna",
+    "actionOpenMenu": "Apri menù",
+    "actionFeature": "In evidenza"
   },
   "staffPage": {
     "title": "🧑‍🍳 Staff",

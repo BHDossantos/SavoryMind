@@ -180,7 +180,9 @@
     "billingPastDue": "Payment failed — your subscription is past due",
     "billingLapsed": "Your subscription has ended",
     "billingNudgeSub": "Update your billing to keep real-time bookings, alerts, and AI intelligence.",
-    "billingNudgeCta": "Fix billing"
+    "billingNudgeCta": "Fix billing",
+    "actionPlanEyebrow": "Today's AI action plan",
+    "actionPlanTitle": "Do these today"
   },
   "consumerDashboard": {
     "loading": "Loading your dashboard...",
@@ -232,7 +234,14 @@
     "moodAdventurous": "Adventurous",
     "moodIndulgent": "Indulgent",
     "moodQuick": "Quick",
-    "moodBrunch": "Brunch"
+    "moodBrunch": "Brunch",
+    "primaryPrompt": "What do you want right now?",
+    "primaryAskFlavor": "Ask Flavor",
+    "primaryAskFlavorSub": "Anything food, drink, or dining",
+    "primaryDineOut": "Dine out",
+    "primaryDineOutSub": "Find a restaurant tonight",
+    "primaryCook": "Cook something",
+    "primaryCookSub": "Recipe ideas from your pantry"
   },
   "sentimentPage": {
     "title": "Customer Sentiment",
@@ -656,7 +665,11 @@
     "gainLine": "💵 Potential gain: +${{amount}}/month",
     "priorityHigh": "HIGH",
     "priorityMedium": "MEDIUM",
-    "priorityLow": "LOW"
+    "priorityLow": "LOW",
+    "actionUpdatePrice": "Update price",
+    "actionCreateCampaign": "Create campaign",
+    "actionOpenMenu": "Open menu",
+    "actionFeature": "Feature this"
   },
   "staffPage": {
     "title": "🧑‍🍳 Staff",
