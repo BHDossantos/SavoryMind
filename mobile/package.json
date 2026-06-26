@@ -18,6 +18,7 @@
     "expo-asset": "~55.0.16",
     "expo-auth-session": "~55.0.15",
     "expo-camera": "^55.0.18",
+    "expo-clipboard": "~55.0.13",
     "expo-crypto": "~55.0.14",
     "expo-font": "~55.0.6",
     "expo-haptics": "~55.0.14",
@@ -62,7 +63,8 @@
     ],
     "moduleNameMapper": {
       "^expo-secure-store$": "<rootDir>/__mocks__/expo-secure-store.js",
-      "^expo-localization$": "<rootDir>/__mocks__/expo-localization.js"
+      "^expo-localization$": "<rootDir>/__mocks__/expo-localization.js",
+      "^expo-clipboard$": "<rootDir>/__mocks__/expo-clipboard.js"
     },
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg))"

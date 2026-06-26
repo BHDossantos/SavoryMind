@@ -46,6 +46,7 @@ export default function MoreScreen() {
     { icon: '🕐', title: t('restaurantFeatures.staffTime'),      sub: t('restaurantFeatures.staffTimeSub'),     screen: 'stafftime' },
     { icon: '🎓', title: t('restaurantFeatures.staffTraining'),  sub: t('restaurantFeatures.staffTrainingSub'), screen: 'training' },
     { icon: '📋', title: t('restaurantFeatures.reports'),        sub: t('restaurantFeatures.reportsSub'),       screen: 'reports' },
+    { icon: '💳', title: t('restaurantFeatures.billing'),        sub: t('restaurantFeatures.billingSub'),       screen: 'billing' },
   ];
 
   return (

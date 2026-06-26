@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
@@ -25,6 +25,14 @@ export default function Dashboard() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [billingStatus, setBillingStatus] = useState(null);
+
+  // Pull the billing status so we can surface a renew nudge when the
+  // subscription lapses. Silent on failure — billing being off is fine.
+  useEffect(() => {
+    if (user?.account_type !== 'restaurant') return;
+    api.getRestaurantBillingStatus().then(setBillingStatus).catch(() => {});
+  }, [user?.account_type]);
 
   // Quick actions strip. Per-render so labels re-translate on language
   // switch; route/icon stay static.
@@ -61,6 +69,26 @@ export default function Dashboard() {
         </View>
         <Text onPress={logout} style={styles.logout}>{t('profile.signOut')}</Text>
       </View>
+
+      {/* Lapsed-subscription nudge — parity with web restaurant dashboard.
+          Surfaces only when billing is configured AND the subscription has
+          past_due/canceled status, so paying / free-trial restaurants don't
+          see noise. */}
+      {billingStatus?.billing_configured && billingStatus?.subscription_status &&
+       ['past_due', 'canceled', 'unpaid'].includes(billingStatus.subscription_status) && (
+        <TouchableOpacity
+          style={lapsedStyles.card}
+          onPress={() => router.push('/billing')}
+          activeOpacity={0.8}
+        >
+          <Text style={lapsedStyles.icon}>⚠️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={lapsedStyles.title}>{t('restaurantDashboard.lapsedTitle')}</Text>
+            <Text style={lapsedStyles.sub}>{t('restaurantDashboard.lapsedSub')}</Text>
+          </View>
+          <Text style={lapsedStyles.arrow}>→</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Quick actions grid */}
       <View style={styles.quickGrid}>
@@ -118,6 +146,14 @@ const styles = StyleSheet.create({
   quickIcon:  { fontSize: 22, marginBottom: 4 },
   quickLabel: { fontSize: 10, fontWeight: '700', color: C.gray[600], textAlign: 'center' },
   section:    { fontSize: 13, fontWeight: '600', color: C.gray[500], marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+});
+
+const lapsedStyles = StyleSheet.create({
+  card:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fef3c7', borderColor: '#fde68a', borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
+  icon:  { fontSize: 22 },
+  title: { fontSize: 14, fontWeight: '700', color: '#92400e' },
+  sub:   { fontSize: 11, color: '#b45309', marginTop: 2 },
+  arrow: { fontSize: 18, color: '#92400e', fontWeight: '700' },
 });
 
 const flavorStyles = StyleSheet.create({
