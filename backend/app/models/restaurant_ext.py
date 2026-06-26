@@ -28,6 +28,21 @@ class Booking(Base):
     # if any. Stamped by the public booking endpoint from a short-lived
     # cookie set when the diner taps a /r/{slug}?b={id} link in the SMS.
     menu_broadcast_id = Column(Integer, ForeignKey("menu_broadcasts.id"), nullable=True)
+    # Manager-private notes about the guest — "allergic to shellfish",
+    # "VIP, comp dessert", "celebrating anniversary". Separate from `notes`
+    # (the guest's own special requests). Surfaced via repeat detection.
+    customer_notes = Column(Text, nullable=True)
+
+
+class SavedRestaurant(Base):
+    """Consumer favorites. (user_id, restaurant_id) is unique. Surface on
+    the consumer dashboard and unlock geofence-style nudges later."""
+    __tablename__ = "saved_restaurants"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    restaurant_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class MenuBroadcast(Base):

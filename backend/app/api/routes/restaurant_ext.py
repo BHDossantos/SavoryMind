@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ...core.database import get_db
@@ -16,8 +17,9 @@ from ...schemas.restaurant_ext import (
 )
 from ...services import (
     booking_service, crm_service, staff_service, prediction_service,
-    trends_service, action_plan_service,
+    trends_service, action_plan_service, campaign_service,
 )
+from ...core.config import settings
 
 router = APIRouter(prefix="/restaurant", tags=["restaurant"])
 
@@ -243,6 +245,37 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
 def get_marketing(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_restaurant(current_user)
     return trends_service.get_marketing_insights(db, current_user.id)
+
+
+class CampaignRequest(BaseModel):
+    dish: str
+    angle: str = "promotion"
+    notes: str = ""
+
+
+@router.post("/campaigns/generate")
+def generate_campaign(
+    body: CampaignRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """One-click campaign: Claude returns Instagram caption + WhatsApp +
+    email + SMS bodies ready to paste. The operator approves what they
+    want, the rest is throwaway. Falls back to a localized template when
+    Claude isn't configured so the UX never dead-ends."""
+    _require_restaurant(current_user)
+    booking_link = None
+    if current_user.slug:
+        booking_link = f"{settings.frontend_url.rstrip('/')}/r/{current_user.slug}"
+    return campaign_service.generate(
+        dish=body.dish,
+        angle=body.angle,
+        restaurant_name=current_user.restaurant_name or current_user.display_name or "the restaurant",
+        cuisine=current_user.restaurant_cuisine or "",
+        language=current_user.language or "en",
+        booking_link=booking_link,
+        notes=body.notes,
+    )
 
 
 # --- Diner Reviews (submitted by diners about this restaurant) ----------------

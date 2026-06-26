@@ -291,7 +291,14 @@
     "noReviewsMatch": "No reviews match your search.",
     "badgePositive": "Positive",
     "badgeNegative": "Negative",
-    "badgeNeutral": "Neutral"
+    "badgeNeutral": "Neutral",
+    "draftCta": "Draft AI reply",
+    "draftLoading": "Drafting…",
+    "responseHeading": "Your reply",
+    "saveResponse": "Save reply",
+    "saving": "Saving…",
+    "regenerate": "Regenerate",
+    "respondedAt": "Replied {{date}}"
   },
   "menuPage": {
     "title": "Menu Analysis",
@@ -452,7 +459,9 @@
     "menuStatsClicks": "Clicks",
     "menuStatsBookings": "Bookings",
     "menuSmsBadge": "Menu SMS",
-    "menuSmsBadgeHint": "Booking came from today's menu SMS broadcast."
+    "menuSmsBadgeHint": "Booking came from today's menu SMS broadcast.",
+    "repeatBadge": "{{count}}× visit",
+    "repeatBadgeHint": "{{count}} previous bookings on file."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -577,7 +586,18 @@
     "fillRate": "Fill Rate",
     "cancelRate": "Cancel Rate",
     "actionItems": "Action Items",
-    "marketingTips": "Marketing Tips"
+    "marketingTips": "Marketing Tips",
+    "campaignEyebrow": "AI campaign generator",
+    "campaignTitle": "Create this week's promotion",
+    "dishPlaceholder": "Dish to promote (e.g. Truffle Pasta)",
+    "notesPlaceholder": "Optional notes (e.g. Friday only, 7pm)",
+    "generateCta": "Generate campaign",
+    "generating": "Generating…",
+    "dishRequired": "Tell us the dish first.",
+    "emailSubject": "Email subject",
+    "emailBody": "Email body",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "trainingPage": {
     "loading": "Analysing staff data...",

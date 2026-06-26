@@ -557,3 +557,79 @@ def delete_conversation(
     there (or wasn't the caller's) so the client knows nothing happened."""
     if not conversation_service.clear(db, current_user.id, conversation_id):
         raise HTTPException(status_code=404, detail="conversation not found")
+
+
+# --- Saved restaurants / favorites ---
+
+@router.get("/saved-restaurants")
+def list_saved_restaurants(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List the consumer's saved restaurants — newest first. Joined with
+    the public restaurant info shape so the frontend can render them
+    without a follow-up call per favorite."""
+    from ...models.restaurant_ext import SavedRestaurant
+    rows = (
+        db.query(SavedRestaurant, User)
+        .join(User, User.id == SavedRestaurant.restaurant_id)
+        .filter(SavedRestaurant.user_id == current_user.id)
+        .order_by(SavedRestaurant.created_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id":              s.id,
+            "restaurant_id":   r.id,
+            "saved_at":        str(s.created_at),
+            "slug":            r.slug,
+            "display_name":    r.display_name,
+            "restaurant_name": r.restaurant_name,
+            "city":            r.city,
+            "country":         r.country,
+            "cuisine":         r.restaurant_cuisine,
+        }
+        for s, r in rows
+    ]
+
+
+@router.post("/saved-restaurants/{restaurant_id}", status_code=201)
+def save_restaurant(
+    restaurant_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Save (favorite) a restaurant. Idempotent — a second tap is a no-op
+    returning the existing row."""
+    from ...models.restaurant_ext import SavedRestaurant
+    restaurant = db.query(User).filter(
+        User.id == restaurant_id, User.account_type == "restaurant",
+    ).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    existing = db.query(SavedRestaurant).filter(
+        SavedRestaurant.user_id == current_user.id,
+        SavedRestaurant.restaurant_id == restaurant_id,
+    ).first()
+    if existing:
+        return {"id": existing.id, "restaurant_id": restaurant_id, "already_saved": True}
+    row = SavedRestaurant(user_id=current_user.id, restaurant_id=restaurant_id)
+    db.add(row); db.commit(); db.refresh(row)
+    posthog_client.capture(current_user.id, "restaurant_saved", {"restaurant_id": restaurant_id})
+    return {"id": row.id, "restaurant_id": restaurant_id, "already_saved": False}
+
+
+@router.delete("/saved-restaurants/{restaurant_id}", status_code=204)
+def unsave_restaurant(
+    restaurant_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from ...models.restaurant_ext import SavedRestaurant
+    row = db.query(SavedRestaurant).filter(
+        SavedRestaurant.user_id == current_user.id,
+        SavedRestaurant.restaurant_id == restaurant_id,
+    ).first()
+    if not row:
+        return  # idempotent
+    db.delete(row); db.commit()

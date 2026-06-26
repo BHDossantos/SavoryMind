@@ -558,9 +558,20 @@ export default function Bookings() {
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
                     <div>
-                      <p className="font-medium text-gray-900">{b.customer_name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-gray-900">{b.customer_name}</p>
+                        {b.repeat_visits > 0 && (
+                          <span
+                            className="text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded"
+                            title={t("bookingsPage.repeatBadgeHint", { count: b.repeat_visits })}
+                          >
+                            🔁 {t("bookingsPage.repeatBadge", { count: b.repeat_visits + 1 })}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400">{b.customer_phone || b.customer_email || ""}</p>
                       {b.notes && <p className="text-xs text-amber-600 mt-0.5 truncate max-w-[160px]">⚠ {b.notes}</p>}
+                      {b.customer_notes && <p className="text-xs text-purple-700 mt-0.5 truncate max-w-[180px]">📝 {b.customer_notes}</p>}
                     </div>
                     {b.source === "online" && (
                       <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium flex-shrink-0">{t("bookingsPage.onlineBadge")}</span>

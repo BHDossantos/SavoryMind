@@ -291,7 +291,14 @@
     "noReviewsMatch": "Ninguna reseña coincide con tu búsqueda.",
     "badgePositive": "Positiva",
     "badgeNegative": "Negativa",
-    "badgeNeutral": "Neutra"
+    "badgeNeutral": "Neutra",
+    "draftCta": "Borrador IA",
+    "draftLoading": "Generando…",
+    "responseHeading": "Tu respuesta",
+    "saveResponse": "Guardar",
+    "saving": "Guardando…",
+    "regenerate": "Regenerar",
+    "respondedAt": "Respondido el {{date}}"
   },
   "menuPage": {
     "title": "Análisis del menú",
@@ -452,7 +459,9 @@
     "menuStatsClicks": "Clics",
     "menuStatsBookings": "Reservas",
     "menuSmsBadge": "SMS menú",
-    "menuSmsBadgeHint": "Reserva originada por el SMS del menú de hoy."
+    "menuSmsBadgeHint": "Reserva originada por el SMS del menú de hoy.",
+    "repeatBadge": "Visita {{count}}",
+    "repeatBadgeHint": "{{count}} reservas previas."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -577,7 +586,18 @@
     "fillRate": "Tasa de ocupación",
     "cancelRate": "Tasa de cancelación",
     "actionItems": "Acciones",
-    "marketingTips": "Consejos de marketing"
+    "marketingTips": "Consejos de marketing",
+    "campaignEyebrow": "Generador de campañas IA",
+    "campaignTitle": "Crea la promoción de la semana",
+    "dishPlaceholder": "Plato a promocionar",
+    "notesPlaceholder": "Notas opcionales",
+    "generateCta": "Generar campaña",
+    "generating": "Generando…",
+    "dishRequired": "Dinos el plato primero.",
+    "emailSubject": "Asunto del correo",
+    "emailBody": "Cuerpo del correo",
+    "copy": "Copiar",
+    "copied": "Copiado"
   },
   "trainingPage": {
     "loading": "Analizando datos del personal...",

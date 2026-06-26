@@ -135,6 +135,12 @@ export const api = {
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
   getMenuBroadcastStats: () => request("/api/restaurant/menu-broadcasts/stats"),
   getActionPlan: () => request("/api/restaurant/action-plan"),
+  generateCampaign: (body) => request("/api/restaurant/campaigns/generate", { method: "POST", body: JSON.stringify(body) }),
+  draftReviewResponse: (id) => request(`/api/reviews/${id}/draft-response`, { method: "POST" }),
+  saveReviewResponse: (id, response) => request(`/api/reviews/${id}/response`, { method: "PATCH", body: JSON.stringify({ response }) }),
+  listSavedRestaurants: () => request("/api/consumer/saved-restaurants"),
+  saveRestaurant: (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: "POST" }),
+  unsaveRestaurant: (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: "DELETE" }),
 
   // Billing — consumer Premium subscription (Stripe)
   getBillingStatus: () => request("/api/billing/status"),

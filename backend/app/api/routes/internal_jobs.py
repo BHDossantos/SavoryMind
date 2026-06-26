@@ -22,6 +22,7 @@ from ...services import (
     inventory_digest_service,
     menu_sms_service,
     reminder_service,
+    weekly_digest_service,
 )
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,21 @@ def daily_briefing(
     no confirmed bookings today are skipped."""
     stats = daily_briefing_service.send_daily_briefings(db)
     logger.info("daily-briefing stats: %s", stats)
+    return stats
+
+
+@router.post("/weekly-digest")
+@limiter.limit("60/minute")
+def weekly_digest(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook: send each onboarded restaurant the weekly Action Plan
+    digest. Designed for Monday 7am UTC (~8–9am Europe). Restaurants with
+    zero actionable signals are skipped — no noise."""
+    stats = weekly_digest_service.send_weekly_digests(db)
+    logger.info("weekly-digest stats: %s", stats)
     return stats
 
 

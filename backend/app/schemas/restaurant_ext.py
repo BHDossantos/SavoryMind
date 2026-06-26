@@ -20,6 +20,7 @@ class BookingUpdate(BaseModel):
     status: Optional[str] = None
     table_number: Optional[int] = None
     notes: Optional[str] = None
+    customer_notes: Optional[str] = None
     time_slot: Optional[str] = None
 
 
@@ -34,9 +35,14 @@ class BookingResponse(BaseModel):
     table_number: Optional[int]
     status: str
     notes: Optional[str]
+    customer_notes: Optional[str] = None
     created_at: datetime
     diner_user_id: Optional[int] = None
     source: Optional[str] = "manual"
+    # Stamped at fetch time by the restaurant bookings list endpoint —
+    # number of prior confirmed/seated/completed bookings from the same
+    # guest, matched by phone or email. 0 = first visit.
+    repeat_visits: Optional[int] = None
 
     model_config = {"from_attributes": True}
 

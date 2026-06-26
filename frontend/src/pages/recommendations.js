@@ -157,7 +157,14 @@ export default function RecommendationsPage() {
                   )}
                   {config.actionKey && (
                     <Link
-                      href={config.actionRoute}
+                      href={
+                        // Deep-link promotion + star_item CTAs to the campaign
+                        // generator with the dish prefilled — one click instead
+                        // of "open marketing → type the dish".
+                        rec.type === "promotion" || rec.type === "star_item"
+                          ? `/restaurant/marketing?promote=${encodeURIComponent(rec.item)}`
+                          : config.actionRoute
+                      }
                       className="inline-flex items-center gap-1 text-xs font-bold bg-gray-900 text-white px-3 py-1.5 rounded-lg mt-3 hover:bg-gray-700"
                     >
                       {t(config.actionKey)} <span>→</span>

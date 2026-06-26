@@ -63,6 +63,56 @@ def booking_table_labels(lang: str) -> dict:
     })
 
 
+def weekly_digest_subject(lang: str, *, rest_name: str) -> str:
+    return _pick(lang, {
+        "en": f"This week's playbook for {rest_name}",
+        "it": f"Il piano della settimana per {rest_name}",
+        "es": f"El plan semanal de {rest_name}",
+        "pt": f"O plano da semana para {rest_name}",
+        "fr": f"Le plan de la semaine pour {rest_name}",
+    })
+
+
+def weekly_digest_labels(lang: str) -> dict[str, str]:
+    return _pick(lang, {
+        "en": {
+            "eyebrow": "Weekly digest",
+            "heading": "Your AI playbook for this week",
+            "intro":   "Five things to focus on at {rest} this week — sorted by revenue impact.",
+            "stats_heading": "Last 7 days · menu SMS",
+            "sms": "messages sent", "clicks": "clicks", "bookings": "bookings",
+        },
+        "it": {
+            "eyebrow": "Riepilogo settimanale",
+            "heading": "Il piano AI per questa settimana",
+            "intro":   "Cinque azioni su cui concentrarsi questa settimana da {rest} — ordinate per impatto.",
+            "stats_heading": "Ultimi 7 giorni · SMS menù",
+            "sms": "messaggi inviati", "clicks": "click", "bookings": "prenotazioni",
+        },
+        "es": {
+            "eyebrow": "Resumen semanal",
+            "heading": "Tu plan IA de la semana",
+            "intro":   "Cinco cosas en las que centrarte esta semana en {rest} — ordenadas por impacto.",
+            "stats_heading": "Últimos 7 días · SMS menú",
+            "sms": "mensajes enviados", "clicks": "clics", "bookings": "reservas",
+        },
+        "pt": {
+            "eyebrow": "Resumo semanal",
+            "heading": "Seu plano IA da semana",
+            "intro":   "Cinco coisas para focar esta semana em {rest} — ordenadas por impacto.",
+            "stats_heading": "Últimos 7 dias · SMS menu",
+            "sms": "mensagens enviadas", "clicks": "cliques", "bookings": "reservas",
+        },
+        "fr": {
+            "eyebrow": "Récap hebdomadaire",
+            "heading": "Votre plan IA de la semaine",
+            "intro":   "Cinq actions à prioriser cette semaine chez {rest} — triées par impact.",
+            "stats_heading": "7 derniers jours · SMS menu",
+            "sms": "messages envoyés", "clicks": "clics", "bookings": "réservations",
+        },
+    })
+
+
 def menu_broadcast_summary_labels(lang: str) -> dict[str, str]:
     """Labels for the 7-day menu broadcast rollup block in the daily briefing."""
     return _pick(lang, {

@@ -16,6 +16,7 @@ from datetime import timedelta
 from html import escape
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -24,7 +25,10 @@ from ...core.database import get_db
 from ...core.rate_limit import limiter
 from ...models.user import User
 from ...models.restaurant_ext import Booking, MenuBroadcast
-from ...services import discover_service, notification_service, resend_client, twilio_client, email_templates
+from ...services import (
+    booking_extras, discover_service, email_templates,
+    notification_service, resend_client, twilio_client,
+)
 
 
 router = APIRouter(prefix="/public/restaurants", tags=["public"])
@@ -227,6 +231,31 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
             if confirmed
             else "Request received — the restaurant will confirm shortly."
         ),
+    )
+
+
+@router.get("/bookings/{booking_id}/ics")
+@limiter.limit("30/minute")
+def booking_ics(booking_id: int, request: Request, db: Session = Depends(get_db)):
+    """Return an .ics calendar file for the booking so the diner can add
+    it to their calendar in one tap. Public because guest bookings have
+    no auth — booking IDs are opaque integers but not secret; the file
+    leaks only the restaurant name + party size + date/time, all of which
+    are already on the confirmation page."""
+    b = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not b:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    restaurant = db.query(User).filter(User.id == b.user_id).first()
+    rest_name = (restaurant.restaurant_name or restaurant.display_name or "the restaurant") if restaurant else "the restaurant"
+    location = ", ".join(
+        x for x in [restaurant.city, restaurant.country]
+        if restaurant and x
+    )
+    body = booking_extras.build_ics(b, restaurant_name=rest_name, location=location)
+    return Response(
+        content=body,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="booking-{booking_id}.ics"'},
     )
 
 

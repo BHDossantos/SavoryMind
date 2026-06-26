@@ -53,6 +53,7 @@ or whatever your existing inventory-digest job uses — same one).
 | `0 7 * * *` | `https://api.savorymind.net/internal/jobs/daily-briefing` | Morning email to each restaurant with today's bookings (08:00 Rome). |
 | `0 6 * * 1` | `https://api.savorymind.net/internal/jobs/inventory-digest` | Weekly inventory digest (existing). |
 | `0 * * * *` | `https://api.savorymind.net/internal/jobs/menu-of-the-day` | Hourly tick — broadcasts each restaurant's published menu by SMS to opted-in CRM customers at 11am restaurant-local. Idempotent per restaurant per local day. |
+| `0 7 * * 1` | `https://api.savorymind.net/internal/jobs/weekly-digest` | Monday morning weekly Action Plan digest to restaurant operators (~8–9am Rome). Skips restaurants with zero actionable signals. |
 
 For each: `Auth header` → `Add OIDC token`, audience matches
 `SCHEDULER_AUDIENCE`.

@@ -291,7 +291,14 @@
     "noReviewsMatch": "Nessuna recensione corrisponde alla tua ricerca.",
     "badgePositive": "Positiva",
     "badgeNegative": "Negativa",
-    "badgeNeutral": "Neutra"
+    "badgeNeutral": "Neutra",
+    "draftCta": "Bozza risposta AI",
+    "draftLoading": "Generazione…",
+    "responseHeading": "La tua risposta",
+    "saveResponse": "Salva risposta",
+    "saving": "Salvataggio…",
+    "regenerate": "Rigenera",
+    "respondedAt": "Risposto il {{date}}"
   },
   "menuPage": {
     "title": "Analisi del menù",
@@ -452,7 +459,9 @@
     "menuStatsClicks": "Click",
     "menuStatsBookings": "Prenotazioni",
     "menuSmsBadge": "SMS menù",
-    "menuSmsBadgeHint": "Prenotazione arrivata dall'SMS del menù di oggi."
+    "menuSmsBadgeHint": "Prenotazione arrivata dall'SMS del menù di oggi.",
+    "repeatBadge": "Visita {{count}}",
+    "repeatBadgeHint": "{{count}} prenotazioni precedenti."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -577,7 +586,18 @@
     "fillRate": "Tasso di riempimento",
     "cancelRate": "Tasso di cancellazione",
     "actionItems": "Azioni da fare",
-    "marketingTips": "Consigli di marketing"
+    "marketingTips": "Consigli di marketing",
+    "campaignEyebrow": "Generatore campagne AI",
+    "campaignTitle": "Crea la promo della settimana",
+    "dishPlaceholder": "Piatto da promuovere (es. Tagliatelle al tartufo)",
+    "notesPlaceholder": "Note opzionali (es. Solo venerdì, 19:00)",
+    "generateCta": "Genera campagna",
+    "generating": "Generazione…",
+    "dishRequired": "Dimmi prima il piatto.",
+    "emailSubject": "Oggetto email",
+    "emailBody": "Corpo email",
+    "copy": "Copia",
+    "copied": "Copiato"
   },
   "trainingPage": {
     "loading": "Analisi dei dati dello staff...",
