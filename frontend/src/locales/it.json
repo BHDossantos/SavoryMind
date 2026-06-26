@@ -1539,7 +1539,15 @@
     "styleCasual": "casual",
     "stylePub": "pub",
     "styleCafe": "caffè",
-    "styleFastCasual": "fast casual"
+    "styleFastCasual": "fast casual",
+    "whyCuisine": "Adori la cucina {{cuisine}}",
+    "whyAtmosphere": "Atmosfera '{{atmos}}' — ti piacerà",
+    "whyLocal": "A {{city}}, la tua città",
+    "whyWine": "Carta vini · si abbina al tuo stile",
+    "save": "Salva",
+    "unsave": "Rimuovi dai preferiti",
+    "saveHint": "Salva nei preferiti",
+    "savedHint": "Salvato — tocca per rimuovere"
   },
   "bookDinerPage": {
     "title": "📅 Prenota un tavolo",

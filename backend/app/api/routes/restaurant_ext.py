@@ -17,7 +17,7 @@ from ...schemas.restaurant_ext import (
 )
 from ...services import (
     booking_service, crm_service, staff_service, prediction_service,
-    trends_service, action_plan_service, campaign_service,
+    trends_service, action_plan_service, campaign_service, posthog_client,
 )
 from ...core.config import settings
 
@@ -267,7 +267,7 @@ def generate_campaign(
     booking_link = None
     if current_user.slug:
         booking_link = f"{settings.frontend_url.rstrip('/')}/r/{current_user.slug}"
-    return campaign_service.generate(
+    out = campaign_service.generate(
         dish=body.dish,
         angle=body.angle,
         restaurant_name=current_user.restaurant_name or current_user.display_name or "the restaurant",
@@ -276,6 +276,11 @@ def generate_campaign(
         booking_link=booking_link,
         notes=body.notes,
     )
+    posthog_client.capture(current_user.id, "campaign_generated", {
+        "angle": body.angle,
+        "language": current_user.language or "en",
+    })
+    return out
 
 
 # --- Diner Reviews (submitted by diners about this restaurant) ----------------
@@ -367,4 +372,44 @@ def action_plan(
     broadcast attribution. The dashboard renders these as the operator's
     first surface."""
     _require_restaurant(current_user)
-    return {"actions": action_plan_service.build_action_plan(db, current_user)}
+    actions = action_plan_service.build_action_plan(db, current_user)
+    posthog_client.capture(current_user.id, "action_plan_viewed", {"action_count": len(actions)})
+    return {"actions": actions}
+
+
+# --- Audit log + Entitlements ---
+
+@router.get("/audit-log")
+def audit_log(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Audit trail for the tenant. Owner/manager only — others get 403."""
+    _require_restaurant(current_user)
+    from ...core import roles as roles_mod
+    from ...services import audit_log_service
+    if not roles_mod.can(current_user, "audit_log.view"):
+        raise HTTPException(status_code=403, detail="Owner or manager only.")
+    return [
+        {
+            "id": r.id,
+            "actor_user_id": r.actor_user_id,
+            "action": r.action,
+            "target": r.target,
+            "metadata": r.extra_metadata,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in audit_log_service.list_for_tenant(db, current_user.id)
+    ]
+
+
+@router.get("/menu/matrix")
+def menu_matrix(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Menu engineering matrix: every item tagged star/plowhorse/puzzle/dog
+    based on margin × popularity. Backs the /restaurant/predictions widget."""
+    _require_restaurant(current_user)
+    from ...services import menu_matrix_service
+    return menu_matrix_service.build_matrix(db, current_user.id)

@@ -1539,7 +1539,15 @@
     "styleCasual": "casual",
     "stylePub": "pub",
     "styleCafe": "café",
-    "styleFastCasual": "fast casual"
+    "styleFastCasual": "fast casual",
+    "whyCuisine": "Te encanta la cocina {{cuisine}}",
+    "whyAtmosphere": "Ambiente '{{atmos}}' — te va",
+    "whyLocal": "En {{city}}, tu ciudad",
+    "whyWine": "Carta de vinos · va con tu estilo",
+    "save": "Guardar",
+    "unsave": "Quitar de favoritos",
+    "saveHint": "Guardar en favoritos",
+    "savedHint": "Guardado — toca para quitar"
   },
   "bookDinerPage": {
     "title": "📅 Reservar mesa",

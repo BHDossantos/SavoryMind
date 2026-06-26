@@ -125,3 +125,14 @@ class User(Base):
     stripe_subscription_id  = Column(String(255), nullable=True)
     subscription_status     = Column(String(50),  nullable=True)  # active | trialing | past_due | canceled
     subscription_period_end = Column(DateTime,    nullable=True)  # current period end (naive UTC)
+    # Restaurant pricing tier — starter | growth | pro. Webhook sets from the
+    # Stripe Price ID. Null = use legacy fallback in entitlements.py.
+    restaurant_tier         = Column(String(20),  nullable=True)
+
+    # Role-based permissions inside a tenant (owner | manager | chef |
+    # server | host | marketer). Defaults to "owner" so single-operator
+    # restaurants don't need to think about this. Audit recommendation.
+    role = Column(String(20), nullable=False, server_default="owner", default="owner")
+    # Demo accounts get visible sample data but are excluded from real
+    # dashboards / investor metrics. Toggleable at signup.
+    is_demo = Column(Boolean, nullable=False, server_default="0", default=False)

@@ -59,6 +59,15 @@ def billing_status(current_user: User = Depends(get_current_user)):
     }
 
 
+@router.get("/entitlements")
+def billing_entitlements(current_user: User = Depends(get_current_user)):
+    """Per-feature gating map the frontend consults before rendering a
+    gated module. Same shape regardless of account type so a single
+    helper can read it from the consumer + restaurant UIs."""
+    from ...core import entitlements
+    return entitlements.entitlements_for(current_user)
+
+
 @router.post("/checkout")
 @limiter.limit("10/minute")
 def create_checkout(

@@ -2,7 +2,35 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import SkeletonLoader from "../../components/SkeletonLoader";
+
+function pj(val, fallback) {
+  if (!val) return fallback;
+  try { return JSON.parse(val); } catch { return fallback; }
+}
+
+// Build a short "why we recommended this" line from the overlap between
+// the diner's saved preferences and the restaurant card. Returns null if
+// there's no meaningful overlap so the line is hidden rather than
+// awkwardly empty.
+function whyRecommended(r, user, t) {
+  if (!user || !r) return null;
+  const myCuisines = pj(user.cuisine_preferences, []).map((c) => c.toLowerCase());
+  const myDiet     = pj(user.dietary_preferences, []).map((c) => c.toLowerCase());
+  const myAtmos    = pj(user.atmosphere_prefs, []).map((c) => c.toLowerCase());
+  const rCuisines  = (r.cuisine || []).map((c) => String(c).toLowerCase());
+  const cuisineMatch = rCuisines.find((c) => myCuisines.some((m) => c.includes(m) || m.includes(c)));
+  if (cuisineMatch) return t("discoverPage.whyCuisine", { cuisine: cuisineMatch });
+  const styleAtmos = (r.dining_style || "").toLowerCase();
+  const atmosMatch = myAtmos.find((a) => styleAtmos.includes(a));
+  if (atmosMatch) return t("discoverPage.whyAtmosphere", { atmos: atmosMatch });
+  if (r.city && user?.city && r.city.toLowerCase() === user.city.toLowerCase()) {
+    return t("discoverPage.whyLocal", { city: r.city });
+  }
+  if (myDiet.length > 0 && r.serves_wine) return t("discoverPage.whyWine");
+  return null;
+}
 
 const MOODS = [
   { id: "",            labelKey: "discoverPage.anyMood" },
@@ -30,6 +58,23 @@ const STYLE_KEY = {
 export default function DiscoverPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { user } = useAuth();
+  const [saved, setSaved] = useState({});  // restaurant_id -> true
+  useEffect(() => {
+    api.listSavedRestaurants()
+      .then((rows) => setSaved(Object.fromEntries(rows.map((r) => [r.restaurant_id, true]))))
+      .catch(() => {});
+  }, []);
+  const toggleSave = async (restaurantId) => {
+    const isSaved = !!saved[restaurantId];
+    setSaved((m) => ({ ...m, [restaurantId]: !isSaved }));  // optimistic
+    try {
+      if (isSaved) await api.unsaveRestaurant(restaurantId);
+      else         await api.saveRestaurant(restaurantId);
+    } catch {
+      setSaved((m) => ({ ...m, [restaurantId]: isSaved }));  // rollback
+    }
+  };
   const [mood, setMood]         = useState("");
   const [cuisine, setCuisine]   = useState("");
   const [city, setCity]         = useState("");
@@ -142,7 +187,17 @@ export default function DiscoverPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-bold text-gray-900 truncate">{r.name}</h3>
-                      <span className="text-xs text-gray-500 flex-shrink-0">{PRICE_LABELS[r.price_level] || "$$"}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-500">{PRICE_LABELS[r.price_level] || "$$"}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleSave(r.id); }}
+                          className="text-base hover:scale-110 transition-transform"
+                          aria-label={saved[r.id] ? t("discoverPage.unsave") : t("discoverPage.save")}
+                          title={saved[r.id] ? t("discoverPage.savedHint") : t("discoverPage.saveHint")}
+                        >
+                          {saved[r.id] ? "❤️" : "🤍"}
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {(r.cuisine || []).slice(0, 2).join(" · ")}
@@ -150,6 +205,12 @@ export default function DiscoverPage() {
                     </p>
                   </div>
                 </div>
+
+                {whyRecommended(r, user, t) && (
+                  <p className="text-xs font-semibold text-diner-700 bg-diner-50 border border-diner-200 px-2.5 py-1.5 rounded-lg mb-2">
+                    ✨ {whyRecommended(r, user, t)}
+                  </p>
+                )}
 
                 {r.bio && <p className="text-sm text-gray-600 mb-3 leading-relaxed line-clamp-2">{r.bio}</p>}
 
