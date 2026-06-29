@@ -691,7 +691,15 @@
     "menuSmsOff": "No",
     "emptyTitle": "Ancora nessun cliente",
     "emptyBody": "Aggiungi i tuoi clienti abituali per inviare loro il menù di oggi via SMS e ricordare cosa amano.",
-    "noResults": "Nessun risultato per questa ricerca."
+    "noResults": "Nessun risultato per questa ricerca.",
+    "giEyebrow": "Intelligenza ospiti AI",
+    "giTitle": "Riconquista questi clienti",
+    "giLapsed": "{{days}} giorni dall'ultima visita",
+    "giWinBack": "Riconquista",
+    "giSent": "Inviato ✓",
+    "giSendSms": "Invia SMS",
+    "giNoPhone": "Nessun telefono — aggiungilo per inviare.",
+    "giConfirm": "Inviare un SMS di riconquista a {{name}} ({{days}} giorni)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind per Ristoranti",

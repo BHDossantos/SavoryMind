@@ -219,6 +219,8 @@ export const api = {
   // Menu broadcast — 7-day SMS attribution rollup for the dashboard widget
   getMenuBroadcastStats: () => request('/api/restaurant/menu-broadcasts/stats'),
   getActionPlan: () => request('/api/restaurant/action-plan'),
+  getAtRiskGuests: () => request('/api/restaurant/crm/at-risk'),
+  draftWinback: (id, body) => request(`/api/restaurant/crm/${id}/winback`, { method: 'POST', body: JSON.stringify(body) }),
 
   // Restaurant billing (Stripe €99/mo pro). Native opens the returned URL
   // in the browser — Apple/Google don't allow native checkout on the web.

@@ -691,7 +691,15 @@
     "menuSmsOff": "Off",
     "emptyTitle": "No customers yet",
     "emptyBody": "Add your regulars so you can text them today's menu and remember what they love.",
-    "noResults": "No matches for that search."
+    "noResults": "No matches for that search.",
+    "giEyebrow": "AI guest intelligence",
+    "giTitle": "Win these guests back",
+    "giLapsed": "{{days}} days since last visit",
+    "giWinBack": "Win back",
+    "giSent": "Sent ✓",
+    "giSendSms": "Send SMS",
+    "giNoPhone": "No phone on file — add one to send.",
+    "giConfirm": "Send a win-back SMS to {{name}} ({{days}} days away)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind for Restaurants",

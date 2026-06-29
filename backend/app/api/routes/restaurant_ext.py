@@ -413,3 +413,103 @@ def menu_matrix(
     _require_restaurant(current_user)
     from ...services import menu_matrix_service
     return menu_matrix_service.build_matrix(db, current_user.id)
+
+
+# --- Guest Intelligence (AI CRM) ---
+
+@router.get("/crm/segments")
+def crm_segments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Counts per auto-segment (vip / new / inactive / high_spender /
+    birthday_this_month / wine_lover / dietary / ...). Drives the CRM
+    segment chips."""
+    _require_restaurant(current_user)
+    from ...services import guest_intelligence_service as gi
+    return gi.segment_summary(db, current_user.id)
+
+
+@router.get("/crm/at-risk")
+def crm_at_risk(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lapsed-but-valuable guests ranked by value-at-stake × recoverability,
+    each with a return-probability estimate. The win-back action list."""
+    _require_restaurant(current_user)
+    from ...services import guest_intelligence_service as gi
+    return {"guests": gi.at_risk_guests(db, current_user.id)}
+
+
+@router.get("/crm/{customer_id}/timeline")
+def crm_timeline(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Unified interaction timeline for one guest."""
+    _require_restaurant(current_user)
+    from ...services import guest_intelligence_service as gi
+    return {"events": gi.timeline_for(db, current_user.id, customer_id)}
+
+
+class WinBackRequest(BaseModel):
+    offer: str = ""          # e.g. "15% off a steak dinner" — operator-set or AI-suggested
+    send: bool = False       # False = draft only; True = draft AND send via SMS
+
+
+@router.post("/crm/{customer_id}/winback")
+def crm_winback(
+    customer_id: int,
+    body: WinBackRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Draft (and optionally send) a personalized win-back SMS for a lapsed
+    guest. Draft uses the campaign generator's voice; send goes through the
+    same Twilio path as the menu broadcast. Nothing sends unless send=True."""
+    _require_restaurant(current_user)
+    from ...models.restaurant_ext import CRMCustomer
+    from ...services import campaign_service, guest_intelligence_service as gi, twilio_client
+
+    c = db.query(CRMCustomer).filter(
+        CRMCustomer.id == customer_id, CRMCustomer.user_id == current_user.id,
+    ).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    dsl = gi._days_since(c.last_visit, date.today())
+    fave = c.favorite_dishes or c.favorite_items or ""
+    offer = body.offer.strip() or (f"a treat on {fave.split(',')[0].strip()}" if fave else "a little something on us")
+    booking_link = None
+    if current_user.slug:
+        booking_link = f"{settings.frontend_url.rstrip('/')}/r/{current_user.slug}"
+
+    campaign = campaign_service.generate(
+        dish=fave.split(",")[0].strip() or "your favourite",
+        angle="comeback",
+        restaurant_name=current_user.restaurant_name or current_user.display_name or "the restaurant",
+        cuisine=current_user.restaurant_cuisine or "",
+        language=current_user.language or "en",
+        booking_link=booking_link,
+        notes=f"Win-back for {c.name}; last visit {dsl} days ago; offer: {offer}",
+    )
+    sms_body = campaign.get("sms_body") or campaign.get("whatsapp_message") or ""
+
+    sent = False
+    if body.send and c.phone:
+        sent = twilio_client.send_sms(c.phone, sms_body)
+        posthog_client.capture(current_user.id, "winback_sent", {
+            "days_since_visit": dsl, "had_offer": bool(body.offer.strip()),
+        })
+
+    return {
+        "customer_id": customer_id,
+        "sms_body": sms_body,
+        "instagram_caption": campaign.get("instagram_caption", ""),
+        "email_subject": campaign.get("email_subject", ""),
+        "email_body": campaign.get("email_body", ""),
+        "return_probability": gi.return_probability(c),
+        "sent": sent,
+    }

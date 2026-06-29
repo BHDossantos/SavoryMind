@@ -44,6 +44,18 @@ def delete_customer(db: Session, user_id: int, customer_id: int) -> bool:
     return True
 
 
+# Loyalty: 1 point per $1 spent + 10 points per visit. Tiers are derived
+# from cumulative points so the CRM list can render a badge without a join.
+def _loyalty_tier(points: int) -> str:
+    if points >= 5000:
+        return "vip"
+    if points >= 2000:
+        return "gold"
+    if points >= 500:
+        return "silver"
+    return "bronze"
+
+
 def record_visit(db: Session, user_id: int, customer_id: int, spend: float) -> CRMCustomer | None:
     customer = get_customer(db, user_id, customer_id)
     if not customer:
@@ -51,6 +63,10 @@ def record_visit(db: Session, user_id: int, customer_id: int, spend: float) -> C
     customer.total_visits += 1
     customer.total_spend += spend
     customer.last_visit = date.today()
+    # Accrue loyalty points and re-derive the tier.
+    earned = int(max(0.0, spend)) + 10
+    customer.loyalty_points = (customer.loyalty_points or 0) + earned
+    customer.loyalty_tier = _loyalty_tier(customer.loyalty_points)
     db.commit()
     db.refresh(customer)
     return customer

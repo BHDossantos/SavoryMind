@@ -29,14 +29,39 @@ export default function CRMScreen() {
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState(null);
 
+  const [atRisk, setAtRisk] = useState([]);
+  const [wbBusy, setWbBusy] = useState(null);  // customer id being sent
+
   const load = async () => {
     try {
       const [c, s] = await Promise.all([api.getCustomers(), api.getCRMSummary()]);
       setCustomers(c); setSummary(s); setError(null);
+      api.getAtRiskGuests().then((d) => setAtRisk(d.guests || [])).catch(() => {});
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
   useFocusEffect(useCallback(() => { load(); }, []));
+
+  // One-tap win-back: draft + send in a single call (mobile keeps it simple —
+  // the operator confirms via the native Alert before it actually sends).
+  const winBack = (g) => {
+    Alert.alert(
+      t('crmPage.giWinBack'),
+      t('crmPage.giConfirm', { name: g.name, days: g.days_since_visit }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('crmPage.giSendSms'), onPress: async () => {
+          if (!g.phone) { Alert.alert(t('crmPage.giNoPhone')); return; }
+          setWbBusy(g.id);
+          try {
+            await api.draftWinback(g.id, { send: true });
+            setAtRisk((prev) => prev.filter((x) => x.id !== g.id));
+          } catch (e) { Alert.alert(e.message || 'Failed'); }
+          finally { setWbBusy(null); }
+        }},
+      ],
+    );
+  };
 
   const filtered = customers.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.email || '').toLowerCase().includes(search.toLowerCase())
@@ -103,6 +128,27 @@ export default function CRMScreen() {
             </View>
           ))}
         </ScrollView>
+      )}
+
+      {atRisk.length > 0 && (
+        <View style={giStyles.panel}>
+          <Text style={giStyles.eyebrow}>{t('crmPage.giEyebrow')}</Text>
+          <Text style={giStyles.title}>🧠 {t('crmPage.giTitle')}</Text>
+          {atRisk.slice(0, 4).map((g) => (
+            <View key={g.id} style={giStyles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={giStyles.name}>{g.name}</Text>
+                <Text style={giStyles.meta}>{t('crmPage.giLapsed', { days: g.days_since_visit })}</Text>
+              </View>
+              <Text style={giStyles.prob}>{Math.round(g.return_probability * 100)}%</Text>
+              <TouchableOpacity style={giStyles.btn} onPress={() => winBack(g)} disabled={wbBusy === g.id}>
+                {wbBusy === g.id
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={giStyles.btnText}>{t('crmPage.giWinBack')}</Text>}
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
       )}
 
       <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
@@ -231,4 +277,16 @@ const styles = StyleSheet.create({
   emptyBody:    { fontSize: 13, color: C.gray[500], textAlign: 'center', marginBottom: 14, lineHeight: 18 },
   emptyCta:     { backgroundColor: C.restaurant.primary, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 11 },
   emptyCtaText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+});
+
+const giStyles = StyleSheet.create({
+  panel:   { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#faf5ff', borderColor: '#e9d5ff', borderWidth: 1, borderRadius: 14, padding: 12 },
+  eyebrow: { fontSize: 10, fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title:   { fontSize: 15, fontWeight: '800', color: C.gray[900], marginTop: 2, marginBottom: 8 },
+  row:     { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderColor: '#e9d5ff', borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6 },
+  name:    { fontSize: 13, fontWeight: '700', color: C.gray[900] },
+  meta:    { fontSize: 11, color: C.gray[500], marginTop: 1 },
+  prob:    { fontSize: 13, fontWeight: '800', color: '#7c3aed' },
+  btn:     { backgroundColor: '#7c3aed', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, minWidth: 76, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 11 },
 });
