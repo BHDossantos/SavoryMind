@@ -1,0 +1,82 @@
+[
+  {
+    "name": "West Coast IPA",
+    "style": "IPA",
+    "brewery": "Various Craft",
+    "abv": 6.5,
+    "flavour": "Citrus, pine, bitter finish",
+    "serve": "8–10°C, tall glass"
+  },
+  {
+    "name": "Chocolate Stout",
+    "style": "Stout",
+    "brewery": "Various Craft",
+    "abv": 5.0,
+    "flavour": "Dark chocolate, roasted coffee, smooth",
+    "serve": "10–12°C, pint glass"
+  },
+  {
+    "name": "Belgian Witbier",
+    "style": "Wheat Beer",
+    "brewery": "Hoegaarden / craft",
+    "abv": 4.9,
+    "flavour": "Orange peel, coriander, hazy",
+    "serve": "4–6°C, weizen glass"
+  },
+  {
+    "name": "German Pilsner",
+    "style": "Pilsner",
+    "brewery": "Bitburger / craft",
+    "abv": 4.8,
+    "flavour": "Crisp, floral, dry bitterness",
+    "serve": "3–5°C, pilsner glass"
+  },
+  {
+    "name": "American Amber Ale",
+    "style": "Amber Ale",
+    "brewery": "Various Craft",
+    "abv": 5.5,
+    "flavour": "Caramel malt, light hops, toasty",
+    "serve": "8–10°C, pint glass"
+  },
+  {
+    "name": "Sour Gose",
+    "style": "Sour",
+    "brewery": "Various Craft",
+    "abv": 4.2,
+    "flavour": "Tart, salty, lemon, refreshing",
+    "serve": "5–7°C, tulip glass"
+  },
+  {
+    "name": "Hefeweizen",
+    "style": "Wheat",
+    "brewery": "Paulaner / Weihenstephan",
+    "abv": 5.4,
+    "flavour": "Banana, clove, yeasty, soft carbonation",
+    "serve": "6–8°C, weizen glass"
+  },
+  {
+    "name": "Porter",
+    "style": "Porter",
+    "brewery": "Various Craft",
+    "abv": 5.5,
+    "flavour": "Dark fruit, toffee, mild roast",
+    "serve": "10–12°C, pint glass"
+  },
+  {
+    "name": "Session IPA",
+    "style": "Session IPA",
+    "brewery": "Various Craft",
+    "abv": 4.0,
+    "flavour": "Tropical fruit, light body, refreshing bitterness",
+    "serve": "6–8°C, tall glass"
+  },
+  {
+    "name": "Saison",
+    "style": "Saison",
+    "brewery": "Dupont / craft",
+    "abv": 6.5,
+    "flavour": "Peppery, earthy, fruity, dry finish",
+    "serve": "7–9°C, tulip glass"
+  }
+]

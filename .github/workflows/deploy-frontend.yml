@@ -1,0 +1,67 @@
+name: Deploy Frontend to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        working-directory: frontend
+        run: |
+          gcloud run deploy savorymind-frontend \
+            --source . \
+            --region europe-west1 \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 3000 \
+            --project savorymind \
+            --set-env-vars "NEXT_PUBLIC_API_URL=https://api.savorymind.net,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }},NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}"
+
+      - name: Map savorymind.net to Cloud Run
+        # Best-effort — see deploy-backend.yml. Mappings already exist and the
+        # current gcloud SDK rejects `--region` here; the deploy above is done.
+        continue-on-error: true
+        run: |
+          for DOMAIN in savorymind.net www.savorymind.net; do
+            if gcloud run domain-mappings describe \
+                --domain "$DOMAIN" \
+                --region europe-west1 \
+                --project savorymind >/dev/null 2>&1; then
+              MAPPED_TO=$(gcloud run domain-mappings describe \
+                --domain "$DOMAIN" \
+                --region europe-west1 \
+                --project savorymind \
+                --format="value(spec.routeName)")
+              if [ "$MAPPED_TO" = "savorymind-frontend" ]; then
+                echo "Domain mapping for $DOMAIN already points to savorymind-frontend."
+              else
+                echo "ERROR: $DOMAIN is mapped to '$MAPPED_TO', expected 'savorymind-frontend'."
+                echo "Fix manually at https://console.cloud.google.com/run/domains?project=savorymind"
+                exit 1
+              fi
+            else
+              echo "Creating domain mapping for $DOMAIN..."
+              gcloud run domain-mappings create \
+                --service savorymind-frontend \
+                --domain "$DOMAIN" \
+                --region europe-west1 \
+                --project savorymind
+            fi
+          done

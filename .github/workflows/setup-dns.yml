@@ -1,0 +1,42 @@
+name: DNS Setup (manual reference)
+
+# DNS for savorymind.net is now managed in Wix (not Vercel).
+# Add these records manually in Wix → Domains → savorymind.net → Manage DNS:
+#
+#   Root domain (savorymind.net) — Cloud Run frontend
+#     A     @     216.239.32.21
+#     A     @     216.239.34.21
+#     A     @     216.239.36.21
+#     A     @     216.239.38.21
+#     AAAA  @     2001:4860:4802:32::15
+#     AAAA  @     2001:4860:4802:34::15
+#     AAAA  @     2001:4860:4802:36::15
+#     AAAA  @     2001:4860:4802:38::15
+#
+#   www subdomain — Cloud Run frontend
+#     CNAME www   ghs.googlehosted.com
+#
+#   API subdomain — Cloud Run backend
+#     CNAME api   ghs.googlehosted.com
+#
+#   Google domain ownership verification (one TXT per subdomain you map):
+#     TXT   @     google-site-verification=<root-token>
+#     TXT   api   google-site-verification=<api-token>
+#
+# After DNS propagates (5–10 min) and Google verifies ownership, run:
+#   gcloud run domain-mappings create --service savorymind-frontend --domain savorymind.net     --region europe-west1 --project savorymind
+#   gcloud run domain-mappings create --service savorymind-frontend --domain www.savorymind.net --region europe-west1 --project savorymind
+#   gcloud run domain-mappings create --service savorymind-api      --domain api.savorymind.net --region europe-west1 --project savorymind
+# (these are also called automatically by deploy-frontend.yml and deploy-backend.yml).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: This workflow is informational only
+        run: |
+          echo "DNS for savorymind.net is managed in Wix — see comments at the top of this file."
+          echo "No automated DNS changes are performed."

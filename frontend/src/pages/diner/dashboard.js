@@ -1,0 +1,433 @@
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
+import LoadingSpinner from "../../components/LoadingSpinner";
+
+const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const STYLE_ICONS = {
+  fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
+  pub: "🍺", cafe: "☕", fast_casual: "🌯",
+};
+
+const MOODS = [
+  { value: "romantic",    labelKey: "dinerDashboardPage.moodRomantic" },
+  { value: "adventurous", labelKey: "dinerDashboardPage.moodAdventurous" },
+  { value: "relaxed",     labelKey: "dinerDashboardPage.moodRelaxed" },
+  { value: "celebratory", labelKey: "dinerDashboardPage.moodCelebratory" },
+  { value: "group",       labelKey: "dinerDashboardPage.moodGroup" },
+  { value: "healthy",     labelKey: "dinerDashboardPage.moodHealthy" },
+  { value: "cozy",        labelKey: "dinerDashboardPage.moodCozy" },
+];
+
+const TIMES = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:00","19:30","20:00","20:30","21:00"];
+const BUDGETS = [
+  { value: "budget", labelKey: "dinerDashboardPage.budgetBudget",  max: 2 },
+  { value: "mid",    labelKey: "dinerDashboardPage.budgetMid",     max: 3 },
+  { value: "luxury", labelKey: "dinerDashboardPage.budgetLuxury",  max: 4 },
+];
+
+function pj(val, fallback) {
+  if (!val) return fallback;
+  try { return JSON.parse(val); } catch { return fallback; }
+}
+
+function RestaurantCard({ r, onReserve }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  return (
+    <div className="bg-white rounded-2xl border border-diner-100 shadow-sm hover:shadow-md hover:border-diner-300 transition-all overflow-hidden group flex flex-col">
+      <div className="h-24 bg-gradient-to-br from-diner-100 to-diner-200 flex items-center justify-center text-4xl group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
+        {r.avatar_url
+          ? <img src={r.avatar_url} alt={r.name} className="w-full h-full object-cover" />
+          : (STYLE_ICONS[r.dining_style] || "🍽️")}
+      </div>
+      <div className="p-3 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-1 mb-0.5">
+          <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">{r.name}</h3>
+          <span className="text-xs text-gray-400 flex-shrink-0">{PRICE_LABELS[r.price_level] || "$$"}</span>
+        </div>
+        <p className="text-xs text-gray-500 mb-1 truncate">
+          {(r.cuisine || []).slice(0, 2).join(" · ")}
+          {r.city && <span className="text-gray-400"> · 📍{r.city}</span>}
+        </p>
+        {r.bio && <p className="text-xs text-gray-600 leading-relaxed mb-1.5 line-clamp-2">{r.bio}</p>}
+        {r.available_slots?.length > 0 && (
+          <p className="text-xs text-green-600 mb-2">{t("dinerDashboardPage.slotsAvailable", { n: r.available_slots.length })}</p>
+        )}
+        <div className="mt-auto flex gap-1.5 pt-1">
+          <button onClick={() => router.push(`/diner/restaurant/${r.id}`)}
+            className="flex-1 text-xs font-semibold border border-diner-300 text-diner-700 py-1.5 rounded-lg hover:bg-diner-50 transition-colors">
+            {t("dinerDashboardPage.view")}
+          </button>
+          <button onClick={() => onReserve(r)}
+            className="flex-1 text-xs font-semibold bg-diner-600 text-white py-1.5 rounded-lg hover:bg-diner-700 transition-colors">
+            {t("dinerDashboardPage.book")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingModal({ restaurant, onClose, onBooked }) {
+  const { t } = useTranslation();
+  const today = new Date().toISOString().split("T")[0];
+  const [form, setForm] = useState({
+    restaurant_name: restaurant?.name || "",
+    booking_date: today,
+    booking_time: "19:00",
+    party_size: 2,
+    special_requests: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.booking_date) { setError(t("dinerDashboardPage.errDate")); return; }
+    setLoading(true); setError(null);
+    try {
+      await api.createDinerBooking(form);
+      onBooked(form.restaurant_name);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="font-bold text-gray-900">{t("dinerDashboardPage.reserveTable")}</h2>
+            <p className="text-sm text-diner-600">{restaurant?.name}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">{t("dinerDashboardPage.date")}</label>
+              <input type="date" value={form.booking_date} min={today}
+                onChange={(e) => setForm((f) => ({ ...f, booking_date: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">{t("dinerDashboardPage.time")}</label>
+              <select value={form.booking_time} onChange={(e) => setForm((f) => ({ ...f, booking_time: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400">
+                {TIMES.map((tm) => <option key={tm}>{tm}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">{t("dinerDashboardPage.partySize")}</label>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setForm((f) => ({ ...f, party_size: Math.max(1, f.party_size - 1) }))}
+                className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold">−</button>
+              <span className="text-lg font-bold text-gray-900 w-6 text-center">{form.party_size}</span>
+              <button type="button" onClick={() => setForm((f) => ({ ...f, party_size: Math.min(20, f.party_size + 1) }))}
+                className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold">+</button>
+              <span className="text-sm text-gray-500">{t("dinerDashboardPage.guests")}</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">{t("dinerDashboardPage.specialRequests")}</label>
+            <textarea value={form.special_requests}
+              onChange={(e) => setForm((f) => ({ ...f, special_requests: e.target.value }))}
+              rows={2} placeholder={t("dinerDashboardPage.specialPh")}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400 resize-none" />
+          </div>
+          <button type="submit" disabled={loading}
+            className="w-full bg-diner-600 text-white font-bold py-3 rounded-xl hover:bg-diner-700 disabled:opacity-60 transition-colors">
+            {loading ? t("dinerDashboardPage.booking") : t("dinerDashboardPage.confirmReservation")}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function DinerDashboard() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+
+  const [mood,     setMood]     = useState("");
+  const [budget,   setBudget]   = useState("mid");
+  const [cuisine,  setCuisine]  = useState("");
+
+  const [allRests,    setAllRests]    = useState([]);
+  const [forYou,      setForYou]      = useState([]);
+  const [plan,        setPlan]        = useState(null);
+  const [bookings,    setBookings]    = useState([]);
+  const [recs,        setRecs]        = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [searching,   setSearching]   = useState(false);
+  const [searchError, setSearchError] = useState(null);
+
+  const [reserving,  setReserving]  = useState(null);
+  const [bookedMsg,  setBookedMsg]  = useState(null);
+
+  const userCuisines = pj(user?.cuisine_preferences, []);
+  const firstName = user?.first_name || user?.display_name?.split(" ")[0] || "Explorer";
+
+  const loadForYou = useCallback(async () => {
+    try {
+      const budgetMax = BUDGETS.find((b) => b.value === (user?.dining_budget || "mid"))?.max || 3;
+      const prefCuisine = userCuisines[0] || "";
+      const results = await api.discoverRestaurants({ max_price_level: budgetMax, cuisine: prefCuisine });
+      setForYou(results.length ? results : await api.discoverRestaurants({ max_price_level: budgetMax }));
+    } catch {}
+  }, [user]);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const r = await api.discoverRestaurants({ max_price_level: 4 });
+      setAllRests(r);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    Promise.all([
+      loadForYou(),
+      loadAll(),
+      api.getDinerBookings().catch(() => []),
+      api.getDinerRecommendations().catch(() => []),
+    ]).then(([, , b, r]) => { setBookings(b); setRecs(r); }).finally(() => setLoading(false));
+  }, [loadForYou, loadAll]);
+
+  const handleSearch = async () => {
+    setSearching(true); setPlan(null); setSearchError(null);
+    try {
+      const maxPrice = BUDGETS.find((b) => b.value === budget)?.max || 3;
+      const params = { max_price_level: maxPrice };
+      if (mood) params.mood = mood;
+      if (cuisine.trim()) params.cuisine = cuisine.trim();
+      setAllRests(await api.discoverRestaurants(params));
+    } catch (e) { setSearchError(e.message); }
+    finally { setSearching(false); }
+  };
+
+  const handlePlanNight = async () => {
+    setPlanLoading(true); setPlan(null);
+    try {
+      const p = await api.getExperiencePlan({ mood: mood || "relaxed", budget, cuisine: cuisine || userCuisines[0] || "" });
+      setPlan(p);
+    } catch {}
+    finally { setPlanLoading(false); }
+  };
+
+  const handleReserve = (restaurant) => { setReserving(restaurant); setBookedMsg(null); };
+  const handleBooked = (name) => {
+    setReserving(null);
+    setBookedMsg(t("dinerDashboardPage.bookedSuccess", { name }));
+    api.getDinerBookings().then(setBookings).catch(() => {});
+    setTimeout(() => setBookedMsg(null), 5000);
+  };
+
+  const upcoming = bookings.filter((b) => b.status === "confirmed").slice(0, 2);
+
+  if (loading) return <LoadingSpinner message={t("dinerDashboardPage.loading")} />;
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12
+    ? t("dinerDashboardPage.goodMorning", { name: firstName })
+    : hour < 18
+      ? t("dinerDashboardPage.goodAfternoon", { name: firstName })
+      : t("dinerDashboardPage.goodEvening", { name: firstName });
+
+  return (
+    <div className="space-y-6">
+
+      <Link
+        href="/consumer/assistant"
+        className="group flex items-center gap-4 rounded-2xl bg-gradient-to-r from-diner-600 to-diner-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
+      >
+        <span className="text-4xl flex-shrink-0">👨‍🍳</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base">{t("dinerDashboardPage.askFlavor")}</p>
+          <p className="text-xs text-white/80 mt-0.5 leading-relaxed">{t("dinerDashboardPage.askFlavorDesc")}</p>
+        </div>
+        <span className="text-2xl flex-shrink-0 group-hover:translate-x-1 transition-transform">→</span>
+      </Link>
+
+      {reserving && <BookingModal restaurant={reserving} onClose={() => setReserving(null)} onBooked={handleBooked} />}
+
+      {bookedMsg && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-3 text-sm text-green-700 font-medium">
+          {bookedMsg}
+        </div>
+      )}
+
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-diner-600 to-teal-700 p-6 text-white">
+        <div className="relative z-10">
+          <p className="text-white/70 text-sm font-medium mb-1">{greeting}</p>
+          <h1 className="text-2xl font-extrabold mb-4">{t("dinerDashboardPage.findNextMeal")}</h1>
+
+          <div className="bg-white/10 backdrop-blur rounded-2xl p-4 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map((m) => (
+                <button key={m.value} onClick={() => setMood(mood === m.value ? "" : m.value)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${mood === m.value ? "bg-white text-diner-700" : "bg-white/20 text-white hover:bg-white/30"}`}>
+                  {t(m.labelKey)}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex gap-1 bg-white/10 rounded-xl p-1">
+                {BUDGETS.map((b) => (
+                  <button key={b.value} onClick={() => setBudget(b.value)}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${budget === b.value ? "bg-white text-diner-700" : "text-white/80 hover:bg-white/20"}`}>
+                    {t(b.labelKey)}
+                  </button>
+                ))}
+              </div>
+              <input value={cuisine} onChange={(e) => setCuisine(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder={t("dinerDashboardPage.cuisinePh")}
+                className="flex-1 bg-white/20 placeholder-white/60 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:bg-white/30 min-w-32" />
+              <button onClick={handleSearch} disabled={searching}
+                className="bg-white text-diner-700 font-bold text-sm px-5 py-2 rounded-xl hover:bg-diner-50 disabled:opacity-70 transition-colors">
+                {searching ? t("dinerDashboardPage.searching") : t("dinerDashboardPage.findTable")}
+              </button>
+              <button onClick={handlePlanNight} disabled={planLoading}
+                className="bg-diner-800/50 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-diner-800/70 disabled:opacity-70 transition-colors border border-white/20">
+                {planLoading ? t("dinerDashboardPage.planning") : t("dinerDashboardPage.planNight")}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="absolute right-8 top-8 text-7xl opacity-10">🍽️</div>
+      </div>
+
+      {upcoming.length > 0 && (
+        <div className="bg-diner-50 border border-diner-200 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📅</span>
+            <div>
+              <p className="font-semibold text-diner-900 text-sm">{t("dinerDashboardPage.nextLabel", { name: upcoming[0].restaurant_name })}</p>
+              <p className="text-xs text-diner-600">{t("dinerDashboardPage.nextSub", { date: upcoming[0].booking_date, time: upcoming[0].booking_time, n: upcoming[0].party_size })}</p>
+            </div>
+          </div>
+          <Link href="/diner/book" className="text-xs text-diner-600 font-semibold hover:underline whitespace-nowrap">{t("dinerDashboardPage.allBookings")}</Link>
+        </div>
+      )}
+
+      {searchError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+          <span>{searchError}</span>
+          <button onClick={() => setSearchError(null)} className="text-red-400 hover:text-red-600 ml-3">✕</button>
+        </div>
+      )}
+
+      {plan && (
+        <div className="bg-gradient-to-br from-diner-50 to-teal-50 border border-diner-200 rounded-2xl p-6">
+          <p className="text-lg font-extrabold text-gray-900 mb-4">{plan.experience_title}</p>
+          {plan.restaurant ? (
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-diner-100 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+                {plan.restaurant.avatar_url
+                  ? <img src={plan.restaurant.avatar_url} alt="" className="w-full h-full object-cover rounded-2xl" />
+                  : (STYLE_ICONS[plan.restaurant.dining_style] || "🍽️")}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-gray-900">{plan.restaurant.name}</p>
+                <p className="text-sm text-gray-500">
+                  {(plan.restaurant.cuisine || []).slice(0, 2).join(" · ")}
+                  {" · "}{PRICE_LABELS[plan.restaurant.price_level] || "$$"}
+                  {plan.restaurant.city && ` · 📍 ${plan.restaurant.city}`}
+                </p>
+              </div>
+              <button onClick={() => handleReserve(plan.restaurant)}
+                className="bg-diner-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-diner-700 transition-colors flex-shrink-0">
+                {t("dinerDashboardPage.reserve")}
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 italic mb-4">{t("dinerDashboardPage.noRegistered")}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <span className="bg-white border border-diner-200 rounded-full px-4 py-1.5 text-sm text-gray-700">🎵 {plan.music.genre}</span>
+            <span className="bg-white border border-diner-200 rounded-full px-4 py-1.5 text-sm text-gray-700">{plan.drink}</span>
+            <span className="bg-white border border-diner-200/60 rounded-full px-4 py-1.5 text-sm text-gray-400 italic">{plan.music.vibe}</span>
+          </div>
+          <button onClick={() => setPlan(null)} className="mt-3 text-xs text-gray-400 hover:text-gray-500">{t("dinerDashboardPage.dismiss")}</button>
+        </div>
+      )}
+
+      {recs.length > 0 && (
+        <div>
+          <h2 className="font-bold text-gray-900 mb-3">{t("dinerDashboardPage.recommendedHeader")}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recs.map((rec, i) => (
+              <Link key={i} href={`/diner/${rec.action}`}
+                className="bg-white border border-diner-100 rounded-2xl p-4 hover:border-diner-300 hover:shadow-sm transition-all flex items-start gap-3">
+                <span className="text-2xl flex-shrink-0">{rec.icon}</span>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">{rec.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{rec.body}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {forYou.length > 0 && userCuisines.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-gray-900">
+              {t("dinerDashboardPage.matchedHeader")}
+              <span className="text-xs font-normal text-diner-600 ml-2">({userCuisines.slice(0, 2).join(" · ")})</span>
+            </h2>
+            <Link href="/diner/discover" className="text-xs text-diner-600 font-medium hover:underline">{t("dinerDashboardPage.seeAll")}</Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {forYou.slice(0, 4).map((r) => (
+              <RestaurantCard key={r.id} r={r} onReserve={handleReserve} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-gray-900">
+            {mood || cuisine ? t("dinerDashboardPage.searchResults") : t("dinerDashboardPage.topRestaurants")}
+          </h2>
+          <span className="text-xs text-gray-400">{t("dinerDashboardPage.placesCount", { n: allRests.length })}</span>
+        </div>
+        {allRests.length === 0 ? (
+          <div className="text-center py-14 bg-white rounded-2xl border border-diner-100">
+            <p className="text-4xl mb-3">🍽️</p>
+            <p className="text-gray-500 font-medium">{t("dinerDashboardPage.noMatch")}</p>
+            <p className="text-sm text-gray-400 mt-1">{t("dinerDashboardPage.noMatchSub")}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {allRests.map((r) => (
+              <RestaurantCard key={r.id} r={r} onReserve={handleReserve} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {bookings.length === 0 && (
+        <div className="bg-gradient-to-r from-diner-50 to-teal-50 border border-diner-100 rounded-2xl p-5 flex items-center gap-4">
+          <span className="text-3xl">🎉</span>
+          <div className="flex-1">
+            <p className="font-semibold text-diner-900 text-sm">{t("dinerDashboardPage.journeyStarts")}</p>
+            <p className="text-xs text-diner-600 mt-0.5">{t("dinerDashboardPage.journeyDesc")}</p>
+          </div>
+          <Link href="/diner/history" className="text-xs text-diner-600 font-semibold hover:underline whitespace-nowrap">{t("dinerDashboardPage.logPast")}</Link>
+        </div>
+      )}
+
+    </div>
+  );
+}

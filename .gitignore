@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.db
+*.sqlite3
+.env
+
+# Node
+node_modules/
+.next/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Apple credentials written by CI (eas-mobile-build.yml). Never committed —
+# the contents come from the ASC_API_KEY_P8 GitHub secret at runtime.
+mobile/asc-api-key.p8
+*.p8
