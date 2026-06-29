@@ -1,4 +1,7 @@
 // In production call the backend directly from the browser (no Next.js proxy needed).
+// NEXT_PUBLIC_API_URL must be set at build time (Cloud Run / GitHub Actions) → https://api.savorymind.net.
+// In local dev the proxy rewrite forwards /backend/* → localhost:8000.
+const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
 // NEXT_PUBLIC_API_URL is set at build/deploy time (see deploy-frontend.yml).
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
 const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";

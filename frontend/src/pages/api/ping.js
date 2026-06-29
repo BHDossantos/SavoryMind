@@ -1,6 +1,8 @@
 export default async function handler(req, res) {
   const backend = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || "https://api.savorymind.net";
   try {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.savorymind.net';
+    const response = await fetch(`${backendUrl}/health`, {
     const response = await fetch(`${backend}/health`, {
       signal: AbortSignal.timeout(10000),
     });

@@ -5,7 +5,7 @@ from typing import Optional
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
-from ...models.diner import DinerReview
+from ...models.diner import DinerReview, DinerBooking, DinerVisit
 from ...services import diner_service, discovery_service, discover_service
 from ...insights.engine import build_diner_recommendations
 
@@ -164,6 +164,22 @@ class ReviewCreate(BaseModel):
 
 @router.post("/reviews", status_code=201)
 def create_review(body: ReviewCreate, db: Session = Depends(get_db), user: User = Depends(require_diner)):
+    if body.booking_id is not None:
+        booking = db.query(DinerBooking).filter(
+            DinerBooking.id == body.booking_id,
+            DinerBooking.user_id == user.id,
+            DinerBooking.restaurant_user_id == body.restaurant_user_id,
+        ).first()
+        if not booking:
+            raise HTTPException(status_code=403, detail="You can only review restaurants you have booked.")
+    else:
+        had_booking = db.query(DinerBooking.id).filter(
+            DinerBooking.user_id == user.id,
+            DinerBooking.restaurant_user_id == body.restaurant_user_id,
+        ).first()
+        had_visit = db.query(DinerVisit.id).filter(DinerVisit.user_id == user.id).first()
+        if not had_booking and not had_visit:
+            raise HTTPException(status_code=403, detail="You can only review restaurants you have visited.")
     existing = db.query(DinerReview).filter(
         DinerReview.diner_user_id == user.id,
         DinerReview.restaurant_user_id == body.restaurant_user_id,
