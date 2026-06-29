@@ -6,6 +6,7 @@ from ...core.database import get_db
 from ...core.security import get_current_user, hash_password
 from ...models.user import User
 from ...services import staff_time_service
+from ...services import employee_survey_service
 
 router = APIRouter(prefix="/staff", tags=["staff-portal"])
 
@@ -98,11 +99,18 @@ def create_employee(body: EmployeeCreate, owner: User = Depends(_require_restaur
         display_name=body.display_name,
         employer_id=owner.id,
         onboarding_completed=True,
+        qr_token=employee_survey_service.generate_qr_token(),
     )
     db.add(emp)
     db.commit()
     db.refresh(emp)
-    return {"id": emp.id, "display_name": emp.display_name, "email": emp.email, "employer_id": emp.employer_id}
+    return {
+        "id": emp.id,
+        "display_name": emp.display_name,
+        "email": emp.email,
+        "employer_id": emp.employer_id,
+        "qr_token": emp.qr_token,
+    }
 
 
 @router.get("/employees")

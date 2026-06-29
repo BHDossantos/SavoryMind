@@ -1,31 +1,42 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
+import LanguageSelector from "./LanguageSelector";
 
+// "Dine Out" entry added in the unified Food Lover + Food Explorer
+// rollout. Routes into the (legacy) /diner/* tree where the
+// discover/book/history screens still live.
 const NAV = [
-  { href: "/consumer/dashboard", label: "Home",    icon: "🏠", match: ["/consumer/dashboard"] },
-  { href: "/consumer/explore",   label: "Explore", icon: "✨", match: ["/consumer/explore"] },
-  { href: "/consumer/cook",      label: "Cook",    icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry", "/consumer/guided-cooking"] },
-  { href: "/consumer/order",     label: "Order",   icon: "🛵", match: ["/consumer/order"] },
-  { href: "/consumer/profile",   label: "Profile", icon: "👤", match: ["/consumer/profile", "/consumer/social"] },
+  { href: "/consumer/dashboard", label: "Home",     icon: "🏠",    match: ["/consumer/dashboard"] },
+  { href: "/consumer/explore",   label: "Explore",  icon: "✨",    match: ["/consumer/explore"] },
+  { href: "/consumer/cook",      label: "Cook",     icon: "👨‍🍳", match: ["/consumer/cook", "/consumer/recipes", "/consumer/planner", "/consumer/pantry", "/consumer/guided-cooking"] },
+  { href: "/diner/discover",     label: "Dine Out", icon: "🍽️",   match: ["/diner/discover", "/diner/book", "/diner/history", "/diner/restaurant"] },
+  // "Order" (consumer/order) intentionally not linked — that flow is a
+  // simulation (no real delivery integration). Re-add when it's real.
+  { href: "/consumer/profile",   label: "Profile",  icon: "👤",    match: ["/consumer/profile", "/consumer/social"] },
 ];
 
 const QUICK_LINKS = [
+  { href: "/consumer/assistant", label: "Ask Flavor",      icon: "👨‍🍳" },
+  { href: "/consumer/cellar",    label: "Cellar",          icon: "🥂" },
   { href: "/consumer/pantry",    label: "My Pantry",       icon: "🧺" },
   { href: "/consumer/planner",   label: "Meal Planner",    icon: "📅" },
   { href: "/consumer/journal",   label: "Food Journal",    icon: "📔" },
-  { href: "/consumer/assistant", label: "Culinary Help",   icon: "👨‍🍳" },
   { href: "/consumer/wine",      label: "Wine Pairing",    icon: "🍷" },
   { href: "/consumer/music",     label: "Music Mood",      icon: "🎵" },
   { href: "/consumer/beverages", label: "Beverages",       icon: "🥂" },
   { href: "/consumer/social",    label: "Connect Apps",    icon: "🔗" },
+  { href: "/diner/book",         label: "My Bookings",     icon: "📅" },
+  { href: "/diner/history",      label: "Visit History",   icon: "📖" },
 ];
 
 export default function ConsumerLayout({ children }) {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isPremium } = useAuth();
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const firstName = user?.first_name || user?.display_name?.split(" ")[0] || "Chef";
 
@@ -92,13 +103,25 @@ export default function ConsumerLayout({ children }) {
 
       {/* Footer */}
       <div className="p-4 border-t border-consumer-100 space-y-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-consumer-50">
-          <span className="text-xs text-consumer-600 font-medium">Food Lover</span>
-          <span className="ml-auto text-xs bg-consumer-500 text-white px-2 py-0.5 rounded-full">Free</span>
+        <Link href="/consumer/upgrade"
+          onClick={() => setSidebarOpen(false)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-consumer-50 hover:bg-consumer-100 transition-colors">
+          <span className="text-xs text-consumer-600 font-medium">
+            {isPremium ? "SavoryMind Premium" : "Upgrade to Premium"}
+          </span>
+          <span className={clsx(
+            "ml-auto text-xs px-2 py-0.5 rounded-full text-white",
+            isPremium ? "bg-amber-500" : "bg-consumer-500"
+          )}>
+            {isPremium ? "Premium" : "Free"}
+          </span>
+        </Link>
+        <div className="px-1">
+          <LanguageSelector />
         </div>
         <button onClick={logout}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-          <span>🚪</span> Sign out
+          <span>🚪</span> {t("nav.signOut")}
         </button>
       </div>
     </aside>

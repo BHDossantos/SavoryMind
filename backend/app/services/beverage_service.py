@@ -2,31 +2,13 @@
 
 import re
 
-BEER_DB = [
-    {"name": "West Coast IPA", "style": "IPA", "brewery": "Various Craft", "abv": 6.5, "flavour": "Citrus, pine, bitter finish", "serve": "8–10°C, tall glass"},
-    {"name": "Chocolate Stout", "style": "Stout", "brewery": "Various Craft", "abv": 5.0, "flavour": "Dark chocolate, roasted coffee, smooth", "serve": "10–12°C, pint glass"},
-    {"name": "Belgian Witbier", "style": "Wheat Beer", "brewery": "Hoegaarden / craft", "abv": 4.9, "flavour": "Orange peel, coriander, hazy", "serve": "4–6°C, weizen glass"},
-    {"name": "German Pilsner", "style": "Pilsner", "brewery": "Bitburger / craft", "abv": 4.8, "flavour": "Crisp, floral, dry bitterness", "serve": "3–5°C, pilsner glass"},
-    {"name": "American Amber Ale", "style": "Amber Ale", "brewery": "Various Craft", "abv": 5.5, "flavour": "Caramel malt, light hops, toasty", "serve": "8–10°C, pint glass"},
-    {"name": "Sour Gose", "style": "Sour", "brewery": "Various Craft", "abv": 4.2, "flavour": "Tart, salty, lemon, refreshing", "serve": "5–7°C, tulip glass"},
-    {"name": "Hefeweizen", "style": "Wheat", "brewery": "Paulaner / Weihenstephan", "abv": 5.4, "flavour": "Banana, clove, yeasty, soft carbonation", "serve": "6–8°C, weizen glass"},
-    {"name": "Porter", "style": "Porter", "brewery": "Various Craft", "abv": 5.5, "flavour": "Dark fruit, toffee, mild roast", "serve": "10–12°C, pint glass"},
-    {"name": "Session IPA", "style": "Session IPA", "brewery": "Various Craft", "abv": 4.0, "flavour": "Tropical fruit, light body, refreshing bitterness", "serve": "6–8°C, tall glass"},
-    {"name": "Saison", "style": "Saison", "brewery": "Dupont / craft", "abv": 6.5, "flavour": "Peppery, earthy, fruity, dry finish", "serve": "7–9°C, tulip glass"},
-]
+# BEER_DB + SPIRITS_DB moved to backend/app/data/{beers,spirits}.json
+# so they can be expanded without touching this file.
+from ..data import get_beers, get_spirits
 
-SPIRITS_DB = [
-    {"name": "Single Malt Scotch", "spirit": "Whisky", "region": "Scottish Highlands", "abv": 43, "flavour": "Peat, vanilla, dried fruit, oak", "serve": "Neat or with a drop of water"},
-    {"name": "Blanco Tequila", "spirit": "Tequila", "region": "Jalisco, Mexico", "abv": 40, "flavour": "Agave, citrus, pepper, clean finish", "serve": "Chilled, shot or cocktail"},
-    {"name": "London Dry Gin", "spirit": "Gin", "region": "UK", "abv": 40, "flavour": "Juniper, citrus peel, botanicals", "serve": "G&T with lemon, or Martini"},
-    {"name": "Dark Rum", "spirit": "Rum", "region": "Caribbean", "abv": 40, "flavour": "Molasses, vanilla, banana, warm spice", "serve": "Neat, on the rocks, or Dark & Stormy"},
-    {"name": "Cognac VS", "spirit": "Brandy", "region": "Cognac, France", "abv": 40, "flavour": "Dried fruit, floral, vanilla, oak", "serve": "Neat in a snifter"},
-    {"name": "Bourbon", "spirit": "Whiskey", "region": "Kentucky, USA", "abv": 45, "flavour": "Corn, caramel, vanilla, toasted oak", "serve": "Neat, Manhattan, or Old Fashioned"},
-    {"name": "Grappa", "spirit": "Grappa", "region": "Italy", "abv": 42, "flavour": "Grape pomace, floral, slightly oily", "serve": "Chilled shot after espresso"},
-    {"name": "Calvados", "spirit": "Apple Brandy", "region": "Normandy, France", "abv": 40, "flavour": "Apple, pear, oak, warm spice", "serve": "Neat or with cheese"},
-    {"name": "Mezcal Joven", "spirit": "Mezcal", "region": "Oaxaca, Mexico", "abv": 42, "flavour": "Smoky, earthy, agave, fruit", "serve": "Neat with orange and sal de gusano"},
-    {"name": "Pisco Sour Base", "spirit": "Pisco", "region": "Peru / Chile", "abv": 40, "flavour": "Floral, grape, fruity, clean", "serve": "Pisco Sour cocktail"},
-]
+BEER_DB = get_beers()
+SPIRITS_DB = get_spirits()
+
 
 BEER_RULES = [
     {"pattern": r"burger|bbq|barbeque|wings|chicken|fried", "beers": [0, 3, 8], "reason": "Hoppy IPAs and crisp pilsners cut through fat and complement smoky char flavours."},

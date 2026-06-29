@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -10,6 +11,7 @@ import { useFocusEffect } from 'expo-router';
 const TABS = ['Menu Trends', 'Global Trends'];
 
 export default function Trends() {
+  const { t } = useTranslation();
   const [data, setData]         = useState(null);
   const [tab, setTab]           = useState('Menu Trends');
   const [loading, setLoading]   = useState(true);
@@ -31,7 +33,7 @@ export default function Trends() {
 
   return (
     <SafeScreen onRefresh={load} refreshing={refreshing}>
-      <Text style={s.title}>Trend Alerts</Text>
+      <Text style={s.title}>{t('screens.trends.title')}</Text>
       <Text style={s.subtitle}>
         {data.total_items} items · {data.total_reviews} reviews analysed
       </Text>

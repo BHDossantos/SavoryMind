@@ -3,138 +3,15 @@ import re
 from sqlalchemy.orm import Session
 from ..models.consumer import WinePairing
 
-WINE_DB = {
-    "cabernet_sauvignon": {
-        "name": "Cabernet Sauvignon",
-        "style": "Full-bodied Red",
-        "flavor_profile": "Blackcurrant, cedar, tobacco, dark chocolate, cassis",
-        "regions": ["Napa Valley, USA", "Bordeaux, France", "Coonawarra, Australia"],
-        "price_range": "$15 – $200+",
-        "serving_temp": "16–18°C (61–64°F)",
-        "decant": True,
-        "decant_time": "30–60 minutes",
-    },
-    "malbec": {
-        "name": "Malbec",
-        "style": "Full-bodied Red",
-        "flavor_profile": "Plum, blackberry, leather, tobacco, violet",
-        "regions": ["Mendoza, Argentina", "Cahors, France"],
-        "price_range": "$10 – $80",
-        "serving_temp": "16–18°C (61–64°F)",
-        "decant": True,
-        "decant_time": "20–30 minutes",
-    },
-    "syrah": {
-        "name": "Syrah / Shiraz",
-        "style": "Bold Red",
-        "flavor_profile": "Blackberry, smoked meat, black pepper, olive, dark chocolate",
-        "regions": ["Barossa Valley, Australia", "Rhône Valley, France", "Washington State, USA"],
-        "price_range": "$12 – $100",
-        "serving_temp": "16–18°C (61–64°F)",
-        "decant": True,
-        "decant_time": "30 minutes",
-    },
-    "pinot_noir": {
-        "name": "Pinot Noir",
-        "style": "Light-bodied Red",
-        "flavor_profile": "Cherry, raspberry, earthy notes, mushroom, vanilla",
-        "regions": ["Burgundy, France", "Willamette Valley, USA", "Central Otago, NZ"],
-        "price_range": "$15 – $300+",
-        "serving_temp": "14–16°C (57–61°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "chardonnay": {
-        "name": "Chardonnay",
-        "style": "Full-bodied White",
-        "flavor_profile": "Apple, lemon, butter, vanilla, oak, tropical fruit",
-        "regions": ["Burgundy, France", "Napa Valley, USA", "South Australia"],
-        "price_range": "$10 – $150",
-        "serving_temp": "10–13°C (50–55°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "sauvignon_blanc": {
-        "name": "Sauvignon Blanc",
-        "style": "Crisp White",
-        "flavor_profile": "Grapefruit, lime, passionfruit, cut grass, white peach",
-        "regions": ["Marlborough, NZ", "Loire Valley, France", "Casablanca Valley, Chile"],
-        "price_range": "$10 – $60",
-        "serving_temp": "8–12°C (46–54°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "pinot_grigio": {
-        "name": "Pinot Grigio",
-        "style": "Light White",
-        "flavor_profile": "Lemon, green apple, pear, white flowers, almond",
-        "regions": ["Alto Adige, Italy", "Alsace, France", "Oregon, USA"],
-        "price_range": "$8 – $40",
-        "serving_temp": "8–11°C (46–52°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "riesling": {
-        "name": "Riesling",
-        "style": "Aromatic White",
-        "flavor_profile": "Lime, green apple, peach, petrol (aged), honey, ginger",
-        "regions": ["Mosel, Germany", "Alsace, France", "Clare Valley, Australia"],
-        "price_range": "$10 – $80",
-        "serving_temp": "7–10°C (45–50°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "champagne": {
-        "name": "Champagne / Sparkling",
-        "style": "Sparkling",
-        "flavor_profile": "Brioche, green apple, citrus, toast, cream, yeast",
-        "regions": ["Champagne, France", "Franciacorta, Italy", "Cava, Spain"],
-        "price_range": "$15 – $500+",
-        "serving_temp": "6–9°C (43–48°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "chianti": {
-        "name": "Chianti / Sangiovese",
-        "style": "Medium-bodied Red",
-        "flavor_profile": "Cherry, plum, leather, tobacco, dried herbs, earthy",
-        "regions": ["Tuscany, Italy", "Super Tuscan blends"],
-        "price_range": "$10 – $100",
-        "serving_temp": "15–18°C (59–64°F)",
-        "decant": True,
-        "decant_time": "20 minutes",
-    },
-    "rose": {
-        "name": "Rosé",
-        "style": "Dry Rosé",
-        "flavor_profile": "Strawberry, watermelon, peach, rose, citrus zest",
-        "regions": ["Provence, France", "Rioja, Spain", "Oregon, USA"],
-        "price_range": "$10 – $50",
-        "serving_temp": "8–12°C (46–54°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "moscato": {
-        "name": "Moscato / Muscat",
-        "style": "Sweet White",
-        "flavor_profile": "Peach, apricot, orange blossom, honey, tropical fruits",
-        "regions": ["Piedmont, Italy", "Alsace, France", "California, USA"],
-        "price_range": "$8 – $40",
-        "serving_temp": "6–8°C (43–46°F)",
-        "decant": False,
-        "decant_time": None,
-    },
-    "port": {
-        "name": "Port",
-        "style": "Fortified Wine",
-        "flavor_profile": "Fig, raisin, caramel, chocolate, nuts, dried fruit",
-        "regions": ["Douro Valley, Portugal"],
-        "price_range": "$15 – $200+",
-        "serving_temp": "17–20°C (63–68°F)",
-        "decant": True,
-        "decant_time": "60 minutes (vintage)",
-    },
-}
+# WINE_DB used to be a 130-line inline literal here. Moved to
+# backend/app/data/wines.json so the catalog can be expanded
+# without touching this file. Loaded once per process via the
+# data.get_wines() helper.
+from ..data import get_wines
+
+
+WINE_DB = get_wines()
+
 
 PAIRING_RULES = [
     {

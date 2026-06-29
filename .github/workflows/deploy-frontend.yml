@@ -32,17 +32,36 @@ jobs:
             --allow-unauthenticated \
             --port 3000 \
             --project savorymind \
-            --set-env-vars "NEXT_PUBLIC_API_URL=https://api.savorymind.net,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }}"
+            --set-env-vars "NEXT_PUBLIC_API_URL=https://api.savorymind.net,NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},SOCIAL_LOGIN_SECRET=${{ secrets.SOCIAL_LOGIN_SECRET }},NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}"
 
       - name: Map savorymind.net to Cloud Run
+        # Best-effort — see deploy-backend.yml. Mappings already exist and the
+        # current gcloud SDK rejects `--region` here; the deploy above is done.
+        continue-on-error: true
         run: |
-          gcloud run domain-mappings create \
-            --service savorymind-frontend \
-            --domain savorymind.net \
-            --region europe-west1 \
-            --project savorymind 2>/dev/null || echo "Domain mapping already exists or domain not yet verified — verify at https://console.cloud.google.com/run/domains?project=savorymind"
-          gcloud run domain-mappings create \
-            --service savorymind-frontend \
-            --domain www.savorymind.net \
-            --region europe-west1 \
-            --project savorymind 2>/dev/null || echo "www mapping already exists or domain not yet verified"
+          for DOMAIN in savorymind.net www.savorymind.net; do
+            if gcloud run domain-mappings describe \
+                --domain "$DOMAIN" \
+                --region europe-west1 \
+                --project savorymind >/dev/null 2>&1; then
+              MAPPED_TO=$(gcloud run domain-mappings describe \
+                --domain "$DOMAIN" \
+                --region europe-west1 \
+                --project savorymind \
+                --format="value(spec.routeName)")
+              if [ "$MAPPED_TO" = "savorymind-frontend" ]; then
+                echo "Domain mapping for $DOMAIN already points to savorymind-frontend."
+              else
+                echo "ERROR: $DOMAIN is mapped to '$MAPPED_TO', expected 'savorymind-frontend'."
+                echo "Fix manually at https://console.cloud.google.com/run/domains?project=savorymind"
+                exit 1
+              fi
+            else
+              echo "Creating domain mapping for $DOMAIN..."
+              gcloud run domain-mappings create \
+                --service savorymind-frontend \
+                --domain "$DOMAIN" \
+                --region europe-west1 \
+                --project savorymind
+            fi
+          done

@@ -15,7 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "net.savorymind.app"
+      "bundleIdentifier": "net.savorymind.app",
+      "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,10 +35,25 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "SavoryMind uses the camera to photograph restaurant menus so the AI can recommend what to order.",
+          "photosPermission": "SavoryMind accesses your photos so you can pick an existing menu photo for AI recommendations."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f24683b2-ffb7-4a62-9984-34be3e717e9b"
+      }
+    },
+    "owner": "brunodossantos707"
   }
 }

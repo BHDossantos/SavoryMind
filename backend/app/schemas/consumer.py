@@ -42,8 +42,9 @@ class MusicRecommendation(BaseModel):
     bpm_range: str
     vibe: str
     spotify_query: str
-    amazon_station: str
-    alexa_command: str
+    # Optional + defaulted so legacy stored moods (saved before the field
+    # existed) still validate; music_service supplies it for new moods.
+    emoji: str = ""
 
 
 class MusicMoodResponse(BaseModel):
@@ -70,6 +71,12 @@ class SocialConnectionResponse(BaseModel):
     connected: bool
     username: Optional[str]
     profile_url: Optional[str]
+    # Space-separated list of OAuth scopes the user actually granted on
+    # the most recent authorize. Lets the frontend detect when an
+    # existing connection is missing newer scopes (e.g. user-top-read
+    # added in the listening-signal commit) and prompt a reconnect
+    # without forcing every user through it.
+    scopes: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

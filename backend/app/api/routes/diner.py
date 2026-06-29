@@ -7,14 +7,18 @@ from ...core.security import get_current_user
 from ...models.user import User
 from ...models.diner import DinerReview, DinerBooking, DinerVisit
 from ...services import diner_service, discovery_service, discover_service
-from ...ml.engine import build_diner_recommendations
+from ...insights.engine import build_diner_recommendations
 
 router = APIRouter(prefix="/diner", tags=["diner"])
 
 
 def require_diner(user: User = Depends(get_current_user)) -> User:
-    if user.account_type != "diner":
-        raise HTTPException(status_code=403, detail="Diner accounts only.")
+    # Food Lover (consumer) and Food Explorer (diner) accounts were unified
+    # into one "food person" shell — both reach the discover/book/history
+    # screens, so both must be accepted here. New signups are always
+    # "consumer"; "diner" is legacy. Restaurant + staff stay gated out.
+    if user.account_type not in ("consumer", "diner"):
+        raise HTTPException(status_code=403, detail="Diner features require a food account.")
     return user
 
 
@@ -81,7 +85,7 @@ def diner_summary(db: Session = Depends(get_db), user: User = Depends(require_di
     return diner_service.get_diner_summary(db, user.id)
 
 
-# ── Recommendations (ML engine) ───────────────────────────────────────────────
+# ── Recommendations (Claude + rules fallback) ───────────────────────────────────────────────
 
 @router.get("/recommendations")
 def diner_recommendations(db: Session = Depends(get_db), user: User = Depends(require_diner)):

@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function CRM() {
+  const { t } = useTranslation();
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary] = useState(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "", menu_sms_opt_in: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -23,12 +25,26 @@ export default function CRM() {
 
   useEffect(() => { fetch(); }, [search]);
 
-  const openNew = () => { setEditCustomer(null); setForm({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "" }); setShowForm(true); };
-  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", favorite_items: c.favorite_items || "", notes: c.notes || "", tags: c.tags || "" }); setShowForm(true); };
+  const openNew = () => { setEditCustomer(null); setForm({ name: "", email: "", phone: "", favorite_items: "", notes: "", tags: "", menu_sms_opt_in: false }); setShowForm(true); };
+  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", favorite_items: c.favorite_items || "", notes: c.notes || "", tags: c.tags || "", menu_sms_opt_in: !!c.menu_sms_opt_in }); setShowForm(true); };
+
+  // Inline toggle from the table cell — single PATCH that flips just the
+  // opt-in flag, no form roundtrip. Optimistic so the checkbox feels snappy.
+  const toggleMenuSms = async (c) => {
+    const next = !c.menu_sms_opt_in;
+    setCustomers((prev) => prev.map((x) => x.id === c.id ? { ...x, menu_sms_opt_in: next } : x));
+    try {
+      await api.updateCustomer(c.id, { menu_sms_opt_in: next });
+    } catch (err) {
+      // Roll back on failure.
+      setCustomers((prev) => prev.map((x) => x.id === c.id ? { ...x, menu_sms_opt_in: !next } : x));
+      setError(err.message);
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError("Name required."); return; }
+    if (!form.name.trim()) { setError(t("crmPage.nameRequired")); return; }
     setSaving(true); setError(null);
     try {
       if (editCustomer) await api.updateCustomer(editCustomer.id, form);
@@ -41,8 +57,8 @@ export default function CRM() {
 
   const handleDelete = (id) => {
     setConfirmDialog({
-      message: "Remove this customer? Their visit history will be lost.",
-      confirmLabel: "Remove",
+      message: t("crmPage.removePrompt"),
+      confirmLabel: t("crmPage.removeBtn"),
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
@@ -64,20 +80,20 @@ export default function CRM() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">👥 CRM</h1>
-          <p className="text-gray-400 mt-1">Know your customers. Build loyalty.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("crmPage.title")}</h1>
+          <p className="text-gray-400 mt-1">{t("crmPage.subtitle")}</p>
         </div>
-        <button onClick={openNew} className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors">+ Add Customer</button>
+        <button onClick={openNew} className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors">{t("crmPage.addCustomer")}</button>
       </div>
 
       {/* Summary */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total Customers", value: summary.total_customers, icon: "👥" },
-            { label: "VIP Members", value: summary.vip_count, icon: "⭐" },
-            { label: "Avg Spend", value: `$${summary.avg_spend.toFixed(0)}`, icon: "💰" },
-            { label: "Total Revenue", value: `$${summary.total_revenue.toLocaleString()}`, icon: "📈" },
+            { label: t("crmPage.totalCustomers"), value: summary.total_customers, icon: "👥" },
+            { label: t("crmPage.vipMembers"),     value: summary.vip_count,        icon: "⭐" },
+            { label: t("crmPage.avgSpend"),       value: `$${summary.avg_spend.toFixed(0)}`, icon: "💰" },
+            { label: t("crmPage.totalRevenue"),   value: `$${summary.total_revenue.toLocaleString()}`, icon: "📈" },
           ].map((s) => (
             <div key={s.label} className="card">
               <div className="text-xl mb-1">{s.icon}</div>
@@ -93,7 +109,7 @@ export default function CRM() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search customers by name..."
+          placeholder={t("crmPage.searchPlaceholder")}
           className="w-full max-w-sm border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
         />
       </div>
@@ -103,17 +119,36 @@ export default function CRM() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Customer</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Visits</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Total Spend</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Last Visit</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tags</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colCustomer")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colVisits")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colTotalSpend")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colLastVisit")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colTags")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("crmPage.colMenuSms")}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400">{t("crmPage.loading")}</td></tr>
+            ) : customers.length === 0 && !search ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-12">
+                  <div className="text-center max-w-md mx-auto">
+                    <div className="text-4xl mb-3">👋</div>
+                    <p className="font-semibold text-gray-800 mb-1">{t("crmPage.emptyTitle")}</p>
+                    <p className="text-sm text-gray-500 mb-4">{t("crmPage.emptyBody")}</p>
+                    <button
+                      onClick={openNew}
+                      className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600"
+                    >
+                      {t("crmPage.addCustomer")}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ) : customers.length === 0 ? (
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400">{t("crmPage.noResults")}</td></tr>
             ) : customers.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-3">
@@ -132,9 +167,24 @@ export default function CRM() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!c.menu_sms_opt_in}
+                      onChange={() => toggleMenuSms(c)}
+                      disabled={!c.phone}
+                      className="rounded text-brand-500 focus:ring-brand-400 disabled:opacity-50"
+                      title={c.phone ? "" : t("crmPage.colMenuSms")}
+                    />
+                    <span className="text-xs text-gray-600">
+                      {c.menu_sms_opt_in ? t("crmPage.menuSmsOn") : t("crmPage.menuSmsOff")}
+                    </span>
+                  </label>
+                </td>
+                <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(c)} className="text-xs text-brand-600 hover:underline">Edit</button>
-                    <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-700">Delete</button>
+                    <button onClick={() => openEdit(c)} className="text-xs text-brand-600 hover:underline">{t("crmPage.edit")}</button>
+                    <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-700">{t("crmPage.delete")}</button>
                   </div>
                 </td>
               </tr>
@@ -147,38 +197,52 @@ export default function CRM() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-            <h2 className="font-bold text-gray-900 text-lg mb-4">{editCustomer ? "Edit Customer" : "Add Customer"}</h2>
+            <h2 className="font-bold text-gray-900 text-lg mb-4">{editCustomer ? t("crmPage.editModalTitle") : t("crmPage.addModalTitle")}</h2>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
             <form onSubmit={handleSave} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                {[["name","Name *"], ["email","Email"], ["phone","Phone"]].map(([key, label]) => (
+                {[["name","crmPage.name"], ["email","crmPage.email"], ["phone","crmPage.phone"]].map(([key, labelKey]) => (
                   <div key={key} className={key === "name" ? "col-span-2" : ""}>
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">{label}</label>
+                    <label className="text-xs font-medium text-gray-700 mb-1 block">{t(labelKey)}</label>
                     <input value={form[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                   </div>
                 ))}
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Favourite Items</label>
-                <input value={form.favorite_items} onChange={(e) => setForm((f) => ({ ...f, favorite_items: e.target.value }))} placeholder="Grilled Salmon, Tiramisu..."
+                <label className="text-xs font-medium text-gray-700 mb-1 block">{t("crmPage.favouriteItems")}</label>
+                <input value={form.favorite_items} onChange={(e) => setForm((f) => ({ ...f, favorite_items: e.target.value }))} placeholder={t("crmPage.favouriteItemsPh")}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Tags (comma-separated)</label>
-                <input value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} placeholder="vip, regular, corporate..."
+                <label className="text-xs font-medium text-gray-700 mb-1 block">{t("crmPage.tagsLabel")}</label>
+                <input value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} placeholder={t("crmPage.tagsPh")}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Notes</label>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">{t("crmPage.notes")}</label>
                 <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={2}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none" />
               </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!form.menu_sms_opt_in}
+                    onChange={(e) => setForm((f) => ({ ...f, menu_sms_opt_in: e.target.checked }))}
+                    className="mt-0.5 rounded text-brand-500 focus:ring-brand-400"
+                  />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-amber-900">{t("crmPage.menuSmsOptIn")}</span>
+                    <span className="block text-xs text-amber-700 mt-0.5">{t("crmPage.menuSmsOptInHint")}</span>
+                  </span>
+                </label>
+              </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving} className="flex-1 bg-brand-500 text-white font-semibold py-2.5 rounded-xl hover:bg-brand-600 disabled:opacity-60">
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? t("crmPage.saving") : t("crmPage.save")}
                 </button>
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">Cancel</button>
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">{t("crmPage.cancel")}</button>
               </div>
             </form>
           </div>

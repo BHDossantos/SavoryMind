@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator, Switch } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -7,7 +8,7 @@ import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 
-const EMPTY = { name: '', email: '', phone: '', notes: '' };
+const EMPTY = { name: '', email: '', phone: '', notes: '', menu_sms_opt_in: false };
 
 function Tag({ label }) {
   const isVip = label === 'vip';
@@ -17,6 +18,7 @@ function Tag({ label }) {
 }
 
 export default function CRMScreen() {
+  const { t } = useTranslation();
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary]     = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -65,13 +67,24 @@ export default function CRMScreen() {
     { text: 'Remove', style: 'destructive', onPress: async () => { await api.deleteCustomer(c.id); load(); } },
   ]);
 
+  // Inline toggle for the daily menu SMS opt-in. Optimistic update so the
+  // switch feels snappy; rolls back if the PATCH fails.
+  const toggleMenuSms = async (c) => {
+    const next = !c.menu_sms_opt_in;
+    setCustomers((prev) => prev.map((x) => x.id === c.id ? { ...x, menu_sms_opt_in: next } : x));
+    try { await api.updateCustomer(c.id, { menu_sms_opt_in: next }); }
+    catch (e) {
+      setCustomers((prev) => prev.map((x) => x.id === c.id ? { ...x, menu_sms_opt_in: !next } : x));
+    }
+  };
+
   if (loading) return <LoadingSpinner message="Loading customers..." color={C.restaurant.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={load} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>CRM</Text>
+        <Text style={styles.title}>{t('screens.crm.title')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>
           <Text style={styles.addBtnText}>+ Add</Text>
         </TouchableOpacity>
@@ -107,6 +120,15 @@ export default function CRMScreen() {
               <Text style={styles.meta}>{c.total_visits} visits · ${(c.total_spend || 0).toFixed(0)} total · avg ${c.total_visits > 0 ? (c.total_spend / c.total_visits).toFixed(0) : 0}/visit</Text>
               {c.last_visit && <Text style={styles.sub}>Last visit: {c.last_visit}</Text>}
               {c.favorite_items && <Text style={styles.sub}>Favourites: {c.favorite_items}</Text>}
+              <View style={styles.smsToggleRow}>
+                <Text style={styles.smsToggleLabel}>{t('crmPage.colMenuSms')}</Text>
+                <Switch
+                  value={!!c.menu_sms_opt_in}
+                  onValueChange={() => toggleMenuSms(c)}
+                  disabled={!c.phone}
+                  trackColor={{ true: C.restaurant.primary }}
+                />
+              </View>
             </View>
             <View style={styles.actions}>
               <TouchableOpacity style={styles.visitBtn} onPress={() => handleRecordVisit(c)}>
@@ -118,7 +140,17 @@ export default function CRMScreen() {
             </View>
           </View>
         ))}
-        {filtered.length === 0 && <Text style={styles.empty}>No customers found.</Text>}
+        {filtered.length === 0 && !search && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>👋</Text>
+            <Text style={styles.emptyTitle}>{t('crmPage.emptyTitle')}</Text>
+            <Text style={styles.emptyBody}>{t('crmPage.emptyBody')}</Text>
+            <TouchableOpacity style={styles.emptyCta} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>
+              <Text style={styles.emptyCtaText}>+ {t('crmPage.addCustomer')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {filtered.length === 0 && !!search && <Text style={styles.empty}>{t('crmPage.noResults')}</Text>}
       </ScrollView>
 
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
@@ -138,6 +170,17 @@ export default function CRMScreen() {
               <TextInput style={styles.input} value={form[key]} onChangeText={v => set(key, v)} keyboardType={kb || 'default'} autoCapitalize={key === 'email' ? 'none' : 'words'} />
             </View>
           ))}
+          <View style={styles.smsFormBox}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.smsFormLabel}>{t('crmPage.menuSmsOptIn')}</Text>
+              <Text style={styles.smsFormHint}>{t('crmPage.menuSmsOptInHint')}</Text>
+            </View>
+            <Switch
+              value={!!form.menu_sms_opt_in}
+              onValueChange={(v) => set('menu_sms_opt_in', v)}
+              trackColor={{ true: C.restaurant.primary }}
+            />
+          </View>
           {formError && <Text style={styles.formError}>{formError}</Text>}
           <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Add Customer</Text>}
@@ -177,4 +220,15 @@ const styles = StyleSheet.create({
   formError:    { color: C.red, fontSize: 13, marginBottom: 12 },
   saveBtn:      { backgroundColor: C.restaurant.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   saveBtnText:  { color: '#fff', fontWeight: '700', fontSize: 16 },
+  smsToggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+  smsToggleLabel: { fontSize: 11, color: C.gray[500] },
+  smsFormBox:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fffbeb', borderColor: '#fde68a', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
+  smsFormLabel: { fontSize: 13, fontWeight: '600', color: '#92400e' },
+  smsFormHint:  { fontSize: 11, color: '#b45309', marginTop: 2 },
+  emptyState:   { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
+  emptyEmoji:   { fontSize: 36, marginBottom: 8 },
+  emptyTitle:   { fontSize: 16, fontWeight: '700', color: C.gray[800], marginBottom: 4 },
+  emptyBody:    { fontSize: 13, color: C.gray[500], textAlign: 'center', marginBottom: 14, lineHeight: 18 },
+  emptyCta:     { backgroundColor: C.restaurant.primary, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 11 },
+  emptyCtaText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

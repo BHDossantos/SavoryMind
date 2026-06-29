@@ -1,256 +1,278 @@
-import re
+"""Flavor assistant — Claude Opus 4.7 answering cooking questions in
+SavoryMind's unified voice. The persona itself lives in
+claude_client.FLAVOR_PERSONA so every Claude-driven surface speaks
+with the same warmth.
 
-KB = [
-    {
-        "tags": ["sauce", "breaking", "broken", "split", "curdled", "separated"],
-        "title": "Sauce is breaking / splitting",
-        "answer": (
-            "Remove from heat immediately. Whisk in 1–2 tbsp of cold water or cream off-heat, "
-            "then very slowly drizzle the sauce back in while whisking constantly. "
-            "For butter-based sauces, a small ice cube whisked in can rescue the emulsion. "
-            "Prevention: never let the pan get too hot and add fat slowly."
-        ),
-    },
-    {
-        "tags": ["sauce", "thick", "too thick", "gluey", "heavy"],
-        "title": "Sauce is too thick",
-        "answer": (
-            "Add warm liquid a splash at a time — water, stock, wine, or cream depending on the sauce. "
-            "Stir continuously over low heat. For tomato sauces a little pasta water works beautifully "
-            "because the starch helps smooth the texture."
-        ),
-    },
-    {
-        "tags": ["sauce", "thin", "too thin", "watery", "won't thicken"],
-        "title": "Sauce won't thicken",
-        "answer": (
-            "Simmer uncovered on medium-low so water evaporates. For faster results: mix 1 tsp cornstarch "
-            "with 2 tsp cold water, stir into the sauce, and cook 1–2 minutes. "
-            "Or whisk in a beurre manié (equal parts softened butter + flour)."
-        ),
-    },
-    {
-        "tags": ["sauce", "lumpy", "lumps", "clumpy"],
-        "title": "Sauce has lumps",
-        "answer": (
-            "Strain through a fine-mesh sieve or blitz briefly with an immersion blender. "
-            "To prevent lumps: always sift flour before adding, and whisk cold milk into a hot roux gradually."
-        ),
-    },
-    {
-        "tags": ["seasoning", "salty", "over-salted", "too salty"],
-        "title": "Food is too salty",
-        "answer": (
-            "Add bulk to dilute: more unsalted potato, rice, pasta, cream, or unsalted stock. "
-            "A raw peeled potato simmered in a liquid dish for 15 min absorbs some salt. "
-            "A small squeeze of lemon or dash of vinegar can also balance perceived saltiness."
-        ),
-    },
-    {
-        "tags": ["seasoning", "bland", "tasteless", "flat", "no flavour", "no flavor"],
-        "title": "Food tastes bland",
-        "answer": (
-            "Season in layers: add salt, then taste. Add acid (lemon juice, vinegar) — it brightens everything. "
-            "A pinch of sugar balances savoury dishes. Finish with a drizzle of good olive oil or a knob of butter "
-            "for richness, and fresh herbs for fragrance."
-        ),
-    },
-    {
-        "tags": ["seasoning", "spicy", "too spicy", "too hot", "burn", "chilli"],
-        "title": "Dish is too spicy",
-        "answer": (
-            "Add dairy — cream, coconut milk, yogurt, or sour cream neutralises capsaicin. "
-            "Increase starch or bulk (rice, potato, bread). A spoonful of sugar or honey also helps. "
-            "Avoid adding water — it spreads the heat rather than reducing it."
-        ),
-    },
-    {
-        "tags": ["seasoning", "sweet", "too sweet", "over-sweet"],
-        "title": "Dish is too sweet",
-        "answer": (
-            "Balance with acid: a splash of lemon juice, wine vinegar, or tamarind. "
-            "A pinch of salt also counteracts sweetness. In savoury dishes, add more aromatics "
-            "(onion, garlic) to add depth that competes with sweetness."
-        ),
-    },
-    {
-        "tags": ["seasoning", "sour", "too sour", "acidic", "too acidic"],
-        "title": "Dish is too sour / acidic",
-        "answer": (
-            "Add a pinch of sugar or honey and stir through over low heat. "
-            "A small knob of butter stirred in smooths sharp acidity. "
-            "Baking soda (¼ tsp at a time) neutralises acid chemically — use sparingly."
-        ),
-    },
-    {
-        "tags": ["meat", "tough", "chewy", "hard", "rubbery"],
-        "title": "Meat is tough / chewy",
-        "answer": (
-            "Tough meat needs more time, not more heat. Return it to low heat with liquid (stock, wine, water) "
-            "and braise covered for 30–60 min more. The collagen will eventually convert to gelatin. "
-            "Next time: use a meat mallet before cooking, or marinate in acid (yogurt, citrus) for 2–4 hours."
-        ),
-    },
-    {
-        "tags": ["meat", "dry", "dried out", "overcooked"],
-        "title": "Meat is dry / overcooked",
-        "answer": (
-            "Slice thinly against the grain and serve with a sauce or pan jus. "
-            "For chicken/pork you can simmer dry slices in warm broth for 5 min to rehydrate slightly. "
-            "Prevention: use a thermometer — chicken is done at 74°C / 165°F, beef medium at 63°C / 145°F."
-        ),
-    },
-    {
-        "tags": ["meat", "won't sear", "sticking", "not browning", "grey"],
-        "title": "Meat won't sear / is going grey",
-        "answer": (
-            "Pat the surface completely dry with paper towels — moisture is the enemy of browning. "
-            "Get the pan smoking hot before the meat goes in. Don't move it for 2–3 min. "
-            "Use a pan that retains heat (cast iron or stainless) and don't crowd it."
-        ),
-    },
-    {
-        "tags": ["pasta", "sticky", "clumping", "sticking together"],
-        "title": "Pasta is sticky / clumping",
-        "answer": (
-            "Toss immediately with sauce or a drizzle of olive oil after draining. "
-            "Never rinse pasta — the starch helps sauce cling. If already clumped, "
-            "dunk briefly in the pasta water still in the pot, then toss with sauce."
-        ),
-    },
-    {
-        "tags": ["pasta", "mushy", "overcooked", "soft"],
-        "title": "Pasta is mushy / overcooked",
-        "answer": (
-            "There's no way to reverse overcooked pasta, but you can salvage it: "
-            "spread on a tray and oven-toast at 200°C / 400°F for 10 min, then toss with sauce for a baked dish. "
-            "Or pan-fry in oil for a crispy pasta cake. Next time pull it 2 min before the packet says."
-        ),
-    },
-    {
-        "tags": ["rice", "mushy", "sticky", "overcooked", "wet"],
-        "title": "Rice is mushy / too wet",
-        "answer": (
-            "Spread on a baking tray and place in a 150°C / 300°F oven for 5–10 min to dry out. "
-            "Or lay a folded tea towel under the lid for the last 5 min of cooking to absorb steam. "
-            "Prevention: use a 1:1.5 rice-to-water ratio for most long-grain varieties."
-        ),
-    },
-    {
-        "tags": ["eggs", "scrambled", "scrambled eggs", "rubbery", "watery"],
-        "title": "Scrambled eggs are rubbery / watery",
-        "answer": (
-            "Rubbery eggs were cooked too hot too fast. Next time: use low heat, stir constantly, "
-            "and remove from heat while still slightly underdone — carry-over cooking finishes them. "
-            "A splash of cream and a knob of butter in the pan helps keep them soft."
-        ),
-    },
-    {
-        "tags": ["eggs", "poached", "poaching", "falling apart"],
-        "title": "Poached eggs falling apart",
-        "answer": (
-            "Add 1 tbsp white vinegar to the water — it helps the whites set faster. "
-            "Water should be simmering, not boiling. Create a gentle whirlpool and drop the egg in the centre. "
-            "Very fresh eggs hold together much better than older ones."
-        ),
-    },
-    {
-        "tags": ["baking", "not rising", "flat", "dense", "heavy"],
-        "title": "Baked good is not rising / too dense",
-        "answer": (
-            "Check your raising agent: baking powder loses potency after 6 months. "
-            "Don't over-mix the batter — this deflates air and develops gluten. "
-            "Make sure your oven is fully preheated. For yeast doughs, the yeast may be dead — "
-            "proof it first: mix with warm water (40°C) and a pinch of sugar, should foam in 10 min."
-        ),
-    },
-    {
-        "tags": ["baking", "burning", "burnt", "too dark", "over-brown"],
-        "title": "Baked good is burning on top",
-        "answer": (
-            "Tent with foil immediately to block direct heat. Lower the oven by 10–15°C and continue baking. "
-            "For future batches: place the rack one level lower, and check 10 min before the timer."
-        ),
-    },
-    {
-        "tags": ["bread", "dough", "not coming together", "crumbly dough", "too dry"],
-        "title": "Bread dough is too dry / crumbly",
-        "answer": (
-            "Add water 1 tbsp at a time, kneading between each addition. "
-            "It's easier to add liquid than to fix a wet dough. "
-            "If you've over-floured the surface, dampen your hands instead of adding more water directly."
-        ),
-    },
-    {
-        "tags": ["vegetables", "mushy", "overcooked", "soggy"],
-        "title": "Vegetables are mushy / overcooked",
-        "answer": (
-            "Plunge immediately into ice water to stop cooking. Drain and pat dry. "
-            "Serve as-is or pan-fry briefly in butter/oil to add some texture back. "
-            "Next time: blanch for 2–3 min only and shock in ice water straight after."
-        ),
-    },
-    {
-        "tags": ["onion", "onions", "burning", "burnt onions"],
-        "title": "Onions are burning",
-        "answer": (
-            "Lower the heat and add a splash of water or stock — it deglazes the pan and slows browning. "
-            "Stir more frequently. If already bitter-burnt, start fresh; burnt onions can't be recovered "
-            "and will make the whole dish taste acrid."
-        ),
-    },
-    {
-        "tags": ["timing", "time", "how long", "when is it done", "is it ready"],
-        "title": "How to tell when it's done",
-        "answer": (
-            "Use a probe thermometer for meat. For cakes: a skewer inserted in the centre comes out clean. "
-            "For pasta: taste it — it should have a slight bite (al dente). "
-            "For vegetables: pierce with a knife; it should slide in with light resistance. "
-            "Colour and smell are also signals: golden and fragrant usually means ready."
-        ),
-    },
-    {
-        "tags": ["substitute", "substitution", "replacement", "don't have", "missing ingredient"],
-        "title": "Ingredient substitutions",
-        "answer": (
-            "Common swaps: butter → equal amount coconut oil or neutral oil; "
-            "buttermilk → milk + 1 tbsp lemon juice (let sit 5 min); "
-            "egg → 3 tbsp aquafaba (chickpea water) or 1 tbsp chia seeds + 3 tbsp water; "
-            "cream → coconut cream or evaporated milk; "
-            "fresh herbs → ⅓ the amount of dried. When in doubt, add gradually and taste."
-        ),
-    },
-]
+Phase 7 — Flavor with tools. Used to be a one-shot Q&A returning a
+{title, answer} JSON. Now Flavor has a tool belt (search_wines /
+search_recipes / get_pantry / get_user_preferences / …) so when the
+user asks "what wine should I pair with the lamb I'm cooking?" she
+actually queries the wine catalog and the pairing engine instead of
+hallucinating an answer.
 
-FALLBACK = (
-    "I'm not sure about that one — try adjusting heat or seasoning first, those fix most problems. "
-    "If the dish is truly beyond saving, there's no shame in starting fresh with what you've learned!"
+The legacy ``answer()`` signature is preserved — callers that don't
+need conversation continuity just send the question string and get
+back ``{title, answer}``. Multi-turn callers pass ``history`` (prior
+messages) and receive ``tool_calls`` in the response for UI ghosting.
+
+i18n: the persona prefix is built per-request via
+claude_client.flavor_persona_for(language). Task instructions stay
+in English (Claude follows English meta-instructions reliably,
+translating them introduces drift) — the persona directive at the
+top is what shifts Flavor's output language.
+"""
+from __future__ import annotations
+
+import json
+import logging
+
+from sqlalchemy.orm import Session
+
+from . import claude_client
+from .flavor_tools import (
+    UserContext,
+    make_dispatcher,
+    tools_for_user,
+    load_user_memories,
 )
 
-_FILLER = re.compile(
-    r"\b(the|a|an|is|are|my|i|its|it|how|do|to|why|what|when|can|should|"
-    r"be|get|make|have|keep|help|please|need)\b",
-    re.IGNORECASE,
-)
+logger = logging.getLogger(__name__)
 
 
-def _score(entry: dict, tokens: list[str]) -> int:
-    return sum(
-        1
-        for tok in tokens
-        for tag in entry["tags"]
-        if tok in tag or tag in tok
+# Task-specific instructions concatenated with the language-aware persona
+# at request time. Phase 7 rewrite teaches Flavor about her tool belt
+# AND about the response shape we want back at the end. The "final
+# message must be plain text" instruction is what makes the structured
+# {title, answer} extraction (below) work after the tool loop ends.
+_ASSISTANT_TASK = """The user is talking to you through SavoryMind's \
+assistant chat — they're often in the middle of cooking, eating out, \
+or planning a meal. Lead with the answer. Practical, not lecture-y. \
+A brief "why" only when it earns its keep.
+
+You have tools that query SavoryMind's catalogs and the user's own data:
+- search_wines / search_beers / search_spirits — browse the catalogs
+- get_wine_pairing / get_beer_pairing / get_spirits_pairing — get
+  ranked recommendations for a specific dish
+- search_recipes / get_recipe — find + read recipes
+- get_pantry — what ingredients the user has on hand
+- get_journal_recent — what they've cooked recently + their ratings
+- get_user_preferences — cuisine likes/dislikes, dietary needs,
+  flavour profile, skill, time budget, drinking habits
+
+CALL READ TOOLS WHENEVER they'd make the answer concrete instead of \
+generic. A pairing question → call get_wine_pairing. "What can I cook \
+tonight" → get_pantry then search_recipes. Always prefer real data \
+over guesses.
+
+ACTION TOOLS (writes) — these mutate the user's data. Rules:
+- Only call when the user EXPLICITLY asks to add / save / log / book / \
+  create / update / remove / accept / decline. "I have eggs" is NOT an \
+  add-to-pantry request; "add eggs to my pantry" is.
+- For bookings: confirm the date, time, and party size with the user \
+  before calling create_booking. Bookings reach real restaurants.
+- For decline_booking: always require + capture a reason.
+- After calling an action tool, briefly tell the user what you did \
+  (e.g. "Added 2 lb eggs to your pantry. Anything else?"). Don't \
+  invent results — say only what the tool returned.
+
+MEMORY: when the user tells you something DURABLE about themselves — \
+an allergy, a piece of kitchen equipment, a strong taste, their skill \
+level, ongoing context — call remember_fact so you carry it into \
+every future conversation. Don't remember transient things. If they \
+say something is no longer true, call forget_fact. Anything already \
+in the "WHAT YOU REMEMBER" block below is loaded — don't re-remember it.
+
+Stay in voice. Encouraging language, acknowledge the situation, gentle \
+push-back when the user is about to make a mistake, one emoji max.
+
+When you're done with tools, respond with a SINGLE plain-text message \
+formatted as:
+
+TITLE: <3-7 word label, sentence case, no trailing punctuation>
+
+<the full answer — typically 1-3 short paragraphs, no markdown headings>
+
+That's it. The "TITLE:" prefix lets the UI extract the title separately."""
+
+
+def _format_memories(memories: list[dict]) -> str:
+    """Render the user's remembered facts as a system-prompt block,
+    grouped by category. Empty string when there's nothing remembered
+    yet (no point spending tokens on an empty header)."""
+    if not memories:
+        return ""
+    by_cat: dict[str, list[str]] = {}
+    for m in memories:
+        by_cat.setdefault(m.get("category", "context"), []).append(m.get("fact", ""))
+    lines = ["WHAT YOU REMEMBER ABOUT THIS USER:"]
+    for cat in ("dietary", "equipment", "preference", "skill", "context"):
+        facts = by_cat.get(cat)
+        if facts:
+            lines.append(f"  [{cat}]")
+            lines.extend(f"  - {f}" for f in facts if f)
+    return "\n".join(lines)
+
+
+def _build_system_prompt(language: str | None, memories: list[dict] | None = None) -> str:
+    """Compose the per-request system prompt: language-aware persona +
+    fixed task instructions + the user's remembered facts (Phase 10).
+    Same persona as every other Flavor surface, plus the tool-belt
+    awareness and long-term memory injection."""
+    base = f"{claude_client.flavor_persona_for(language)}\n\n{_ASSISTANT_TASK}"
+    memory_block = _format_memories(memories or [])
+    if memory_block:
+        base = f"{base}\n\n{memory_block}"
+    return base
+
+
+def _parse_response(text: str) -> dict:
+    """Pull the TITLE prefix off the front and treat the rest as the answer.
+
+    Phase 6 used Claude's JSON-mode for this. Tool-use turns can't be
+    combined with JSON-schema output, so we ask Claude for a TITLE: prefix
+    and parse it ourselves. Falls back to a generic title if Claude
+    skips the prefix."""
+    if not text:
+        return {"title": "Hit a snag", "answer": "Something glitched on my end. Try once more in a moment."}
+    text = text.strip()
+    if text.upper().startswith("TITLE:"):
+        first_newline = text.find("\n")
+        if first_newline > 0:
+            title = text[6:first_newline].strip()
+            body = text[first_newline + 1:].strip()
+            if title and body:
+                return {"title": title, "answer": body}
+    # Fallback: model skipped the prefix. Use the first sentence as a
+    # title-ish label and the rest as the answer.
+    return {"title": "Flavor says", "answer": text}
+
+
+def answer(
+    question: str,
+    *,
+    language: str | None = None,
+    user_id: int | None = None,
+    account_type: str = "consumer",
+    db: Session | None = None,
+    history: list[dict] | None = None,
+) -> dict:
+    """Ask Flavor a cooking question. Returns:
+        {
+          "title":      str,         # short label for the answer
+          "answer":     str,         # the answer body
+          "tool_calls": [..],        # tool invocations (for UI ghosting + logs)
+          "history":    [..],        # full conversation messages (for next turn)
+        }
+
+    Falls back gracefully — never raises into the route handler.
+
+    Args:
+      question:     the user's message this turn
+      language:     'en' / 'es' / 'it' / 'pt' (see flavor_persona_for)
+      user_id:      who's asking — gates the per-user tools
+      account_type: 'consumer' / 'restaurant' / 'diner' / 'staff'
+      db:           SQLAlchemy session for tool execution
+      history:      optional list of prior {role, content} messages for
+                    multi-turn continuity. Caller manages persistence
+                    (it's just a JSON list).
+    """
+    if not claude_client.is_configured():
+        return {
+            "title":      "Flavor's not configured yet",
+            "answer":     "Flavor isn't wired up on this server — the admin needs to set the AI key. Once that's in, I'll be here.",
+            "tool_calls": [],
+            "history":    history or [],
+        }
+
+    if user_id is None or db is None:
+        # Defensive fallback — without user_id we can't run per-user tools.
+        # Fall back to the legacy no-tools call_json path so the chat
+        # still works for unauthenticated / smoke-test scenarios.
+        result = claude_client.call_json(
+            _build_system_prompt(language),
+            question,
+            {
+                "type": "object",
+                "properties": {"title": {"type": "string"}, "answer": {"type": "string"}},
+                "required": ["title", "answer"],
+                "additionalProperties": False,
+            },
+        )
+        if not result:
+            return _glitch(history)
+        return {
+            "title":      str(result["title"]),
+            "answer":     str(result["answer"]),
+            "tool_calls": [],
+            "history":    history or [],
+        }
+
+    ctx = UserContext(
+        user_id=user_id,
+        account_type=account_type or "consumer",
+        language=(language or "en"),
+        db=db,
+    )
+    dispatcher = make_dispatcher(ctx)
+
+    # Phase 10 — auto-inject the user's long-term memory into the system
+    # prompt. Flavor gets every remembered fact every conversation
+    # without spending a tool call to recall. Best-effort: returns []
+    # on any error so a memory hiccup never blocks the chat.
+    memories = load_user_memories(db, user_id)
+
+    # Start with prior turns (if any), then append the new user question.
+    messages = list(history or [])
+    messages.append({"role": "user", "content": question})
+
+    result = claude_client.call_with_tools(
+        system_prompt=_build_system_prompt(language, memories),
+        messages=messages,
+        tools=tools_for_user(ctx),
+        dispatcher=dispatcher,
     )
 
+    text = result.get("answer") or ""
+    parsed = _parse_response(text)
+    return {
+        "title":      parsed["title"],
+        "answer":     parsed["answer"],
+        "tool_calls": result.get("tool_calls", []),
+        "history":    result.get("messages", messages),
+        # CTA chips the frontend renders below the answer — the audit's
+        # "AI generates actions, not just answers" baked in. Derived from
+        # which tools Claude called this turn so each chip lines up with
+        # something the user can really do next.
+        "suggested_actions": _suggested_actions_from_tools(result.get("tool_calls", [])),
+    }
 
-def answer(question: str) -> dict:
-    tokens = _FILLER.sub("", question.lower()).split()
-    tokens = [t.strip(".,?!") for t in tokens if len(t) > 2]
 
-    scored = [(e, _score(e, tokens)) for e in KB]
-    scored.sort(key=lambda x: x[1], reverse=True)
+def _suggested_actions_from_tools(tool_calls: list[dict]) -> list[dict]:
+    """Map the tool names Claude called into a small set of action chips.
+    Conservative: only emit a chip when we can route the user somewhere
+    concrete. Otherwise the chip would dead-end and erode trust."""
+    names = {(c.get("name") or "") for c in (tool_calls or [])}
+    actions: list[dict] = []
+    if "tool_get_wine_pairing" in names or "tool_search_wines" in names:
+        actions.append({"label": "See wine pairings", "icon": "🍷", "route": "/consumer/wine"})
+    if "tool_get_beer_pairing" in names or "tool_search_beers" in names \
+            or "tool_get_spirits_pairing" in names or "tool_search_spirits" in names:
+        actions.append({"label": "See beverage pairings", "icon": "🍺", "route": "/consumer/beverages"})
+    if "tool_search_recipes" in names or "tool_get_recipe" in names:
+        actions.append({"label": "Cook a recipe", "icon": "🥘", "route": "/consumer/recipes"})
+    if "tool_get_pantry" in names:
+        actions.append({"label": "Update pantry", "icon": "🧺", "route": "/consumer/pantry"})
+    if "tool_get_journal_recent" in names:
+        actions.append({"label": "Open journal", "icon": "📔", "route": "/consumer/journal"})
+    # Always-on fallback: if Flavor mentioned a restaurant via context but
+    # didn't call a tool, we'd still want to nudge towards booking.
+    return actions[:3]  # cap at 3 chips — more is noise
 
-    best_entry, best_score = scored[0]
-    if best_score == 0:
-        return {"title": "General Tip", "answer": FALLBACK}
-    return {"title": best_entry["title"], "answer": best_entry["answer"]}
+
+def _glitch(history: list[dict] | None) -> dict:
+    return {
+        "title":      "Hit a snag",
+        "answer":     "Something glitched on my end. Try once more in a moment — usually that does it.",
+        "tool_calls": [],
+        "history":    history or [],
+    }

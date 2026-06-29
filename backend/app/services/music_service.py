@@ -10,8 +10,6 @@ MOOD_BASE = {
         "artists": ["Norah Jones", "Miles Davis", "Sade", "Frank Sinatra", "João Gilberto"],
         "bpm_range": "60–80 BPM — slow and intentional",
         "spotify_query": "romantic jazz dinner",
-        "amazon_station": "Romantic Evening Radio",
-        "alexa_command": "Alexa, play romantic dinner music",
     },
     "celebratory": {
         "vibe": "Festive & Uplifting",
@@ -20,8 +18,6 @@ MOOD_BASE = {
         "artists": ["Bruno Mars", "Earth Wind & Fire", "Stevie Wonder", "Dua Lipa"],
         "bpm_range": "110–140 BPM — energetic and bright",
         "spotify_query": "celebration party hits",
-        "amazon_station": "Party Hits Radio",
-        "alexa_command": "Alexa, play celebration songs",
     },
     "casual": {
         "vibe": "Relaxed & Easygoing",
@@ -30,8 +26,6 @@ MOOD_BASE = {
         "artists": ["Jack Johnson", "Ben Harper", "The Paper Kites", "Bon Iver"],
         "bpm_range": "80–100 BPM — comfortable and breezy",
         "spotify_query": "chill indie folk acoustic",
-        "amazon_station": "Chill Vibes Radio",
-        "alexa_command": "Alexa, play chill background music",
     },
     "focused": {
         "vibe": "Productive & Focused",
@@ -40,8 +34,6 @@ MOOD_BASE = {
         "artists": ["Brian Eno", "Tycho", "Explosions in the Sky", "Lofi Girl"],
         "bpm_range": "70–90 BPM — steady and undistracting",
         "spotify_query": "focus work study music",
-        "amazon_station": "Deep Focus Radio",
-        "alexa_command": "Alexa, play focus music",
     },
     "melancholy": {
         "vibe": "Reflective & Soulful",
@@ -50,8 +42,6 @@ MOOD_BASE = {
         "artists": ["Nick Drake", "Elliott Smith", "Phoebe Bridgers", "B.B. King"],
         "bpm_range": "50–75 BPM — slow and contemplative",
         "spotify_query": "sad indie folk acoustic",
-        "amazon_station": "Soulful Blues Radio",
-        "alexa_command": "Alexa, play reflective music",
     },
     "energetic": {
         "vibe": "High Energy & Bold",
@@ -60,8 +50,6 @@ MOOD_BASE = {
         "artists": ["Bad Bunny", "Rosalía", "The Killers", "Calvin Harris"],
         "bpm_range": "120–160 BPM — fast and powerful",
         "spotify_query": "high energy latin dance",
-        "amazon_station": "High Energy Radio",
-        "alexa_command": "Alexa, play high energy music",
     },
 }
 
@@ -99,8 +87,6 @@ def build_music_recommendation(mood: str, food_type: str, occasion: str) -> dict
         "vibe": base["vibe"],
         "emoji": base["emoji"],
         "spotify_query": base["spotify_query"],
-        "amazon_station": base["amazon_station"],
-        "alexa_command": base["alexa_command"],
     }
 
 

@@ -1,39 +1,37 @@
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { C } from '../constants/colors';
-
-const MODES = [
-  {
-    type: 'consumer',
-    icon: '🏠',
-    title: 'Food Lover',
-    tagline: 'The right wine. The right song. The right recipe.',
-    color: C.consumer.primary,
-    light: C.consumer.light,
-    border: C.consumer.border,
-  },
-  {
-    type: 'diner',
-    icon: '🍽️',
-    title: 'Food Explorer',
-    tagline: 'Remember every great meal. Book the next one.',
-    color: C.diner.primary,
-    light: C.diner.light,
-    border: C.diner.border,
-  },
-  {
-    type: 'restaurant',
-    icon: '🏪',
-    title: 'Restaurant Owner',
-    tagline: 'See your numbers clearly. Serve your guests better.',
-    color: C.restaurant.primary,
-    light: C.restaurant.light,
-    border: C.restaurant.border,
-  },
-];
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
+  // Two modes only: anyone who eats food (consumer — cook + dine
+  // unified) and restaurant operators. The Food Lover / Food Explorer
+  // split that used to exist forced users to pick one half of the app;
+  // the consumer shell now hosts both. Restaurant Owner stays separate
+  // because the mental model + permissions are different.
+  const MODES = [
+    {
+      type: 'consumer',
+      icon: '🍴',
+      title: t('welcome.foodPerson'),
+      tagline: t('welcome.foodPersonTagline'),
+      color: C.consumer.primary,
+      light: C.consumer.light,
+      border: C.consumer.border,
+    },
+    {
+      type: 'restaurant',
+      icon: '🏪',
+      title: t('welcome.restaurantOwner'),
+      tagline: t('welcome.restaurantOwnerTagline'),
+      color: C.restaurant.primary,
+      light: C.restaurant.light,
+      border: C.restaurant.border,
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -41,10 +39,8 @@ export default function WelcomeScreen() {
         <View style={styles.header}>
           <Text style={styles.logo}>🧠</Text>
           <Text style={styles.brand}>SavoryMind</Text>
-          <Text style={styles.headline}>Every meal has a story.</Text>
-          <Text style={styles.sub}>
-            Yours starts here — whether you're in the kitchen,{'\n'}at the table, or behind the pass.
-          </Text>
+          <Text style={styles.headline}>{t('welcome.tagline')}</Text>
+          <Text style={styles.sub}>{t('welcome.subtitle')}</Text>
         </View>
 
         <View style={styles.cards}>
@@ -66,7 +62,10 @@ export default function WelcomeScreen() {
         </View>
 
         <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginLink}>
-          <Text style={styles.loginText}>Already have an account? <Text style={styles.loginBold}>Sign in</Text></Text>
+          <Text style={styles.loginText}>
+            {t('welcome.alreadyHaveAccount')}{' '}
+            <Text style={styles.loginBold}>{t('welcome.signIn')}</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

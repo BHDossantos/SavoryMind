@@ -6,17 +6,59 @@ import ConsumerLayout from "../components/ConsumerLayout";
 import DinerLayout from "../components/DinerLayout";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { getAccessToken } from "../services/api";
+import { trackPageview, identify } from "../lib/analytics";
+// i18n must be imported (side-effect: initialises i18next) before any
+// component that calls useTranslation() renders. _app is the top of
+// the tree, so this guarantees a single init for the whole SPA.
+import "../services/i18n";
 import "../styles/globals.css";
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup"];
+// Routes that must render without auth. Marketing surfaces, plus the
+// legal + support pages every store submission requires to be publicly
+// accessible (App Store / Play Store reject submissions whose privacy
+// policy URL hides behind a login wall — and our own privacy policy
+// declares these pages public, so the auth wrapper would be lying
+// otherwise).
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/signup",
+  "/legal/privacy",
+  "/legal/terms",
+  "/legal/account-deletion",
+  "/support",
+  // Public anonymous-feedback flow — a diner scans an employee's printed
+  // QR code and lands here. No account required.
+  "/scan/[token]",
+  // Public guest-booking page — what a restaurant shares with their
+  // existing diners over WhatsApp/Instagram. No account required.
+  "/r/[slug]",
+  // Mood-to-Meal — the consumer wedge ("Tell us how you feel. We'll
+  // tell you what to eat."). Public so a fresh visitor can try once
+  // without signing up; signed-in users get personalised results.
+  "/discover/mood",
+  // Snap-a-Menu — sister surface to Mood-to-Meal. "Order like a local,
+  // anywhere." Tourist snaps an unfamiliar menu, AI picks one dish.
+  "/discover/menu",
+  // Per-result share permalink. Renders a custom OG card carrying the
+  // shared title, server-side via getServerSideProps. Public so a
+  // recipient who doesn't yet have an account lands on something
+  // meaningful, not a login wall.
+  "/s",
+];
 const NO_LAYOUT_ROUTES = ["/onboarding"];
 
 function homePath(user) {
   if (!user) return "/login";
   if (user.account_type === "staff") return "/staff-portal";
   if (!user.onboarding_completed) return "/onboarding";
-  if (user.account_type === "consumer") return "/consumer/dashboard";
-  if (user.account_type === "diner") return "/diner/dashboard";
+  // Food Lover (consumer) and Food Explorer (diner) used to be
+  // separate nav trees. Unified into one: both account types land
+  // on the consumer shell, which now hosts cook + dine features.
+  // Diner-only pages (discover/book/history) stay in /diner/* and
+  // are reached via the Dine entry in the consumer nav.
+  if (user.account_type === "consumer" || user.account_type === "diner") return "/consumer/dashboard";
   return "/dashboard";
 }
 
@@ -29,16 +71,50 @@ function AppContent({ Component, pageProps }) {
   const isDinerRoute = router.pathname.startsWith("/diner");
   const isRestaurantRoute = !isConsumerRoute && !isDinerRoute && !isPublic && !isOnboarding;
 
+  // PostHog page_view + identify. Both no-op when NEXT_PUBLIC_POSTHOG_KEY
+  // is unset. We capture page_view on routeChangeComplete (post-replace)
+  // so the path matches what the user actually sees.
+  useEffect(() => {
+    const handleRouteChange = (url) => trackPageview(url);
+    router.events.on("routeChangeComplete", handleRouteChange);
+    // Initial pageview
+    trackPageview(router.asPath);
+    return () => router.events.off("routeChangeComplete", handleRouteChange);
+  }, [router]);
+
+  // Sync user identity to PostHog whenever auth state changes. Safe
+  // properties only — never email/name (those stay in the backend
+  // identify() call which has the same privacy-safe traits).
+  useEffect(() => {
+    if (user) {
+      identify(user.id, {
+        account_type: user.account_type,
+      });
+    }
+  }, [user?.id, user?.account_type]);
+
+  // Sync the user's server-stored language preference on hydrate. Without
+  // this, a user who picked Spanish on mobile would still see English on
+  // web after login until they manually re-pick. Imported lazily to avoid
+  // a circular import with _app's side-effect init of services/i18n.
+  useEffect(() => {
+    if (user?.language) {
+      import("../services/i18n").then(({ applyServerLanguage }) => {
+        applyServerLanguage(user.language);
+      });
+    }
+  }, [user?.language]);
+
   useEffect(() => {
     if (loading) return;
-    // Guard: treat a fresh localStorage token as "authenticated" even if React
-    // state hasn't propagated yet (router.push completes before setUser renders).
-    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
+    // Guard: a freshly-set in-memory access token means we're authenticated
+    // even before setUser's render commits (router.push fires synchronously
+    // after setAccessToken+setUser).
+    const hasToken = !!getAccessToken();
     if (!user && !hasToken && !isPublic && !isOnboarding) {
       router.replace("/login");
       return;
     }
-    // Wait for React state to catch up when token exists but user not yet set
     if (!user && hasToken) return;
     // Staff accounts skip onboarding — always go to staff portal
     if (user && user.account_type === "staff") {
@@ -56,7 +132,13 @@ function AppContent({ Component, pageProps }) {
       router.replace("/onboarding");
       return;
     }
-    if (user && isPublic && router.pathname !== "/") {
+    // Logged-in users get bounced away from /login + /signup (no point
+    // re-authenticating). But /legal/* and /support stay accessible —
+    // logged-in users should still be able to read the privacy policy
+    // or contact support without being booted to their dashboard.
+    if (user && isPublic && router.pathname !== "/"
+        && !router.pathname.startsWith("/legal")
+        && router.pathname !== "/support") {
       router.replace(homePath(user));
       return;
     }
@@ -68,15 +150,29 @@ function AppContent({ Component, pageProps }) {
       const type = user.account_type;
       // null account_type means new social user — onboarding will handle it
       if (!type) return;
-      if (type === "consumer" && !isConsumerRoute) {
+      // Food Lover (consumer) + Food Explorer (diner) now share the
+      // consumer shell. They can freely navigate into /consumer/* OR
+      // /diner/* — both are part of their unified app. Only redirect
+      // them if they wander into a route that isn't theirs (e.g. the
+      // restaurant /dashboard tree).
+      const isFoodPerson = type === "consumer" || type === "diner";
+      if (isFoodPerson && !isConsumerRoute && !isDinerRoute) {
         router.replace("/consumer/dashboard");
-      } else if (type === "diner" && !isDinerRoute) {
-        router.replace("/diner/dashboard");
       } else if (type === "restaurant" && (isConsumerRoute || isDinerRoute)) {
         router.replace("/dashboard");
       }
     }
   }, [user, loading, isPublic, isOnboarding, isConsumerRoute, isDinerRoute, router]);
+
+  // Public routes never wait for the auth context to hydrate — they're
+  // public by definition, so a logged-out (or pre-hydration) visitor must
+  // get rendered HTML immediately. This also lets link-scrapers see each
+  // page's <Head>: previously a generic loading spinner SSR'd in place of
+  // the page, so og:image / og:title via next/head never reached scrapers
+  // like WhatsApp, iMessage, Slack, Twitter (none run client JS).
+  if (isPublic) {
+    return <Component {...pageProps} />;
+  }
 
   if (loading) {
     return (
@@ -89,7 +185,7 @@ function AppContent({ Component, pageProps }) {
     );
   }
 
-  if (isPublic || isOnboarding) {
+  if (isOnboarding) {
     return <Component {...pageProps} />;
   }
 
@@ -99,19 +195,16 @@ function AppContent({ Component, pageProps }) {
     return <Component {...pageProps} />;
   }
 
-  if (user.account_type === "consumer") {
+  // Food Lover (consumer) + Food Explorer (diner) both get the
+  // ConsumerLayout — it's the unified shell with cook + dine nav
+  // after Option B. DinerLayout is kept around for routes that
+  // are explicitly diner-only (legacy /diner/welcome etc.) but
+  // not used as the top-level shell anymore.
+  if (user.account_type === "consumer" || user.account_type === "diner") {
     return (
       <ConsumerLayout>
         <Component {...pageProps} />
       </ConsumerLayout>
-    );
-  }
-
-  if (user.account_type === "diner") {
-    return (
-      <DinerLayout>
-        <Component {...pageProps} />
-      </DinerLayout>
     );
   }
 

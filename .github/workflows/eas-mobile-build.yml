@@ -1,0 +1,210 @@
+name: EAS Mobile Build
+
+# Triggers a cloud build on Expo's EAS infrastructure whenever mobile code
+# changes land on main. Also dispatchable manually so you can rebuild
+# without a code change (e.g. to pick up updated app store credentials).
+#
+# Requires the EXPO_TOKEN1 repository secret — generate one at
+# https://expo.dev/accounts/[account]/settings/access-tokens and store
+# it as EXPO_TOKEN1 under Settings → Secrets and variables → Actions.
+#
+# --non-interactive keeps the runner from prompting for credentials.
+# --no-wait returns the build URL immediately rather than tying up a
+# GitHub Actions runner for the 25–35 min EAS takes to build. Follow
+# build progress at https://expo.dev/accounts/[account]/projects/savorymind-mobile/builds
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/eas-mobile-build.yml"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which platform to build"
+        required: true
+        default: "all"
+        type: choice
+        options: [all, android, ios]
+      profile:
+        description: "eas.json build profile"
+        required: true
+        default: "production"
+        type: choice
+        options: [production, preview, development]
+
+permissions:
+  # Need write so the auto-init step can commit the EAS projectId back
+  # to mobile/app.json on the very first run. Subsequent runs skip the
+  # commit because the file already has it.
+  contents: write
+
+jobs:
+  build:
+    name: EAS build
+    runs-on: ubuntu-latest
+    # Even with --no-wait the EAS CLI does a fair bit of local prep
+    # (manifest upload, fingerprinting, credentials sync) before it
+    # hands off to the cloud. 20 min covers the slowest of those.
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a token instead of GITHUB_TOKEN for the optional commit
+          # below, so the push event re-triggers downstream workflows
+          # like CI. With the default token, pushed commits are silent
+          # to other workflows.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN1 }}
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        # --ignore-scripts skips Expo postinstall hooks that need native
+        # tooling we don't have on a vanilla runner; EAS provisions
+        # everything it needs cloud-side.
+        run: npm ci --ignore-scripts
+
+      - name: Initialise EAS project (one-time bootstrap)
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Production builds use a Dev Build (not Expo Go) — silence
+          # the "you're using Expo Go for development" warning that
+          # otherwise clutters every CI run's log.
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
+        run: |
+          # eas init is required before `eas build` can run non-interactively.
+          # It writes extra.eas.projectId into app.json, linking this repo to
+          # an EAS project (creating one under the token's account if the slug
+          # isn't already taken). After the first run we commit that change
+          # back to main so subsequent builds skip this step entirely.
+          if grep -q '"projectId"' app.json; then
+            echo "EAS projectId already set — skipping init."
+          else
+            echo "No EAS projectId in app.json — running eas init"
+            eas init --non-interactive --force
+          fi
+
+      - name: Commit projectId back to main (first run only)
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        working-directory: mobile
+        run: |
+          # Best-effort: if app.json now has changes (i.e. the bootstrap
+          # step just added projectId), commit + push so future runs find
+          # the same project. [skip ci] avoids re-triggering this same
+          # workflow in a loop. continue-on-error in the step below means
+          # we still proceed to build even if the push is rejected (e.g.
+          # branch protection rules block direct pushes to main).
+          if git diff --quiet app.json; then
+            echo "No app.json changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app.json
+            git commit -m "ci: bootstrap EAS projectId in app.json [skip ci]"
+            git push origin HEAD:main || echo "Push failed — continuing to build anyway."
+          fi
+        continue-on-error: true
+
+      - name: Write Apple ASC API key (production iOS only)
+        # Only materialise the .p8 when we'll actually use it — preview and
+        # development builds don't submit, so they don't need it. Skipping
+        # also avoids surfacing a "missing secret" error for repos that
+        # haven't set up the Apple credentials yet.
+        if: github.event.inputs.profile == 'production' || github.event_name == 'push'
+        working-directory: mobile
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          if [ -n "$ASC_API_KEY_P8" ]; then
+            printf '%s' "$ASC_API_KEY_P8" > asc-api-key.p8
+            chmod 600 asc-api-key.p8
+            echo "Wrote asc-api-key.p8 ($(wc -c < asc-api-key.p8) bytes)"
+          else
+            echo "ASC_API_KEY_P8 secret not set — skipping (iOS auto-submit will be disabled)."
+          fi
+
+      - name: Trigger EAS build (Android)
+        id: build_android
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android' || github.event_name == 'push'
+        # Don't fail the whole workflow if Android can't dispatch — e.g.
+        # EAS free-tier quota exhausted, in which case the iOS build below
+        # should still get its chance.
+        continue-on-error: true
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Production builds use a Dev Build (not Expo Go) — silence
+          # the "you're using Expo Go for development" warning that
+          # otherwise clutters every CI run's log.
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          echo "▶ Building Android — profile=$PROFILE"
+          eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
+
+      - name: Trigger EAS build (iOS)
+        id: build_ios
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'ios' || github.event_name == 'push'
+        continue-on-error: true
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN1 }}
+          # Production builds use a Dev Build (not Expo Go) — silence
+          # the "you're using Expo Go for development" warning that
+          # otherwise clutters every CI run's log.
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
+          # Apple App Store Connect API key, used both for iOS credentials
+          # provisioning during the build (so we don't need a stored
+          # distribution cert) and for the auto-submit step after the build
+          # finishes. eas.json references $ASC_API_KEY_ID / $ASC_API_ISSUER_ID
+          # by name, so they must be on the env at this step.
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          # Auto-submit only on production iOS builds with credentials.
+          IOS_AUTO_SUBMIT=""
+          if [ "$PROFILE" = "production" ] && [ -f asc-api-key.p8 ]; then
+            IOS_AUTO_SUBMIT="--auto-submit"
+            echo "Production + ASC key present → iOS build will auto-submit to TestFlight."
+          fi
+          echo "▶ Building iOS — profile=$PROFILE"
+          eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
+
+      - name: Fail if both platforms failed
+        # Without this guard the job would always succeed even when neither
+        # platform dispatched. We tolerate one failing (e.g. Android quota
+        # exhausted) but flag the run red when both went down.
+        if: steps.build_android.outcome == 'failure' && steps.build_ios.outcome == 'failure'
+        run: |
+          echo "::error::Both Android AND iOS builds failed to dispatch — see the steps above."
+          exit 1
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "## EAS build summary"
+            echo ""
+            echo "- Android: **${{ steps.build_android.outcome }}**"
+            echo "- iOS:     **${{ steps.build_ios.outcome }}**"
+            echo ""
+            echo "Track progress at https://expo.dev/accounts/_/projects/savorymind-mobile/builds"
+            echo ""
+            echo "Builds run in Expo's cloud — this workflow only initiates them."
+          } >> "$GITHUB_STEP_SUMMARY"

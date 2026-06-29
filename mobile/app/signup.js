@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../constants/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://savorymind.net';
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 
-const OTHER_PROVIDERS = [
+// Google → native flow when configured (commit "wire mobile expo-auth-session"),
+// WebBrowser fallback otherwise. Other providers route through the web
+// app's OAuth flow until each gets its own backend ID-token verifier.
+const SOCIAL_PROVIDERS = [
+  { id: 'google',   label: 'Google',    bg: '#fff',     emoji: 'G',  fg: '#4285F4' },
   { id: 'github',   label: 'GitHub',    bg: '#1a1a1a', emoji: '🐙' },
   { id: 'azure-ad', label: 'Microsoft', bg: '#0078d4', emoji: '🪟' },
   { id: 'apple',    label: 'Apple',     bg: '#000000', emoji: '🍎' },
@@ -21,18 +25,28 @@ const OTHER_PROVIDERS = [
   { id: 'linkedin', label: 'LinkedIn',  bg: '#0A66C2', emoji: '💼' },
 ];
 
-const TYPES = [
-  { value: 'consumer',   label: '🏠 Food Lover',           color: C.consumer.primary },
-  { value: 'diner',      label: '🍽️ Food Explorer',      color: C.diner.primary },
-  { value: 'restaurant', label: '🏪 Restaurant Owner',  color: C.restaurant.primary },
-];
-
 export default function SignupScreen() {
   const router = useRouter();
-  const { register, loginSocial } = useAuth();
+  const { t } = useTranslation();
+  const { register, loginGoogle } = useAuth();
   const { type: defaultType } = useLocalSearchParams();
+
+  // Account-type tiles. Two options after the Food Lover / Food Explorer
+  // unification — consumer covers anyone who cooks at home OR eats out
+  // (or both); restaurant is for operators. Derived per-render so labels
+  // re-translate on language change. `diner` is still a valid backend
+  // account_type for legacy accounts, but new signups always pick
+  // consumer to land them on the unified shell.
+  const TYPES = [
+    { value: 'consumer',   label: `🍴 ${t('welcome.foodPerson')}`,       color: C.consumer.primary },
+    { value: 'restaurant', label: `🏪 ${t('welcome.restaurantOwner')}`,  color: C.restaurant.primary },
+  ];
+  // Normalise the URL ?type= param. Old links / shares might still
+  // carry ?type=diner — fold it into 'consumer' so users land in the
+  // unified shell instead of seeing a non-existent tile selected.
+  const normalisedType = defaultType === 'diner' ? 'consumer' : defaultType;
   const [form, setForm] = useState({
-    email: '', password: '', display_name: '', account_type: defaultType || 'consumer',
+    email: '', password: '', display_name: '', account_type: normalisedType || 'consumer',
   });
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null);
@@ -40,59 +54,70 @@ export default function SignupScreen() {
 
   const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setError(null); };
 
+  // Native Google flow (mirrors login.js — see comments there for the
+  // why). When EXPO_PUBLIC_GOOGLE_CLIENT_ID isn't set, the Google tile
+  // falls through to the WebBrowser path with the rest of the providers.
   const [, googleResponse, googlePrompt] = Google.useAuthRequest({
-    clientId: GOOGLE_CLIENT_ID || 'placeholder',
-    redirectUri: makeRedirectUri({ scheme: 'savorymind' }),
+    clientId: GOOGLE_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    scopes: ['openid', 'profile', 'email'],
   });
 
   useEffect(() => {
     if (!googleResponse) return;
     if (googleResponse.type === 'success') {
-      handleGoogleSuccess(googleResponse.authentication?.accessToken);
+      const idToken = googleResponse.authentication?.idToken
+        || googleResponse.params?.id_token;
+      if (!idToken) {
+        setError(t('auth.errors.googleNoIdToken'));
+        setSocialLoading(null);
+        return;
+      }
+      (async () => {
+        try {
+          await loginGoogle(idToken);
+        } catch (e) {
+          setError(e.message || t('auth.errors.googleFailed'));
+        } finally {
+          setSocialLoading(null);
+        }
+      })();
+    } else if (googleResponse.type === 'error') {
+      setError(t('auth.errors.googleFailed'));
+      setSocialLoading(null);
     } else {
       setSocialLoading(null);
     }
-  }, [googleResponse]);
+  }, [googleResponse]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleGoogleSuccess = async (accessToken) => {
-    if (!accessToken) { setSocialLoading(null); return; }
-    try {
-      const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }).then((r) => r.json());
-      await loginSocial({ provider: 'google', provider_id: userInfo.sub, email: userInfo.email, name: userInfo.name, avatar_url: userInfo.picture });
-    } catch (e) {
-      setError(e.message || 'Google sign-in failed.');
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const handleGooglePress = async () => {
-    if (!GOOGLE_CLIENT_ID) { setError('Google sign-in not configured. Use email or visit the web app.'); return; }
-    setSocialLoading('google');
-    setError(null);
-    await googlePrompt();
-  };
-
-  const handleOtherProvider = async (p) => {
+  const handleSocialProvider = async (p) => {
     setSocialLoading(p.id);
+    setError(null);
+
+    if (p.id === 'google' && GOOGLE_CLIENT_ID) {
+      try {
+        await googlePrompt();
+        return;
+      } catch (e) {
+        // Fall through to WebBrowser if the native sheet can't open.
+      }
+    }
+
     try { await WebBrowser.openBrowserAsync(WEB_APP_URL + '/login'); }
-    catch { setError('Could not open browser.'); }
+    catch { setError(t('auth.errors.browserFailed')); }
     finally { setSocialLoading(null); }
   };
 
   const handleSignup = async () => {
     if (!form.email.trim() || !form.password || !form.display_name.trim()) {
-      setError('All fields are required.'); return;
+      setError(t('auth.errors.allFieldsRequired')); return;
     }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (form.password.length < 6) { setError(t('auth.errors.passwordTooShort')); return; }
     setLoading(true);
     setError(null);
     try {
       await register({ ...form, email: form.email.trim() });
     } catch (e) {
-      setError(e.message || 'Signup failed. Please try again.');
+      setError(e.message || t('auth.errors.signupFailed'));
     } finally {
       setLoading(false);
     }
@@ -105,32 +130,36 @@ export default function SignupScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>{t('auth.back')}</Text>
           </TouchableOpacity>
           <Text style={styles.logo}>🧠</Text>
-          <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.sub}>Free to start — no card needed.</Text>
+          <Text style={styles.title}>{t('auth.signupTitle')}</Text>
+          <Text style={styles.sub}>{t('auth.signupSubtitle')}</Text>
 
-          {/* Google */}
-          <TouchableOpacity style={styles.googleBtn} onPress={handleGooglePress} disabled={loading || !!socialLoading}>
-            {socialLoading === 'google' ? <ActivityIndicator color="#4285F4" size="small" /> : <Text style={styles.googleG}>G</Text>}
-            <Text style={styles.googleText}>{socialLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}</Text>
-          </TouchableOpacity>
+          {/* Social providers — open the web app's OAuth flow in a browser. */}
           <View style={styles.socialRow}>
-            {OTHER_PROVIDERS.map((p) => (
-              <TouchableOpacity key={p.id} style={[styles.socialIcon, { backgroundColor: p.bg }]} onPress={() => handleOtherProvider(p)} disabled={loading || !!socialLoading}>
-                {socialLoading === p.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.socialEmoji}>{p.emoji}</Text>}
+            {SOCIAL_PROVIDERS.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.socialIcon, { backgroundColor: p.bg, borderWidth: p.id === 'google' ? 1 : 0, borderColor: '#d1d5db' }]}
+                onPress={() => handleSocialProvider(p)}
+                disabled={loading || !!socialLoading}
+              >
+                {socialLoading === p.id
+                  ? <ActivityIndicator color={p.fg || '#fff'} size="small" />
+                  : <Text style={[styles.socialEmoji, p.fg && { color: p.fg, fontWeight: '800' }]}>{p.emoji}</Text>
+                }
               </TouchableOpacity>
             ))}
           </View>
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or sign up with email</Text>
+            <Text style={styles.dividerText}>{t('auth.orSignUpEmail')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Account type selector */}
-          <Text style={styles.label}>I am a...</Text>
+          <Text style={styles.label}>{t('auth.iAmA')}</Text>
           <View style={styles.typeRow}>
             {TYPES.map((t) => (
               <TouchableOpacity
@@ -148,24 +177,26 @@ export default function SignupScreen() {
           {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
 
           <View style={styles.form}>
-            <Text style={styles.label}>Display Name</Text>
-            <TextInput style={styles.input} value={form.display_name} onChangeText={(v) => set('display_name', v)} placeholder="Your name" />
-            <Text style={styles.label}>Email</Text>
-            <TextInput style={styles.input} value={form.email} onChangeText={(v) => set('email', v)} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
-            <Text style={styles.label}>Password</Text>
-            <TextInput style={styles.input} value={form.password} onChangeText={(v) => set('password', v)} placeholder="Min. 6 characters" secureTextEntry />
+            <Text style={styles.label}>{t('auth.displayName')}</Text>
+            <TextInput style={styles.input} value={form.display_name} onChangeText={(v) => set('display_name', v)} placeholder={t('auth.displayNamePlaceholder')} />
+            <Text style={styles.label}>{t('auth.email')}</Text>
+            <TextInput style={styles.input} value={form.email} onChangeText={(v) => set('email', v)} placeholder={t('auth.emailPlaceholder')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+            <Text style={styles.label}>{t('auth.password')}</Text>
+            <TextInput style={styles.input} value={form.password} onChangeText={(v) => set('password', v)} placeholder={t('auth.passwordMin')} secureTextEntry />
 
             <TouchableOpacity
               style={[styles.btn, { backgroundColor: activeType?.color || C.gray[900] }]}
               onPress={handleSignup}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Get Started →</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('auth.signupButton')}</Text>}
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginLink}>
-            <Text style={styles.loginText}>Already have an account? <Text style={styles.loginBold}>Sign in</Text></Text>
+            <Text style={styles.loginText}>
+              {t('welcome.alreadyHaveAccount')} <Text style={styles.loginBold}>{t('welcome.signIn')}</Text>
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

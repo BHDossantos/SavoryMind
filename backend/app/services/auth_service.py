@@ -1,8 +1,17 @@
+from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from ..models.user import User
+from ..models.auth_revocation import RefreshTokenRevocation
 from ..schemas.auth import UserRegister, UserLogin
-from ..core.security import hash_password, verify_password, create_access_token
+from ..core.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    REFRESH_TOKEN_TYPE,
+)
 from .seed_data import seed_database, seed_consumer_data, seed_diner_data
 
 
@@ -15,7 +24,14 @@ def _seed_for_type(db: Session, user: User) -> None:
         seed_diner_data(db, user.id)
 
 
-def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[str, User]:
+def _issue_tokens(user: User) -> tuple[str, str]:
+    return (
+        create_access_token(user.id, user.email),
+        create_refresh_token(user.id, user.email),
+    )
+
+
+def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[str, str, User]:
     if db.query(User).filter(User.email == data.email.lower()).first():
         raise HTTPException(status_code=400, detail="Email already registered.")
 
@@ -42,8 +58,8 @@ def register(db: Session, data: UserRegister, employer_id: int = None) -> tuple[
         seed_diner_data(db, user_id=user.id)
     # staff: no seeding
 
-    token = create_access_token(user.id, user.email)
-    return token, user
+    access, refresh = _issue_tokens(user)
+    return access, refresh, user
 
 
 def social_login(
@@ -53,7 +69,7 @@ def social_login(
     email: str,
     name: str,
     avatar_url: str = "",
-) -> tuple[str, User]:
+) -> tuple[str, str, User]:
     # 1. Exact match on social identity
     user = db.query(User).filter(
         User.social_provider == provider,
@@ -85,16 +101,114 @@ def social_login(
         db.commit()
         db.refresh(user)
 
-    token = create_access_token(user.id, user.email)
-    return token, user
+    access, refresh = _issue_tokens(user)
+    return access, refresh, user
 
 
-def login(db: Session, data: UserLogin) -> tuple[str, User]:
+def login(db: Session, data: UserLogin) -> tuple[str, str, User]:
     user = db.query(User).filter(User.email == data.email.lower()).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
         )
-    token = create_access_token(user.id, user.email)
-    return token, user
+    access, refresh = _issue_tokens(user)
+    return access, refresh, user
+
+
+def _is_jti_revoked(db: Session, jti: str) -> bool:
+    if not jti:
+        return False
+    return (
+        db.query(RefreshTokenRevocation)
+        .filter(RefreshTokenRevocation.jti == jti)
+        .first()
+        is not None
+    )
+
+
+def _revoke_jti(db: Session, jti: str, user_id: int, exp_timestamp: int) -> None:
+    """Insert a row recording that this jti is no longer accepted. Idempotent —
+    duplicate inserts (e.g. a client double-clicking logout) are ignored."""
+    if not jti:
+        return
+    if _is_jti_revoked(db, jti):
+        return
+    db.add(RefreshTokenRevocation(
+        jti=jti,
+        user_id=user_id,
+        expires_at=datetime.utcfromtimestamp(exp_timestamp),
+        revoked_at=datetime.utcnow(),
+    ))
+    db.commit()
+
+
+def _prune_expired_revocations(db: Session) -> None:
+    """Best-effort cleanup of revocation rows whose underlying tokens have
+    naturally expired anyway. Called opportunistically on /refresh so the
+    table stays bounded without a separate cron."""
+    db.query(RefreshTokenRevocation).filter(
+        RefreshTokenRevocation.expires_at < datetime.utcnow()
+    ).delete(synchronize_session=False)
+    db.commit()
+
+
+def refresh_session(db: Session, refresh_token: str) -> tuple[str, str, User]:
+    """Validate a refresh token, reject if its jti has been revoked, then
+    mint a new access + refresh pair and revoke the old jti so the rotated
+    cookie can't be replayed."""
+    try:
+        payload = decode_token(refresh_token, REFRESH_TOKEN_TYPE)
+        user_id = int(payload.get("sub", 0))
+        jti = payload.get("jti")
+        exp = int(payload.get("exp", 0))
+    except (ValueError, KeyError):
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+
+    # Tag the JTI on the Sentry scope so any error from this point on is
+    # traceable to the specific refresh-token instance — useful for diagnosing
+    # replay-detection trips.
+    try:
+        import sentry_sdk
+        if jti:
+            sentry_sdk.set_tag("refresh_jti", jti)
+    except Exception:
+        pass
+
+    if _is_jti_revoked(db, jti):
+        # Stolen-cookie replay or post-logout reuse. Treat as auth failure
+        # without leaking which.
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+
+    # Rotation: blacklist the just-used jti before handing out the new one.
+    # If both the legitimate user and an attacker hold copies of the cookie,
+    # whoever calls /refresh second gets 401 — and the user can see "logged
+    # out unexpectedly" as a signal something's wrong.
+    if jti:
+        _revoke_jti(db, jti, user_id, exp)
+
+    _prune_expired_revocations(db)
+
+    access, new_refresh = _issue_tokens(user)
+    return access, new_refresh, user
+
+
+def logout(db: Session, refresh_token: str | None) -> None:
+    """Revoke the user's current refresh token so it can't be used again
+    even if the cookie was already exfiltrated. Silent no-op if the token
+    is absent or malformed — logout shouldn't 4xx the user."""
+    if not refresh_token:
+        return
+    try:
+        payload = decode_token(refresh_token, REFRESH_TOKEN_TYPE)
+    except (ValueError, KeyError):
+        return
+    jti = payload.get("jti")
+    user_id = int(payload.get("sub", 0))
+    exp = int(payload.get("exp", 0))
+    if jti and exp:
+        _revoke_jti(db, jti, user_id, exp)

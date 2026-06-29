@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import SafeScreen from '../../components/SafeScreen';
 import { api } from '../../services/api';
@@ -14,6 +15,7 @@ const STATUS_STYLE = {
 };
 
 export default function BookScreen() {
+  const { t } = useTranslation();
   const [bookings, setBookings]     = useState([]);
   const [showForm, setShowForm]     = useState(false);
   const [form, setForm]             = useState(EMPTY);
@@ -54,7 +56,7 @@ export default function BookScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>My Bookings</Text>
+          <Text style={styles.title}>{t('screens.book.title')}</Text>
           {bookings.length > 0 && <Text style={styles.sub}>{upcoming.length} upcoming · {past.length} past</Text>}
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setShowForm(!showForm); setForm(EMPTY); setFormError(null); }}>

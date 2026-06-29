@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
+import LanguageSelector from "./LanguageSelector";
 
 const navLinks = [
   { href: "/diner/dashboard",  label: "Home",         icon: "🏠" },
@@ -16,6 +18,7 @@ const navLinks = [
 export default function DinerLayout({ children }) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [notifications, setNotifications] = useState([]);
@@ -139,14 +142,17 @@ export default function DinerLayout({ children }) {
           <span>🎯</span> Getting Started
         </Link>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-diner-50">
-          <span className="text-xs text-diner-600 font-medium">Diner Mode</span>
+          <span className="text-xs text-diner-600 font-medium">{t("nav.foodExplorer")}</span>
           <span className="ml-auto text-xs bg-diner-500 text-white px-2 py-0.5 rounded-full">Free</span>
+        </div>
+        <div className="px-1">
+          <LanguageSelector />
         </div>
         <button
           onClick={logout}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
         >
-          <span>🚪</span> Sign out
+          <span>🚪</span> {t("nav.signOut")}
         </button>
       </div>
     </aside>

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import SafeScreen from '../../components/SafeScreen';
@@ -17,6 +18,7 @@ function SpeedBadge({ total }) {
 }
 
 export default function KitchenScreen() {
+  const { t } = useTranslation();
   const [times, setTimes]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
@@ -72,7 +74,7 @@ export default function KitchenScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>Kitchen Times</Text>
+          <Text style={styles.title}>{t('screens.kitchen.title')}</Text>
           <Text style={styles.sub}>{times.length} records{avgTotal ? ` · avg ${avgTotal} min` : ''}</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>

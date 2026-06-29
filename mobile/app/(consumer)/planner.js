@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -12,6 +13,7 @@ const DIETARY_LABELS  = { '': 'All', vegetarian: 'Vegetarian', vegan: 'Vegan', k
 const TABS = ['Plan', 'Shopping List'];
 
 export default function Planner() {
+  const { t } = useTranslation();
   const [tab, setTab]         = useState('Plan');
   const [dietary, setDietary] = useState('');
   const [plan, setPlan]       = useState(null);
@@ -49,7 +51,7 @@ export default function Planner() {
   return (
     <SafeScreen onRefresh={load} refreshing={refreshing}>
       {/* Header */}
-      <Text style={s.title}>Meal Planner</Text>
+      <Text style={s.title}>{t('screens.planner.title')}</Text>
       <Text style={s.subtitle}>Your personalised weekly plan</Text>
 
       {/* Today's suggestion */}

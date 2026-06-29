@@ -1,6 +1,261 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
+import usePolling from "../../hooks/usePolling";
+import { playChime } from "../../utils/chime";
+import { fmtDate, fmtDateShort } from "../../utils/format";
 import ConfirmDialog from "../../components/ConfirmDialog";
+
+function ShareLinkWidget() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [copied, setCopied] = useState(false);
+
+  if (!user?.slug) return null;
+
+  const base = (typeof window !== "undefined" ? window.location.origin : "https://savorymind.net");
+  const link = `${base}/r/${user.slug}`;
+  const waMessage = t("bookingsPage.shareWhatsappMessage", { link });
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Older browsers / Safari without permission — best effort
+    }
+  };
+
+  return (
+    <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-brand-900 mb-1">
+        🔗 {t("bookingsPage.shareLinkHeadline")}
+      </p>
+      <p className="text-xs text-brand-700 mb-2">{t("bookingsPage.shareLinkSubtitle")}</p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <code className="flex-1 min-w-[180px] text-xs bg-white border border-brand-200 rounded-lg px-3 py-2 text-gray-700 font-mono truncate">
+          {link}
+        </code>
+        <button
+          onClick={copy}
+          className="flex-shrink-0 text-xs px-3 py-2 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700"
+        >
+          {copied ? t("bookingsPage.shareCopied") : t("bookingsPage.shareCopy")}
+        </button>
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex-shrink-0 inline-flex items-center gap-1 text-xs px-3 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+        >
+          💬 {t("bookingsPage.shareWhatsapp")}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function SmsAlertWidget() {
+  const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [editing, setEditing] = useState(!user?.phone);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const save = async () => {
+    const trimmed = phone.trim();
+    // Loose client-side check — Twilio enforces E.164 server-side. Empty
+    // clears the phone (opt-out).
+    if (trimmed && !/^\+[1-9]\d{6,14}$/.test(trimmed)) {
+      setErr(t("bookingsPage.smsPhoneInvalid"));
+      return;
+    }
+    setSaving(true); setErr(null);
+    try {
+      await api.updateProfile({ phone: trimmed || null });
+      updateUser({ phone: trimmed || null });
+      setEditing(false);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing && user?.phone) {
+    return (
+      <div className="mb-4 flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+        <span className="text-green-800">
+          📱 {t("bookingsPage.smsAlertsActive", { phone: user.phone })}
+        </span>
+        <button onClick={() => setEditing(true)} className="text-green-700 underline text-xs font-medium">
+          {t("bookingsPage.smsChange")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-brand-900 mb-1">{t("bookingsPage.smsHeadline")}</p>
+      <p className="text-xs text-brand-700 mb-2">{t("bookingsPage.smsSubtitle")}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="+15555550100"
+          className="flex-1 min-w-[180px] border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="text-xs px-4 py-1.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-60"
+        >
+          {saving ? t("common.saving") : t("bookingsPage.smsEnable")}
+        </button>
+        {user?.phone && (
+          <button
+            onClick={() => { setPhone(user.phone); setEditing(false); setErr(null); }}
+            className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700"
+          >
+            {t("common.cancel")}
+          </button>
+        )}
+      </div>
+      {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+    </div>
+  );
+}
+
+function TodaysMenuWidget() {
+  const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
+  const [menu, setMenu] = useState(user?.menu_of_the_day || "");
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
+  const [err, setErr] = useState(null);
+  const [stats, setStats] = useState(null);
+
+  // Default expanded when there's no menu set yet — auto-nudge the operator
+  // to publish today's menu so the broadcast actually goes out. Collapsed
+  // once they've saved at least once, so the page isn't cluttered every day.
+  const [expanded, setExpanded] = useState(!user?.menu_of_the_day);
+
+  // Load the 7-day attribution rollup once the widget is open. Silent on
+  // failure — the textarea still works without it.
+  useEffect(() => {
+    if (!expanded) return;
+    api.getMenuBroadcastStats().then(setStats).catch(() => {});
+  }, [expanded]);
+
+  const remaining = 300 - menu.length;
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    try {
+      // Server truncates the body before sending the SMS anyway, but capping
+      // input keeps the textarea honest to the operator about what diners see.
+      const trimmed = menu.trim().slice(0, 300);
+      await api.updateProfile({ menu_of_the_day: trimmed });
+      updateUser({ menu_of_the_day: trimmed });
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 4000);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clear = async () => {
+    setSaving(true); setErr(null);
+    try {
+      await api.updateProfile({ menu_of_the_day: "" });
+      updateUser({ menu_of_the_day: "" });
+      setMenu("");
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-left flex items-center justify-between gap-2"
+      >
+        <div>
+          <p className="text-sm font-semibold text-amber-900">
+            🍽 {t("bookingsPage.menuHeadline")}
+          </p>
+          <p className="text-xs text-amber-700 mt-0.5">{t("bookingsPage.menuSubtitle")}</p>
+        </div>
+        <span className="text-amber-700 text-sm flex-shrink-0">{expanded ? "▾" : "▸"}</span>
+      </button>
+      {expanded && (
+        <div className="mt-3">
+          {stats && stats.rounds > 0 && (
+            <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+              {[
+                { label: t("bookingsPage.menuStatsSent"),     value: stats.sms_sent },
+                { label: t("bookingsPage.menuStatsClicks"),   value: stats.clicks },
+                { label: t("bookingsPage.menuStatsBookings"), value: stats.bookings },
+              ].map((s) => (
+                <div key={s.label} className="bg-white border border-amber-200 rounded-lg px-2 py-2">
+                  <p className="text-lg font-bold text-amber-900">{s.value}</p>
+                  <p className="text-[10px] text-amber-700 uppercase tracking-wider">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <textarea
+            value={menu}
+            onChange={(e) => setMenu(e.target.value.slice(0, 300))}
+            rows={4}
+            placeholder={t("bookingsPage.menuPlaceholder")}
+            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none bg-white"
+          />
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs text-amber-700">{t("bookingsPage.menuCharCount", { n: menu.length })}</span>
+            {user?.menu_sms_last_sent_date === new Date().toISOString().split("T")[0] && (
+              <span className="text-xs text-amber-700 italic">{t("bookingsPage.menuSentToday")}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="text-xs px-4 py-1.5 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-60"
+            >
+              {saving ? t("common.saving") : t("bookingsPage.menuSave")}
+            </button>
+            {menu && (
+              <button
+                onClick={clear}
+                disabled={saving}
+                className="text-xs px-3 py-1.5 text-amber-700 hover:text-amber-900"
+              >
+                {t("bookingsPage.menuClear")}
+              </button>
+            )}
+            {savedMsg && (
+              <span className="text-xs text-green-700 font-medium">✓ {t("bookingsPage.menuSaved")}</span>
+            )}
+          </div>
+          {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 const STATUS_STYLES = {
   confirmed: "bg-blue-100 text-blue-700",
@@ -9,6 +264,7 @@ const STATUS_STYLES = {
   completed: "bg-gray-100 text-gray-600",
   cancelled: "bg-red-100 text-red-600",
   declined:  "bg-red-100 text-red-600",
+  no_show:   "bg-red-200 text-red-800",
 };
 
 const ALL_SLOTS = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:00","19:30","20:00","20:30","21:00"];
@@ -16,6 +272,8 @@ const ALL_SLOTS = ["12:00","12:30","13:00","13:30","14:00","18:00","18:30","19:0
 const today = () => new Date().toISOString().split("T")[0];
 
 export default function Bookings() {
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [bookings, setBookings]     = useState([]);
   const [summary, setSummary]       = useState(null);
   const [filterDate, setFilterDate] = useState(today());
@@ -56,9 +314,50 @@ export default function Bookings() {
 
   useEffect(() => { fetchAll(); }, [filterDate]);
 
+  // Poll silently while the bookings page is open so new arrivals and
+  // status changes (e.g. a diner cancelling, a pending request from the
+  // public flow) show up without the restaurant having to refresh.
+  usePolling(
+    () => Promise.all([
+      api.getBookings(filterDate || undefined),
+      api.getTodaySummary(),
+    ])
+      .then(([b, s]) => { setBookings(b); setSummary(s); })
+      .catch(() => {}),
+    { intervalMs: 10000, enabled: true },
+  );
+
+  // Detect newly-arrived bookings vs the previous tick — chime + toast
+  // so a restaurant operator doesn't have to keep eyes on the page. The
+  // first render skips (prevIdsRef empty) so we don't fire for every
+  // already-known booking on mount.
+  const prevIdsRef = useRef(null);
+  const [realtimeMsg, setRealtimeMsg] = useState(null);
+  useEffect(() => {
+    if (prevIdsRef.current === null) {
+      prevIdsRef.current = new Set(bookings.map((b) => b.id));
+      return;
+    }
+    const prev = prevIdsRef.current;
+    const newOne = bookings.find((b) => !prev.has(b.id));
+    if (newOne) {
+      playChime();
+      setRealtimeMsg(t("bookingsPage.realtimeNew", {
+        name: newOne.customer_name || t("bookingsPage.realtimeGuest"),
+        party: newOne.party_size,
+      }));
+    }
+    prevIdsRef.current = new Set(bookings.map((b) => b.id));
+  }, [bookings, t]);
+  useEffect(() => {
+    if (!realtimeMsg) return;
+    const timer = setTimeout(() => setRealtimeMsg(null), 5500);
+    return () => clearTimeout(timer);
+  }, [realtimeMsg]);
+
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!form.customer_name.trim()) { setError("Customer name required."); return; }
+    if (!form.customer_name.trim()) { setError(t("bookingsPage.customerRequired")); return; }
     setSaving(true); setError(null);
     try {
       await api.createBooking({
@@ -79,24 +378,24 @@ export default function Bookings() {
 
   const handleDelete = (id) => {
     setConfirmDialog({
-      message: "Delete this booking? This cannot be undone.",
-      confirmLabel: "Delete",
+      message: t("bookingsPage.deletePrompt"),
+      confirmLabel: t("bookingsPage.delete"),
       onConfirm: async () => {
         setConfirmDialog(null);
         try { await api.deleteBooking(id); fetchAll(); }
-        catch (err) { setError(err.message || "Failed to delete booking."); }
+        catch (err) { setError(err.message || t("bookingsPage.deleteFailed")); }
       },
     });
   };
 
   const handleConfirm = async (id) => {
     try { await api.confirmBooking(id); fetchAll(); }
-    catch (err) { setError(err.message || "Failed to confirm booking."); }
+    catch (err) { setError(err.message || t("bookingsPage.confirmFailed")); }
   };
 
   const handleDecline = async (id) => {
     try { await api.declineBooking(id); fetchAll(); }
-    catch (err) { setError(err.message || "Failed to decline booking."); }
+    catch (err) { setError(err.message || t("bookingsPage.declineFailed")); }
   };
 
   const toggleSlot = (slot) => {
@@ -111,7 +410,7 @@ export default function Bookings() {
       await api.updateMyAvailability({ time_slots: availSlots, booking_window_days: Number(bookingWindow) });
       setAvailSuccess(true);
       setTimeout(() => setAvailSuccess(false), 3000);
-    } catch (err) { setAvailError(err.message || "Failed to save availability."); }
+    } catch (err) { setAvailError(err.message || t("bookingsPage.saveAvailFailed")); }
     finally { setAvailSaving(false); }
   };
 
@@ -120,37 +419,65 @@ export default function Bookings() {
 
   return (
     <div>
+      {realtimeMsg && (
+        <div
+          role="status"
+          className="fixed top-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-brand-600 print:hidden"
+        >
+          {realtimeMsg}
+        </div>
+      )}
+      <div className="print:hidden">
+        <ShareLinkWidget />
+        <SmsAlertWidget />
+        <TodaysMenuWidget />
+      </div>
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between print:hidden">
           <span>{error}</span>
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-3">✕</button>
         </div>
       )}
-      <div className="flex items-center justify-between mb-8">
+
+      {/* Print-only header — shows on paper instead of the screen chrome. */}
+      <div className="hidden print:block mb-4">
+        <h1 className="text-2xl font-bold">
+          {user?.restaurant_name || user?.display_name}
+        </h1>
+        <p className="text-sm text-gray-600">
+          {t("bookingsPage.printHeader", { date: fmtDate(filterDate || today(), i18n.language) })}
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📅 Bookings</h1>
-          <p className="text-gray-400 mt-1">Manage table reservations and covers</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("bookingsPage.title")}</h1>
+          <p className="text-gray-400 mt-1">{t("bookingsPage.subtitle")}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => { setFilterDate(today()); setTimeout(() => window.print(), 300); }}
+            className="border border-gray-200 text-gray-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+            🖨 {t("bookingsPage.printToday")}
+          </button>
           <button onClick={() => { setShowAvail(true); loadAvailability(); }}
-            className="border border-gray-200 text-gray-700 font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
-            ⚙ Availability
+            className="border border-gray-200 text-gray-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+            {t("bookingsPage.availabilityBtn")}
           </button>
           <button onClick={() => setShowForm(true)}
-            className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors">
-            + New Booking
+            className="bg-brand-500 text-white font-semibold px-4 sm:px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors text-sm">
+            {t("bookingsPage.newBooking")}
           </button>
         </div>
       </div>
 
       {/* Today summary */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 print:hidden">
           {[
-            { label: "Today's Bookings", value: summary.total_bookings, icon: "📅" },
-            { label: "Confirmed", value: summary.confirmed, icon: "✅" },
-            { label: "Total Covers", value: summary.total_covers, icon: "👥" },
-            { label: "Cancelled", value: summary.cancelled, icon: "❌" },
+            { label: t("bookingsPage.todayBookings"), value: summary.total_bookings, icon: "📅" },
+            { label: t("bookingsPage.confirmed"),     value: summary.confirmed,      icon: "✅" },
+            { label: t("bookingsPage.totalCovers"),   value: summary.total_covers,   icon: "👥" },
+            { label: t("bookingsPage.cancelled"),     value: summary.cancelled,      icon: "❌" },
           ].map((s) => (
             <div key={s.label} className="card">
               <div className="text-xl mb-1">{s.icon}</div>
@@ -166,8 +493,8 @@ export default function Bookings() {
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
           <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-amber-900">🌐 Online Booking Requests</h2>
-              <p className="text-xs text-amber-700 mt-0.5">Diners requesting tables via SavoryMind — confirm or decline</p>
+              <h2 className="font-semibold text-amber-900">{t("bookingsPage.onlineRequests")}</h2>
+              <p className="text-xs text-amber-700 mt-0.5">{t("bookingsPage.onlineRequestsSub")}</p>
             </div>
             <span className="bg-amber-200 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">{onlineRequests.length}</span>
           </div>
@@ -176,17 +503,17 @@ export default function Bookings() {
               <div key={b.id} className="px-5 py-4 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900">{b.customer_name}</p>
-                  <p className="text-sm text-gray-600">{b.date} · {b.time_slot} · {b.party_size} guests</p>
+                  <p className="text-sm text-gray-600">{fmtDate(b.date, i18n.language)} · {b.time_slot} · {t("bookingsPage.guests", { count: b.party_size })}</p>
                   {b.notes && <p className="text-xs text-gray-500 italic mt-0.5 truncate">{b.notes}</p>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <button onClick={() => handleConfirm(b.id)}
                     className="text-sm font-semibold bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition-colors">
-                    ✓ Confirm
+                    {t("bookingsPage.confirmBtn")}
                   </button>
                   <button onClick={() => handleDecline(b.id)}
                     className="text-sm font-semibold bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition-colors">
-                    ✕ Decline
+                    {t("bookingsPage.declineBtn")}
                   </button>
                 </div>
               </div>
@@ -196,70 +523,88 @@ export default function Bookings() {
       )}
 
       {/* Filter */}
-      <div className="flex items-center gap-4 mb-5">
-        <label className="text-sm font-medium text-gray-700">Date:</label>
+      <div className="flex items-center gap-4 mb-5 print:hidden">
+        <label className="text-sm font-medium text-gray-700">{t("bookingsPage.dateFilter")}</label>
         <input
           type="date"
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
           className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
         />
-        <button onClick={() => setFilterDate("")} className="text-xs text-gray-400 hover:text-gray-700">Show all</button>
+        <button onClick={() => setFilterDate("")} className="text-xs text-gray-400 hover:text-gray-700">{t("bookingsPage.showAll")}</button>
       </div>
 
-      {/* Bookings table */}
-      <div className="card overflow-hidden p-0">
-        <table className="w-full text-sm">
+      {/* Bookings table — horizontal scroll on narrow screens so the
+          status column doesn't get clipped on phones */}
+      <div className="card overflow-x-auto p-0 print:overflow-visible">
+        <table className="w-full text-sm min-w-[640px] print:min-w-0">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date / Time</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Party</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Table</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3" />
+              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colCustomer")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colDateTime")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colParty")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("bookingsPage.colTable")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider print:hidden">{t("bookingsPage.colStatus")}</th>
+              <th className="px-4 py-3 print:hidden" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={6} className="text-center py-10 text-gray-400">{t("bookingsPage.loading")}</td></tr>
             ) : regularBookings.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">No bookings for this date.</td></tr>
+              <tr><td colSpan={6} className="text-center py-10 text-gray-400">{t("bookingsPage.noBookings")}</td></tr>
             ) : regularBookings.map((b) => (
               <tr key={b.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
                     <div>
-                      <p className="font-medium text-gray-900">{b.customer_name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-gray-900">{b.customer_name}</p>
+                        {b.repeat_visits > 0 && (
+                          <span
+                            className="text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded"
+                            title={t("bookingsPage.repeatBadgeHint", { count: b.repeat_visits })}
+                          >
+                            🔁 {t("bookingsPage.repeatBadge", { count: b.repeat_visits + 1 })}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400">{b.customer_phone || b.customer_email || ""}</p>
                       {b.notes && <p className="text-xs text-amber-600 mt-0.5 truncate max-w-[160px]">⚠ {b.notes}</p>}
+                      {b.customer_notes && <p className="text-xs text-purple-700 mt-0.5 truncate max-w-[180px]">📝 {b.customer_notes}</p>}
                     </div>
                     {b.source === "online" && (
-                      <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium flex-shrink-0">🌐 Online</span>
+                      <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium flex-shrink-0">{t("bookingsPage.onlineBadge")}</span>
+                    )}
+                    {b.source === "menu_sms" && (
+                      <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-medium flex-shrink-0" title={t("bookingsPage.menuSmsBadgeHint")}>
+                        🍽 {t("bookingsPage.menuSmsBadge")}
+                      </span>
                     )}
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-800">{b.date}</p>
+                  <p className="font-medium text-gray-800">{fmtDate(b.date, i18n.language)}</p>
                   <p className="text-xs text-gray-400">{b.time_slot}</p>
                 </td>
-                <td className="px-4 py-3 font-medium text-gray-800">{b.party_size} pax</td>
+                <td className="px-4 py-3 font-medium text-gray-800">{t("bookingsPage.pax", { n: b.party_size })}</td>
                 <td className="px-4 py-3 text-gray-600">{b.table_number ? `T${b.table_number}` : "—"}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 print:hidden">
                   <select
                     value={b.status}
                     onChange={(e) => updateStatus(b.id, e.target.value)}
                     className={`text-xs font-medium px-2 py-1 rounded-full border-none cursor-pointer ${STATUS_STYLES[b.status] || "bg-gray-100 text-gray-600"}`}
                   >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="seated">Seated</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="pending">{t("bookingsPage.statusPending")}</option>
+                    <option value="confirmed">{t("bookingsPage.statusConfirmed")}</option>
+                    <option value="seated">{t("bookingsPage.statusSeated")}</option>
+                    <option value="completed">{t("bookingsPage.statusCompleted")}</option>
+                    <option value="no_show">{t("bookingsPage.statusNoShow")}</option>
+                    <option value="cancelled">{t("bookingsPage.statusCancelled")}</option>
                   </select>
                 </td>
-                <td className="px-4 py-3">
-                  <button onClick={() => handleDelete(b.id)} className="text-xs text-red-500 hover:text-red-700">Delete</button>
+                <td className="px-4 py-3 print:hidden">
+                  <button onClick={() => handleDelete(b.id)} className="text-xs text-red-500 hover:text-red-700">{t("bookingsPage.delete")}</button>
                 </td>
               </tr>
             ))}
@@ -280,53 +625,53 @@ export default function Bookings() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-            <h2 className="font-bold text-gray-900 text-lg mb-4">New Booking</h2>
+            <h2 className="font-bold text-gray-900 text-lg mb-4">{t("bookingsPage.newModalTitle")}</h2>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Customer name *</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.customerName")}</label>
                   <input value={form.customer_name} onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Phone</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.phone")}</label>
                   <input value={form.customer_phone} onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Date</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.date")}</label>
                   <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Time</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.time")}</label>
                   <input value={form.time_slot} onChange={(e) => setForm((f) => ({ ...f, time_slot: e.target.value }))} placeholder="19:00"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Party size</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.partySize")}</label>
                   <input type="number" min="1" value={form.party_size} onChange={(e) => setForm((f) => ({ ...f, party_size: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Table #</label>
-                  <input type="number" value={form.table_number} onChange={(e) => setForm((f) => ({ ...f, table_number: e.target.value }))} placeholder="Optional"
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.tableNum")}</label>
+                  <input type="number" value={form.table_number} onChange={(e) => setForm((f) => ({ ...f, table_number: e.target.value }))} placeholder={t("bookingsPage.tableOptional")}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Notes / Dietary</label>
-                <input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Allergies, special requests..."
+                <label className="text-xs font-medium text-gray-700 mb-1 block">{t("bookingsPage.notes")}</label>
+                <input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder={t("bookingsPage.notesPlaceholder")}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving}
                   className="flex-1 bg-brand-500 text-white font-semibold py-2.5 rounded-xl hover:bg-brand-600 disabled:opacity-60 transition-colors">
-                  {saving ? "Saving..." : "Create Booking"}
+                  {saving ? t("bookingsPage.saving") : t("bookingsPage.createBooking")}
                 </button>
                 <button type="button" onClick={() => setShowForm(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">Cancel</button>
+                  className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">{t("bookingsPage.cancel")}</button>
               </div>
             </form>
           </div>
@@ -338,17 +683,17 @@ export default function Bookings() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-gray-900 text-lg">⚙ Online Availability Settings</h2>
+              <h2 className="font-bold text-gray-900 text-lg">{t("bookingsPage.availModalTitle")}</h2>
               <button onClick={() => setShowAvail(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
-            <p className="text-sm text-gray-500 mb-5">Choose which time slots diners can request online. Only selected slots appear in the discovery page.</p>
+            <p className="text-sm text-gray-500 mb-5">{t("bookingsPage.availIntro")}</p>
 
             {availLoading ? (
-              <p className="text-center text-gray-400 py-4">Loading…</p>
+              <p className="text-center text-gray-400 py-4">{t("bookingsPage.savingDots")}</p>
             ) : (
               <>
                 <div className="mb-5">
-                  <label className="text-xs font-semibold text-gray-700 mb-3 block uppercase tracking-wider">Available Time Slots</label>
+                  <label className="text-xs font-semibold text-gray-700 mb-3 block uppercase tracking-wider">{t("bookingsPage.availSlotsLabel")}</label>
                   <div className="grid grid-cols-3 gap-2">
                     {ALL_SLOTS.map((slot) => (
                       <button key={slot} type="button" onClick={() => toggleSlot(slot)}
@@ -364,17 +709,17 @@ export default function Bookings() {
                 </div>
 
                 <div className="mb-6">
-                  <label className="text-xs font-semibold text-gray-700 mb-1 block uppercase tracking-wider">Booking Window (days in advance)</label>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 block uppercase tracking-wider">{t("bookingsPage.bookingWindowLabel")}</label>
                   <input type="number" value={bookingWindow} min={1} max={365}
                     onChange={(e) => setBookingWindow(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Diners can book up to {bookingWindow} days ahead</p>
+                  <p className="text-xs text-gray-400 mt-1">{t("bookingsPage.bookingWindowHint", { days: bookingWindow })}</p>
                 </div>
 
                 {availSuccess && (
                   <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                    ✓ Availability settings saved
+                    {t("bookingsPage.availSaved")}
                   </div>
                 )}
                 {availError && (
@@ -384,10 +729,10 @@ export default function Bookings() {
                 <div className="flex gap-3">
                   <button onClick={saveAvailability} disabled={availSaving}
                     className="flex-1 bg-brand-500 text-white font-semibold py-2.5 rounded-xl hover:bg-brand-600 disabled:opacity-60 transition-colors">
-                    {availSaving ? "Saving…" : "Save Settings"}
+                    {availSaving ? t("bookingsPage.savingDots") : t("bookingsPage.saveSettings")}
                   </button>
                   <button onClick={() => setShowAvail(false)}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">Cancel</button>
+                    className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-200">{t("bookingsPage.cancel")}</button>
                 </div>
               </>
             )}

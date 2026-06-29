@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -7,6 +8,8 @@ import { api } from '../../services/api';
 import { C } from '../../constants/colors';
 import { useFocusEffect } from 'expo-router';
 
+// Category enum values stay in English — they're the canonical strings
+// the backend stores. The DISPLAY of each cat goes through t() below.
 const CATS = ['All', 'Mains', 'Starters', 'Desserts', 'Drinks'];
 const EMPTY = { name: '', category: 'Mains', price: '', cost: '', orders_last_30_days: '', rating: '', description: '' };
 
@@ -16,6 +19,7 @@ function MarginBadge({ margin }) {
 }
 
 export default function MenuScreen() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,6 +30,16 @@ export default function MenuScreen() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  // Canonical category value → translated label. Lives inline so it
+  // re-evaluates on language switch.
+  const CAT_LABEL = {
+    All:      t('menuScreen.catAll'),
+    Mains:    t('menuScreen.catMains'),
+    Starters: t('menuScreen.catStarters'),
+    Desserts: t('menuScreen.catDesserts'),
+    Drinks:   t('menuScreen.catDrinks'),
+  };
 
   const load = async () => {
     try {
@@ -54,44 +68,44 @@ export default function MenuScreen() {
 
   const handleSave = async () => {
     const price = parseFloat(form.price), cost = parseFloat(form.cost);
-    if (!form.name.trim()) { setFormError('Name is required.'); return; }
-    if (isNaN(price) || price <= 0) { setFormError('Price must be > 0.'); return; }
-    if (isNaN(cost) || cost < 0) { setFormError('Cost cannot be negative.'); return; }
-    if (cost >= price) { setFormError('Cost must be less than price.'); return; }
+    if (!form.name.trim()) { setFormError(t('menuScreen.errNameRequired')); return; }
+    if (isNaN(price) || price <= 0) { setFormError(t('menuScreen.errPricePositive')); return; }
+    if (isNaN(cost) || cost < 0) { setFormError(t('menuScreen.errCostNegative')); return; }
+    if (cost >= price) { setFormError(t('menuScreen.errCostBelowPrice')); return; }
     setSaving(true); setFormError(null);
     try {
       const payload = { ...form, price, cost, orders_last_30_days: parseInt(form.orders_last_30_days) || 0, rating: form.rating !== '' ? parseFloat(form.rating) : 0 };
       if (editing) await api.updateMenuItem(editing.id, payload);
       else await api.createMenuItem(payload);
       closeForm(); load();
-    } catch (e) { setFormError(e.message || 'Save failed.'); }
+    } catch (e) { setFormError(e.message || t('menuScreen.errSaveFailed')); }
     finally { setSaving(false); }
   };
 
   const handleDelete = (item) =>
-    Alert.alert('Delete Item', `Delete "${item.name}"? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await api.deleteMenuItem(item.id); load(); } },
+    Alert.alert(t('menuScreen.deleteTitle'), t('menuScreen.deleteBody', { name: item.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('menuScreen.delete'), style: 'destructive', onPress: async () => { await api.deleteMenuItem(item.id); load(); } },
     ]);
 
-  if (loading) return <LoadingSpinner message="Loading menu..." color={C.restaurant.primary} />;
+  if (loading) return <LoadingSpinner message={t('menuScreen.loading')} color={C.restaurant.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={load} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Menu Analysis</Text>
+        <Text style={styles.title}>{t('menuScreen.title')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setEditing(null); setForm(EMPTY); setFormError(null); setShowForm(true); }}>
-          <Text style={styles.addBtnText}>+ Add</Text>
+          <Text style={styles.addBtnText}>{t('menuScreen.addBtn')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={{ paddingHorizontal: 16 }}>
-        <TextInput style={styles.search} placeholder="Search items..." value={search} onChangeText={setSearch} />
+        <TextInput style={styles.search} placeholder={t('menuScreen.searchPlaceholder')} value={search} onChangeText={setSearch} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           {CATS.map((c) => (
             <TouchableOpacity key={c} style={[styles.catBtn, category === c && styles.catBtnActive]} onPress={() => setCategory(c)}>
-              <Text style={[styles.catText, category === c && styles.catTextActive]}>{c}</Text>
+              <Text style={[styles.catText, category === c && styles.catTextActive]}>{CAT_LABEL[c]}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -102,11 +116,11 @@ export default function MenuScreen() {
           <View key={item.id} style={styles.card}>
             <View style={{ flex: 1 }}>
               <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemCat}>{item.category}</Text>
+              <Text style={styles.itemCat}>{CAT_LABEL[item.category] || item.category}</Text>
               <View style={styles.itemMeta}>
                 <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
                 <MarginBadge margin={item.profit_margin} />
-                <Text style={styles.itemOrders}>{item.orders_last_30_days} orders</Text>
+                <Text style={styles.itemOrders}>{t('menuScreen.ordersN', { count: item.orders_last_30_days })}</Text>
               </View>
             </View>
             <View style={styles.actions}>
@@ -115,29 +129,36 @@ export default function MenuScreen() {
             </View>
           </View>
         ))}
-        {filtered.length === 0 && <Text style={styles.empty}>No items match your filters.</Text>}
+        {filtered.length === 0 && <Text style={styles.empty}>{t('menuScreen.empty')}</Text>}
       </ScrollView>
 
       {/* Add/Edit Modal */}
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeForm}>
         <SafeScreen>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <Text style={styles.modalTitle}>{editing ? `Edit: ${editing.name}` : 'New Menu Item'}</Text>
-            <TouchableOpacity onPress={closeForm}><Text style={{ fontSize: 16, color: C.gray[500] }}>Cancel</Text></TouchableOpacity>
+            <Text style={styles.modalTitle}>{editing ? t('menuScreen.modalEdit', { name: editing.name }) : t('menuScreen.modalNew')}</Text>
+            <TouchableOpacity onPress={closeForm}><Text style={{ fontSize: 16, color: C.gray[500] }}>{t('common.cancel')}</Text></TouchableOpacity>
           </View>
 
-          {[{ key: 'name', label: 'Name' }, { key: 'price', label: 'Price ($)', kb: 'decimal-pad' }, { key: 'cost', label: 'Cost ($)', kb: 'decimal-pad' }, { key: 'orders_last_30_days', label: 'Orders (30 days)', kb: 'number-pad' }, { key: 'rating', label: 'Rating (0–5)', kb: 'decimal-pad' }, { key: 'description', label: 'Description' }].map(({ key, label, kb }) => (
+          {[
+            { key: 'name',                label: t('menuScreen.labelName') },
+            { key: 'price',               label: t('menuScreen.labelPrice'),       kb: 'decimal-pad' },
+            { key: 'cost',                label: t('menuScreen.labelCost'),        kb: 'decimal-pad' },
+            { key: 'orders_last_30_days', label: t('menuScreen.labelOrders'),      kb: 'number-pad' },
+            { key: 'rating',              label: t('menuScreen.labelRating'),      kb: 'decimal-pad' },
+            { key: 'description',         label: t('menuScreen.labelDescription') },
+          ].map(({ key, label, kb }) => (
             <View key={key} style={{ marginBottom: 12 }}>
               <Text style={styles.label}>{label}</Text>
               <TextInput style={styles.input} value={form[key]} onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))} keyboardType={kb || 'default'} />
             </View>
           ))}
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{t('menuScreen.labelCategory')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {['Mains', 'Starters', 'Desserts', 'Drinks'].map((c) => (
               <TouchableOpacity key={c} style={[styles.catBtn, form.category === c && styles.catBtnActive]} onPress={() => setForm((f) => ({ ...f, category: c }))}>
-                <Text style={[styles.catText, form.category === c && styles.catTextActive]}>{c}</Text>
+                <Text style={[styles.catText, form.category === c && styles.catTextActive]}>{CAT_LABEL[c]}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -145,7 +166,7 @@ export default function MenuScreen() {
           {formError && <Text style={styles.formError}>{formError}</Text>}
 
           <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{editing ? 'Save Changes' : 'Add Item'}</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{editing ? t('menuScreen.saveChanges') : t('menuScreen.addItem')}</Text>}
           </TouchableOpacity>
         </SafeScreen>
       </Modal>
