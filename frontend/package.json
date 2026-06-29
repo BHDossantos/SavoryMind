@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "next": "^16.1.5",
     "clsx": "^2.1.1",
     "i18next": "^26.2.0",
     "i18next-browser-languagedetector": "^8.2.1",
