@@ -132,6 +132,131 @@ function SmsAlertWidget() {
   );
 }
 
+function TodaysMenuWidget() {
+  const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
+  const [menu, setMenu] = useState(user?.menu_of_the_day || "");
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
+  const [err, setErr] = useState(null);
+  const [stats, setStats] = useState(null);
+
+  // Default expanded when there's no menu set yet — auto-nudge the operator
+  // to publish today's menu so the broadcast actually goes out. Collapsed
+  // once they've saved at least once, so the page isn't cluttered every day.
+  const [expanded, setExpanded] = useState(!user?.menu_of_the_day);
+
+  // Load the 7-day attribution rollup once the widget is open. Silent on
+  // failure — the textarea still works without it.
+  useEffect(() => {
+    if (!expanded) return;
+    api.getMenuBroadcastStats().then(setStats).catch(() => {});
+  }, [expanded]);
+
+  const remaining = 300 - menu.length;
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    try {
+      // Server truncates the body before sending the SMS anyway, but capping
+      // input keeps the textarea honest to the operator about what diners see.
+      const trimmed = menu.trim().slice(0, 300);
+      await api.updateProfile({ menu_of_the_day: trimmed });
+      updateUser({ menu_of_the_day: trimmed });
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 4000);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clear = async () => {
+    setSaving(true); setErr(null);
+    try {
+      await api.updateProfile({ menu_of_the_day: "" });
+      updateUser({ menu_of_the_day: "" });
+      setMenu("");
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-left flex items-center justify-between gap-2"
+      >
+        <div>
+          <p className="text-sm font-semibold text-amber-900">
+            🍽 {t("bookingsPage.menuHeadline")}
+          </p>
+          <p className="text-xs text-amber-700 mt-0.5">{t("bookingsPage.menuSubtitle")}</p>
+        </div>
+        <span className="text-amber-700 text-sm flex-shrink-0">{expanded ? "▾" : "▸"}</span>
+      </button>
+      {expanded && (
+        <div className="mt-3">
+          {stats && stats.rounds > 0 && (
+            <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+              {[
+                { label: t("bookingsPage.menuStatsSent"),     value: stats.sms_sent },
+                { label: t("bookingsPage.menuStatsClicks"),   value: stats.clicks },
+                { label: t("bookingsPage.menuStatsBookings"), value: stats.bookings },
+              ].map((s) => (
+                <div key={s.label} className="bg-white border border-amber-200 rounded-lg px-2 py-2">
+                  <p className="text-lg font-bold text-amber-900">{s.value}</p>
+                  <p className="text-[10px] text-amber-700 uppercase tracking-wider">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <textarea
+            value={menu}
+            onChange={(e) => setMenu(e.target.value.slice(0, 300))}
+            rows={4}
+            placeholder={t("bookingsPage.menuPlaceholder")}
+            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none bg-white"
+          />
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs text-amber-700">{t("bookingsPage.menuCharCount", { n: menu.length })}</span>
+            {user?.menu_sms_last_sent_date === new Date().toISOString().split("T")[0] && (
+              <span className="text-xs text-amber-700 italic">{t("bookingsPage.menuSentToday")}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="text-xs px-4 py-1.5 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-60"
+            >
+              {saving ? t("common.saving") : t("bookingsPage.menuSave")}
+            </button>
+            {menu && (
+              <button
+                onClick={clear}
+                disabled={saving}
+                className="text-xs px-3 py-1.5 text-amber-700 hover:text-amber-900"
+              >
+                {t("bookingsPage.menuClear")}
+              </button>
+            )}
+            {savedMsg && (
+              <span className="text-xs text-green-700 font-medium">✓ {t("bookingsPage.menuSaved")}</span>
+            )}
+          </div>
+          {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 const STATUS_STYLES = {
   confirmed: "bg-blue-100 text-blue-700",
   pending:   "bg-amber-100 text-amber-700",
@@ -305,6 +430,7 @@ export default function Bookings() {
       <div className="print:hidden">
         <ShareLinkWidget />
         <SmsAlertWidget />
+        <TodaysMenuWidget />
       </div>
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center justify-between print:hidden">
@@ -432,12 +558,28 @@ export default function Bookings() {
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
                     <div>
-                      <p className="font-medium text-gray-900">{b.customer_name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-gray-900">{b.customer_name}</p>
+                        {b.repeat_visits > 0 && (
+                          <span
+                            className="text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded"
+                            title={t("bookingsPage.repeatBadgeHint", { count: b.repeat_visits })}
+                          >
+                            🔁 {t("bookingsPage.repeatBadge", { count: b.repeat_visits + 1 })}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400">{b.customer_phone || b.customer_email || ""}</p>
                       {b.notes && <p className="text-xs text-amber-600 mt-0.5 truncate max-w-[160px]">⚠ {b.notes}</p>}
+                      {b.customer_notes && <p className="text-xs text-purple-700 mt-0.5 truncate max-w-[180px]">📝 {b.customer_notes}</p>}
                     </div>
                     {b.source === "online" && (
                       <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium flex-shrink-0">{t("bookingsPage.onlineBadge")}</span>
+                    )}
+                    {b.source === "menu_sms" && (
+                      <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-medium flex-shrink-0" title={t("bookingsPage.menuSmsBadgeHint")}>
+                        🍽 {t("bookingsPage.menuSmsBadge")}
+                      </span>
                     )}
                   </div>
                 </td>

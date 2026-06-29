@@ -24,6 +24,44 @@ class Booking(Base):
     # Idempotency flag for the day-before reminder scheduler — non-null
     # means the reminder has been delivered (or attempted), do not re-send.
     reminder_sent_at = Column(DateTime, nullable=True)
+    # Attribution back to the daily menu broadcast that drove this booking,
+    # if any. Stamped by the public booking endpoint from a short-lived
+    # cookie set when the diner taps a /r/{slug}?b={id} link in the SMS.
+    menu_broadcast_id = Column(Integer, ForeignKey("menu_broadcasts.id"), nullable=True)
+    # Manager-private notes about the guest — "allergic to shellfish",
+    # "VIP, comp dessert", "celebrating anniversary". Separate from `notes`
+    # (the guest's own special requests). Surfaced via repeat detection.
+    customer_notes = Column(Text, nullable=True)
+
+
+class SavedRestaurant(Base):
+    """Consumer favorites. (user_id, restaurant_id) is unique. Surface on
+    the consumer dashboard and unlock geofence-style nudges later."""
+    __tablename__ = "saved_restaurants"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    restaurant_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class MenuBroadcast(Base):
+    """One row per restaurant per daily menu-of-the-day SMS round.
+
+    Created when the cron dispatches the round; click_count increments on
+    /r/{slug}?b={id} hits. Bookings carry menu_broadcast_id when the diner
+    converts within the attribution window. The restaurant dashboard rolls
+    this up into "X SMSs, Y clicks, Z bookings — €99/mo earned."
+    """
+    __tablename__ = "menu_broadcasts"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    sent_at       = Column(DateTime, nullable=False, default=datetime.utcnow)
+    local_date    = Column(Date, nullable=False)   # restaurant-local calendar day
+    sms_count     = Column(Integer, nullable=False, default=0)
+    click_count   = Column(Integer, nullable=False, default=0)
+    menu_snapshot = Column(Text, nullable=True)    # what was sent, for the dashboard
 
 
 class CRMCustomer(Base):
@@ -40,6 +78,9 @@ class CRMCustomer(Base):
     favorite_items = Column(Text, nullable=True)   # comma-separated
     notes = Column(Text, nullable=True)
     tags = Column(String, nullable=True)            # "vip,regular,birthday"
+    # Opt-in flag for the daily menu-of-the-day SMS broadcast. Default
+    # False = the cron never SMSs a customer who didn't explicitly say yes.
+    menu_sms_opt_in = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

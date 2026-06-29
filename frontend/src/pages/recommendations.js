@@ -1,17 +1,39 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import { api } from "../services/api";
 import clsx from "clsx";
 
-// Type IDs (backend-stored) map to i18n keys for the friendly label
-// + a static icon/color tied to severity.
+// Each recommendation type maps to a single concrete action the operator
+// can take in one tap. Driven by the audit's central thesis: "AI should
+// not just answer questions — AI should create actions inside the app."
 const TYPE_CONFIG = {
-  price_increase: { icon: "💰", labelKey: "recommendationsPage.typeRaisePrice",    color: "bg-orange-50 border-orange-200" },
-  promotion:      { icon: "📣", labelKey: "recommendationsPage.typePromotion",     color: "bg-blue-50 border-blue-200" },
-  quality_review: { icon: "⚠️", labelKey: "recommendationsPage.typeQualityReview", color: "bg-red-50 border-red-200" },
-  star_item:      { icon: "⭐", labelKey: "recommendationsPage.typeStarItem",      color: "bg-green-50 border-green-200" },
+  price_increase: {
+    icon: "💰", labelKey: "recommendationsPage.typeRaisePrice",
+    color: "bg-orange-50 border-orange-200",
+    actionKey: "recommendationsPage.actionUpdatePrice",
+    actionRoute: "/menu",
+  },
+  promotion: {
+    icon: "📣", labelKey: "recommendationsPage.typePromotion",
+    color: "bg-blue-50 border-blue-200",
+    actionKey: "recommendationsPage.actionCreateCampaign",
+    actionRoute: "/restaurant/marketing",
+  },
+  quality_review: {
+    icon: "⚠️", labelKey: "recommendationsPage.typeQualityReview",
+    color: "bg-red-50 border-red-200",
+    actionKey: "recommendationsPage.actionOpenMenu",
+    actionRoute: "/menu",
+  },
+  star_item: {
+    icon: "⭐", labelKey: "recommendationsPage.typeStarItem",
+    color: "bg-green-50 border-green-200",
+    actionKey: "recommendationsPage.actionFeature",
+    actionRoute: "/restaurant/marketing",
+  },
 };
 
 const PRIORITY_BADGE = {
@@ -132,6 +154,21 @@ export default function RecommendationsPage() {
                     <p className="text-sm text-green-600 font-medium mt-2">
                       {t("recommendationsPage.gainLine", { amount: rec.potential_gain.toFixed(0) })}
                     </p>
+                  )}
+                  {config.actionKey && (
+                    <Link
+                      href={
+                        // Deep-link promotion + star_item CTAs to the campaign
+                        // generator with the dish prefilled — one click instead
+                        // of "open marketing → type the dish".
+                        rec.type === "promotion" || rec.type === "star_item"
+                          ? `/restaurant/marketing?promote=${encodeURIComponent(rec.item)}`
+                          : config.actionRoute
+                      }
+                      className="inline-flex items-center gap-1 text-xs font-bold bg-gray-900 text-white px-3 py-1.5 rounded-lg mt-3 hover:bg-gray-700"
+                    >
+                      {t(config.actionKey)} <span>→</span>
+                    </Link>
                   )}
                 </div>
               </div>

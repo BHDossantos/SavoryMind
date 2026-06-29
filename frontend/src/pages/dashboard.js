@@ -11,6 +11,61 @@ import { api } from "../services/api";
 
 const PIE_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa"];
 
+const SEVERITY_STYLES = {
+  high:   { bg: "bg-red-50",    border: "border-red-200",    chip: "bg-red-100 text-red-800" },
+  medium: { bg: "bg-amber-50",  border: "border-amber-200",  chip: "bg-amber-100 text-amber-800" },
+  low:    { bg: "bg-green-50",  border: "border-green-200",  chip: "bg-green-100 text-green-800" },
+};
+
+// Today's AI Action Plan — the dashboard's most prominent surface. Each card
+// is a single decision the operator can act on right now: promote X, fix Y,
+// publish today's menu. Tappable straight to the destination, with a dollar
+// estimate where we have one.
+function ActionPlanCard({ actions }) {
+  const { t } = useTranslation();
+  return (
+    <section className="mb-8 rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-xs font-bold text-brand-700 uppercase tracking-wider">
+            {t("restaurantDashboard.actionPlanEyebrow")}
+          </p>
+          <h2 className="text-lg font-extrabold text-gray-900">
+            {t("restaurantDashboard.actionPlanTitle")}
+          </h2>
+        </div>
+        <span className="text-2xl" aria-hidden>🎯</span>
+      </div>
+      <div className="space-y-2">
+        {actions.map((a, idx) => {
+          const s = SEVERITY_STYLES[a.severity] || SEVERITY_STYLES.medium;
+          return (
+            <Link
+              key={`${a.kind}-${idx}`}
+              href={a.cta_route}
+              className={`flex items-center gap-3 rounded-xl border ${s.border} ${s.bg} px-3 py-3 hover:shadow-sm transition-shadow`}
+            >
+              <span className="text-xl flex-shrink-0" aria-hidden>{a.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 text-sm">{a.title}</p>
+                <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{a.body}</p>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                {a.estimated_gain > 0 && (
+                  <p className="text-xs font-bold text-green-700">+${a.estimated_gain.toFixed(0)}</p>
+                )}
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${s.chip} mt-1`}>
+                  {a.cta_label}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
@@ -18,6 +73,7 @@ export default function Dashboard() {
   const [sentimentSummary, setSentimentSummary] = useState(null);
   const [todaySummary, setTodaySummary] = useState(null);
   const [billing, setBilling] = useState(null);
+  const [actionPlan, setActionPlan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,13 +85,15 @@ export default function Dashboard() {
       api.getSentimentSummary(),
       api.getTodaySummary().catch(() => null),  // tolerated: a brand-new restaurant has no slots yet
       api.getRestaurantBillingStatus().catch(() => null),  // tolerated: billing dormant in dev
+      api.getActionPlan().catch(() => ({ actions: [] })),
     ])
-      .then(([s, items, sent, today, bill]) => {
+      .then(([s, items, sent, today, bill, plan]) => {
         setStats(s);
         setMenuItems(items);
         setSentimentSummary(sent);
         setTodaySummary(today);
         setBilling(bill);
+        setActionPlan(plan?.actions || []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -98,6 +156,11 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">{t("restaurantDashboard.title")}</h1>
         <p className="text-gray-400 mt-1">{t("restaurantDashboard.subtitle")}</p>
       </div>
+
+      {/* Today's AI Action Plan — the operator's first surface. Renders only
+          when at least one action fires (a brand-new restaurant with no
+          signals doesn't get a useless empty card). */}
+      {actionPlan.length > 0 && <ActionPlanCard actions={actionPlan} />}
 
       {/* Today's bookings — the most actionable line on the dashboard for a
           restaurant on a typical morning. Tolerates a null summary (brand-new

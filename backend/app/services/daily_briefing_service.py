@@ -13,14 +13,15 @@ if the failure mode actually materialises.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from html import escape
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..models.user import User
-from ..models.restaurant_ext import Booking
+from ..models.restaurant_ext import Booking, MenuBroadcast
 from . import resend_client, email_templates
 
 
@@ -47,7 +48,8 @@ def send_daily_briefings(db: Session, today: date | None = None) -> dict:
         if not restaurant or not restaurant.email:
             skipped_no_email += 1
             continue
-        _send_briefing(restaurant, items, today)
+        menu_stats = _menu_broadcast_stats_7d(db, restaurant_id, today)
+        _send_briefing(restaurant, items, today, menu_stats)
         sent += 1
 
     return {
@@ -58,7 +60,43 @@ def send_daily_briefings(db: Session, today: date | None = None) -> dict:
     }
 
 
-def _send_briefing(restaurant: User, bookings: list[Booking], today: date) -> None:
+def _menu_broadcast_stats_7d(db: Session, user_id: int, today: date) -> dict:
+    """7-day rollup of menu-of-the-day SMS broadcasts for this restaurant.
+
+    Returns zeroed dict when the restaurant hasn't broadcast anything; the
+    email-builder hides the whole section in that case so the briefing
+    isn't cluttered with "0 / 0 / 0" before the feature has been used.
+    """
+    cutoff = today - timedelta(days=6)
+    totals = (
+        db.query(
+            func.coalesce(func.sum(MenuBroadcast.sms_count), 0),
+            func.coalesce(func.sum(MenuBroadcast.click_count), 0),
+            func.count(MenuBroadcast.id),
+        )
+        .filter(
+            MenuBroadcast.user_id == user_id,
+            MenuBroadcast.local_date >= cutoff,
+        )
+        .one()
+    )
+    sms, clicks, rounds = totals
+    bookings = (
+        db.query(func.count(Booking.id))
+        .join(MenuBroadcast, MenuBroadcast.id == Booking.menu_broadcast_id)
+        .filter(
+            MenuBroadcast.user_id == user_id,
+            MenuBroadcast.local_date >= cutoff,
+        )
+        .scalar()
+        or 0
+    )
+    return {"rounds": int(rounds), "sms": int(sms), "clicks": int(clicks), "bookings": int(bookings)}
+
+
+def _send_briefing(
+    restaurant: User, bookings: list[Booking], today: date, menu_stats: dict | None = None,
+) -> None:
     lang = (restaurant.language or "en")
     dashboard = f"{settings.frontend_url.rstrip('/')}/restaurant/bookings"
     total_covers = sum(b.party_size for b in bookings)
@@ -79,6 +117,19 @@ def _send_briefing(restaurant: User, bookings: list[Booking], today: date) -> No
         for b in bookings
     )
 
+    menu_block = ""
+    if menu_stats and menu_stats.get("rounds", 0) > 0:
+        menu_labels = email_templates.menu_broadcast_summary_labels(lang)
+        menu_block = f"""
+      <div style="margin:24px 0 8px;padding:16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;">
+        <p style="font-size:12px;font-weight:600;color:#ea580c;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">{escape(menu_labels["heading"])}</p>
+        <p style="font-size:13px;color:#1f2937;margin:0;line-height:1.6;">
+          <strong>{menu_stats["sms"]}</strong> {escape(menu_labels["sms"])} ·
+          <strong>{menu_stats["clicks"]}</strong> {escape(menu_labels["clicks"])} ·
+          <strong>{menu_stats["bookings"]}</strong> {escape(menu_labels["bookings"])}
+        </p>
+      </div>
+        """
     html = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827;">
       <h1 style="font-size:18px;margin:0 0 12px;">{escape(intro)}</h1>
@@ -93,6 +144,7 @@ def _send_briefing(restaurant: User, bookings: list[Booking], today: date) -> No
         </thead>
         <tbody>{rows}</tbody>
       </table>
+      {menu_block}
       <p style="margin:24px 0;">
         <a href="{dashboard}" style="background:#ea580c;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">{escape(cta)}</a>
       </p>

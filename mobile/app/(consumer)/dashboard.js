@@ -83,21 +83,39 @@ export default function ConsumerDashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Featured: Flavor — SavoryMind's unified AI voice, backed by
-          Claude Opus 4.7. Promoted above the quick-action grid so it's
-          the first thing on the dashboard, not below-the-fold. */}
-      <TouchableOpacity
-        style={styles.assistantCard}
-        onPress={() => router.push('/(consumer)/assistant')}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.assistantEmoji}>👨‍🍳</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.assistantTitle}>{t('dashboard.askFlavor')}</Text>
-          <Text style={styles.assistantSub}>{t('dashboard.askFlavorSub')}</Text>
-        </View>
-        <Text style={styles.assistantArrow}>→</Text>
-      </TouchableOpacity>
+      {/* Three primary actions — "What do you want right now?" Makes
+          the app instantly explainable to a brand-new user. Parity with
+          the consumer dashboard redesign on web. */}
+      <Text style={styles.primaryPrompt}>{t('consumerDashboard.primaryPrompt')}</Text>
+      <View style={styles.primaryRow}>
+        <TouchableOpacity
+          style={[styles.primaryCard, { backgroundColor: C.consumer.dark }]}
+          onPress={() => router.push('/(consumer)/assistant')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryIcon}>👨‍🍳</Text>
+          <Text style={styles.primaryTitle}>{t('consumerDashboard.primaryAskFlavor')}</Text>
+          <Text style={styles.primarySub}>{t('consumerDashboard.primaryAskFlavorSub')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryCard, { backgroundColor: '#ea580c' }]}
+          onPress={() => router.push('/(diner)/discover')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryIcon}>🍽️</Text>
+          <Text style={styles.primaryTitle}>{t('consumerDashboard.primaryDineOut')}</Text>
+          <Text style={styles.primarySub}>{t('consumerDashboard.primaryDineOutSub')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryCard, { backgroundColor: '#0d9488' }]}
+          onPress={() => router.push('/(consumer)/recipes')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryIcon}>🥘</Text>
+          <Text style={styles.primaryTitle}>{t('consumerDashboard.primaryCook')}</Text>
+          <Text style={styles.primarySub}>{t('consumerDashboard.primaryCookSub')}</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.quickGrid}>
         {QUICK.filter((q) => !q.flavor).map((q) => (
@@ -177,6 +195,12 @@ const styles = StyleSheet.create({
   assistantTitle:   { fontSize: 15, fontWeight: '800', color: '#fff' },
   assistantSub:     { fontSize: 12, color: '#fff', opacity: 0.85, marginTop: 2, lineHeight: 16 },
   assistantArrow:   { fontSize: 20, color: '#fff', fontWeight: '700' },
+  primaryPrompt:    { fontSize: 14, fontWeight: '700', color: C.gray[800], marginBottom: 10 },
+  primaryRow:       { flexDirection: 'row', gap: 8, marginBottom: 24 },
+  primaryCard:      { flex: 1, borderRadius: 16, padding: 12 },
+  primaryIcon:      { fontSize: 22, marginBottom: 6 },
+  primaryTitle:     { fontSize: 12, fontWeight: '800', color: '#fff' },
+  primarySub:       { fontSize: 9, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   sectionTitle:{ fontSize: 15, fontWeight: '700', color: C.gray[800], marginBottom: 10 },
   goingOutRow:  { flexDirection: 'row', gap: 10, marginBottom: 28 },
   dineCard:     { flex: 1, backgroundColor: C.diner.light, borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: C.diner.border },

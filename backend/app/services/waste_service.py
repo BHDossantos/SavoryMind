@@ -65,11 +65,44 @@ def get_waste_summary(db: Session, user_id: int) -> dict:
     item_list = sorted(by_item.values(), key=lambda x: x["total_cost"], reverse=True)
     reason_list = [{"reason": k, "cost": v} for k, v in sorted(by_reason.items(), key=lambda x: x[1], reverse=True)]
 
+    # Carbon impact — rough heuristic: 2.5 kgCO2e per kg of generic food
+    # waste (FAO 2013). It's an order-of-magnitude figure for the
+    # dashboard, not a science claim — labeled as such in the UI.
+    co2_kg = round(total_kg * 2.5, 1)
+
+    # Recurring waste alerts — items wasted ≥3 times signal a systemic
+    # issue (over-prep, poor demand forecast, spoilage). Surface them so
+    # the chef can act before next week's prep.
+    item_counts: dict[str, int] = {}
+    for l in logs:
+        item_counts[l.item_name] = item_counts.get(l.item_name, 0) + 1
+    recurring_alerts = sorted(
+        ({"item": name, "incidents": cnt,
+          "estimated_weekly_cost": round(by_item[name]["total_cost"] / 4, 2)}
+         for name, cnt in item_counts.items() if cnt >= 3),
+        key=lambda x: x["estimated_weekly_cost"], reverse=True,
+    )[:5]
+
+    # Prep-volume suggestion: cut the highest-cost wasted items' next
+    # batch by 15%. That's the audit's "prep quantity forecasting" in
+    # its simplest, most defensible form — a fixed-percentage suggestion
+    # tied to the actual loss.
+    prep_suggestions = [
+        {
+            "item": it["name"],
+            "advice": f"Cut next batch by ~15%; current weekly loss ${it['total_cost']/4:.0f}",
+        }
+        for it in item_list[:3]
+    ]
+
     return {
         "total_cost": round(total_cost, 2),
         "total_kg": round(total_kg, 2),
+        "co2_kg":   co2_kg,
         "entries": len(logs),
         "by_staff": staff_list[:10],
         "by_item": item_list[:10],
         "by_reason": reason_list,
+        "recurring_alerts": recurring_alerts,
+        "prep_suggestions": prep_suggestions,
     }

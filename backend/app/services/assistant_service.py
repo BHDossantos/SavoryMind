@@ -239,7 +239,34 @@ def answer(
         "answer":     parsed["answer"],
         "tool_calls": result.get("tool_calls", []),
         "history":    result.get("messages", messages),
+        # CTA chips the frontend renders below the answer — the audit's
+        # "AI generates actions, not just answers" baked in. Derived from
+        # which tools Claude called this turn so each chip lines up with
+        # something the user can really do next.
+        "suggested_actions": _suggested_actions_from_tools(result.get("tool_calls", [])),
     }
+
+
+def _suggested_actions_from_tools(tool_calls: list[dict]) -> list[dict]:
+    """Map the tool names Claude called into a small set of action chips.
+    Conservative: only emit a chip when we can route the user somewhere
+    concrete. Otherwise the chip would dead-end and erode trust."""
+    names = {(c.get("name") or "") for c in (tool_calls or [])}
+    actions: list[dict] = []
+    if "tool_get_wine_pairing" in names or "tool_search_wines" in names:
+        actions.append({"label": "See wine pairings", "icon": "🍷", "route": "/consumer/wine"})
+    if "tool_get_beer_pairing" in names or "tool_search_beers" in names \
+            or "tool_get_spirits_pairing" in names or "tool_search_spirits" in names:
+        actions.append({"label": "See beverage pairings", "icon": "🍺", "route": "/consumer/beverages"})
+    if "tool_search_recipes" in names or "tool_get_recipe" in names:
+        actions.append({"label": "Cook a recipe", "icon": "🥘", "route": "/consumer/recipes"})
+    if "tool_get_pantry" in names:
+        actions.append({"label": "Update pantry", "icon": "🧺", "route": "/consumer/pantry"})
+    if "tool_get_journal_recent" in names:
+        actions.append({"label": "Open journal", "icon": "📔", "route": "/consumer/journal"})
+    # Always-on fallback: if Flavor mentioned a restaurant via context but
+    # didn't call a tool, we'd still want to nudge towards booking.
+    return actions[:3]  # cap at 3 chips — more is noise
 
 
 def _glitch(history: list[dict] | None) -> dict:

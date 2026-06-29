@@ -13,7 +13,18 @@ def get_bookings(db: Session, user_id: int, filter_date: date | None = None) -> 
     q = db.query(Booking).filter(Booking.user_id == user_id)
     if filter_date:
         q = q.filter(Booking.date == filter_date)
-    return q.order_by(Booking.date, Booking.time_slot).all()
+    bookings = q.order_by(Booking.date, Booking.time_slot).all()
+    # Stamp repeat-visit counts as a transient attribute so the response
+    # serializer can render "3rd visit" inline. One COUNT per booking is
+    # fine at pilot scale (<200 bookings/day); switch to a single window
+    # function if this becomes a hot path.
+    from . import booking_extras
+    for b in bookings:
+        b.repeat_visits = max(0, booking_extras.repeat_visits_count(
+            db, user_id=user_id, phone=b.customer_phone or "",
+            email=b.customer_email,
+        ) - 1)  # subtract self
+    return bookings
 
 
 def get_booking(db: Session, user_id: int, booking_id: int) -> Booking | None:

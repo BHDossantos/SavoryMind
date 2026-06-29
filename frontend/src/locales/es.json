@@ -180,7 +180,9 @@
     "billingPastDue": "Pago fallido — tu suscripción está vencida",
     "billingLapsed": "Tu suscripción ha terminado",
     "billingNudgeSub": "Actualiza la facturación para mantener reservas en tiempo real, alertas e inteligencia AI.",
-    "billingNudgeCta": "Arreglar facturación"
+    "billingNudgeCta": "Arreglar facturación",
+    "actionPlanEyebrow": "Plan de acción IA de hoy",
+    "actionPlanTitle": "Haz esto hoy"
   },
   "consumerDashboard": {
     "loading": "Cargando tu panel...",
@@ -232,7 +234,14 @@
     "moodAdventurous": "Aventurero",
     "moodIndulgent": "Indulgente",
     "moodQuick": "Rápido",
-    "moodBrunch": "Brunch"
+    "moodBrunch": "Brunch",
+    "primaryPrompt": "¿Qué quieres ahora?",
+    "primaryAskFlavor": "Pregunta a Flavor",
+    "primaryAskFlavorSub": "Comida, bebida o restaurantes",
+    "primaryDineOut": "Salir a comer",
+    "primaryDineOutSub": "Encuentra un restaurante esta noche",
+    "primaryCook": "Cocina algo",
+    "primaryCookSub": "Ideas de receta de tu despensa"
   },
   "sentimentPage": {
     "title": "Opiniones de clientes",
@@ -282,7 +291,14 @@
     "noReviewsMatch": "Ninguna reseña coincide con tu búsqueda.",
     "badgePositive": "Positiva",
     "badgeNegative": "Negativa",
-    "badgeNeutral": "Neutra"
+    "badgeNeutral": "Neutra",
+    "draftCta": "Borrador IA",
+    "draftLoading": "Generando…",
+    "responseHeading": "Tu respuesta",
+    "saveResponse": "Guardar",
+    "saving": "Guardando…",
+    "regenerate": "Regenerar",
+    "respondedAt": "Respondido el {{date}}"
   },
   "menuPage": {
     "title": "Análisis del menú",
@@ -430,7 +446,22 @@
     "shareWhatsapp": "WhatsApp",
     "shareWhatsappMessage": "Hola 👋 Tenemos una nueva forma de reservar mesa — 30 segundos, sin instalar app. Reserva aquí: {{link}}",
     "printToday": "Imprimir hoy",
-    "printHeader": "Hoy — {{date}}"
+    "printHeader": "Hoy — {{date}}",
+    "menuHeadline": "Menú del día",
+    "menuSubtitle": "Publica el menú de hoy y lo enviaremos por SMS a las 11 a todos los clientes CRM que se hayan apuntado.",
+    "menuPlaceholder": "ej. Tagliatelle al ragú — €14\nTiramisú — €6",
+    "menuSave": "Publicar menú",
+    "menuClear": "Borrar",
+    "menuSaved": "Menú publicado — los clientes apuntados lo recibirán a las 11 hora local.",
+    "menuSentToday": "Ya enviado hoy",
+    "menuCharCount": "{{n}} / 300 caracteres",
+    "menuStatsSent": "SMS enviados",
+    "menuStatsClicks": "Clics",
+    "menuStatsBookings": "Reservas",
+    "menuSmsBadge": "SMS menú",
+    "menuSmsBadgeHint": "Reserva originada por el SMS del menú de hoy.",
+    "repeatBadge": "Visita {{count}}",
+    "repeatBadgeHint": "{{count}} reservas previas."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -464,7 +495,15 @@
     "cancel": "Cancelar",
     "nameRequired": "El nombre es obligatorio.",
     "removePrompt": "¿Eliminar este cliente? Se perderá su historial de visitas.",
-    "removeBtn": "Eliminar"
+    "removeBtn": "Eliminar",
+    "colMenuSms": "SMS menú",
+    "menuSmsOptIn": "Recibe el menú del día por SMS",
+    "menuSmsOptInHint": "Enviaremos el menú de hoy alrededor de las 11. El cliente puede darse de baja cuando quiera.",
+    "menuSmsOn": "Sí",
+    "menuSmsOff": "No",
+    "emptyTitle": "Aún no hay clientes",
+    "emptyBody": "Añade a tus clientes habituales para enviarles el menú de hoy por SMS y recordar lo que les gusta.",
+    "noResults": "Sin resultados para esa búsqueda."
   },
   "inventoryPage": {
     "title": "Inventario",
@@ -547,7 +586,18 @@
     "fillRate": "Tasa de ocupación",
     "cancelRate": "Tasa de cancelación",
     "actionItems": "Acciones",
-    "marketingTips": "Consejos de marketing"
+    "marketingTips": "Consejos de marketing",
+    "campaignEyebrow": "Generador de campañas IA",
+    "campaignTitle": "Crea la promoción de la semana",
+    "dishPlaceholder": "Plato a promocionar",
+    "notesPlaceholder": "Notas opcionales",
+    "generateCta": "Generar campaña",
+    "generating": "Generando…",
+    "dishRequired": "Dinos el plato primero.",
+    "emailSubject": "Asunto del correo",
+    "emailBody": "Cuerpo del correo",
+    "copy": "Copiar",
+    "copied": "Copiado"
   },
   "trainingPage": {
     "loading": "Analizando datos del personal...",
@@ -635,7 +685,11 @@
     "gainLine": "💵 Ganancia potencial: +${{amount}}/mes",
     "priorityHigh": "ALTA",
     "priorityMedium": "MEDIA",
-    "priorityLow": "BAJA"
+    "priorityLow": "BAJA",
+    "actionUpdatePrice": "Actualizar precio",
+    "actionCreateCampaign": "Crear campaña",
+    "actionOpenMenu": "Abrir menú",
+    "actionFeature": "Destacar"
   },
   "staffPage": {
     "title": "🧑‍🍳 Personal",
@@ -1485,7 +1539,15 @@
     "styleCasual": "casual",
     "stylePub": "pub",
     "styleCafe": "café",
-    "styleFastCasual": "fast casual"
+    "styleFastCasual": "fast casual",
+    "whyCuisine": "Te encanta la cocina {{cuisine}}",
+    "whyAtmosphere": "Ambiente '{{atmos}}' — te va",
+    "whyLocal": "En {{city}}, tu ciudad",
+    "whyWine": "Carta de vinos · va con tu estilo",
+    "save": "Guardar",
+    "unsave": "Quitar de favoritos",
+    "saveHint": "Guardar en favoritos",
+    "savedHint": "Guardado — toca para quitar"
   },
   "bookDinerPage": {
     "title": "📅 Reservar mesa",

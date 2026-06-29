@@ -16,6 +16,7 @@ from datetime import timedelta
 from html import escape
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -23,8 +24,11 @@ from ...core.config import settings
 from ...core.database import get_db
 from ...core.rate_limit import limiter
 from ...models.user import User
-from ...models.restaurant_ext import Booking
-from ...services import discover_service, notification_service, resend_client, twilio_client, email_templates
+from ...models.restaurant_ext import Booking, MenuBroadcast
+from ...services import (
+    booking_extras, discover_service, email_templates,
+    notification_service, resend_client, twilio_client,
+)
 
 
 router = APIRouter(prefix="/public/restaurants", tags=["public"])
@@ -62,6 +66,11 @@ class GuestBookingRequest(BaseModel):
     customer_phone:   str = Field(..., min_length=4,  max_length=32)
     customer_email:   str | None = None
     special_requests: str | None = None
+    # Attribution: when the diner arrived via /r/{slug}?b=N from the daily
+    # menu SMS, the frontend echoes N back here so we can stamp the booking
+    # and roll up "bookings driven by this week's menu broadcasts" on the
+    # restaurant dashboard.
+    menu_broadcast_id: int | None = None
 
 
 class GuestBookingResponse(BaseModel):
@@ -136,6 +145,22 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
     confirmed = slot is not None and slot["remaining_covers"] >= body.party_size
     status = "confirmed" if confirmed else "pending"
 
+    # Attribution: only stamp menu_broadcast_id if the broadcast actually
+    # belongs to THIS restaurant. Prevents a spoofed ?b=N for restaurant A
+    # showing up under restaurant B's stats.
+    attributed_broadcast_id = None
+    if body.menu_broadcast_id is not None:
+        owned = (
+            db.query(MenuBroadcast.id)
+            .filter(
+                MenuBroadcast.id == body.menu_broadcast_id,
+                MenuBroadcast.user_id == restaurant.id,
+            )
+            .first()
+        )
+        if owned:
+            attributed_broadcast_id = body.menu_broadcast_id
+
     booking = Booking(
         user_id=restaurant.id,
         customer_name=body.customer_name.strip(),
@@ -147,7 +172,8 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
         notes=(body.special_requests or "").strip() or None,
         status=status,
         diner_user_id=None,
-        source="public",
+        source="menu_sms" if attributed_broadcast_id else "public",
+        menu_broadcast_id=attributed_broadcast_id,
     )
     db.add(booking)
 
@@ -206,6 +232,54 @@ def book_as_guest(slug: str, body: GuestBookingRequest, request: Request, db: Se
             else "Request received — the restaurant will confirm shortly."
         ),
     )
+
+
+@router.get("/bookings/{booking_id}/ics")
+@limiter.limit("30/minute")
+def booking_ics(booking_id: int, request: Request, db: Session = Depends(get_db)):
+    """Return an .ics calendar file for the booking so the diner can add
+    it to their calendar in one tap. Public because guest bookings have
+    no auth — booking IDs are opaque integers but not secret; the file
+    leaks only the restaurant name + party size + date/time, all of which
+    are already on the confirmation page."""
+    b = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not b:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    restaurant = db.query(User).filter(User.id == b.user_id).first()
+    rest_name = (restaurant.restaurant_name or restaurant.display_name or "the restaurant") if restaurant else "the restaurant"
+    location = ", ".join(
+        x for x in [restaurant.city, restaurant.country]
+        if restaurant and x
+    )
+    body = booking_extras.build_ics(b, restaurant_name=rest_name, location=location)
+    return Response(
+        content=body,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="booking-{booking_id}.ics"'},
+    )
+
+
+@router.post("/menu-broadcasts/{broadcast_id}/click", status_code=204)
+@limiter.limit("60/minute")
+def track_menu_broadcast_click(
+    broadcast_id: int, request: Request, db: Session = Depends(get_db),
+):
+    """Fire-and-forget click tracker for the /r/{slug}?b={id} link in the
+    daily menu SMS. Returns 204 even when the broadcast is unknown so a
+    stale link (or a hostile crawler) doesn't leak the broadcast inventory.
+    Rate-limited per IP because there's no auth gate."""
+    broadcast = (
+        db.query(MenuBroadcast)
+        .filter(MenuBroadcast.id == broadcast_id)
+        .first()
+    )
+    if broadcast is not None:
+        # Plain increment — concurrent clicks within the same second may
+        # under-count by one, fine for the dashboard's order-of-magnitude
+        # signal. A cron job is not going to OLAP-aggregate this.
+        broadcast.click_count = (broadcast.click_count or 0) + 1
+        db.commit()
+    return None
 
 
 def _send_guest_booking_email(

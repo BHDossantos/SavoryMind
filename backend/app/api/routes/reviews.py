@@ -1,10 +1,14 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ...core.database import get_db
 from ...core.security import get_current_user
-from ...schemas.review import ReviewCreate, ReviewResponse, SentimentSummary
-from ...services import review_service, posthog_client
+from ...models.review import Review
 from ...models.user import User
+from ...schemas.review import ReviewCreate, ReviewResponse, SentimentSummary
+from ...services import review_service, posthog_client, review_response_service
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -55,3 +59,50 @@ def delete_review(review_id: int, db: Session = Depends(get_db), current_user: U
     _require_restaurant(current_user)
     if not review_service.delete_review(db, current_user.id, review_id):
         raise HTTPException(status_code=404, detail="Review not found")
+
+
+class ResponseSaveRequest(BaseModel):
+    response: str
+
+
+@router.post("/{review_id}/draft-response")
+def draft_response(
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a draft reply to a single review. The operator reviews and
+    explicitly saves it via PATCH /reviews/{id}/response — nothing is
+    auto-published."""
+    _require_restaurant(current_user)
+    r = db.query(Review).filter(
+        Review.id == review_id, Review.user_id == current_user.id,
+    ).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return review_response_service.generate(
+        rating=int(r.rating or 0),
+        comment=r.comment or "",
+        guest_name=r.customer_name or "",
+        restaurant_name=current_user.restaurant_name or current_user.display_name or "the restaurant",
+        language=current_user.language or "en",
+    )
+
+
+@router.patch("/{review_id}/response")
+def save_response(
+    review_id: int,
+    body: ResponseSaveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    r = db.query(Review).filter(
+        Review.id == review_id, Review.user_id == current_user.id,
+    ).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Review not found")
+    r.response = (body.response or "").strip() or None
+    r.responded_at = datetime.utcnow() if r.response else None
+    db.commit(); db.refresh(r)
+    return {"id": r.id, "response": r.response, "responded_at": r.responded_at}

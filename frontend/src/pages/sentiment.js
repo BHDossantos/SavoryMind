@@ -26,6 +26,88 @@ function ScoreBar({ score }) {
   );
 }
 
+// Per-review draft-response control. The operator generates a draft, edits
+// it inline, then saves — nothing is ever auto-published. Saved responses
+// stay visible so the page doubles as a reply history.
+function ReviewResponseBlock({ review, onSaved }) {
+  const { t } = useTranslation();
+  const [draft, setDraft]     = useState(review.response || "");
+  const [open, setOpen]       = useState(!!review.response);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [err, setErr]         = useState(null);
+
+  const generate = async () => {
+    setLoading(true); setErr(null);
+    try {
+      const d = await api.draftReviewResponse(review.id);
+      setDraft(d.response || "");
+      setOpen(true);
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
+  };
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    try {
+      await api.saveReviewResponse(review.id, draft);
+      onSaved?.();
+    } catch (e) { setErr(e.message); }
+    finally { setSaving(false); }
+  };
+
+  if (!open && !review.response) {
+    return (
+      <div className="mt-3">
+        <button
+          onClick={generate}
+          disabled={loading}
+          className="text-xs font-bold bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700 disabled:opacity-60"
+        >
+          {loading ? t("sentimentPage.draftLoading") : t("sentimentPage.draftCta")}
+        </button>
+        {err && <span className="text-xs text-red-600 ml-2">{err}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 border-l-4 border-brand-200 pl-3">
+      <p className="text-[10px] font-bold text-brand-700 uppercase tracking-wider mb-1">
+        {t("sentimentPage.responseHeading")}
+      </p>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={3}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+      />
+      <div className="flex items-center gap-2 mt-1.5">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="text-xs font-bold bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 disabled:opacity-60"
+        >
+          {saving ? t("sentimentPage.saving") : t("sentimentPage.saveResponse")}
+        </button>
+        <button
+          onClick={generate}
+          disabled={loading}
+          className="text-xs font-medium text-brand-600 hover:text-brand-800"
+        >
+          {loading ? "…" : t("sentimentPage.regenerate")}
+        </button>
+        {review.responded_at && (
+          <span className="text-[11px] text-gray-400 ml-auto">
+            {t("sentimentPage.respondedAt", { date: new Date(review.responded_at).toLocaleDateString() })}
+          </span>
+        )}
+      </div>
+      {err && <p className="text-xs text-red-600 mt-1">{err}</p>}
+    </div>
+  );
+}
+
 export default function SentimentPage() {
   const { t } = useTranslation();
   const [reviews, setReviews] = useState([]);
@@ -417,6 +499,7 @@ export default function SentimentPage() {
                   <ScoreBar score={review.sentiment_score} />
                   <SentimentBadge label={review.sentiment_label} />
                 </div>
+                <ReviewResponseBlock review={review} onSaved={fetchData} />
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                 <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>

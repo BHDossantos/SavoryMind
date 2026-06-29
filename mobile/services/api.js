@@ -216,6 +216,21 @@ export const api = {
   deleteCustomer: (id) => request(`/api/restaurant/crm/${id}`, { method: 'DELETE' }),
   recordVisit: (id, spend) => request(`/api/restaurant/crm/${id}/visit?spend=${spend}`, { method: 'POST' }),
 
+  // Menu broadcast — 7-day SMS attribution rollup for the dashboard widget
+  getMenuBroadcastStats: () => request('/api/restaurant/menu-broadcasts/stats'),
+  getActionPlan: () => request('/api/restaurant/action-plan'),
+
+  // Restaurant billing (Stripe €99/mo pro). Native opens the returned URL
+  // in the browser — Apple/Google don't allow native checkout on the web.
+  getRestaurantBillingStatus: () => request('/api/billing/restaurant/status'),
+  createRestaurantCheckout: () => request('/api/billing/restaurant/checkout', { method: 'POST' }),
+  createRestaurantPortal: () => request('/api/billing/restaurant/portal', { method: 'POST' }),
+
+  // Consumer Premium billing (parity with web)
+  getBillingStatus: () => request('/api/billing/status'),
+  createCheckout: () => request('/api/billing/checkout', { method: 'POST' }),
+  createBillingPortal: () => request('/api/billing/portal', { method: 'POST' }),
+
   getStaff: () => request('/api/restaurant/staff'),
   getStaffSummary: () => request('/api/restaurant/staff/summary'),
   createStaff: (data) => request('/api/restaurant/staff', { method: 'POST', body: JSON.stringify(data) }),

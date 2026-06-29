@@ -63,6 +63,67 @@ def booking_table_labels(lang: str) -> dict:
     })
 
 
+def weekly_digest_subject(lang: str, *, rest_name: str) -> str:
+    return _pick(lang, {
+        "en": f"This week's playbook for {rest_name}",
+        "it": f"Il piano della settimana per {rest_name}",
+        "es": f"El plan semanal de {rest_name}",
+        "pt": f"O plano da semana para {rest_name}",
+        "fr": f"Le plan de la semaine pour {rest_name}",
+    })
+
+
+def weekly_digest_labels(lang: str) -> dict[str, str]:
+    return _pick(lang, {
+        "en": {
+            "eyebrow": "Weekly digest",
+            "heading": "Your AI playbook for this week",
+            "intro":   "Five things to focus on at {rest} this week — sorted by revenue impact.",
+            "stats_heading": "Last 7 days · menu SMS",
+            "sms": "messages sent", "clicks": "clicks", "bookings": "bookings",
+        },
+        "it": {
+            "eyebrow": "Riepilogo settimanale",
+            "heading": "Il piano AI per questa settimana",
+            "intro":   "Cinque azioni su cui concentrarsi questa settimana da {rest} — ordinate per impatto.",
+            "stats_heading": "Ultimi 7 giorni · SMS menù",
+            "sms": "messaggi inviati", "clicks": "click", "bookings": "prenotazioni",
+        },
+        "es": {
+            "eyebrow": "Resumen semanal",
+            "heading": "Tu plan IA de la semana",
+            "intro":   "Cinco cosas en las que centrarte esta semana en {rest} — ordenadas por impacto.",
+            "stats_heading": "Últimos 7 días · SMS menú",
+            "sms": "mensajes enviados", "clicks": "clics", "bookings": "reservas",
+        },
+        "pt": {
+            "eyebrow": "Resumo semanal",
+            "heading": "Seu plano IA da semana",
+            "intro":   "Cinco coisas para focar esta semana em {rest} — ordenadas por impacto.",
+            "stats_heading": "Últimos 7 dias · SMS menu",
+            "sms": "mensagens enviadas", "clicks": "cliques", "bookings": "reservas",
+        },
+        "fr": {
+            "eyebrow": "Récap hebdomadaire",
+            "heading": "Votre plan IA de la semaine",
+            "intro":   "Cinq actions à prioriser cette semaine chez {rest} — triées par impact.",
+            "stats_heading": "7 derniers jours · SMS menu",
+            "sms": "messages envoyés", "clicks": "clics", "bookings": "réservations",
+        },
+    })
+
+
+def menu_broadcast_summary_labels(lang: str) -> dict[str, str]:
+    """Labels for the 7-day menu broadcast rollup block in the daily briefing."""
+    return _pick(lang, {
+        "en": {"heading": "Last 7 days · menu SMS", "sms": "messages sent", "clicks": "clicks", "bookings": "bookings"},
+        "it": {"heading": "Ultimi 7 giorni · SMS menù", "sms": "messaggi inviati", "clicks": "click", "bookings": "prenotazioni"},
+        "es": {"heading": "Últimos 7 días · SMS menú", "sms": "mensajes enviados", "clicks": "clics", "bookings": "reservas"},
+        "pt": {"heading": "Últimos 7 dias · SMS menu", "sms": "mensagens enviadas", "clicks": "cliques", "bookings": "reservas"},
+        "fr": {"heading": "7 derniers jours · SMS menu", "sms": "messages envoyés", "clicks": "clics", "bookings": "réservations"},
+    })
+
+
 def open_dashboard_cta(lang: str) -> str:
     return _pick(lang, {
         "en": "Open dashboard",
@@ -236,6 +297,35 @@ def welcome_what_next(lang: str) -> str:
         "pt": "Quando uma reserva chegar, vocês receberão um som no app, um e-mail e (se configurarem o telefone na página de reservas) um SMS — tudo em tempo real. Também enviaremos um resumo matinal das reservas do dia.",
         "fr": "Lorsqu'une réservation arrive, vous recevrez un son dans l'app, un e-mail et (si vous renseignez le numéro dans la page des réservations) un SMS — tout en temps réel. Nous vous enverrons aussi un briefing matinal des réservations du jour.",
     })
+
+
+def menu_of_the_day_sms(
+    lang: str,
+    *,
+    rest_label: str,
+    menu_body: str,
+    booking_url: str | None = None,
+) -> str:
+    """Daily menu broadcast — kept short so it fits in a few SMS segments
+    even when the menu is verbose. Caller is responsible for length-clamping
+    `menu_body` before passing it in (Twilio bills per segment)."""
+    book_line = ""
+    if booking_url:
+        book_line = _pick(lang, {
+            "en": f"\nBook: {booking_url}",
+            "it": f"\nPrenota: {booking_url}",
+            "es": f"\nReserva: {booking_url}",
+            "pt": f"\nReserve: {booking_url}",
+            "fr": f"\nRéservez : {booking_url}",
+        })
+    intro = _pick(lang, {
+        "en": f"Today at {rest_label}:",
+        "it": f"Oggi da {rest_label}:",
+        "es": f"Hoy en {rest_label}:",
+        "pt": f"Hoje em {rest_label}:",
+        "fr": f"Aujourd'hui chez {rest_label} :",
+    })
+    return f"{intro}\n{menu_body}{book_line}"
 
 
 def reminder_sms(lang: str, *, rest_label: str, party_size: int, booking_date: str, booking_time: str) -> str:

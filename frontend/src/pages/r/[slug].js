@@ -43,6 +43,16 @@ export default function GuestBookingPage() {
   const [submitErr,  setSubmitErr]  = useState(null);
   const [result,     setResult]     = useState(null);
 
+  // Attribution: when the diner lands from the daily menu SMS the URL is
+  // /r/{slug}?b={broadcast_id}. We fire the click tracker once on mount
+  // and carry the id into the booking POST so the restaurant dashboard
+  // can roll up "bookings driven by today's menu SMS".
+  const broadcastId = router.isReady && router.query.b ? Number(router.query.b) : null;
+  useEffect(() => {
+    if (!broadcastId || Number.isNaN(broadcastId)) return;
+    api.trackMenuBroadcastClick(broadcastId).catch(() => {});
+  }, [broadcastId]);
+
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
@@ -73,6 +83,7 @@ export default function GuestBookingPage() {
         customer_phone:   phone.trim(),
         customer_email:   email.trim() || null,
         special_requests: notes.trim() || null,
+        menu_broadcast_id: broadcastId && !Number.isNaN(broadcastId) ? broadcastId : null,
       });
       setResult(res);
     } catch (err) {

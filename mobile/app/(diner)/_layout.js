@@ -22,6 +22,7 @@ export default function DinerLayout() {
       <Tabs.Screen name="profile"   options={{ title: t('nav.profile'),   tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }} />
       {/* Hidden from the tab bar — reachable from dashboard / profile. */}
       <Tabs.Screen name="history"   options={{ href: null }} />
+      <Tabs.Screen name="welcome"   options={{ href: null }} />
     </Tabs>
   );
 }

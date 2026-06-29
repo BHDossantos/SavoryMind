@@ -211,6 +211,7 @@ export default function AssistantPage() {
         title: data.title,
         text: data.answer,
         toolCalls: data.tool_calls || [],
+        suggestedActions: data.suggested_actions || [],
       }]);
     } catch (e) {
       setMessages((m) => [
@@ -285,6 +286,19 @@ export default function AssistantPage() {
                 <p className="text-[11px] italic text-gray-400 mt-2">
                   {summariseToolCalls(msg.toolCalls, t)}
                 </p>
+              )}
+              {msg.role === "assistant" && Array.isArray(msg.suggestedActions) && msg.suggestedActions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {msg.suggestedActions.map((a) => (
+                    <a
+                      key={a.route}
+                      href={a.route}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold bg-consumer-600 text-white px-3 py-1.5 rounded-full hover:bg-consumer-700 transition-colors"
+                    >
+                      <span>{a.icon}</span> {a.label} →
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           </div>
