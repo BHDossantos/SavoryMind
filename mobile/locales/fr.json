@@ -867,5 +867,11 @@
     "primaryDineOutSub": "Trouvez un restaurant ce soir",
     "primaryCook": "Cuisinez quelque chose",
     "primaryCookSub": "Idées de recettes du garde-manger"
+  },
+  "staffPage": {
+    "wfEyebrow": "Personnel IA",
+    "wfTitle": "Signaux d'équipe à suivre",
+    "wfAtRisk": "{{name}} risque de partir",
+    "wfOvertime": "{{name}} proche des heures sup (~{{hours}}h)"
   }
 }

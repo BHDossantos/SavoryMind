@@ -208,6 +208,7 @@ export const api = {
   // Restaurant — Staff
   getStaffSummary: () => request("/api/restaurant/staff/summary"),
   getStaff: () => request("/api/restaurant/staff"),
+  getStaffIntelligence: () => request("/api/restaurant/staff/intelligence"),
   createStaff: (data) => request("/api/restaurant/staff", { method: "POST", body: JSON.stringify(data) }),
   updateStaff: (id, data) => request(`/api/restaurant/staff/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteStaff: (id) => request(`/api/restaurant/staff/${id}`, { method: "DELETE" }),

@@ -867,5 +867,11 @@
     "primaryDineOutSub": "Encuentra un restaurante esta noche",
     "primaryCook": "Cocina algo",
     "primaryCookSub": "Ideas de receta de tu despensa"
+  },
+  "staffPage": {
+    "wfEyebrow": "Personal IA",
+    "wfTitle": "Señales del equipo a tener en cuenta",
+    "wfAtRisk": "{{name}} podría irse",
+    "wfOvertime": "{{name}} cerca de horas extra (~{{hours}}h)"
   }
 }

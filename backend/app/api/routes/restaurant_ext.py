@@ -513,3 +513,17 @@ def crm_winback(
         "return_probability": gi.return_probability(c),
         "sent": sent,
     }
+
+
+# --- Workforce Intelligence (AI staff layer, Restaurant OS Wave B) ---
+
+@router.get("/staff/intelligence")
+def staff_intelligence(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Overtime alerts, attrition risk, and demand-based staffing for the
+    next window — the AI Workforce panel. Heuristic, computed on read."""
+    _require_restaurant(current_user)
+    from ...services import workforce_intelligence_service as wf
+    return wf.build(db, current_user.id)

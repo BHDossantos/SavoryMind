@@ -867,5 +867,11 @@
     "primaryDineOutSub": "Trova un ristorante stasera",
     "primaryCook": "Cucina qualcosa",
     "primaryCookSub": "Idee ricette dalla tua dispensa"
+  },
+  "staffPage": {
+    "wfEyebrow": "Forza lavoro AI",
+    "wfTitle": "Segnali del team su cui agire",
+    "wfAtRisk": "{{name}} potrebbe lasciare",
+    "wfOvertime": "{{name}} verso gli straordinari (~{{hours}}h)"
   }
 }

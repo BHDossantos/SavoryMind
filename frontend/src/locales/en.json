@@ -752,7 +752,11 @@
     "shiftMorning": "Morning",
     "shiftAfternoon": "Afternoon",
     "shiftEvening": "Evening",
-    "shiftFull": "Full"
+    "shiftFull": "Full",
+    "wfEyebrow": "AI workforce",
+    "wfTitle": "Team signals worth acting on",
+    "wfAtRisk": "{{name}} may be at flight risk",
+    "wfOvertime": "{{name}} nearing overtime (~{{hours}}h)"
   },
   "staffTimePage": {
     "title": "⏱️ Staff Time Tracker",

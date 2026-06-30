@@ -752,7 +752,11 @@
     "shiftMorning": "Manhã",
     "shiftAfternoon": "Tarde",
     "shiftEvening": "Noite",
-    "shiftFull": "Completo"
+    "shiftFull": "Completo",
+    "wfEyebrow": "Equipe IA",
+    "wfTitle": "Sinais da equipe para agir",
+    "wfAtRisk": "{{name}} pode sair",
+    "wfOvertime": "{{name}} perto de horas extras (~{{hours}}h)"
   },
   "staffTimePage": {
     "title": "⏱️ Controlo de horas da equipa",

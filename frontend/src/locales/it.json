@@ -752,7 +752,11 @@
     "shiftMorning": "Mattina",
     "shiftAfternoon": "Pomeriggio",
     "shiftEvening": "Sera",
-    "shiftFull": "Completo"
+    "shiftFull": "Completo",
+    "wfEyebrow": "Forza lavoro AI",
+    "wfTitle": "Segnali del team su cui agire",
+    "wfAtRisk": "{{name}} potrebbe lasciare",
+    "wfOvertime": "{{name}} verso gli straordinari (~{{hours}}h)"
   },
   "staffTimePage": {
     "title": "⏱️ Gestione orari staff",

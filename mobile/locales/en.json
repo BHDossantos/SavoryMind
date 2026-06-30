@@ -867,5 +867,11 @@
     "primaryDineOutSub": "Find a restaurant tonight",
     "primaryCook": "Cook something",
     "primaryCookSub": "Recipe ideas from your pantry"
+  },
+  "staffPage": {
+    "wfEyebrow": "AI workforce",
+    "wfTitle": "Team signals worth acting on",
+    "wfAtRisk": "{{name}} may be at flight risk",
+    "wfOvertime": "{{name}} nearing overtime (~{{hours}}h)"
   }
 }
