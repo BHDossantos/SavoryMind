@@ -2,9 +2,6 @@
 // NEXT_PUBLIC_API_URL must be set at build time (Cloud Run / GitHub Actions) → https://api.savorymind.net.
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
 const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
-// NEXT_PUBLIC_API_URL is set at build/deploy time (see deploy-frontend.yml).
-// In local dev the proxy rewrite forwards /backend/* → localhost:8000.
-const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
 
 function getBaseUrl() {
   if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
@@ -141,6 +138,10 @@ export const api = {
   generateCampaign: (body) => request("/api/restaurant/campaigns/generate", { method: "POST", body: JSON.stringify(body) }),
   draftReviewResponse: (id) => request(`/api/reviews/${id}/draft-response`, { method: "POST" }),
   saveReviewResponse: (id, response) => request(`/api/reviews/${id}/response`, { method: "PATCH", body: JSON.stringify({ response }) }),
+  getCRMSegments: () => request("/api/restaurant/crm/segments"),
+  getAtRiskGuests: () => request("/api/restaurant/crm/at-risk"),
+  getCustomerTimeline: (id) => request(`/api/restaurant/crm/${id}/timeline`),
+  draftWinback: (id, body) => request(`/api/restaurant/crm/${id}/winback`, { method: "POST", body: JSON.stringify(body) }),
   listSavedRestaurants: () => request("/api/consumer/saved-restaurants"),
   saveRestaurant: (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: "POST" }),
   unsaveRestaurant: (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: "DELETE" }),
@@ -207,6 +208,7 @@ export const api = {
   // Restaurant — Staff
   getStaffSummary: () => request("/api/restaurant/staff/summary"),
   getStaff: () => request("/api/restaurant/staff"),
+  getStaffIntelligence: () => request("/api/restaurant/staff/intelligence"),
   createStaff: (data) => request("/api/restaurant/staff", { method: "POST", body: JSON.stringify(data) }),
   updateStaff: (id, data) => request(`/api/restaurant/staff/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteStaff: (id) => request(`/api/restaurant/staff/${id}`, { method: "DELETE" }),

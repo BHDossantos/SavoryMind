@@ -83,6 +83,22 @@ class CRMCustomer(Base):
     menu_sms_opt_in = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Rich guest profile — the CRM fields restaurants actually use. All
+    # nullable so existing rows are untouched. Powers guest intelligence
+    # (birthday campaigns, dietary-aware offers, segment membership).
+    birthday        = Column(Date, nullable=True)
+    anniversary     = Column(Date, nullable=True)
+    allergies       = Column(Text, nullable=True)     # free text or comma list
+    favorite_dishes = Column(Text, nullable=True)     # comma-separated
+    favorite_drinks = Column(Text, nullable=True)     # comma-separated
+    wine_pref       = Column(String, nullable=True)   # "Cabernet", "Pinot Noir"
+    seating_pref    = Column(String, nullable=True)   # "Corner booth", "Patio"
+    address         = Column(Text, nullable=True)
+    # Loyalty — points accrue on visits; tier is derived but cached here so
+    # the CRM list can render it without recomputing per row.
+    loyalty_points  = Column(Integer, nullable=False, default=0, server_default="0")
+    loyalty_tier    = Column(String, nullable=True)   # bronze | silver | gold | vip
+
 
 class Staff(Base):
     __tablename__ = "staff"

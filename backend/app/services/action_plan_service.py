@@ -217,6 +217,41 @@ def _waste_action(db: Session, user_id: int) -> dict | None:
     )
 
 
+def _workforce_action(db: Session, user_id: int) -> dict | None:
+    """Surface the single most urgent workforce signal (attrition first,
+    then overtime) as one Action Plan card."""
+    try:
+        from . import workforce_intelligence_service as wf
+        wfdata = wf.build(db, user_id)
+    except Exception:
+        return None
+    risks = wfdata.get("attrition_risks") or []
+    if risks:
+        top = risks[0]
+        return _action(
+            kind="attrition_risk",
+            title=f"{top['name']} may be at flight risk",
+            body=f"{int(top['confidence'] * 100)}% — {', '.join(top['reasons'][:2])}. {top['recommendation']}",
+            icon="🧑‍🍳",
+            severity=SEV_HIGH,
+            cta_label="Review staff",
+            cta_route="/restaurant/staff",
+        )
+    ot = wfdata.get("overtime_alerts") or []
+    if ot:
+        top = ot[0]
+        return _action(
+            kind="overtime",
+            title=f"{top['name']} is heading into overtime",
+            body=f"~{top['estimated_weekly_hours']}h this week. {top['recommendation']}",
+            icon="⏱",
+            severity=SEV_MEDIUM,
+            cta_label="Review staff",
+            cta_route="/restaurant/staff",
+        )
+    return None
+
+
 def build_action_plan(db: Session, user: User, *, today: date | None = None) -> list[dict]:
     """Compose the day's Action Plan. Returns up to 5 cards, sorted so the
     operator's eye lands on revenue-impacting items first."""
@@ -234,6 +269,9 @@ def build_action_plan(db: Session, user: User, *, today: date | None = None) -> 
     waste = _waste_action(db, user.id)
     if waste:
         actions.append(waste)
+    workforce = _workforce_action(db, user.id)
+    if workforce:
+        actions.append(workforce)
 
     # Severity → sort key. high before medium before low; tie-broken by
     # estimated_gain (bigger wins first).

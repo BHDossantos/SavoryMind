@@ -691,7 +691,15 @@
     "menuSmsOff": "No",
     "emptyTitle": "Aún no hay clientes",
     "emptyBody": "Añade a tus clientes habituales para enviarles el menú de hoy por SMS y recordar lo que les gusta.",
-    "noResults": "Sin resultados para esa búsqueda."
+    "noResults": "Sin resultados para esa búsqueda.",
+    "giEyebrow": "Inteligencia de clientes IA",
+    "giTitle": "Recupera estos clientes",
+    "giLapsed": "{{days}} días desde la última visita",
+    "giWinBack": "Recuperar",
+    "giSent": "Enviado ✓",
+    "giSendSms": "Enviar SMS",
+    "giNoPhone": "Sin teléfono — añade uno para enviar.",
+    "giConfirm": "¿Enviar SMS de recuperación a {{name}} ({{days}} días)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind para Restaurantes",
@@ -859,5 +867,11 @@
     "primaryDineOutSub": "Encuentra un restaurante esta noche",
     "primaryCook": "Cocina algo",
     "primaryCookSub": "Ideas de receta de tu despensa"
+  },
+  "staffPage": {
+    "wfEyebrow": "Personal IA",
+    "wfTitle": "Señales del equipo a tener en cuenta",
+    "wfAtRisk": "{{name}} podría irse",
+    "wfOvertime": "{{name}} cerca de horas extra (~{{hours}}h)"
   }
 }

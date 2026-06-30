@@ -36,11 +36,13 @@ export default function StaffScreen() {
   const [form, setForm]           = useState(EMPTY);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState(null);
+  const [intel, setIntel] = useState(null);
 
   const load = async () => {
     try { setStaff(await api.getStaff()); setError(null); }
     catch (e) { setError(e.message); }
     finally { setLoading(false); }
+    api.getStaffIntelligence().then(setIntel).catch(() => {});
   };
   useFocusEffect(useCallback(() => { load(); }, []));
 
@@ -77,6 +79,31 @@ export default function StaffScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        {intel && ((intel.attrition_risks || []).length > 0 || (intel.overtime_alerts || []).length > 0
+          || (intel.staffing_suggestion && intel.staffing_suggestion.direction !== 'steady')) && (
+          <View style={wfStyles.panel}>
+            <Text style={wfStyles.eyebrow}>{t('staffPage.wfEyebrow')}</Text>
+            <Text style={wfStyles.title}>🧠 {t('staffPage.wfTitle')}</Text>
+            {intel.staffing_suggestion && intel.staffing_suggestion.direction !== 'steady' && (
+              <View style={[wfStyles.row, { borderColor: '#c7d2fe' }]}>
+                <Text style={wfStyles.rowTitle}>📈 {intel.staffing_suggestion.headline}</Text>
+                <Text style={wfStyles.rowSub}>{intel.staffing_suggestion.recommendation}</Text>
+              </View>
+            )}
+            {(intel.attrition_risks || []).map((r) => (
+              <View key={`r${r.id}`} style={[wfStyles.row, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
+                <Text style={wfStyles.rowTitle}>⚠️ {t('staffPage.wfAtRisk', { name: r.name })} · {Math.round(r.confidence * 100)}%</Text>
+                <Text style={wfStyles.rowSub}>{r.reasons.join(' · ')} — {r.recommendation}</Text>
+              </View>
+            ))}
+            {(intel.overtime_alerts || []).map((o) => (
+              <View key={`o${o.id}`} style={[wfStyles.row, { borderColor: '#fde68a', backgroundColor: '#fffbeb' }]}>
+                <Text style={wfStyles.rowTitle}>⏱ {t('staffPage.wfOvertime', { name: o.name, hours: o.estimated_weekly_hours })}</Text>
+                <Text style={wfStyles.rowSub}>{o.recommendation}</Text>
+              </View>
+            ))}
+          </View>
+        )}
         {staff.map(m => (
           <View key={m.id} style={styles.card}>
             <Text style={styles.emoji}>{ROLE_EMOJI[m.role] || '👤'}</Text>
@@ -182,4 +209,13 @@ const styles = StyleSheet.create({
   formError:      { color: C.red, fontSize: 13, marginBottom: 12 },
   saveBtn:        { backgroundColor: C.restaurant.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   saveBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
+});
+
+const wfStyles = StyleSheet.create({
+  panel:    { backgroundColor: '#eef2ff', borderColor: '#c7d2fe', borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 14 },
+  eyebrow:  { fontSize: 10, fontWeight: '700', color: '#4338ca', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title:    { fontSize: 15, fontWeight: '800', color: C.gray[900], marginTop: 2, marginBottom: 8 },
+  row:      { borderWidth: 1, borderRadius: 10, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6 },
+  rowTitle: { fontSize: 13, fontWeight: '700', color: C.gray[900] },
+  rowSub:   { fontSize: 11, color: C.gray[600], marginTop: 2 },
 });
