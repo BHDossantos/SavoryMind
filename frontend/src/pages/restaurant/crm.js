@@ -151,6 +151,7 @@ export default function CRM() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [redeemFor, setRedeemFor] = useState(null);   // customer being redeemed for
 
   const fetch = () => {
     setLoading(true);
@@ -227,6 +228,9 @@ export default function CRM() {
 
       {/* AI Guest Intelligence — win-back panel */}
       <GuestIntelligencePanel onSent={fetch} />
+
+      {/* Loyalty rewards catalog */}
+      <LoyaltyRewardsManager t={t} />
 
       {/* Summary */}
       {summary && (
@@ -333,6 +337,7 @@ export default function CRM() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
+                    <button onClick={() => setRedeemFor(c)} className="text-xs text-purple-600 hover:underline">🎁 {t("crmPage.redeem")}</button>
                     <button onClick={() => openEdit(c)} className="text-xs text-brand-600 hover:underline">{t("crmPage.edit")}</button>
                     <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-700">{t("crmPage.delete")}</button>
                   </div>
@@ -434,6 +439,149 @@ export default function CRM() {
           onCancel={() => setConfirmDialog(null)}
         />
       )}
+
+      {redeemFor && (
+        <RedeemModal
+          customer={redeemFor}
+          t={t}
+          onClose={() => setRedeemFor(null)}
+          onRedeemed={() => { setRedeemFor(null); fetch(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Reward catalog manager — collapsible so it doesn't clutter the CRM on
+// days the operator isn't editing rewards.
+function LoyaltyRewardsManager({ t }) {
+  const [open, setOpen] = useState(false);
+  const [rewards, setRewards] = useState([]);
+  const [name, setName] = useState("");
+  const [cost, setCost] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const load = () => api.getLoyaltyRewards().then(setRewards).catch(() => {});
+  useEffect(() => { if (open) load(); }, [open]);
+
+  const add = async () => {
+    const points = parseInt(cost, 10);
+    if (!name.trim() || !points || points <= 0) { setErr(t("crmPage.loyaltyInvalid")); return; }
+    setBusy(true); setErr(null);
+    try {
+      await api.createLoyaltyReward({ name: name.trim(), points_cost: points });
+      setName(""); setCost(""); load();
+    } catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const remove = async (id) => {
+    try { await api.deleteLoyaltyReward(id); load(); } catch {}
+  };
+
+  return (
+    <section className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4">
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between">
+        <div className="text-left">
+          <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">{t("crmPage.loyaltyEyebrow")}</p>
+          <h2 className="text-base font-extrabold text-gray-900">🎁 {t("crmPage.loyaltyTitle")}</h2>
+        </div>
+        <span className="text-amber-700">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-2 mb-3">
+            {rewards.length === 0 && <p className="text-sm text-gray-400">{t("crmPage.loyaltyEmpty")}</p>}
+            {rewards.map((r) => (
+              <span key={r.id} className="inline-flex items-center gap-2 text-xs bg-white border border-amber-200 rounded-full px-3 py-1.5">
+                <span className="font-semibold text-gray-800">{r.name}</span>
+                <span className="text-amber-700 font-bold">{r.points_cost} pts</span>
+                <button onClick={() => remove(r.id)} className="text-red-400 hover:text-red-600">✕</button>
+              </span>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("crmPage.loyaltyNamePh")}
+              className="flex-1 min-w-[160px] border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <input value={cost} onChange={(e) => setCost(e.target.value)} placeholder={t("crmPage.loyaltyCostPh")} type="number"
+              className="w-28 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <button onClick={add} disabled={busy} className="bg-amber-600 text-white font-bold px-4 py-2 rounded-xl hover:bg-amber-700 disabled:opacity-60 text-sm">
+              {t("crmPage.loyaltyAdd")}
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Per-customer redemption modal — shows balance/tier + affordable rewards.
+function RedeemModal({ customer, t, onClose, onRedeemed }) {
+  const [data, setData] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const [done, setDone] = useState(null);
+
+  useEffect(() => {
+    api.getCustomerRewards(customer.id).then(setData).catch((e) => setErr(e.message));
+  }, [customer.id]);
+
+  const redeem = async (rewardId) => {
+    setBusy(true); setErr(null);
+    try {
+      const res = await api.redeemReward(customer.id, rewardId);
+      setDone(res);
+      setTimeout(onRedeemed, 1400);
+    } catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="font-bold text-gray-900 text-lg">🎁 {t("crmPage.redeemFor", { name: customer.name })}</h3>
+            {data && (
+              <p className="text-xs text-gray-500">
+                {t("crmPage.loyaltyBalance", { points: data.loyalty_points })}
+                {data.loyalty_tier ? ` · ${data.loyalty_tier}` : ""}
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+        </div>
+        {done ? (
+          <div className="text-center py-6">
+            <p className="text-3xl mb-2">✅</p>
+            <p className="font-semibold text-gray-900">{t("crmPage.redeemDone", { reward: done.reward_name })}</p>
+            <p className="text-sm text-gray-500 mt-1">{t("crmPage.loyaltyBalance", { points: done.remaining_points })}</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {!data && !err && <p className="text-sm text-gray-400">…</p>}
+            {data && data.rewards.length === 0 && <p className="text-sm text-gray-400">{t("crmPage.loyaltyEmpty")}</p>}
+            {data && data.rewards.map((r) => (
+              <div key={r.id} className="flex items-center justify-between border border-gray-200 rounded-xl px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{r.name}</p>
+                  <p className="text-xs text-amber-700 font-bold">{r.points_cost} pts</p>
+                </div>
+                <button
+                  onClick={() => redeem(r.id)}
+                  disabled={busy || !r.affordable}
+                  className="text-xs font-bold bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-40"
+                >
+                  {r.affordable ? t("crmPage.redeem") : t("crmPage.loyaltyShort")}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+      </div>
     </div>
   );
 }

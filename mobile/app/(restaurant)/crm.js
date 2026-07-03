@@ -31,6 +31,27 @@ export default function CRMScreen() {
 
   const [atRisk, setAtRisk] = useState([]);
   const [wbBusy, setWbBusy] = useState(null);  // customer id being sent
+  const [redeem, setRedeem] = useState(null);  // { customer, data, busy, done }
+
+  const openRedeem = async (c) => {
+    setRedeem({ customer: c, data: null, busy: false, done: null });
+    try {
+      const data = await api.getCustomerRewards(c.id);
+      setRedeem((r) => r && r.customer.id === c.id ? { ...r, data } : r);
+    } catch (e) { Alert.alert(e.message || 'Failed'); setRedeem(null); }
+  };
+
+  const doRedeem = async (rewardId) => {
+    setRedeem((r) => ({ ...r, busy: true }));
+    try {
+      const res = await api.redeemReward(redeem.customer.id, rewardId);
+      setRedeem((r) => ({ ...r, busy: false, done: res }));
+      setTimeout(() => { setRedeem(null); load(); }, 1400);
+    } catch (e) {
+      Alert.alert(e.message || 'Failed');
+      setRedeem((r) => ({ ...r, busy: false }));
+    }
+  };
 
   const load = async () => {
     try {
@@ -180,6 +201,9 @@ export default function CRMScreen() {
               <TouchableOpacity style={styles.visitBtn} onPress={() => handleRecordVisit(c)}>
                 <Text style={styles.visitBtnText}>+ Visit</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => openRedeem(c)} style={{ padding: 4 }}>
+                <Text>🎁</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDelete(c)} style={{ padding: 4 }}>
                 <Text>🗑️</Text>
               </TouchableOpacity>
@@ -233,9 +257,66 @@ export default function CRMScreen() {
           </TouchableOpacity>
         </SafeScreen>
       </Modal>
+
+      <Modal visible={!!redeem} animationType="fade" transparent onRequestClose={() => setRedeem(null)}>
+        <View style={rdStyles.backdrop}>
+          <View style={rdStyles.sheet}>
+            <View style={rdStyles.header}>
+              <Text style={rdStyles.title}>🎁 {redeem?.customer?.name}</Text>
+              <TouchableOpacity onPress={() => setRedeem(null)}><Text style={rdStyles.close}>✕</Text></TouchableOpacity>
+            </View>
+            {redeem?.data && !redeem?.done && (
+              <Text style={rdStyles.balance}>{redeem.data.loyalty_points} pts{redeem.data.loyalty_tier ? ` · ${redeem.data.loyalty_tier}` : ''}</Text>
+            )}
+            {redeem?.done ? (
+              <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                <Text style={{ fontSize: 28 }}>✅</Text>
+                <Text style={rdStyles.doneText}>{redeem.done.reward_name}</Text>
+                <Text style={rdStyles.balance}>{redeem.done.remaining_points} pts left</Text>
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {!redeem?.data && <Text style={rdStyles.dim}>…</Text>}
+                {redeem?.data?.rewards?.length === 0 && <Text style={rdStyles.dim}>No rewards yet.</Text>}
+                {redeem?.data?.rewards?.map((r) => (
+                  <View key={r.id} style={rdStyles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={rdStyles.rName}>{r.name}</Text>
+                      <Text style={rdStyles.rCost}>{r.points_cost} pts</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[rdStyles.btn, !r.affordable && { opacity: 0.4 }]}
+                      disabled={redeem.busy || !r.affordable}
+                      onPress={() => doRedeem(r.id)}
+                    >
+                      <Text style={rdStyles.btnText}>{r.affordable ? 'Redeem' : 'Short'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const rdStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 },
+  sheet:    { backgroundColor: '#fff', borderRadius: 18, padding: 18 },
+  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title:    { fontSize: 17, fontWeight: '800', color: C.gray[900] },
+  close:    { fontSize: 18, color: C.gray[400] },
+  balance:  { fontSize: 12, color: C.gray[500], marginTop: 2, marginBottom: 8 },
+  dim:      { fontSize: 13, color: C.gray[400], paddingVertical: 8 },
+  row:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.gray[200], borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
+  rName:    { fontSize: 14, fontWeight: '700', color: C.gray[900] },
+  rCost:    { fontSize: 12, fontWeight: '700', color: '#b45309', marginTop: 2 },
+  btn:      { backgroundColor: '#7c3aed', borderRadius: 9, paddingHorizontal: 14, paddingVertical: 8 },
+  btnText:  { color: '#fff', fontWeight: '700', fontSize: 12 },
+  doneText: { fontSize: 15, fontWeight: '700', color: C.gray[900], marginTop: 6 },
+});
 
 const styles = StyleSheet.create({
   topBar:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 56 },

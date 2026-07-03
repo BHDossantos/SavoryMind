@@ -530,7 +530,19 @@
     "seatingPrefPh": "ex. Mesa de canto",
     "favouriteDrinks": "Bebidas favoritas",
     "allergies": "Alergias / dieta",
-    "allergiesPh": "ex. Sem glúten, sem marisco"
+    "allergiesPh": "ex. Sem glúten, sem marisco",
+    "redeem": "Resgatar",
+    "redeemFor": "Resgatar para {{name}}",
+    "redeemDone": "Resgatado: {{reward}}",
+    "loyaltyEyebrow": "Fidelidade",
+    "loyaltyTitle": "Catálogo de recompensas",
+    "loyaltyEmpty": "Ainda sem recompensas.",
+    "loyaltyNamePh": "Nome (ex. Sobremesa grátis)",
+    "loyaltyCostPh": "Pontos",
+    "loyaltyAdd": "Adicionar",
+    "loyaltyInvalid": "Insira um nome e um custo positivo.",
+    "loyaltyBalance": "{{points}} pontos",
+    "loyaltyShort": "Falta"
   },
   "inventoryPage": {
     "title": "Inventário",

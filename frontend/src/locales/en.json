@@ -530,7 +530,19 @@
     "seatingPrefPh": "e.g. Corner booth",
     "favouriteDrinks": "Favourite drinks",
     "allergies": "Allergies / dietary",
-    "allergiesPh": "e.g. Gluten-free, no shellfish"
+    "allergiesPh": "e.g. Gluten-free, no shellfish",
+    "redeem": "Redeem",
+    "redeemFor": "Redeem for {{name}}",
+    "redeemDone": "Redeemed: {{reward}}",
+    "loyaltyEyebrow": "Loyalty",
+    "loyaltyTitle": "Reward catalog",
+    "loyaltyEmpty": "No rewards yet.",
+    "loyaltyNamePh": "Reward name (e.g. Free dessert)",
+    "loyaltyCostPh": "Points",
+    "loyaltyAdd": "Add",
+    "loyaltyInvalid": "Enter a name and a positive point cost.",
+    "loyaltyBalance": "{{points}} points",
+    "loyaltyShort": "Short"
   },
   "inventoryPage": {
     "title": "Inventory",

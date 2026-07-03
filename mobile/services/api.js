@@ -221,6 +221,8 @@ export const api = {
   getActionPlan: () => request('/api/restaurant/action-plan'),
   getAtRiskGuests: () => request('/api/restaurant/crm/at-risk'),
   draftWinback: (id, body) => request(`/api/restaurant/crm/${id}/winback`, { method: 'POST', body: JSON.stringify(body) }),
+  getCustomerRewards: (customerId) => request(`/api/restaurant/loyalty/customers/${customerId}/available`),
+  redeemReward: (customerId, rewardId) => request(`/api/restaurant/loyalty/customers/${customerId}/redeem`, { method: 'POST', body: JSON.stringify({ reward_id: rewardId }) }),
 
   // Restaurant billing (Stripe €99/mo pro). Native opens the returned URL
   // in the browser — Apple/Google don't allow native checkout on the web.

@@ -530,7 +530,19 @@
     "seatingPrefPh": "ej. Rincón",
     "favouriteDrinks": "Bebidas favoritas",
     "allergies": "Alergias / dieta",
-    "allergiesPh": "ej. Sin gluten, sin marisco"
+    "allergiesPh": "ej. Sin gluten, sin marisco",
+    "redeem": "Canjear",
+    "redeemFor": "Canjear para {{name}}",
+    "redeemDone": "Canjeado: {{reward}}",
+    "loyaltyEyebrow": "Fidelidad",
+    "loyaltyTitle": "Catálogo de recompensas",
+    "loyaltyEmpty": "Aún no hay recompensas.",
+    "loyaltyNamePh": "Nombre (ej. Postre gratis)",
+    "loyaltyCostPh": "Puntos",
+    "loyaltyAdd": "Añadir",
+    "loyaltyInvalid": "Introduce un nombre y un coste positivo.",
+    "loyaltyBalance": "{{points}} puntos",
+    "loyaltyShort": "Falta"
   },
   "inventoryPage": {
     "title": "Inventario",

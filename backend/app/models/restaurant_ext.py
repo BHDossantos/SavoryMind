@@ -128,3 +128,32 @@ class SalesLog(Base):
     sale_date = Column(Date, nullable=False)
     hour_of_day = Column(Integer, nullable=False)   # 0-23
     day_of_week = Column(Integer, nullable=False)   # 0=Mon, 6=Sun
+
+
+class LoyaltyReward(Base):
+    """A reward a restaurant offers for loyalty points (e.g. 'Free dessert'
+    for 500 pts). Scoped per restaurant via user_id."""
+    __tablename__ = "loyalty_rewards"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    user_id     = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name        = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+    points_cost = Column(Integer, nullable=False)
+    active      = Column(Boolean, nullable=False, default=True, server_default="1")
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class LoyaltyRedemption(Base):
+    """Log of a customer redeeming a reward. Points are deducted from the
+    CRMCustomer at redemption time; reward_name is snapshotted so history
+    survives reward edits/deletes."""
+    __tablename__ = "loyalty_redemptions"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    customer_id  = Column(Integer, ForeignKey("crm_customers.id"), nullable=False, index=True)
+    reward_id    = Column(Integer, ForeignKey("loyalty_rewards.id"), nullable=True)
+    reward_name  = Column(String(120), nullable=False)
+    points_spent = Column(Integer, nullable=False)
+    redeemed_at  = Column(DateTime, default=datetime.utcnow, nullable=False)

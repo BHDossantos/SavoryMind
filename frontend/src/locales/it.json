@@ -530,7 +530,19 @@
     "seatingPrefPh": "es. Tavolo d'angolo",
     "favouriteDrinks": "Bevande preferite",
     "allergies": "Allergie / dieta",
-    "allergiesPh": "es. Senza glutine, no crostacei"
+    "allergiesPh": "es. Senza glutine, no crostacei",
+    "redeem": "Riscatta",
+    "redeemFor": "Riscatta per {{name}}",
+    "redeemDone": "Riscattato: {{reward}}",
+    "loyaltyEyebrow": "Fedeltà",
+    "loyaltyTitle": "Catalogo premi",
+    "loyaltyEmpty": "Ancora nessun premio.",
+    "loyaltyNamePh": "Nome premio (es. Dolce omaggio)",
+    "loyaltyCostPh": "Punti",
+    "loyaltyAdd": "Aggiungi",
+    "loyaltyInvalid": "Inserisci un nome e un costo in punti positivo.",
+    "loyaltyBalance": "{{points}} punti",
+    "loyaltyShort": "Insuff."
   },
   "inventoryPage": {
     "title": "Magazzino",

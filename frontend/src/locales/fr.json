@@ -530,7 +530,19 @@
     "seatingPrefPh": "ex. Coin banquette",
     "favouriteDrinks": "Boissons préférées",
     "allergies": "Allergies / régime",
-    "allergiesPh": "ex. Sans gluten, sans crustacés"
+    "allergiesPh": "ex. Sans gluten, sans crustacés",
+    "redeem": "Échanger",
+    "redeemFor": "Échanger pour {{name}}",
+    "redeemDone": "Échangé : {{reward}}",
+    "loyaltyEyebrow": "Fidélité",
+    "loyaltyTitle": "Catalogue de récompenses",
+    "loyaltyEmpty": "Aucune récompense.",
+    "loyaltyNamePh": "Nom (ex. Dessert offert)",
+    "loyaltyCostPh": "Points",
+    "loyaltyAdd": "Ajouter",
+    "loyaltyInvalid": "Entrez un nom et un coût positif.",
+    "loyaltyBalance": "{{points}} points",
+    "loyaltyShort": "Insuff."
   },
   "inventoryPage": {
     "title": "Inventaire",

@@ -527,3 +527,128 @@ def staff_intelligence(
     _require_restaurant(current_user)
     from ...services import workforce_intelligence_service as wf
     return wf.build(db, current_user.id)
+
+
+# --- Loyalty rewards + redemption (Restaurant OS Wave C) ---
+
+class LoyaltyRewardCreate(BaseModel):
+    name: str
+    points_cost: int
+    description: str = ""
+
+
+class LoyaltyRewardUpdate(BaseModel):
+    name: Optional[str] = None
+    points_cost: Optional[int] = None
+    description: Optional[str] = None
+    active: Optional[bool] = None
+
+
+@router.get("/loyalty/rewards")
+def list_loyalty_rewards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    rows = loyalty_service.list_rewards(db, current_user.id)
+    return [
+        {"id": r.id, "name": r.name, "description": r.description,
+         "points_cost": r.points_cost, "active": r.active}
+        for r in rows
+    ]
+
+
+@router.post("/loyalty/rewards", status_code=201)
+def create_loyalty_reward(
+    body: LoyaltyRewardCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    try:
+        r = loyalty_service.create_reward(
+            db, current_user.id, name=body.name,
+            points_cost=body.points_cost, description=body.description,
+        )
+    except loyalty_service.LoyaltyError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"id": r.id, "name": r.name, "description": r.description,
+            "points_cost": r.points_cost, "active": r.active}
+
+
+@router.patch("/loyalty/rewards/{reward_id}")
+def update_loyalty_reward(
+    reward_id: int,
+    body: LoyaltyRewardUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    r = loyalty_service.update_reward(db, current_user.id, reward_id, **body.model_dump(exclude_none=True))
+    if not r:
+        raise HTTPException(status_code=404, detail="Reward not found")
+    return {"id": r.id, "name": r.name, "description": r.description,
+            "points_cost": r.points_cost, "active": r.active}
+
+
+@router.delete("/loyalty/rewards/{reward_id}", status_code=204)
+def delete_loyalty_reward(
+    reward_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    if not loyalty_service.delete_reward(db, current_user.id, reward_id):
+        raise HTTPException(status_code=404, detail="Reward not found")
+
+
+@router.get("/loyalty/customers/{customer_id}/available")
+def customer_available_rewards(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    try:
+        return loyalty_service.affordable_for_customer(db, current_user.id, customer_id)
+    except loyalty_service.LoyaltyError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+class RedeemRequest(BaseModel):
+    reward_id: int
+
+
+@router.post("/loyalty/customers/{customer_id}/redeem")
+def redeem_reward(
+    customer_id: int,
+    body: RedeemRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    try:
+        result = loyalty_service.redeem(db, current_user.id, customer_id, body.reward_id)
+    except loyalty_service.LoyaltyError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    posthog_client.capture(current_user.id, "loyalty_redeemed", {
+        "points_spent": result["points_spent"],
+    })
+    return result
+
+
+@router.get("/loyalty/customers/{customer_id}/history")
+def customer_redemption_history(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    return {"redemptions": loyalty_service.redemption_history(db, current_user.id, customer_id)}
