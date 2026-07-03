@@ -37,6 +37,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (user?.id) {
       identify(user.id, { account_type: user.account_type });
+      // Register for native push once authenticated. Best-effort — the
+      // helper no-ops on simulators / denied permission / any error.
+      import('../services/push')
+        .then((m) => m.registerForPush())
+        .catch(() => {});
     }
   }, [user?.id, user?.account_type]);
 

@@ -43,6 +43,13 @@
           "cameraPermission": "SavoryMind uses the camera to photograph restaurant menus so the AI can recommend what to order.",
           "photosPermission": "SavoryMind accesses your photos so you can pick an existing menu photo for AI recommendations."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ea580c"
+        }
       ]
     ],
     "experiments": {

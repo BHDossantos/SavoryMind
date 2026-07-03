@@ -221,6 +221,18 @@ def get_recommendations(db: Session = Depends(get_db), current_user: User = Depe
     return recs
 
 
+@router.get("/ml-suggestions")
+def get_ml_suggestions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Learned taste suggestions from collaborative filtering over the
+    user's behavior. 'personalized' once they have history, 'popular' on
+    cold start. Complements the rules/Claude recommendations with a signal
+    that improves as the user (and the community) interact more."""
+    _require_consumer(current_user)
+    from ...services import ml_recommender_service
+    tokens = ml_recommender_service.recommend_tokens(db, current_user.id)
+    return {"suggestions": tokens}
+
+
 # ── Beverages ─────────────────────────────────────────────────────────────────
 
 # ── Catalog browse endpoints (Phase 8) ────────────────────────────────────

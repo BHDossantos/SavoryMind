@@ -27,7 +27,8 @@
     "flavor": "Flavor",
     "billing": "Billing",
     "schedule": "Schedule",
-    "operations": "Operations"
+    "operations": "Operations",
+    "integrations": "Integrations"
   },
   "common": {
     "loading": "Loading…",
@@ -184,7 +185,9 @@
     "billingNudgeSub": "Update your billing to keep real-time bookings, alerts, and AI intelligence.",
     "billingNudgeCta": "Fix billing",
     "actionPlanEyebrow": "Today's AI action plan",
-    "actionPlanTitle": "Do these today"
+    "actionPlanTitle": "Do these today",
+    "trendingEyebrow": "What's trending",
+    "trendingTitle": "Momentum on your menu"
   },
   "consumerDashboard": {
     "loading": "Loading your dashboard...",
@@ -243,7 +246,9 @@
     "primaryDineOut": "Dine out",
     "primaryDineOutSub": "Find a restaurant tonight",
     "primaryCook": "Cook something",
-    "primaryCookSub": "Recipe ideas from your pantry"
+    "primaryCookSub": "Recipe ideas from your pantry",
+    "mlTitle": "Picked for you",
+    "mlSub": "Learned from what you and people like you enjoy."
   },
   "sentimentPage": {
     "title": "Customer Sentiment",
@@ -2344,5 +2349,25 @@
     "cat_prep": "Prep",
     "cat_compliance": "Compliance",
     "cat_maintenance": "Maintenance"
+  },
+  "integrationsPage": {
+    "title": "Integrations",
+    "subtitle": "Connect your POS so SavoryMind runs on real sales data.",
+    "square": "Square POS",
+    "squareDesc": "Sync catalog, orders and revenue automatically.",
+    "statusConnected": "Connected",
+    "statusOff": "Not connected",
+    "notConfigured": "Square isn't configured on this server yet — ask your admin to add the SQUARE_* keys.",
+    "merchant": "Merchant",
+    "lastSync": "Last sync",
+    "syncSummary": "{{items}} items · {{orders}} orders · ${{revenue}} synced",
+    "connectSquare": "Connect Square",
+    "syncNow": "Sync now",
+    "syncing": "Syncing…",
+    "disconnect": "Disconnect",
+    "connected": "Square connected — run a sync to pull your data.",
+    "connectError": "Couldn't connect Square. Please try again.",
+    "syncDone": "Synced {{items}} items and {{orders}} orders.",
+    "whatItDoes": "Syncing pulls your Square catalog into your menu and your last 30 days of orders into analytics and forecasting — replacing any manual numbers."
   }
 }

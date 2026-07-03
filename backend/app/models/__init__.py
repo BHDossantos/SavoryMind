@@ -7,3 +7,4 @@ from .kitchen import FoodWasteLog, DishTimeLog, StaffTimeLog
 from .diner import DinerBooking, DinerVisit
 from .auth_revocation import RefreshTokenRevocation
 from .inventory import InventoryItem, InventoryAdjustment
+from .pos import POSConnection

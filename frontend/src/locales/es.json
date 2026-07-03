@@ -27,7 +27,8 @@
     "flavor": "Flavor",
     "billing": "Facturación",
     "schedule": "Horario",
-    "operations": "Operaciones"
+    "operations": "Operaciones",
+    "integrations": "Integraciones"
   },
   "common": {
     "loading": "Cargando…",
@@ -184,7 +185,9 @@
     "billingNudgeSub": "Actualiza la facturación para mantener reservas en tiempo real, alertas e inteligencia AI.",
     "billingNudgeCta": "Arreglar facturación",
     "actionPlanEyebrow": "Plan de acción IA de hoy",
-    "actionPlanTitle": "Haz esto hoy"
+    "actionPlanTitle": "Haz esto hoy",
+    "trendingEyebrow": "Tendencias",
+    "trendingTitle": "Impulso en tu menú"
   },
   "consumerDashboard": {
     "loading": "Cargando tu panel...",
@@ -243,7 +246,9 @@
     "primaryDineOut": "Salir a comer",
     "primaryDineOutSub": "Encuentra un restaurante esta noche",
     "primaryCook": "Cocina algo",
-    "primaryCookSub": "Ideas de receta de tu despensa"
+    "primaryCookSub": "Ideas de receta de tu despensa",
+    "mlTitle": "Elegido para ti",
+    "mlSub": "Aprendido de lo que te gusta a ti y a gente como tú."
   },
   "sentimentPage": {
     "title": "Opiniones de clientes",
@@ -2344,5 +2349,25 @@
     "cat_prep": "Preparación",
     "cat_compliance": "Cumplimiento",
     "cat_maintenance": "Mantenimiento"
+  },
+  "integrationsPage": {
+    "title": "Integraciones",
+    "subtitle": "Conecta tu POS y SavoryMind usará datos de ventas reales.",
+    "square": "Square POS",
+    "squareDesc": "Sincroniza catálogo, pedidos e ingresos automáticamente.",
+    "statusConnected": "Conectado",
+    "statusOff": "No conectado",
+    "notConfigured": "Square aún no está configurado en este servidor — pide al admin las claves SQUARE_*.",
+    "merchant": "Comercio",
+    "lastSync": "Última sync",
+    "syncSummary": "{{items}} artículos · {{orders}} pedidos · ${{revenue}} sincronizados",
+    "connectSquare": "Conectar Square",
+    "syncNow": "Sincronizar",
+    "syncing": "Sincronizando…",
+    "disconnect": "Desconectar",
+    "connected": "Square conectado — ejecuta una sync para importar tus datos.",
+    "connectError": "No se pudo conectar Square. Inténtalo de nuevo.",
+    "syncDone": "Sincronizados {{items}} artículos y {{orders}} pedidos.",
+    "whatItDoes": "La sync importa tu catálogo de Square al menú y tus últimos 30 días de pedidos a analíticas y previsiones — sustituyendo los números manuales."
   }
 }

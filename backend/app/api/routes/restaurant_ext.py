@@ -906,3 +906,87 @@ def ops_instantiate_checklist(
         return operations_service.instantiate(db, current_user.id, template_id)
     except operations_service.OperationsError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+# --- POS integration: Square (real system-of-record data) ---
+
+@router.get("/pos/status")
+def pos_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    return square_pos_service.status(db, current_user.id)
+
+
+@router.get("/pos/square/start")
+def pos_square_start(current_user: User = Depends(get_current_user)):
+    """Returns the Square authorize URL for the SPA to navigate to."""
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    if not square_pos_service.is_configured():
+        raise HTTPException(status_code=503, detail="Square is not configured on this server.")
+    return {"authorize_url": square_pos_service.build_authorize_url(current_user.id)}
+
+
+@router.get("/pos/square/callback")
+def pos_square_callback(
+    code: str = "",
+    state: str = "",
+    db: Session = Depends(get_db),
+):
+    """Square redirects here after the merchant approves. Identity comes
+    from the signed state (no auth header on a browser redirect)."""
+    from fastapi.responses import RedirectResponse
+    from ...services import square_pos_service
+    dest = f"{settings.frontend_url.rstrip('/')}/restaurant/integrations"
+    if not code or not state:
+        return RedirectResponse(url=f"{dest}?pos=error")
+    try:
+        user_id = square_pos_service.verify_state(state)
+        token_response = square_pos_service.exchange_code(code)
+        square_pos_service.save_connection(db, user_id, token_response)
+    except Exception:
+        return RedirectResponse(url=f"{dest}?pos=error")
+    return RedirectResponse(url=f"{dest}?pos=connected")
+
+
+@router.post("/pos/sync")
+def pos_sync(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pull the merchant's catalog + last-30-day orders into SavoryMind."""
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    try:
+        stats = square_pos_service.sync(db, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    posthog_client.capture(current_user.id, "pos_synced", {"orders": stats.get("orders", 0)})
+    return stats
+
+
+@router.post("/pos/disconnect", status_code=204)
+def pos_disconnect(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    square_pos_service.disconnect(db, current_user.id)
+
+
+# --- ML: what's trending (velocity from POS-fed sales) ---
+
+@router.get("/trending")
+def whats_trending(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Menu items ranked by sales momentum (rising/falling) over the last
+    two weeks. Sharpens as POS data flows in."""
+    _require_restaurant(current_user)
+    from ...services import menu_trending_service
+    return menu_trending_service.trending(db, current_user.id)

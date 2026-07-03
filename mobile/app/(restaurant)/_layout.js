@@ -26,6 +26,7 @@ export default function RestaurantLayout() {
       <Tabs.Screen name="inventory"       options={{ href: null }} />
       <Tabs.Screen name="billing"         options={{ href: null }} />
       <Tabs.Screen name="operations"      options={{ href: null }} />
+      <Tabs.Screen name="integrations"    options={{ href: null }} />
     </Tabs>
   );
 }

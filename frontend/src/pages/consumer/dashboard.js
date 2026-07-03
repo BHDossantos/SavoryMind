@@ -43,6 +43,16 @@ const MOOD_CHIPS = [
   { id: "brunch",      emoji: "🥞", labelKey: "consumerDashboard.moodBrunch"      },
 ];
 
+// Turn a CF token ("cuisine:italian", "mood:romantic") into a friendly chip
+// label. Unknown shapes fall back to the raw value after the colon.
+function formatToken(token) {
+  const [kind, ...rest] = String(token).split(":");
+  const value = rest.join(":").replace(/_/g, " ");
+  const cap = value.charAt(0).toUpperCase() + value.slice(1);
+  const emoji = { cuisine: "🍽️", mood: "🎭", dish: "🍲", food_type: "🥘", action: "✨" }[kind] || "•";
+  return `${emoji} ${cap || token}`;
+}
+
 export default function ConsumerDashboard() {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -56,8 +66,10 @@ export default function ConsumerDashboard() {
   const [activeMood,   setActiveMood]   = useState("");
   const [suggestion,   setSuggestion]   = useState(null);
   const [suggLoading,  setSuggLoading]  = useState(false);
+  const [mlSuggestions, setMlSuggestions] = useState([]);
 
   useEffect(() => {
+    api.getMlSuggestions().then((d) => setMlSuggestions(d.suggestions || [])).catch(() => {});
     Promise.all([
       api.getWinePairings(),
       api.getMusicMoods(),
@@ -121,6 +133,25 @@ export default function ConsumerDashboard() {
         </div>
         <div className="absolute right-6 top-6 text-6xl opacity-20">{persona?.icon || "🍽️"}</div>
       </div>
+
+      {/* ── Learned suggestions — item-item CF over your behavior. Gets
+          smarter as you (and the community) interact more. */}
+      {mlSuggestions.length > 0 && (
+        <div>
+          <p className="text-sm font-bold text-gray-900 mb-1">
+            ✨ {t("consumerDashboard.mlTitle")}
+          </p>
+          <p className="text-xs text-gray-400 mb-2">{t("consumerDashboard.mlSub")}</p>
+          <div className="flex flex-wrap gap-2">
+            {mlSuggestions.slice(0, 8).map((s) => (
+              <span key={s.token}
+                className="text-sm font-semibold px-3 py-1.5 rounded-full bg-consumer-50 text-consumer-700 border border-consumer-200">
+                {formatToken(s.token)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Three primary actions — "What do you want right now?"
           Makes the app instantly explainable. Same idea on mobile. */}

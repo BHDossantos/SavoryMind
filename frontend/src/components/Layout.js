@@ -22,6 +22,7 @@ function useNavLinks() {
     { href: "/restaurant/staff",        labelKey: "nav.staff",           icon: "🧑‍🍳" },
     { href: "/restaurant/schedule",     labelKey: "nav.schedule",        icon: "🗓️" },
     { href: "/restaurant/operations",   labelKey: "nav.operations",      icon: "✅" },
+    { href: "/restaurant/integrations", labelKey: "nav.integrations",    icon: "🔌" },
     { href: "/restaurant/predictions",  labelKey: "nav.predictions",     icon: "🔮" },
     { href: "/restaurant/trends",       labelKey: "nav.trends",          icon: "🚀" },
     { href: "/restaurant/marketing",    labelKey: "nav.marketing",       icon: "💌" },

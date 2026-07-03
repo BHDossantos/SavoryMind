@@ -178,6 +178,7 @@ export const api = {
   },
   refresh: tryRefresh,
   getMe: () => request('/api/auth/me'),
+  registerPushToken: (token) => request('/api/auth/push-token', { method: 'POST', body: JSON.stringify({ token }) }),
 
   // Auth-level profile patch (display_name, language, etc.). Distinct
   // from updateProfile() further down — that one is the consumer-feature
@@ -219,6 +220,8 @@ export const api = {
   // Menu broadcast — 7-day SMS attribution rollup for the dashboard widget
   getMenuBroadcastStats: () => request('/api/restaurant/menu-broadcasts/stats'),
   getActionPlan: () => request('/api/restaurant/action-plan'),
+  getTrending: () => request('/api/restaurant/trending'),
+  getMlSuggestions: () => request('/api/consumer/ml-suggestions'),
   getAtRiskGuests: () => request('/api/restaurant/crm/at-risk'),
   draftWinback: (id, body) => request(`/api/restaurant/crm/${id}/winback`, { method: 'POST', body: JSON.stringify(body) }),
   getCustomerRewards: (customerId) => request(`/api/restaurant/loyalty/customers/${customerId}/available`),
@@ -247,6 +250,10 @@ export const api = {
   deleteOpsTask: (id) => request(`/api/restaurant/operations/tasks/${id}`, { method: 'DELETE' }),
   getChecklists: () => request('/api/restaurant/operations/checklists'),
   instantiateChecklist: (id) => request(`/api/restaurant/operations/checklists/${id}/instantiate`, { method: 'POST' }),
+  getPosStatus: () => request('/api/restaurant/pos/status'),
+  startSquareConnect: () => request('/api/restaurant/pos/square/start'),
+  syncPos: () => request('/api/restaurant/pos/sync', { method: 'POST' }),
+  disconnectPos: () => request('/api/restaurant/pos/disconnect', { method: 'DELETE' }),
   createStaff: (data) => request('/api/restaurant/staff', { method: 'POST', body: JSON.stringify(data) }),
   deleteStaff: (id) => request(`/api/restaurant/staff/${id}`, { method: 'DELETE' }),
 

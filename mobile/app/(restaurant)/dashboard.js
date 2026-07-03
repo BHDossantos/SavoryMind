@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [billingStatus, setBillingStatus] = useState(null);
   const [actionPlan, setActionPlan] = useState([]);
+  const [trending, setTrending] = useState(null);
 
   // Pull the billing status so we can surface a renew nudge when the
   // subscription lapses. Silent on failure — billing being off is fine.
@@ -34,6 +35,7 @@ export default function Dashboard() {
     if (user?.account_type !== 'restaurant') return;
     api.getRestaurantBillingStatus().then(setBillingStatus).catch(() => {});
     api.getActionPlan().then((r) => setActionPlan(r?.actions || [])).catch(() => {});
+    api.getTrending().then(setTrending).catch(() => {});
   }, [user?.account_type]);
 
   // Quick actions strip. Per-render so labels re-translate on language
@@ -90,6 +92,26 @@ export default function Dashboard() {
           </View>
           <Text style={lapsedStyles.arrow}>→</Text>
         </TouchableOpacity>
+      )}
+
+      {/* What's trending — sales momentum (ML velocity from POS data). */}
+      {trending && trending.has_data && (trending.rising.length > 0 || trending.falling.length > 0) && (
+        <View style={trendStyles.section}>
+          <Text style={trendStyles.eyebrow}>{t('restaurantDashboard.trendingEyebrow')}</Text>
+          <Text style={trendStyles.title}>📈 {t('restaurantDashboard.trendingTitle')}</Text>
+          {trending.rising.slice(0, 3).map((r) => (
+            <View key={`up${r.item}`} style={trendStyles.row}>
+              <Text style={trendStyles.item}>{r.trend === 'new' ? '✨' : '🔥'} {r.item}</Text>
+              <Text style={trendStyles.up}>{r.velocity > 0 ? `+${r.velocity}` : r.velocity} · {r.momentum}×</Text>
+            </View>
+          ))}
+          {trending.falling.slice(0, 1).map((r) => (
+            <View key={`dn${r.item}`} style={trendStyles.row}>
+              <Text style={trendStyles.itemDim}>📉 {r.item}</Text>
+              <Text style={trendStyles.down}>{r.velocity}</Text>
+            </View>
+          ))}
+        </View>
       )}
 
       {/* Today's AI Action Plan — the operator's first decision surface. */}
@@ -215,4 +237,15 @@ const flavorStyles = StyleSheet.create({
   title:   { fontSize: 15, fontWeight: '800', color: '#fff' },
   sub:     { fontSize: 12, color: '#fff', opacity: 0.85, marginTop: 2, lineHeight: 16 },
   arrow:   { fontSize: 20, color: '#fff', fontWeight: '700' },
+});
+
+const trendStyles = StyleSheet.create({
+  section: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0', borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 16 },
+  eyebrow: { fontSize: 10, fontWeight: '700', color: '#047857', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title:   { fontSize: 16, fontWeight: '800', color: '#1f2937', marginTop: 2, marginBottom: 8 },
+  row:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderColor: '#d1fae5', borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6 },
+  item:    { fontSize: 13, fontWeight: '700', color: C.gray[900], flex: 1 },
+  itemDim: { fontSize: 13, fontWeight: '500', color: C.gray[500], flex: 1 },
+  up:      { fontSize: 12, fontWeight: '800', color: '#047857' },
+  down:    { fontSize: 12, fontWeight: '800', color: C.gray[400] },
 });
