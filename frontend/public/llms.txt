@@ -1,0 +1,36 @@
+# SavoryMind
+
+> SavoryMind finds the €500–2,000 a month a restaurant is losing — in food waste, over-portioning, and staff time — and coaches the team to stop it. Each loss is quantified in euros, attributed to a cause, and turned into a personalized, dignity-preserving coaching plan delivered to staff on WhatsApp.
+
+## What it does
+
+- **Loss discovery in 15 minutes**: upload a sales export (CSV/Excel from any POS) or answer a guided audit — SavoryMind produces a transparent estimate: "you are losing between €X and €Y per month", with a per-cause breakdown (waste, portioning, staff time) and honest confidence bands. Industry reference: food waste is typically 4–10% of food purchases.
+- **Per-employee coaching**: every lost euro has a name, a cause, and a plan to stop losing it. Plans are constructive (process fixes, never personal criticism), owner-approved before delivery, and sent via WhatsApp in Italian, English, or Spanish.
+- **Six modules**: Dashboard (monthly loss estimate + recovered-to-date), Losses & Waste (20-second incident logging + inventory), Staff Coaching, Menu & Margins, AI Predictions, Settings & Billing. Bookings, CRM, review sentiment, and marketing tools are included as extras.
+
+## Who it's for
+
+Independent restaurants, trattorias, and pizzerias — Italian-first (interface in Italian and English), starting in Rome, expanding across Italy and the EU. Built for owners, not IT departments: no installation, no hardware, works from a phone.
+
+## Pricing (EUR)
+
+- **Trattoria** — €149/month: 1 location, core modules, coaching for 10 employees.
+- **Ristorante** — €299/month: everything in Trattoria + advanced modules unlocked, unlimited coaching, WhatsApp delivery.
+- **Gruppo** — €599/month: multi-location, dedicated onboarding.
+- Annual billing = 2 months free (10× the monthly price per year).
+
+## The guarantee
+
+30-day free trial on every plan. If SavoryMind does not identify at least €500/month in recoverable losses, you don't pay. Estimates are never inflated: if a kitchen is already efficient, SavoryMind says so.
+
+## Key links
+
+- Homepage (Italian): https://savorymind.net/
+- Homepage (English): https://savorymind.net/en
+- Product for restaurants: https://savorymind.net/ristoranti
+- How it works: https://savorymind.net/come-funziona
+- Pricing: https://savorymind.net/pricing (English: https://savorymind.net/en/pricing)
+- Case studies: https://savorymind.net/case-studies
+- Contact: https://savorymind.net/contatti
+- Consumer app ("tell us how you feel, we'll tell you what to eat"): https://savorymind.net/per-chi-ama-il-cibo
+- Privacy (GDPR): https://savorymind.net/legal/privacy

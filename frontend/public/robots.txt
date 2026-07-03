@@ -1,0 +1,16 @@
+# SavoryMind — https://savorymind.net
+# Marketing routes are open to all crawlers (including AI answer engines).
+# The authenticated app is disallowed: it renders nothing useful to a bot.
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /restaurant/
+Disallow: /consumer/
+Disallow: /diner/
+Disallow: /onboarding
+Disallow: /login
+Disallow: /staff-portal
+Disallow: /api/
+
+Sitemap: https://savorymind.net/sitemap.xml
