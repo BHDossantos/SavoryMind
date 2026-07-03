@@ -28,6 +28,17 @@ const PUBLIC_ROUTES = [
   "/legal/terms",
   "/legal/account-deletion",
   "/support",
+  // B2B marketing site (P0 pivot) — Italian-first with /en mirrors. These
+  // must render full HTML for crawlers, so the auth gate never wraps them.
+  "/en",
+  "/pricing",
+  "/en/pricing",
+  "/ristoranti",
+  "/come-funziona",
+  "/case-studies",
+  "/contatti",
+  "/per-chi-ama-il-cibo",
+  "/sitemap.xml",
   // Public anonymous-feedback flow — a diner scans an employee's printed
   // QR code and lands here. No account required.
   "/scan/[token]",

@@ -19,6 +19,9 @@ export default function DinerRestaurantDetail() {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [partySize, setPartySize] = useState(2);
+  const [menu, setMenu] = useState([]);
+  const [reviews, setReviews] = useState(null);
+  const [showFullMenu, setShowFullMenu] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -26,6 +29,9 @@ export default function DinerRestaurantDetail() {
       .then(setRestaurant)
       .catch(() => {})
       .finally(() => setLoading(false));
+    // Menu + reviews are additive — the profile renders fine without them.
+    api.getRestaurantMenu(Number(id)).then((m) => setMenu(m.items || [])).catch(() => {});
+    api.getRestaurantReviews(Number(id)).then(setReviews).catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -76,7 +82,12 @@ export default function DinerRestaurantDetail() {
             <Text style={styles.back}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>{restaurant.name}</Text>
+          {restaurant.review_count > 0 && (
+            <Text style={styles.ratingLine}>★ {restaurant.rating} · {restaurant.review_count} review{restaurant.review_count === 1 ? '' : 's'}</Text>
+          )}
           {restaurant.city && <Text style={styles.sub}>{restaurant.city}{restaurant.country ? `, ${restaurant.country}` : ''}</Text>}
+          {restaurant.street_address ? <Text style={styles.sub}>📍 {restaurant.street_address}</Text> : null}
+          {restaurant.opening_hours ? <Text style={styles.sub}>🕐 {restaurant.opening_hours}</Text> : null}
           {(restaurant.cuisine || []).length > 0 && (
             <Text style={styles.cuisine}>{restaurant.cuisine.join(' · ')}</Text>
           )}
@@ -135,6 +146,43 @@ export default function DinerRestaurantDetail() {
             </View>
           )}
         </View>
+
+        {menu.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Menu</Text>
+            {(showFullMenu ? menu : menu.slice(0, 6)).map((m) => (
+              <View key={m.id} style={styles.menuRow}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={styles.menuName}>{m.name}</Text>
+                  {!!m.description && <Text style={styles.menuDesc} numberOfLines={2}>{m.description}</Text>}
+                </View>
+                <Text style={styles.menuPrice}>{m.price?.toFixed ? m.price.toFixed(2) : m.price}</Text>
+              </View>
+            ))}
+            {menu.length > 6 && (
+              <TouchableOpacity onPress={() => setShowFullMenu((v) => !v)}>
+                <Text style={styles.moreLink}>
+                  {showFullMenu ? 'Show less' : `Show all ${menu.length} dishes`}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {reviews && reviews.review_count > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Reviews · ★ {reviews.average_rating} ({reviews.review_count})
+            </Text>
+            {reviews.reviews.slice(0, 5).map((rv, i) => (
+              <View key={i} style={styles.reviewRow}>
+                <Text style={styles.reviewStars}>{'★'.repeat(Math.round(rv.rating))}</Text>
+                {!!rv.comment && <Text style={styles.body}>{rv.comment}</Text>}
+                <Text style={styles.reviewMeta}>{rv.diner_name}{rv.date ? ` · ${rv.date}` : ''}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeScreen>
   );
@@ -162,4 +210,13 @@ const styles = StyleSheet.create({
   emptyEmoji:  { fontSize: 32, marginBottom: 4 },
   emptyTitle:  { fontSize: 14, fontWeight: '700', color: C.gray[800] },
   emptySub:    { fontSize: 12, color: C.gray[500], marginTop: 4, textAlign: 'center' },
+  ratingLine:  { fontSize: 13, color: '#b45309', fontWeight: '700', marginTop: 4 },
+  menuRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
+  menuName:    { fontSize: 14, fontWeight: '600', color: C.gray[900] },
+  menuDesc:    { fontSize: 12, color: C.gray[500], marginTop: 2 },
+  menuPrice:   { fontSize: 14, fontWeight: '700', color: C.gray[700] },
+  moreLink:    { fontSize: 13, color: C.diner.text, fontWeight: '700', marginTop: 10, textAlign: 'center' },
+  reviewRow:   { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.gray[100] },
+  reviewStars: { fontSize: 13, color: '#f59e0b', marginBottom: 2 },
+  reviewMeta:  { fontSize: 11, color: C.gray[400], marginTop: 4 },
 });

@@ -362,8 +362,8 @@ export const api = {
   getDinerRecommendations: () => request('/api/diner/recommendations'),
 
   // Diner — discovery. Hits the DB-backed discover endpoint (the same one the
-  // web client uses) so registered restaurants show up. The older
-  // /api/diner/discover route returns hardcoded mock data.
+  // web client uses) so registered restaurants show up. Supports lat/lng/
+  // radius_km params for near-me distance search.
   discoverRestaurants: (params) => request(`/api/discover/restaurants?${new URLSearchParams(params).toString()}`),
   getExperiencePlan: (params) => request(`/api/diner/experience-plan?${new URLSearchParams(params).toString()}`),
 
@@ -423,6 +423,15 @@ export const api = {
   getRestaurant:    (id)        => request(`/api/discover/restaurants/${id}`),
   getAvailability:  (id, date)  => request(`/api/discover/availability/${id}?check_date=${date}`),
   requestBooking:   (data)      => request('/api/discover/book', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Diner — public restaurant profile extras (menu + aggregated reviews)
+  getRestaurantMenu:    (id) => request(`/api/discover/restaurants/${id}/menu`),
+  getRestaurantReviews: (id) => request(`/api/discover/restaurants/${id}/reviews`),
+
+  // Consumer — saved / favorite restaurants (parity with web)
+  listSavedRestaurants: ()   => request('/api/consumer/saved-restaurants'),
+  saveRestaurant:       (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: 'POST' }),
+  unsaveRestaurant:     (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: 'DELETE' }),
 
   // Diner — reviews
   createDinerReview: (data) => request('/api/diner/reviews', { method: 'POST', body: JSON.stringify(data) }),

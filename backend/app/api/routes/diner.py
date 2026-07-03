@@ -6,7 +6,7 @@ from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.user import User
 from ...models.diner import DinerReview, DinerBooking, DinerVisit
-from ...services import diner_service, discovery_service, discover_service
+from ...services import diner_service, discover_service
 from ...insights.engine import build_diner_recommendations
 
 router = APIRouter(prefix="/diner", tags=["diner"])
@@ -90,26 +90,6 @@ def diner_summary(db: Session = Depends(get_db), user: User = Depends(require_di
 @router.get("/recommendations")
 def diner_recommendations(db: Session = Depends(get_db), user: User = Depends(require_diner)):
     return build_diner_recommendations(db, user)
-
-
-# ── Restaurant Discovery ───────────────────────────────────────────────────────
-
-@router.get("/discover")
-def discover(
-    mood: str = "",
-    cuisine: str = "",
-    max_price_level: int = 4,
-    max_wait_minutes: int = 60,
-    open_now: bool = True,
-    user: User = Depends(require_diner),
-):
-    return discovery_service.discover_restaurants(
-        mood=mood,
-        cuisine=cuisine,
-        max_price_level=max_price_level,
-        max_wait_minutes=max_wait_minutes,
-        open_now=open_now,
-    )
 
 
 _MUSIC_MAP = {

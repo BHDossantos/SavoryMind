@@ -468,7 +468,12 @@
     "menuSmsBadge": "SMS menu",
     "menuSmsBadgeHint": "Reserva originada pelo SMS do menu de hoje.",
     "repeatBadge": "Visita {{count}}",
-    "repeatBadgeHint": "{{count}} reservas anteriores."
+    "repeatBadgeHint": "{{count}} reservas anteriores.",
+    "publicProfileHeadline": "O seu perfil público",
+    "publicProfileSubtitle": "Morada e horário mostrados aos clientes no seu perfil e página de reservas.",
+    "publicProfileAddressPh": "Morada, ex. Rua Augusta 1",
+    "publicProfileHoursPh": "Horário, ex. Ter–Dom 12:00–23:00",
+    "publicProfileSaved": "Perfil público atualizado."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1597,7 +1602,8 @@
     "save": "Guardar",
     "unsave": "Remover dos favoritos",
     "saveHint": "Guardar nos favoritos",
-    "savedHint": "Guardado — toque para remover"
+    "savedHint": "Guardado — toque para remover",
+    "nearMe": "Perto de mim"
   },
   "bookDinerPage": {
     "title": "📅 Reservar mesa",
@@ -1875,7 +1881,13 @@
     "slotsAvailable_one": "{{count}} horário disponível",
     "slotsAvailable_other": "{{count}} horários disponíveis",
     "slotLeft": "{{n}} livres",
-    "bookTable": "📅 Reservar mesa"
+    "bookTable": "📅 Reservar mesa",
+    "menu": "Menu",
+    "reviews": "Avaliações",
+    "reviewCount_other": "{{count}} avaliações",
+    "showLess": "Mostrar menos",
+    "showAllDishes": "Ver todos os {{count}} pratos",
+    "reviewCount_one": "{{count}} avaliação"
   },
   "notFoundPage": {
     "code": "404",
@@ -2191,7 +2203,9 @@
     "confirmedMsg": "Esperamos você em {{date}} às {{time}} no {{name}}.",
     "pendingTitle": "Solicitação enviada",
     "pendingMsg": "A equipe de {{name}} confirmará em breve.",
-    "confirmationFootnote": "Você receberá uma confirmação por SMS ou telefone se necessário."
+    "confirmationFootnote": "Você receberá uma confirmação por SMS ou telefone se necessário.",
+    "reviews": "avaliações",
+    "menuTitle": "Menu"
   },
   "moodPage": {
     "title": "Mood to meal",

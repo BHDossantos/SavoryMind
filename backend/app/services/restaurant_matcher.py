@@ -115,6 +115,7 @@ def _to_dict(r: User) -> dict:
     restaurant's email, phone, or owner name — none of that helps a
     diner deciding where to book."""
     return {
+        "id":              r.id,
         "slug":            r.slug,
         "display_name":    r.display_name,
         "restaurant_name": r.restaurant_name or r.display_name,

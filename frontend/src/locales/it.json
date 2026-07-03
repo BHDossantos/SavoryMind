@@ -468,7 +468,12 @@
     "menuSmsBadge": "SMS menù",
     "menuSmsBadgeHint": "Prenotazione arrivata dall'SMS del menù di oggi.",
     "repeatBadge": "Visita {{count}}",
-    "repeatBadgeHint": "{{count}} prenotazioni precedenti."
+    "repeatBadgeHint": "{{count}} prenotazioni precedenti.",
+    "publicProfileHeadline": "Il tuo profilo pubblico",
+    "publicProfileSubtitle": "Indirizzo e orari di apertura mostrati ai clienti sul tuo profilo e sulla pagina di prenotazione.",
+    "publicProfileAddressPh": "Indirizzo, es. Via Roma 1",
+    "publicProfileHoursPh": "Orari, es. Mar–Dom 12:00–23:00",
+    "publicProfileSaved": "Profilo pubblico aggiornato."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1597,7 +1602,8 @@
     "save": "Salva",
     "unsave": "Rimuovi dai preferiti",
     "saveHint": "Salva nei preferiti",
-    "savedHint": "Salvato — tocca per rimuovere"
+    "savedHint": "Salvato — tocca per rimuovere",
+    "nearMe": "Vicino a me"
   },
   "bookDinerPage": {
     "title": "📅 Prenota un tavolo",
@@ -1875,7 +1881,13 @@
     "slotsAvailable_one": "{{count}} slot disponibile",
     "slotsAvailable_other": "{{count}} slot disponibili",
     "slotLeft": "{{n}} liberi",
-    "bookTable": "📅 Prenota un tavolo"
+    "bookTable": "📅 Prenota un tavolo",
+    "menu": "Menù",
+    "reviews": "Recensioni",
+    "reviewCount_other": "{{count}} recensioni",
+    "showLess": "Mostra meno",
+    "showAllDishes": "Mostra tutti i {{count}} piatti",
+    "reviewCount_one": "{{count}} recensione"
   },
   "notFoundPage": {
     "code": "404",
@@ -2191,7 +2203,9 @@
     "confirmedMsg": "Ti aspettiamo il {{date}} alle {{time}} da {{name}}.",
     "pendingTitle": "Richiesta inviata",
     "pendingMsg": "Il team di {{name}} confermerà a breve.",
-    "confirmationFootnote": "Riceverai una conferma via SMS o telefono se necessario."
+    "confirmationFootnote": "Riceverai una conferma via SMS o telefono se necessario.",
+    "reviews": "recensioni",
+    "menuTitle": "Menù"
   },
   "moodPage": {
     "title": "Mood to meal",

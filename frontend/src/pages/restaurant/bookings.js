@@ -132,6 +132,86 @@ function SmsAlertWidget() {
   );
 }
 
+function PublicProfileWidget() {
+  const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
+  const [address, setAddress] = useState(user?.street_address || "");
+  const [hours, setHours]     = useState(user?.opening_hours || "");
+  const [saving, setSaving]   = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
+  const [err, setErr]         = useState(null);
+  // Collapsed once both fields are set — same auto-nudge pattern as the
+  // menu widget: incomplete public profile stays visible until fixed.
+  const [expanded, setExpanded] = useState(!(user?.street_address && user?.opening_hours));
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    try {
+      const payload = { street_address: address.trim() || null, opening_hours: hours.trim() || null };
+      // Pin the restaurant on the map for near-me search. Best-effort:
+      // denied permission just means no distance sort for this venue.
+      if (!user?.latitude && typeof navigator !== "undefined" && navigator.geolocation) {
+        await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => { payload.latitude = pos.coords.latitude; payload.longitude = pos.coords.longitude; resolve(); },
+            () => resolve(),
+            { timeout: 5000 },
+          );
+        });
+      }
+      await api.updateProfile(payload);
+      updateUser(payload);
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 3000);
+      setExpanded(false);
+    } catch (e) { setErr(e.message); }
+    finally { setSaving(false); }
+  };
+
+  if (!expanded) {
+    return (
+      <div className="mb-4 flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+        <span className="text-green-800 truncate">
+          🏠 {[user?.street_address, user?.opening_hours].filter(Boolean).join(" · ") || t("bookingsPage.publicProfileHeadline")}
+        </span>
+        <button onClick={() => setExpanded(true)} className="text-green-700 underline text-xs font-medium flex-shrink-0 ml-3">
+          {t("bookingsPage.smsChange")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-brand-900 mb-1">{t("bookingsPage.publicProfileHeadline")}</p>
+      <p className="text-xs text-brand-700 mb-2">{t("bookingsPage.publicProfileSubtitle")}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder={t("bookingsPage.publicProfileAddressPh")}
+          className="flex-1 min-w-[180px] border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+        />
+        <input
+          value={hours}
+          onChange={(e) => setHours(e.target.value)}
+          placeholder={t("bookingsPage.publicProfileHoursPh")}
+          className="flex-1 min-w-[180px] border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="text-xs px-4 py-1.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-60"
+        >
+          {saving ? t("common.saving") : t("common.save")}
+        </button>
+      </div>
+      {savedMsg && <p className="text-xs text-green-700 mt-2">{t("bookingsPage.publicProfileSaved")}</p>}
+      {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+    </div>
+  );
+}
+
 function TodaysMenuWidget() {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
@@ -430,6 +510,7 @@ export default function Bookings() {
       <div className="print:hidden">
         <ShareLinkWidget />
         <SmsAlertWidget />
+        <PublicProfileWidget />
         <TodaysMenuWidget />
       </div>
       {error && (

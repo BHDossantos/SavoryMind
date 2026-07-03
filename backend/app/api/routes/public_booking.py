@@ -44,8 +44,13 @@ class PublicRestaurant(BaseModel):
     dining_style:    str | None = None
     city:            str | None = None
     country:         str | None = None
+    street_address:  str | None = None
+    opening_hours:   str | None = None
     cuisines:        str | None = None  # raw JSON string — same shape as profile
     bio:             str | None = None
+    avatar_url:      str | None = None
+    rating:          float = 0.0
+    review_count:    int = 0
 
 
 class AvailabilityDay(BaseModel):
@@ -56,6 +61,7 @@ class AvailabilityDay(BaseModel):
 class PublicRestaurantResponse(BaseModel):
     restaurant: PublicRestaurant
     upcoming:   list[AvailabilityDay]
+    menu:       list[dict] = []
 
 
 class GuestBookingRequest(BaseModel):
@@ -100,6 +106,9 @@ def get_public_restaurant(slug: str, db: Session = Depends(get_db)):
         avail = discover_service.get_availability(db, restaurant.id, d)
         upcoming.append(AvailabilityDay(date=str(d), slots=avail["slots"]))
 
+    rating, review_count = discover_service._ratings_for(db, [restaurant.id]).get(
+        restaurant.id, (0.0, 0)
+    )
     return PublicRestaurantResponse(
         restaurant=PublicRestaurant(
             slug=restaurant.slug,
@@ -109,10 +118,16 @@ def get_public_restaurant(slug: str, db: Session = Depends(get_db)):
             dining_style=restaurant.dining_style,
             city=restaurant.city,
             country=restaurant.country,
+            street_address=restaurant.street_address,
+            opening_hours=restaurant.opening_hours,
             cuisines=restaurant.restaurant_cuisine,
             bio=restaurant.bio,
+            avatar_url=restaurant.avatar_url,
+            rating=rating,
+            review_count=review_count,
         ),
         upcoming=upcoming,
+        menu=discover_service.get_public_menu(db, restaurant.id),
     )
 
 

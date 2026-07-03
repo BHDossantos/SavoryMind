@@ -468,7 +468,12 @@
     "menuSmsBadge": "Menu SMS",
     "menuSmsBadgeHint": "Booking came from today's menu SMS broadcast.",
     "repeatBadge": "{{count}}× visit",
-    "repeatBadgeHint": "{{count}} previous bookings on file."
+    "repeatBadgeHint": "{{count}} previous bookings on file.",
+    "publicProfileHeadline": "Your public profile",
+    "publicProfileSubtitle": "Address and opening hours shown to diners on your profile and booking page.",
+    "publicProfileAddressPh": "Street address, e.g. Via Roma 1",
+    "publicProfileHoursPh": "Opening hours, e.g. Tue–Sun 12:00–23:00",
+    "publicProfileSaved": "Public profile updated."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1597,7 +1602,8 @@
     "save": "Save",
     "unsave": "Remove from favorites",
     "saveHint": "Save to favorites",
-    "savedHint": "Saved — tap to remove"
+    "savedHint": "Saved — tap to remove",
+    "nearMe": "Near me"
   },
   "bookDinerPage": {
     "title": "📅 Book a Table",
@@ -1875,7 +1881,13 @@
     "slotsAvailable_one": "{{count}} slot available",
     "slotsAvailable_other": "{{count}} slots available",
     "slotLeft": "{{n}} left",
-    "bookTable": "📅 Book a Table"
+    "bookTable": "📅 Book a Table",
+    "menu": "Menu",
+    "reviews": "Reviews",
+    "reviewCount_other": "{{count}} reviews",
+    "showLess": "Show less",
+    "showAllDishes": "Show all {{count}} dishes",
+    "reviewCount_one": "{{count}} review"
   },
   "notFoundPage": {
     "code": "404",
@@ -2191,7 +2203,9 @@
     "confirmedMsg": "See you on {{date}} at {{time}} at {{name}}.",
     "pendingTitle": "Booking request sent",
     "pendingMsg": "The team at {{name}} will confirm shortly.",
-    "confirmationFootnote": "You'll get a confirmation by text or phone if needed."
+    "confirmationFootnote": "You'll get a confirmation by text or phone if needed.",
+    "reviews": "reviews",
+    "menuTitle": "Menu"
   },
   "moodPage": {
     "title": "Mood to meal",

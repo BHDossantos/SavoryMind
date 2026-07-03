@@ -468,7 +468,12 @@
     "menuSmsBadge": "SMS menú",
     "menuSmsBadgeHint": "Reserva originada por el SMS del menú de hoy.",
     "repeatBadge": "Visita {{count}}",
-    "repeatBadgeHint": "{{count}} reservas previas."
+    "repeatBadgeHint": "{{count}} reservas previas.",
+    "publicProfileHeadline": "Tu perfil público",
+    "publicProfileSubtitle": "Dirección y horario que ven los comensales en tu perfil y página de reservas.",
+    "publicProfileAddressPh": "Dirección, p. ej. Calle Mayor 1",
+    "publicProfileHoursPh": "Horario, p. ej. Mar–Dom 12:00–23:00",
+    "publicProfileSaved": "Perfil público actualizado."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1597,7 +1602,8 @@
     "save": "Guardar",
     "unsave": "Quitar de favoritos",
     "saveHint": "Guardar en favoritos",
-    "savedHint": "Guardado — toca para quitar"
+    "savedHint": "Guardado — toca para quitar",
+    "nearMe": "Cerca de mí"
   },
   "bookDinerPage": {
     "title": "📅 Reservar mesa",
@@ -1875,7 +1881,13 @@
     "slotsAvailable_one": "{{count}} horario disponible",
     "slotsAvailable_other": "{{count}} horarios disponibles",
     "slotLeft": "{{n}} libres",
-    "bookTable": "📅 Reservar mesa"
+    "bookTable": "📅 Reservar mesa",
+    "menu": "Menú",
+    "reviews": "Reseñas",
+    "reviewCount_other": "{{count}} reseñas",
+    "showLess": "Mostrar menos",
+    "showAllDishes": "Ver los {{count}} platos",
+    "reviewCount_one": "{{count}} reseña"
   },
   "notFoundPage": {
     "code": "404",
@@ -2191,7 +2203,9 @@
     "confirmedMsg": "Te esperamos el {{date}} a las {{time}} en {{name}}.",
     "pendingTitle": "Solicitud enviada",
     "pendingMsg": "El equipo de {{name}} la confirmará en breve.",
-    "confirmationFootnote": "Recibirás una confirmación por mensaje o llamada si hace falta."
+    "confirmationFootnote": "Recibirás una confirmación por mensaje o llamada si hace falta.",
+    "reviews": "reseñas",
+    "menuTitle": "Menú"
   },
   "moodPage": {
     "title": "Mood to meal",
