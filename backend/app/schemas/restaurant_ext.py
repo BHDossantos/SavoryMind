@@ -49,7 +49,20 @@ class BookingResponse(BaseModel):
 
 # --- CRM ---
 
-class CRMCustomerCreate(BaseModel):
+class _CRMGuestFields(BaseModel):
+    """Shared rich-profile fields used across create/update/response so the
+    schema stays DRY as the guest profile grows."""
+    birthday: Optional[date] = None
+    anniversary: Optional[date] = None
+    allergies: Optional[str] = None
+    favorite_dishes: Optional[str] = None
+    favorite_drinks: Optional[str] = None
+    wine_pref: Optional[str] = None
+    seating_pref: Optional[str] = None
+    address: Optional[str] = None
+
+
+class CRMCustomerCreate(_CRMGuestFields):
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -59,7 +72,7 @@ class CRMCustomerCreate(BaseModel):
     menu_sms_opt_in: Optional[bool] = None
 
 
-class CRMCustomerUpdate(BaseModel):
+class CRMCustomerUpdate(_CRMGuestFields):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -71,9 +84,11 @@ class CRMCustomerUpdate(BaseModel):
     # Toggle for the daily menu-of-the-day SMS broadcast. Per-customer
     # opt-in — the cron skips anyone without it explicitly set to True.
     menu_sms_opt_in: Optional[bool] = None
+    loyalty_points: Optional[int] = None
+    loyalty_tier: Optional[str] = None
 
 
-class CRMCustomerResponse(BaseModel):
+class CRMCustomerResponse(_CRMGuestFields):
     id: int
     name: str
     email: Optional[str]
@@ -85,6 +100,8 @@ class CRMCustomerResponse(BaseModel):
     notes: Optional[str]
     tags: Optional[str]
     menu_sms_opt_in: bool = False
+    loyalty_points: int = 0
+    loyalty_tier: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -66,6 +66,39 @@ function ActionPlanCard({ actions }) {
   );
 }
 
+// What's Trending — menu items ranked by sales momentum (ML velocity from
+// POS-fed sales). Rising items are what the operator should ride today.
+function TrendingCard({ trending }) {
+  const { t } = useTranslation();
+  return (
+    <section className="mb-8 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">{t("restaurantDashboard.trendingEyebrow")}</p>
+          <h2 className="text-lg font-extrabold text-gray-900">{t("restaurantDashboard.trendingTitle")}</h2>
+        </div>
+        <span className="text-2xl" aria-hidden>📈</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {trending.rising.slice(0, 4).map((r) => (
+          <div key={`up-${r.item}`} className="flex items-center justify-between rounded-xl border border-emerald-100 bg-white px-3 py-2">
+            <span className="text-sm font-semibold text-gray-900 truncate">{r.trend === "new" ? "✨" : "🔥"} {r.item}</span>
+            <span className="text-xs font-bold text-emerald-700 flex-shrink-0">
+              {r.velocity > 0 ? `+${r.velocity}` : r.velocity} · {r.momentum}×
+            </span>
+          </div>
+        ))}
+        {trending.falling.slice(0, 2).map((r) => (
+          <div key={`dn-${r.item}`} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-3 py-2">
+            <span className="text-sm font-medium text-gray-500 truncate">📉 {r.item}</span>
+            <span className="text-xs font-bold text-gray-400 flex-shrink-0">{r.velocity}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
@@ -74,6 +107,7 @@ export default function Dashboard() {
   const [todaySummary, setTodaySummary] = useState(null);
   const [billing, setBilling] = useState(null);
   const [actionPlan, setActionPlan] = useState([]);
+  const [trending, setTrending] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -86,14 +120,16 @@ export default function Dashboard() {
       api.getTodaySummary().catch(() => null),  // tolerated: a brand-new restaurant has no slots yet
       api.getRestaurantBillingStatus().catch(() => null),  // tolerated: billing dormant in dev
       api.getActionPlan().catch(() => ({ actions: [] })),
+      api.getTrending().catch(() => null),
     ])
-      .then(([s, items, sent, today, bill, plan]) => {
+      .then(([s, items, sent, today, bill, plan, trend]) => {
         setStats(s);
         setMenuItems(items);
         setSentimentSummary(sent);
         setTodaySummary(today);
         setBilling(bill);
         setActionPlan(plan?.actions || []);
+        setTrending(trend);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -162,6 +198,10 @@ export default function Dashboard() {
           when at least one action fires (a brand-new restaurant with no
           signals doesn't get a useless empty card). */}
       {actionPlan.length > 0 && <ActionPlanCard actions={actionPlan} />}
+
+      {trending && trending.has_data && (trending.rising.length > 0 || trending.falling.length > 0) && (
+        <TrendingCard trending={trending} />
+      )}
 
       {/* Today's bookings — the most actionable line on the dashboard for a
           restaurant on a typical morning. Tolerates a null summary (brand-new

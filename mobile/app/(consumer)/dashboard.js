@@ -8,6 +8,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
 import { useFocusEffect, useRouter } from 'expo-router';
 
+const _EMOJI = { cuisine: '🍽️', mood: '🎭', dish: '🍲', food_type: '🥘', action: '✨' };
+function fmtToken(token) {
+  const [kind, ...rest] = String(token).split(':');
+  const value = rest.join(':').replace(/_/g, ' ');
+  const cap = value.charAt(0).toUpperCase() + value.slice(1);
+  return `${_EMOJI[kind] || '•'} ${cap || token}`;
+}
+
 export default function ConsumerDashboard() {
   const { user } = useAuth();
   const router = useRouter();
@@ -16,6 +24,7 @@ export default function ConsumerDashboard() {
   const [moods, setMoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mlSuggestions, setMlSuggestions] = useState([]);
 
   // Quick-actions strip. Derived per-render so the labels re-translate
   // when the active language changes; the route + icon stay static.
@@ -53,7 +62,10 @@ export default function ConsumerDashboard() {
     finally { setLoading(false); }
   };
 
-  useFocusEffect(useCallback(() => { load(); }, []));
+  useFocusEffect(useCallback(() => {
+    load();
+    api.getMlSuggestions().then((d) => setMlSuggestions(d.suggestions || [])).catch(() => {});
+  }, []));
 
   if (loading) return <LoadingSpinner message={t('dashboard.loading')} color={C.consumer.primary} />;
 
@@ -86,6 +98,19 @@ export default function ConsumerDashboard() {
       {/* Three primary actions — "What do you want right now?" Makes
           the app instantly explainable to a brand-new user. Parity with
           the consumer dashboard redesign on web. */}
+      {mlSuggestions.length > 0 && (
+        <View style={{ marginBottom: 18 }}>
+          <Text style={styles.primaryPrompt}>✨ {t('consumerDashboard.mlTitle')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {mlSuggestions.slice(0, 6).map((s) => (
+              <View key={s.token} style={mlStyles.chip}>
+                <Text style={mlStyles.chipText}>{fmtToken(s.token)}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       <Text style={styles.primaryPrompt}>{t('consumerDashboard.primaryPrompt')}</Text>
       <View style={styles.primaryRow}>
         <TouchableOpacity
@@ -210,4 +235,9 @@ const styles = StyleSheet.create({
   recentIcon:  { fontSize: 22 },
   recentTitle: { fontSize: 13, fontWeight: '600', color: C.gray[900] },
   recentSub:   { fontSize: 12, color: C.gray[500], marginTop: 2 },
+});
+
+const mlStyles = StyleSheet.create({
+  chip:     { backgroundColor: C.consumer.light, borderColor: C.consumer.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  chipText: { fontSize: 13, fontWeight: '600', color: C.consumer.text },
 });

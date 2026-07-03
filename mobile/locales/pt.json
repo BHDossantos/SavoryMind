@@ -162,7 +162,11 @@
     "quickActionStaff": "Pessoal",
     "quickActionReports": "Relatórios",
     "billing": "Faturação",
-    "billingSub": "Gerencie a assinatura e o pagamento."
+    "billingSub": "Gerencie a assinatura e o pagamento.",
+    "operations": "Operações",
+    "operationsSub": "Tarefas, listas e conformidade.",
+    "integrations": "Integrações",
+    "integrationsSub": "Conecte o seu POS (Square)."
   },
   "notifications": {
     "title": "Notificações",
@@ -691,7 +695,15 @@
     "menuSmsOff": "Não",
     "emptyTitle": "Ainda sem clientes",
     "emptyBody": "Adicione seus clientes regulares para enviar o menu de hoje por SMS e lembrar do que eles gostam.",
-    "noResults": "Sem resultados para essa busca."
+    "noResults": "Sem resultados para essa busca.",
+    "giEyebrow": "Inteligência de clientes IA",
+    "giTitle": "Reconquiste estes clientes",
+    "giLapsed": "{{days}} dias desde a última visita",
+    "giWinBack": "Reconquistar",
+    "giSent": "Enviado ✓",
+    "giSendSms": "Enviar SMS",
+    "giNoPhone": "Sem telefone — adicione um para enviar.",
+    "giConfirm": "Enviar SMS de reconquista para {{name}} ({{days}} dias)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind para Restaurantes",
@@ -728,7 +740,9 @@
     "lapsedTitle": "Sua assinatura expirou",
     "lapsedSub": "Renove para manter ativos SMS menu, alertas e inteligência.",
     "actionPlanEyebrow": "Plano de ação IA de hoje",
-    "actionPlanTitle": "Faça isto hoje"
+    "actionPlanTitle": "Faça isto hoje",
+    "trendingEyebrow": "Em alta",
+    "trendingTitle": "Impulso no seu menu"
   },
   "upgradePage": {
     "title": "SavoryMind Premium",
@@ -858,6 +872,56 @@
     "primaryDineOut": "Jantar fora",
     "primaryDineOutSub": "Encontre um restaurante esta noite",
     "primaryCook": "Cozinhe algo",
-    "primaryCookSub": "Ideias de receita da sua despensa"
+    "primaryCookSub": "Ideias de receita da sua despensa",
+    "mlTitle": "Escolhido para você",
+    "mlSub": "Aprendido do que você e pessoas como você gostam."
+  },
+  "staffPage": {
+    "wfEyebrow": "Equipe IA",
+    "wfTitle": "Sinais da equipe para agir",
+    "wfAtRisk": "{{name}} pode sair",
+    "wfOvertime": "{{name}} perto de horas extras (~{{hours}}h)"
+  },
+  "opsPage": {
+    "title": "Operações",
+    "subtitle": "Tarefas, listas e conformidade.",
+    "overdue": "{{count}} atrasadas — conclua antes do serviço.",
+    "checklists": "Listas",
+    "newChecklist": "Nova lista",
+    "checklistNamePh": "Nome (ex. Abertura)",
+    "checklistItemsPh": "Um item por linha\nAbrir portas\nLigar a grelha",
+    "noChecklists": "Ainda sem listas.",
+    "runToday": "Usar hoje",
+    "taskPh": "Adicionar tarefa…",
+    "addTask": "Adicionar",
+    "allClear": "Tudo em ordem.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "cat_general": "Geral",
+    "cat_opening": "Abertura",
+    "cat_closing": "Fecho",
+    "cat_prep": "Preparação",
+    "cat_compliance": "Conformidade",
+    "cat_maintenance": "Manutenção"
+  },
+  "integrationsPage": {
+    "title": "Integrações",
+    "subtitle": "Conecte o seu POS e o SavoryMind usará dados de vendas reais.",
+    "square": "Square POS",
+    "squareDesc": "Sincronize catálogo, pedidos e receita automaticamente.",
+    "statusConnected": "Conectado",
+    "statusOff": "Não conectado",
+    "notConfigured": "O Square ainda não está configurado neste servidor — peça ao admin as chaves SQUARE_*.",
+    "merchant": "Comerciante",
+    "lastSync": "Última sync",
+    "syncSummary": "{{items}} itens · {{orders}} pedidos · ${{revenue}} sincronizados",
+    "connectSquare": "Conectar Square",
+    "syncNow": "Sincronizar",
+    "syncing": "Sincronizando…",
+    "disconnect": "Desconectar",
+    "connected": "Square conectado — execute uma sync para importar os dados.",
+    "connectError": "Não foi possível conectar o Square. Tente novamente.",
+    "syncDone": "Sincronizados {{items}} itens e {{orders}} pedidos.",
+    "whatItDoes": "A sync importa o catálogo Square para o menu e os últimos 30 dias de pedidos para análises e previsões — substituindo números manuais."
   }
 }

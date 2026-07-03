@@ -162,7 +162,11 @@
     "quickActionStaff": "Personal",
     "quickActionReports": "Informes",
     "billing": "Facturación",
-    "billingSub": "Gestiona suscripción y pago."
+    "billingSub": "Gestiona suscripción y pago.",
+    "operations": "Operaciones",
+    "operationsSub": "Tareas, listas y cumplimiento.",
+    "integrations": "Integraciones",
+    "integrationsSub": "Conecta tu POS (Square)."
   },
   "notifications": {
     "title": "Notificaciones",
@@ -691,7 +695,15 @@
     "menuSmsOff": "No",
     "emptyTitle": "Aún no hay clientes",
     "emptyBody": "Añade a tus clientes habituales para enviarles el menú de hoy por SMS y recordar lo que les gusta.",
-    "noResults": "Sin resultados para esa búsqueda."
+    "noResults": "Sin resultados para esa búsqueda.",
+    "giEyebrow": "Inteligencia de clientes IA",
+    "giTitle": "Recupera estos clientes",
+    "giLapsed": "{{days}} días desde la última visita",
+    "giWinBack": "Recuperar",
+    "giSent": "Enviado ✓",
+    "giSendSms": "Enviar SMS",
+    "giNoPhone": "Sin teléfono — añade uno para enviar.",
+    "giConfirm": "¿Enviar SMS de recuperación a {{name}} ({{days}} días)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind para Restaurantes",
@@ -728,7 +740,9 @@
     "lapsedTitle": "Tu suscripción ha caducado",
     "lapsedSub": "Renueva para mantener activos SMS menú, alertas e inteligencia.",
     "actionPlanEyebrow": "Plan de acción IA de hoy",
-    "actionPlanTitle": "Haz esto hoy"
+    "actionPlanTitle": "Haz esto hoy",
+    "trendingEyebrow": "Tendencias",
+    "trendingTitle": "Impulso en tu menú"
   },
   "upgradePage": {
     "title": "SavoryMind Premium",
@@ -858,6 +872,56 @@
     "primaryDineOut": "Salir a comer",
     "primaryDineOutSub": "Encuentra un restaurante esta noche",
     "primaryCook": "Cocina algo",
-    "primaryCookSub": "Ideas de receta de tu despensa"
+    "primaryCookSub": "Ideas de receta de tu despensa",
+    "mlTitle": "Elegido para ti",
+    "mlSub": "Aprendido de lo que te gusta a ti y a gente como tú."
+  },
+  "staffPage": {
+    "wfEyebrow": "Personal IA",
+    "wfTitle": "Señales del equipo a tener en cuenta",
+    "wfAtRisk": "{{name}} podría irse",
+    "wfOvertime": "{{name}} cerca de horas extra (~{{hours}}h)"
+  },
+  "opsPage": {
+    "title": "Operaciones",
+    "subtitle": "Tareas, listas y cumplimiento.",
+    "overdue": "{{count}} atrasadas — completa antes del servicio.",
+    "checklists": "Listas",
+    "newChecklist": "Nueva lista",
+    "checklistNamePh": "Nombre (ej. Apertura)",
+    "checklistItemsPh": "Un ítem por línea\nAbrir puertas\nEncender parrilla",
+    "noChecklists": "Aún no hay listas.",
+    "runToday": "Usar hoy",
+    "taskPh": "Añadir tarea…",
+    "addTask": "Añadir",
+    "allClear": "Todo en orden.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "cat_general": "General",
+    "cat_opening": "Apertura",
+    "cat_closing": "Cierre",
+    "cat_prep": "Preparación",
+    "cat_compliance": "Cumplimiento",
+    "cat_maintenance": "Mantenimiento"
+  },
+  "integrationsPage": {
+    "title": "Integraciones",
+    "subtitle": "Conecta tu POS y SavoryMind usará datos de ventas reales.",
+    "square": "Square POS",
+    "squareDesc": "Sincroniza catálogo, pedidos e ingresos automáticamente.",
+    "statusConnected": "Conectado",
+    "statusOff": "No conectado",
+    "notConfigured": "Square aún no está configurado en este servidor — pide al admin las claves SQUARE_*.",
+    "merchant": "Comercio",
+    "lastSync": "Última sync",
+    "syncSummary": "{{items}} artículos · {{orders}} pedidos · ${{revenue}} sincronizados",
+    "connectSquare": "Conectar Square",
+    "syncNow": "Sincronizar",
+    "syncing": "Sincronizando…",
+    "disconnect": "Desconectar",
+    "connected": "Square conectado — ejecuta una sync para importar tus datos.",
+    "connectError": "No se pudo conectar Square. Inténtalo de nuevo.",
+    "syncDone": "Sincronizados {{items}} artículos y {{orders}} pedidos.",
+    "whatItDoes": "La sync importa tu catálogo de Square al menú y tus últimos 30 días de pedidos a analíticas y previsiones — sustituyendo los números manuales."
   }
 }

@@ -2,9 +2,6 @@
 // NEXT_PUBLIC_API_URL must be set at build time (Cloud Run / GitHub Actions) → https://api.savorymind.net.
 // In local dev the proxy rewrite forwards /backend/* → localhost:8000.
 const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
-// NEXT_PUBLIC_API_URL is set at build/deploy time (see deploy-frontend.yml).
-// In local dev the proxy rewrite forwards /backend/* → localhost:8000.
-const PROD_API = process.env.NEXT_PUBLIC_API_URL || "https://api.savorymind.net";
 
 function getBaseUrl() {
   if (typeof window === "undefined") return "/backend"; // SSR fallback (unused for auth)
@@ -138,9 +135,21 @@ export const api = {
   updateProfile: (data) => request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(data) }),
   getMenuBroadcastStats: () => request("/api/restaurant/menu-broadcasts/stats"),
   getActionPlan: () => request("/api/restaurant/action-plan"),
+  getTrending: () => request("/api/restaurant/trending"),
+  getMlSuggestions: () => request("/api/consumer/ml-suggestions"),
   generateCampaign: (body) => request("/api/restaurant/campaigns/generate", { method: "POST", body: JSON.stringify(body) }),
   draftReviewResponse: (id) => request(`/api/reviews/${id}/draft-response`, { method: "POST" }),
   saveReviewResponse: (id, response) => request(`/api/reviews/${id}/response`, { method: "PATCH", body: JSON.stringify({ response }) }),
+  getCRMSegments: () => request("/api/restaurant/crm/segments"),
+  getAtRiskGuests: () => request("/api/restaurant/crm/at-risk"),
+  getCustomerTimeline: (id) => request(`/api/restaurant/crm/${id}/timeline`),
+  draftWinback: (id, body) => request(`/api/restaurant/crm/${id}/winback`, { method: "POST", body: JSON.stringify(body) }),
+  getLoyaltyRewards: () => request("/api/restaurant/loyalty/rewards"),
+  createLoyaltyReward: (body) => request("/api/restaurant/loyalty/rewards", { method: "POST", body: JSON.stringify(body) }),
+  updateLoyaltyReward: (id, body) => request(`/api/restaurant/loyalty/rewards/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteLoyaltyReward: (id) => request(`/api/restaurant/loyalty/rewards/${id}`, { method: "DELETE" }),
+  getCustomerRewards: (customerId) => request(`/api/restaurant/loyalty/customers/${customerId}/available`),
+  redeemReward: (customerId, rewardId) => request(`/api/restaurant/loyalty/customers/${customerId}/redeem`, { method: "POST", body: JSON.stringify({ reward_id: rewardId }) }),
   listSavedRestaurants: () => request("/api/consumer/saved-restaurants"),
   saveRestaurant: (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: "POST" }),
   unsaveRestaurant: (id) => request(`/api/consumer/saved-restaurants/${id}`, { method: "DELETE" }),
@@ -207,6 +216,25 @@ export const api = {
   // Restaurant — Staff
   getStaffSummary: () => request("/api/restaurant/staff/summary"),
   getStaff: () => request("/api/restaurant/staff"),
+  getStaffIntelligence: () => request("/api/restaurant/staff/intelligence"),
+  getSchedule: (weekStart) => request(`/api/restaurant/schedule${weekStart ? `?week_start=${weekStart}` : ""}`),
+  createShift: (body) => request("/api/restaurant/schedule/shifts", { method: "POST", body: JSON.stringify(body) }),
+  deleteShift: (id) => request(`/api/restaurant/schedule/shifts/${id}`, { method: "DELETE" }),
+  getClockStatus: () => request("/api/restaurant/clock/status"),
+  clockIn: (staffId) => request("/api/restaurant/clock/in", { method: "POST", body: JSON.stringify({ staff_id: staffId }) }),
+  clockOut: (staffId, breakMinutes = 0) => request("/api/restaurant/clock/out", { method: "POST", body: JSON.stringify({ staff_id: staffId, break_minutes: breakMinutes }) }),
+  getOpsTasks: () => request("/api/restaurant/operations/tasks"),
+  createOpsTask: (body) => request("/api/restaurant/operations/tasks", { method: "POST", body: JSON.stringify(body) }),
+  toggleOpsTask: (id, done) => request(`/api/restaurant/operations/tasks/${id}?done=${done}`, { method: "PATCH" }),
+  deleteOpsTask: (id) => request(`/api/restaurant/operations/tasks/${id}`, { method: "DELETE" }),
+  getChecklists: () => request("/api/restaurant/operations/checklists"),
+  createChecklist: (body) => request("/api/restaurant/operations/checklists", { method: "POST", body: JSON.stringify(body) }),
+  deleteChecklist: (id) => request(`/api/restaurant/operations/checklists/${id}`, { method: "DELETE" }),
+  instantiateChecklist: (id) => request(`/api/restaurant/operations/checklists/${id}/instantiate`, { method: "POST" }),
+  getPosStatus: () => request("/api/restaurant/pos/status"),
+  startSquareConnect: () => request("/api/restaurant/pos/square/start"),
+  syncPos: () => request("/api/restaurant/pos/sync", { method: "POST" }),
+  disconnectPos: () => request("/api/restaurant/pos/disconnect", { method: "DELETE" }),
   createStaff: (data) => request("/api/restaurant/staff", { method: "POST", body: JSON.stringify(data) }),
   updateStaff: (id, data) => request(`/api/restaurant/staff/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteStaff: (id) => request(`/api/restaurant/staff/${id}`, { method: "DELETE" }),

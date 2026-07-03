@@ -83,6 +83,22 @@ class CRMCustomer(Base):
     menu_sms_opt_in = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Rich guest profile — the CRM fields restaurants actually use. All
+    # nullable so existing rows are untouched. Powers guest intelligence
+    # (birthday campaigns, dietary-aware offers, segment membership).
+    birthday        = Column(Date, nullable=True)
+    anniversary     = Column(Date, nullable=True)
+    allergies       = Column(Text, nullable=True)     # free text or comma list
+    favorite_dishes = Column(Text, nullable=True)     # comma-separated
+    favorite_drinks = Column(Text, nullable=True)     # comma-separated
+    wine_pref       = Column(String, nullable=True)   # "Cabernet", "Pinot Noir"
+    seating_pref    = Column(String, nullable=True)   # "Corner booth", "Patio"
+    address         = Column(Text, nullable=True)
+    # Loyalty — points accrue on visits; tier is derived but cached here so
+    # the CRM list can render it without recomputing per row.
+    loyalty_points  = Column(Integer, nullable=False, default=0, server_default="0")
+    loyalty_tier    = Column(String, nullable=True)   # bronze | silver | gold | vip
+
 
 class Staff(Base):
     __tablename__ = "staff"
@@ -112,3 +128,98 @@ class SalesLog(Base):
     sale_date = Column(Date, nullable=False)
     hour_of_day = Column(Integer, nullable=False)   # 0-23
     day_of_week = Column(Integer, nullable=False)   # 0=Mon, 6=Sun
+
+
+class LoyaltyReward(Base):
+    """A reward a restaurant offers for loyalty points (e.g. 'Free dessert'
+    for 500 pts). Scoped per restaurant via user_id."""
+    __tablename__ = "loyalty_rewards"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    user_id     = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name        = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+    points_cost = Column(Integer, nullable=False)
+    active      = Column(Boolean, nullable=False, default=True, server_default="1")
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class LoyaltyRedemption(Base):
+    """Log of a customer redeeming a reward. Points are deducted from the
+    CRMCustomer at redemption time; reward_name is snapshotted so history
+    survives reward edits/deletes."""
+    __tablename__ = "loyalty_redemptions"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    customer_id  = Column(Integer, ForeignKey("crm_customers.id"), nullable=False, index=True)
+    reward_id    = Column(Integer, ForeignKey("loyalty_rewards.id"), nullable=True)
+    reward_name  = Column(String(120), nullable=False)
+    points_spent = Column(Integer, nullable=False)
+    redeemed_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Shift(Base):
+    """A planned shift for a staff member. Backs the weekly schedule grid."""
+    __tablename__ = "shifts"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    staff_id   = Column(Integer, ForeignKey("staff.id"), nullable=False, index=True)
+    date       = Column(Date, nullable=False, index=True)
+    start_time = Column(String(5), nullable=False)   # "09:00"
+    end_time   = Column(String(5), nullable=False)   # "17:00"
+    role       = Column(String(40), nullable=True)
+    notes      = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class TimePunch(Base):
+    """A clock-in/out event. clock_out null = currently on the clock.
+    Paired into worked hours by scheduling_service."""
+    __tablename__ = "time_punches"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    staff_id      = Column(Integer, ForeignKey("staff.id"), nullable=False, index=True)
+    clock_in      = Column(DateTime, nullable=False, default=datetime.utcnow)
+    clock_out     = Column(DateTime, nullable=True)
+    break_minutes = Column(Integer, nullable=False, default=0, server_default="0")
+
+
+class OpsTask(Base):
+    """An operational task — one-off or instantiated from a checklist.
+    Backs the Operations page's today-view + overdue Action Plan card."""
+    __tablename__ = "ops_tasks"
+
+    id                 = Column(Integer, primary_key=True, index=True)
+    user_id            = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title              = Column(String(200), nullable=False)
+    category           = Column(String(40), nullable=False, default="general", server_default="general")
+    assignee           = Column(String(120), nullable=True)
+    due_date           = Column(Date, nullable=True, index=True)
+    done               = Column(Boolean, nullable=False, default=False, server_default="0")
+    done_at            = Column(DateTime, nullable=True)
+    source_template_id = Column(Integer, nullable=True)
+    created_at         = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ChecklistTemplate(Base):
+    """A reusable checklist (Opening / Closing / Compliance) the operator
+    instantiates into ops_tasks for a day."""
+    __tablename__ = "checklist_templates"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name       = Column(String(120), nullable=False)
+    category   = Column(String(40), nullable=False, default="general", server_default="general")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ChecklistItem(Base):
+    __tablename__ = "checklist_items"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("checklist_templates.id"), nullable=False, index=True)
+    label       = Column(String(200), nullable=False)
+    position    = Column(Integer, nullable=False, default=0, server_default="0")

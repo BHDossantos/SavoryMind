@@ -358,3 +358,24 @@ def update_profile(
         auth_service._seed_for_type(db, current_user)
 
     return current_user
+
+
+from pydantic import BaseModel as _BaseModel
+
+
+class PushTokenBody(_BaseModel):
+    token: str
+
+
+@router.post("/push-token", status_code=204)
+def register_push_token(
+    body: PushTokenBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Store the device's Expo push token so the backend can deliver native
+    notifications. Sent by the mobile app after permission is granted. An
+    empty token clears it (e.g. on logout / permission revoked)."""
+    token = (body.token or "").strip()
+    current_user.expo_push_token = token or None
+    db.commit()

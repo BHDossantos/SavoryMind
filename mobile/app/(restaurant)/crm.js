@@ -29,14 +29,60 @@ export default function CRMScreen() {
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState(null);
 
+  const [atRisk, setAtRisk] = useState([]);
+  const [wbBusy, setWbBusy] = useState(null);  // customer id being sent
+  const [redeem, setRedeem] = useState(null);  // { customer, data, busy, done }
+
+  const openRedeem = async (c) => {
+    setRedeem({ customer: c, data: null, busy: false, done: null });
+    try {
+      const data = await api.getCustomerRewards(c.id);
+      setRedeem((r) => r && r.customer.id === c.id ? { ...r, data } : r);
+    } catch (e) { Alert.alert(e.message || 'Failed'); setRedeem(null); }
+  };
+
+  const doRedeem = async (rewardId) => {
+    setRedeem((r) => ({ ...r, busy: true }));
+    try {
+      const res = await api.redeemReward(redeem.customer.id, rewardId);
+      setRedeem((r) => ({ ...r, busy: false, done: res }));
+      setTimeout(() => { setRedeem(null); load(); }, 1400);
+    } catch (e) {
+      Alert.alert(e.message || 'Failed');
+      setRedeem((r) => ({ ...r, busy: false }));
+    }
+  };
+
   const load = async () => {
     try {
       const [c, s] = await Promise.all([api.getCustomers(), api.getCRMSummary()]);
       setCustomers(c); setSummary(s); setError(null);
+      api.getAtRiskGuests().then((d) => setAtRisk(d.guests || [])).catch(() => {});
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
   useFocusEffect(useCallback(() => { load(); }, []));
+
+  // One-tap win-back: draft + send in a single call (mobile keeps it simple —
+  // the operator confirms via the native Alert before it actually sends).
+  const winBack = (g) => {
+    Alert.alert(
+      t('crmPage.giWinBack'),
+      t('crmPage.giConfirm', { name: g.name, days: g.days_since_visit }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('crmPage.giSendSms'), onPress: async () => {
+          if (!g.phone) { Alert.alert(t('crmPage.giNoPhone')); return; }
+          setWbBusy(g.id);
+          try {
+            await api.draftWinback(g.id, { send: true });
+            setAtRisk((prev) => prev.filter((x) => x.id !== g.id));
+          } catch (e) { Alert.alert(e.message || 'Failed'); }
+          finally { setWbBusy(null); }
+        }},
+      ],
+    );
+  };
 
   const filtered = customers.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.email || '').toLowerCase().includes(search.toLowerCase())
@@ -105,6 +151,27 @@ export default function CRMScreen() {
         </ScrollView>
       )}
 
+      {atRisk.length > 0 && (
+        <View style={giStyles.panel}>
+          <Text style={giStyles.eyebrow}>{t('crmPage.giEyebrow')}</Text>
+          <Text style={giStyles.title}>🧠 {t('crmPage.giTitle')}</Text>
+          {atRisk.slice(0, 4).map((g) => (
+            <View key={g.id} style={giStyles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={giStyles.name}>{g.name}</Text>
+                <Text style={giStyles.meta}>{t('crmPage.giLapsed', { days: g.days_since_visit })}</Text>
+              </View>
+              <Text style={giStyles.prob}>{Math.round(g.return_probability * 100)}%</Text>
+              <TouchableOpacity style={giStyles.btn} onPress={() => winBack(g)} disabled={wbBusy === g.id}>
+                {wbBusy === g.id
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={giStyles.btnText}>{t('crmPage.giWinBack')}</Text>}
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
       <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
         <TextInput style={styles.search} placeholder="Search by name or email..." value={search} onChangeText={setSearch} />
       </View>
@@ -133,6 +200,9 @@ export default function CRMScreen() {
             <View style={styles.actions}>
               <TouchableOpacity style={styles.visitBtn} onPress={() => handleRecordVisit(c)}>
                 <Text style={styles.visitBtnText}>+ Visit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => openRedeem(c)} style={{ padding: 4 }}>
+                <Text>🎁</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDelete(c)} style={{ padding: 4 }}>
                 <Text>🗑️</Text>
@@ -187,9 +257,66 @@ export default function CRMScreen() {
           </TouchableOpacity>
         </SafeScreen>
       </Modal>
+
+      <Modal visible={!!redeem} animationType="fade" transparent onRequestClose={() => setRedeem(null)}>
+        <View style={rdStyles.backdrop}>
+          <View style={rdStyles.sheet}>
+            <View style={rdStyles.header}>
+              <Text style={rdStyles.title}>🎁 {redeem?.customer?.name}</Text>
+              <TouchableOpacity onPress={() => setRedeem(null)}><Text style={rdStyles.close}>✕</Text></TouchableOpacity>
+            </View>
+            {redeem?.data && !redeem?.done && (
+              <Text style={rdStyles.balance}>{redeem.data.loyalty_points} pts{redeem.data.loyalty_tier ? ` · ${redeem.data.loyalty_tier}` : ''}</Text>
+            )}
+            {redeem?.done ? (
+              <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                <Text style={{ fontSize: 28 }}>✅</Text>
+                <Text style={rdStyles.doneText}>{redeem.done.reward_name}</Text>
+                <Text style={rdStyles.balance}>{redeem.done.remaining_points} pts left</Text>
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {!redeem?.data && <Text style={rdStyles.dim}>…</Text>}
+                {redeem?.data?.rewards?.length === 0 && <Text style={rdStyles.dim}>No rewards yet.</Text>}
+                {redeem?.data?.rewards?.map((r) => (
+                  <View key={r.id} style={rdStyles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={rdStyles.rName}>{r.name}</Text>
+                      <Text style={rdStyles.rCost}>{r.points_cost} pts</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[rdStyles.btn, !r.affordable && { opacity: 0.4 }]}
+                      disabled={redeem.busy || !r.affordable}
+                      onPress={() => doRedeem(r.id)}
+                    >
+                      <Text style={rdStyles.btnText}>{r.affordable ? 'Redeem' : 'Short'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const rdStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 },
+  sheet:    { backgroundColor: '#fff', borderRadius: 18, padding: 18 },
+  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title:    { fontSize: 17, fontWeight: '800', color: C.gray[900] },
+  close:    { fontSize: 18, color: C.gray[400] },
+  balance:  { fontSize: 12, color: C.gray[500], marginTop: 2, marginBottom: 8 },
+  dim:      { fontSize: 13, color: C.gray[400], paddingVertical: 8 },
+  row:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.gray[200], borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
+  rName:    { fontSize: 14, fontWeight: '700', color: C.gray[900] },
+  rCost:    { fontSize: 12, fontWeight: '700', color: '#b45309', marginTop: 2 },
+  btn:      { backgroundColor: '#7c3aed', borderRadius: 9, paddingHorizontal: 14, paddingVertical: 8 },
+  btnText:  { color: '#fff', fontWeight: '700', fontSize: 12 },
+  doneText: { fontSize: 15, fontWeight: '700', color: C.gray[900], marginTop: 6 },
+});
 
 const styles = StyleSheet.create({
   topBar:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 56 },
@@ -231,4 +358,16 @@ const styles = StyleSheet.create({
   emptyBody:    { fontSize: 13, color: C.gray[500], textAlign: 'center', marginBottom: 14, lineHeight: 18 },
   emptyCta:     { backgroundColor: C.restaurant.primary, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 11 },
   emptyCtaText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+});
+
+const giStyles = StyleSheet.create({
+  panel:   { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#faf5ff', borderColor: '#e9d5ff', borderWidth: 1, borderRadius: 14, padding: 12 },
+  eyebrow: { fontSize: 10, fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title:   { fontSize: 15, fontWeight: '800', color: C.gray[900], marginTop: 2, marginBottom: 8 },
+  row:     { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderColor: '#e9d5ff', borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6 },
+  name:    { fontSize: 13, fontWeight: '700', color: C.gray[900] },
+  meta:    { fontSize: 11, color: C.gray[500], marginTop: 1 },
+  prob:    { fontSize: 13, fontWeight: '800', color: '#7c3aed' },
+  btn:     { backgroundColor: '#7c3aed', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, minWidth: 76, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 11 },
 });

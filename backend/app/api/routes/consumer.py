@@ -60,17 +60,12 @@ def _log(db: Session, user_id: int, action_type: str, meta: dict | None = None) 
 
 
 def _parse_json(raw: str | None, fallback):
-def _safe_loads(raw: str | None, fallback):
     """Tolerate malformed/empty JSON columns instead of 500-ing the whole route."""
     if not raw:
         return fallback
     try:
         return json.loads(raw)
     except (json.JSONDecodeError, TypeError):
-        return fallback
-
-
-    except (ValueError, TypeError):
         return fallback
 
 
@@ -93,7 +88,6 @@ def create_wine_pairing(
     record = wine_service.save_pairing(db, current_user.id, body.dish_name, body.dish_description)
     _log(db, current_user.id, "wine_pairing", {"dish": body.dish_name})
     recs = [WineRecommendation(**r) for r in _parse_json(record.recommendations, [])]
-    recs = [WineRecommendation(**r) for r in _safe_loads(record.recommendations, [])]
     return WinePairingResponse(id=record.id, dish_name=record.dish_name, recommendations=recs, created_at=record.created_at)
 
 
@@ -104,7 +98,6 @@ def list_wine_pairings(db: Session = Depends(get_db), current_user: User = Depen
     result = []
     for r in records:
         recs = [WineRecommendation(**w) for w in _parse_json(r.recommendations, [])]
-        recs = [WineRecommendation(**w) for w in _safe_loads(r.recommendations, [])]
         result.append(WinePairingResponse(id=r.id, dish_name=r.dish_name, recommendations=recs, created_at=r.created_at))
     return result
 
@@ -125,7 +118,6 @@ def create_music_mood(
     if parsed is None:
         raise HTTPException(status_code=500, detail="Music recommendation could not be generated.")
     recs = MusicRecommendation(**parsed)
-    recs = MusicRecommendation(**_safe_loads(record.recommendations, _MUSIC_FALLBACK))
     return MusicMoodResponse(
         id=record.id, mood=record.mood, food_type=record.food_type,
         occasion=record.occasion, recommendations=recs, created_at=record.created_at,
@@ -145,7 +137,6 @@ def list_music_moods(db: Session = Depends(get_db), current_user: User = Depends
             recs = MusicRecommendation(**parsed)
         except (TypeError, ValueError):
             continue
-        recs = MusicRecommendation(**_safe_loads(r.recommendations, {}))
         result.append(MusicMoodResponse(
             id=r.id, mood=r.mood, food_type=r.food_type,
             occasion=r.occasion, recommendations=recs, created_at=r.created_at,
@@ -228,6 +219,18 @@ def get_recommendations(db: Session = Depends(get_db), current_user: User = Depe
         "recommendations_count": len(recs) if isinstance(recs, list) else 0,
     })
     return recs
+
+
+@router.get("/ml-suggestions")
+def get_ml_suggestions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Learned taste suggestions from collaborative filtering over the
+    user's behavior. 'personalized' once they have history, 'popular' on
+    cold start. Complements the rules/Claude recommendations with a signal
+    that improves as the user (and the community) interact more."""
+    _require_consumer(current_user)
+    from ...services import ml_recommender_service
+    tokens = ml_recommender_service.recommend_tokens(db, current_user.id)
+    return {"suggestions": tokens}
 
 
 # ── Beverages ─────────────────────────────────────────────────────────────────

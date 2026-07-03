@@ -167,6 +167,30 @@ the backend must be set to `net.savorymind.app` exactly, or the
 `/api/auth/apple` endpoint 503s during review and the build is
 rejected. Verify on `/health/deep` — `apple_signin: enabled`.
 
+### 1i. Push notification credentials (APNs)
+
+SavoryMind now registers for native push (the `expo-notifications`
+plugin in `app.json`). iOS push requires an **APNs key** on top of the
+build/signing credentials. EAS manages it for you — but it has to be
+generated once:
+
+```bash
+cd mobile
+eas credentials -p ios
+```
+
+Choose **Push Notifications: Manage your Apple Push Notifications Key**
+→ **Set up a new key**. EAS creates the APNs key in your Apple account
+and stores it in its vault. That's it — the same production build then
+carries push. No App Store listing field changes, but the **App Privacy
+questionnaire** (1h.2) must declare that the app collects a device
+**push token** (Data Not Linked to You → "Identifiers", used for App
+Functionality). Skipping this is a Guideline 5.1.1 rejection.
+
+There is nothing to do on the backend beyond setting no env var at all:
+`push_service` no-ops safely when a device has no token, and the Expo
+push endpoint needs no server-side key for the standard tier.
+
 ---
 
 ## 2. Android path (Google Play)
@@ -189,7 +213,10 @@ it manually the first time. Subsequent submissions are scripted.
      "Teen"
    - Target audience and content → 18+ (alcohol pairing recommendations)
    - Data safety → uses Camera (menu photos), Email, Phone Number,
-     Location (city only, for restaurant matching)
+     Location (city only, for restaurant matching), and a **push token**
+     (device identifier, App Functionality). Android push works out of
+     the box via Expo's FCM proxy — no `google-services.json` needed for
+     the standard tier.
 
 ### 2b. Initial APK upload (Google's one-time gate)
 
@@ -299,6 +326,8 @@ already-published one.
 | Android submit credentials | GitHub secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` |
 | Camera/photos permission strings | `mobile/app.json` → `expo.plugins` |
 | Apple Sign-In capability | `mobile/app.json` → `ios.usesAppleSignIn: true` |
+| Push notifications plugin | `mobile/app.json` → `expo.plugins` (`expo-notifications`) |
+| iOS APNs key | EAS credential vault (`eas credentials -p ios`) |
 | EAS account that owns builds | `eas login` on the machine that runs builds |
 | Build CI workflow | `.github/workflows/eas-mobile-build.yml` |
 
@@ -322,6 +351,11 @@ already-published one.
 - **Camera permission must have a real reason string**. Already set in
   `mobile/app.json`'s `expo-image-picker` plugin config. Editing it to
   a placeholder rejects on review.
+- **Push token must be declared in App Privacy / Data Safety**. The app
+  collects a device push token; both stores require it declared as an
+  identifier used for App Functionality (§1i, §2a). The iOS APNs key
+  must be generated once via `eas credentials -p ios` or push silently
+  never arrives on device.
 
 ---
 

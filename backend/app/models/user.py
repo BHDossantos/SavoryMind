@@ -136,3 +136,7 @@ class User(Base):
     # Demo accounts get visible sample data but are excluded from real
     # dashboards / investor metrics. Toggleable at signup.
     is_demo = Column(Boolean, nullable=False, server_default="0", default=False)
+
+    # Expo push token for native notifications (mobile). Nullable — no token
+    # means no push; email/SMS/in-app still deliver.
+    expo_push_token = Column(String(200), nullable=True)

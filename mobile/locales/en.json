@@ -162,7 +162,11 @@
     "quickActionStaff": "Staff",
     "quickActionReports": "Reports",
     "billing": "Billing",
-    "billingSub": "Manage your subscription and payment."
+    "billingSub": "Manage your subscription and payment.",
+    "operations": "Operations",
+    "operationsSub": "Tasks, checklists & compliance.",
+    "integrations": "Integrations",
+    "integrationsSub": "Connect your POS (Square)."
   },
   "notifications": {
     "title": "Notifications",
@@ -691,7 +695,15 @@
     "menuSmsOff": "Off",
     "emptyTitle": "No customers yet",
     "emptyBody": "Add your regulars so you can text them today's menu and remember what they love.",
-    "noResults": "No matches for that search."
+    "noResults": "No matches for that search.",
+    "giEyebrow": "AI guest intelligence",
+    "giTitle": "Win these guests back",
+    "giLapsed": "{{days}} days since last visit",
+    "giWinBack": "Win back",
+    "giSent": "Sent ✓",
+    "giSendSms": "Send SMS",
+    "giNoPhone": "No phone on file — add one to send.",
+    "giConfirm": "Send a win-back SMS to {{name}} ({{days}} days away)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind for Restaurants",
@@ -728,7 +740,9 @@
     "lapsedTitle": "Your subscription has lapsed",
     "lapsedSub": "Renew to keep menu SMS, alerts, and intelligence active.",
     "actionPlanEyebrow": "Today's AI action plan",
-    "actionPlanTitle": "Do these today"
+    "actionPlanTitle": "Do these today",
+    "trendingEyebrow": "What's trending",
+    "trendingTitle": "Momentum on your menu"
   },
   "upgradePage": {
     "title": "SavoryMind Premium",
@@ -858,6 +872,56 @@
     "primaryDineOut": "Dine out",
     "primaryDineOutSub": "Find a restaurant tonight",
     "primaryCook": "Cook something",
-    "primaryCookSub": "Recipe ideas from your pantry"
+    "primaryCookSub": "Recipe ideas from your pantry",
+    "mlTitle": "Picked for you",
+    "mlSub": "Learned from what you and people like you enjoy."
+  },
+  "staffPage": {
+    "wfEyebrow": "AI workforce",
+    "wfTitle": "Team signals worth acting on",
+    "wfAtRisk": "{{name}} may be at flight risk",
+    "wfOvertime": "{{name}} nearing overtime (~{{hours}}h)"
+  },
+  "opsPage": {
+    "title": "Operations",
+    "subtitle": "Tasks, checklists and compliance.",
+    "overdue": "{{count}} overdue — clear before service.",
+    "checklists": "Checklists",
+    "newChecklist": "New checklist",
+    "checklistNamePh": "Checklist name (e.g. Opening)",
+    "checklistItemsPh": "One item per line\nUnlock doors\nTurn on grill",
+    "noChecklists": "No checklists yet.",
+    "runToday": "Run today",
+    "taskPh": "Add a task…",
+    "addTask": "Add",
+    "allClear": "All clear — nothing pending.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "cat_general": "General",
+    "cat_opening": "Opening",
+    "cat_closing": "Closing",
+    "cat_prep": "Prep",
+    "cat_compliance": "Compliance",
+    "cat_maintenance": "Maintenance"
+  },
+  "integrationsPage": {
+    "title": "Integrations",
+    "subtitle": "Connect your POS so SavoryMind runs on real sales data.",
+    "square": "Square POS",
+    "squareDesc": "Sync catalog, orders and revenue automatically.",
+    "statusConnected": "Connected",
+    "statusOff": "Not connected",
+    "notConfigured": "Square isn't configured on this server yet — ask your admin to add the SQUARE_* keys.",
+    "merchant": "Merchant",
+    "lastSync": "Last sync",
+    "syncSummary": "{{items}} items · {{orders}} orders · ${{revenue}} synced",
+    "connectSquare": "Connect Square",
+    "syncNow": "Sync now",
+    "syncing": "Syncing…",
+    "disconnect": "Disconnect",
+    "connected": "Square connected — run a sync to pull your data.",
+    "connectError": "Couldn't connect Square. Please try again.",
+    "syncDone": "Synced {{items}} items and {{orders}} orders.",
+    "whatItDoes": "Syncing pulls your Square catalog into your menu and your last 30 days of orders into analytics and forecasting — replacing any manual numbers."
   }
 }

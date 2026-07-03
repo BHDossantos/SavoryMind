@@ -22,6 +22,7 @@ from ...services import (
     inventory_digest_service,
     menu_sms_service,
     reminder_service,
+    square_pos_service,
     weekly_digest_service,
 )
 
@@ -161,4 +162,35 @@ def menu_of_the_day(
     User.menu_sms_last_sent_date so overlapping ticks are safe."""
     stats = menu_sms_service.send_due_menus(db)
     logger.info("menu-of-the-day stats: %s", stats)
+    return stats
+
+
+@router.post("/pos-sync")
+@limiter.limit("60/minute")
+def pos_sync(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook: re-sync every connected Square merchant's catalog + recent
+    orders. Hourly is a sensible default. Idempotent — a sync overwrites the
+    last-30-day window rather than appending."""
+    stats = square_pos_service.sync_all_connected(db)
+    logger.info("pos-sync stats: %s", stats)
+    return stats
+
+
+@router.post("/ml-retrain")
+@limiter.limit("60/minute")
+def ml_retrain(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook: rebuild the collaborative-filtering recommender from the
+    latest behavior data. Daily is plenty; the model also self-refreshes on
+    a 5-min TTL during live traffic."""
+    from ...services import ml_recommender_service
+    stats = ml_recommender_service.retrain(db)
+    logger.info("ml-retrain stats: %s", stats)
     return stats

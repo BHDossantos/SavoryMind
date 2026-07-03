@@ -25,6 +25,50 @@ const stars = (rating) => {
   return "★".repeat(full) + "☆".repeat(5 - full);
 };
 
+// AI Workforce panel — attrition risk, overtime, and demand-based
+// staffing for the next window. Coaching-framed, manager-only view.
+function WorkforcePanel({ intel, t }) {
+  if (!intel) return null;
+  const risks = intel.attrition_risks || [];
+  const ot = intel.overtime_alerts || [];
+  const staffing = intel.staffing_suggestion;
+  if (!risks.length && !ot.length && !staffing) return null;
+  return (
+    <section className="mb-6 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{t("staffPage.wfEyebrow")}</p>
+          <h2 className="text-lg font-extrabold text-gray-900">{t("staffPage.wfTitle")}</h2>
+        </div>
+        <span className="text-2xl" aria-hidden>🧠</span>
+      </div>
+      <div className="space-y-2">
+        {staffing && staffing.direction !== "steady" && (
+          <div className="rounded-xl border border-indigo-100 bg-white px-3 py-2.5">
+            <p className="font-semibold text-gray-900 text-sm">📈 {staffing.headline}</p>
+            <p className="text-xs text-gray-600 mt-0.5">{staffing.recommendation}</p>
+          </div>
+        )}
+        {risks.map((r) => (
+          <div key={`risk-${r.id}`} className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-gray-900 text-sm">⚠️ {t("staffPage.wfAtRisk", { name: r.name })}</p>
+              <span className="text-xs font-bold text-red-700">{Math.round(r.confidence * 100)}%</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-0.5">{r.reasons.join(" · ")} — {r.recommendation}</p>
+          </div>
+        ))}
+        {ot.map((o) => (
+          <div key={`ot-${o.id}`} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+            <p className="font-semibold text-gray-900 text-sm">⏱ {t("staffPage.wfOvertime", { name: o.name, hours: o.estimated_weekly_hours })}</p>
+            <p className="text-xs text-gray-600 mt-0.5">{o.recommendation}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Staff() {
   const { t } = useTranslation();
   const [staff, setStaff] = useState([]);
@@ -36,11 +80,14 @@ export default function Staff() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  const [intel, setIntel] = useState(null);
+
   const fetch = () => {
     setLoading(true);
     Promise.all([api.getStaff(), api.getStaffSummary()])
       .then(([s, sm]) => { setStaff(s); setSummary(sm); })
       .finally(() => setLoading(false));
+    api.getStaffIntelligence().then(setIntel).catch(() => {});
   };
 
   useEffect(() => { fetch(); }, []);
@@ -74,6 +121,8 @@ export default function Staff() {
         </div>
         <button onClick={openNew} className="bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-colors">{t("staffPage.addStaff")}</button>
       </div>
+
+      <WorkforcePanel intel={intel} t={t} />
 
       {/* Summary */}
       {summary && (

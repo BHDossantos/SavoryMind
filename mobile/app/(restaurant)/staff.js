@@ -36,13 +36,31 @@ export default function StaffScreen() {
   const [form, setForm]           = useState(EMPTY);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState(null);
+  const [intel, setIntel] = useState(null);
+
+  const [onClock, setOnClock] = useState([]);
+  const [clockBusy, setClockBusy] = useState(null);
 
   const load = async () => {
     try { setStaff(await api.getStaff()); setError(null); }
     catch (e) { setError(e.message); }
     finally { setLoading(false); }
+    api.getStaffIntelligence().then(setIntel).catch(() => {});
+    api.getClockStatus().then((c) => setOnClock(c.on_clock || [])).catch(() => {});
   };
   useFocusEffect(useCallback(() => { load(); }, []));
+
+  const isOnClock = (id) => onClock.some((o) => o.staff_id === id);
+  const togglePunch = async (s) => {
+    setClockBusy(s.id);
+    try {
+      if (isOnClock(s.id)) await api.clockOut(s.id);
+      else await api.clockIn(s.id);
+      const c = await api.getClockStatus();
+      setOnClock(c.on_clock || []);
+    } catch (e) { Alert.alert(e.message || 'Failed'); }
+    finally { setClockBusy(null); }
+  };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -77,6 +95,31 @@ export default function StaffScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        {intel && ((intel.attrition_risks || []).length > 0 || (intel.overtime_alerts || []).length > 0
+          || (intel.staffing_suggestion && intel.staffing_suggestion.direction !== 'steady')) && (
+          <View style={wfStyles.panel}>
+            <Text style={wfStyles.eyebrow}>{t('staffPage.wfEyebrow')}</Text>
+            <Text style={wfStyles.title}>🧠 {t('staffPage.wfTitle')}</Text>
+            {intel.staffing_suggestion && intel.staffing_suggestion.direction !== 'steady' && (
+              <View style={[wfStyles.row, { borderColor: '#c7d2fe' }]}>
+                <Text style={wfStyles.rowTitle}>📈 {intel.staffing_suggestion.headline}</Text>
+                <Text style={wfStyles.rowSub}>{intel.staffing_suggestion.recommendation}</Text>
+              </View>
+            )}
+            {(intel.attrition_risks || []).map((r) => (
+              <View key={`r${r.id}`} style={[wfStyles.row, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
+                <Text style={wfStyles.rowTitle}>⚠️ {t('staffPage.wfAtRisk', { name: r.name })} · {Math.round(r.confidence * 100)}%</Text>
+                <Text style={wfStyles.rowSub}>{r.reasons.join(' · ')} — {r.recommendation}</Text>
+              </View>
+            ))}
+            {(intel.overtime_alerts || []).map((o) => (
+              <View key={`o${o.id}`} style={[wfStyles.row, { borderColor: '#fde68a', backgroundColor: '#fffbeb' }]}>
+                <Text style={wfStyles.rowTitle}>⏱ {t('staffPage.wfOvertime', { name: o.name, hours: o.estimated_weekly_hours })}</Text>
+                <Text style={wfStyles.rowSub}>{o.recommendation}</Text>
+              </View>
+            ))}
+          </View>
+        )}
         {staff.map(m => (
           <View key={m.id} style={styles.card}>
             <Text style={styles.emoji}>{ROLE_EMOJI[m.role] || '👤'}</Text>
@@ -94,6 +137,17 @@ export default function StaffScreen() {
                 {m.orders_handled > 0 && <Text style={styles.stat}>📦 {m.orders_handled} orders</Text>}
               </View>
               {m.notes ? <Text style={styles.notes}>{m.notes}</Text> : null}
+              <TouchableOpacity
+                style={[clockStyles.btn, isOnClock(m.id) ? clockStyles.btnOn : clockStyles.btnOff]}
+                onPress={() => togglePunch(m)}
+                disabled={clockBusy === m.id}
+              >
+                {clockBusy === m.id
+                  ? <ActivityIndicator color={isOnClock(m.id) ? '#fff' : C.gray[600]} size="small" />
+                  : <Text style={[clockStyles.btnText, isOnClock(m.id) && { color: '#fff' }]}>
+                      {isOnClock(m.id) ? '🟢 Clock out' : '⚪ Clock in'}
+                    </Text>}
+              </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={() => handleDelete(m)} style={{ padding: 4, alignSelf: 'flex-start' }}>
               <Text>🗑️</Text>
@@ -182,4 +236,20 @@ const styles = StyleSheet.create({
   formError:      { color: C.red, fontSize: 13, marginBottom: 12 },
   saveBtn:        { backgroundColor: C.restaurant.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   saveBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
+});
+
+const wfStyles = StyleSheet.create({
+  panel:    { backgroundColor: '#eef2ff', borderColor: '#c7d2fe', borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 14 },
+  eyebrow:  { fontSize: 10, fontWeight: '700', color: '#4338ca', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title:    { fontSize: 15, fontWeight: '800', color: C.gray[900], marginTop: 2, marginBottom: 8 },
+  row:      { borderWidth: 1, borderRadius: 10, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6 },
+  rowTitle: { fontSize: 13, fontWeight: '700', color: C.gray[900] },
+  rowSub:   { fontSize: 11, color: C.gray[600], marginTop: 2 },
+});
+
+const clockStyles = StyleSheet.create({
+  btn:     { marginTop: 8, alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
+  btnOn:   { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+  btnOff:  { backgroundColor: '#fff', borderColor: '#d1d5db' },
+  btnText: { fontSize: 12, fontWeight: '700', color: '#374151' },
 });

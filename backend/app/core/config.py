@@ -75,6 +75,16 @@ class Settings(BaseSettings):
     # appended; defaults to the social-connect page.
     frontend_url: str = "http://localhost:3000"
 
+    # Square POS integration (real provider). Empty SQUARE_APP_ID disables
+    # POS connect — endpoints respond 503 so the UI falls back gracefully.
+    # Register an app at developer.squareup.com; set the redirect to
+    # SQUARE_REDIRECT_URI. square_environment is "sandbox" or "production".
+    square_app_id: str = ""
+    square_app_secret: str = ""
+    square_redirect_uri: str = "http://localhost:8000/api/restaurant/pos/square/callback"
+    square_environment: str = "sandbox"
+    square_api_version: str = "2024-06-04"
+
     # Fernet key (32-byte url-safe base64) used to encrypt OAuth tokens at
     # rest in the social_connections table. The default below is for local
     # dev only — main.py refuses to start in production unless this is

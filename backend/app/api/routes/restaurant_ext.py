@@ -413,3 +413,580 @@ def menu_matrix(
     _require_restaurant(current_user)
     from ...services import menu_matrix_service
     return menu_matrix_service.build_matrix(db, current_user.id)
+
+
+# --- Guest Intelligence (AI CRM) ---
+
+@router.get("/crm/segments")
+def crm_segments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Counts per auto-segment (vip / new / inactive / high_spender /
+    birthday_this_month / wine_lover / dietary / ...). Drives the CRM
+    segment chips."""
+    _require_restaurant(current_user)
+    from ...services import guest_intelligence_service as gi
+    return gi.segment_summary(db, current_user.id)
+
+
+@router.get("/crm/at-risk")
+def crm_at_risk(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lapsed-but-valuable guests ranked by value-at-stake × recoverability,
+    each with a return-probability estimate. The win-back action list."""
+    _require_restaurant(current_user)
+    from ...services import guest_intelligence_service as gi
+    return {"guests": gi.at_risk_guests(db, current_user.id)}
+
+
+@router.get("/crm/{customer_id}/timeline")
+def crm_timeline(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Unified interaction timeline for one guest."""
+    _require_restaurant(current_user)
+    from ...services import guest_intelligence_service as gi
+    return {"events": gi.timeline_for(db, current_user.id, customer_id)}
+
+
+class WinBackRequest(BaseModel):
+    offer: str = ""          # e.g. "15% off a steak dinner" — operator-set or AI-suggested
+    send: bool = False       # False = draft only; True = draft AND send via SMS
+
+
+@router.post("/crm/{customer_id}/winback")
+def crm_winback(
+    customer_id: int,
+    body: WinBackRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Draft (and optionally send) a personalized win-back SMS for a lapsed
+    guest. Draft uses the campaign generator's voice; send goes through the
+    same Twilio path as the menu broadcast. Nothing sends unless send=True."""
+    _require_restaurant(current_user)
+    from ...models.restaurant_ext import CRMCustomer
+    from ...services import campaign_service, guest_intelligence_service as gi, twilio_client
+
+    c = db.query(CRMCustomer).filter(
+        CRMCustomer.id == customer_id, CRMCustomer.user_id == current_user.id,
+    ).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    dsl = gi._days_since(c.last_visit, date.today())
+    fave = c.favorite_dishes or c.favorite_items or ""
+    offer = body.offer.strip() or (f"a treat on {fave.split(',')[0].strip()}" if fave else "a little something on us")
+    booking_link = None
+    if current_user.slug:
+        booking_link = f"{settings.frontend_url.rstrip('/')}/r/{current_user.slug}"
+
+    campaign = campaign_service.generate(
+        dish=fave.split(",")[0].strip() or "your favourite",
+        angle="comeback",
+        restaurant_name=current_user.restaurant_name or current_user.display_name or "the restaurant",
+        cuisine=current_user.restaurant_cuisine or "",
+        language=current_user.language or "en",
+        booking_link=booking_link,
+        notes=f"Win-back for {c.name}; last visit {dsl} days ago; offer: {offer}",
+    )
+    sms_body = campaign.get("sms_body") or campaign.get("whatsapp_message") or ""
+
+    sent = False
+    if body.send and c.phone:
+        sent = twilio_client.send_sms(c.phone, sms_body)
+        posthog_client.capture(current_user.id, "winback_sent", {
+            "days_since_visit": dsl, "had_offer": bool(body.offer.strip()),
+        })
+
+    return {
+        "customer_id": customer_id,
+        "sms_body": sms_body,
+        "instagram_caption": campaign.get("instagram_caption", ""),
+        "email_subject": campaign.get("email_subject", ""),
+        "email_body": campaign.get("email_body", ""),
+        "return_probability": gi.return_probability(c),
+        "sent": sent,
+    }
+
+
+# --- Workforce Intelligence (AI staff layer, Restaurant OS Wave B) ---
+
+@router.get("/staff/intelligence")
+def staff_intelligence(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Overtime alerts, attrition risk, and demand-based staffing for the
+    next window — the AI Workforce panel. Heuristic, computed on read."""
+    _require_restaurant(current_user)
+    from ...services import workforce_intelligence_service as wf
+    return wf.build(db, current_user.id)
+
+
+# --- Loyalty rewards + redemption (Restaurant OS Wave C) ---
+
+class LoyaltyRewardCreate(BaseModel):
+    name: str
+    points_cost: int
+    description: str = ""
+
+
+class LoyaltyRewardUpdate(BaseModel):
+    name: Optional[str] = None
+    points_cost: Optional[int] = None
+    description: Optional[str] = None
+    active: Optional[bool] = None
+
+
+@router.get("/loyalty/rewards")
+def list_loyalty_rewards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    rows = loyalty_service.list_rewards(db, current_user.id)
+    return [
+        {"id": r.id, "name": r.name, "description": r.description,
+         "points_cost": r.points_cost, "active": r.active}
+        for r in rows
+    ]
+
+
+@router.post("/loyalty/rewards", status_code=201)
+def create_loyalty_reward(
+    body: LoyaltyRewardCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    try:
+        r = loyalty_service.create_reward(
+            db, current_user.id, name=body.name,
+            points_cost=body.points_cost, description=body.description,
+        )
+    except loyalty_service.LoyaltyError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"id": r.id, "name": r.name, "description": r.description,
+            "points_cost": r.points_cost, "active": r.active}
+
+
+@router.patch("/loyalty/rewards/{reward_id}")
+def update_loyalty_reward(
+    reward_id: int,
+    body: LoyaltyRewardUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    r = loyalty_service.update_reward(db, current_user.id, reward_id, **body.model_dump(exclude_none=True))
+    if not r:
+        raise HTTPException(status_code=404, detail="Reward not found")
+    return {"id": r.id, "name": r.name, "description": r.description,
+            "points_cost": r.points_cost, "active": r.active}
+
+
+@router.delete("/loyalty/rewards/{reward_id}", status_code=204)
+def delete_loyalty_reward(
+    reward_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    if not loyalty_service.delete_reward(db, current_user.id, reward_id):
+        raise HTTPException(status_code=404, detail="Reward not found")
+
+
+@router.get("/loyalty/customers/{customer_id}/available")
+def customer_available_rewards(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    try:
+        return loyalty_service.affordable_for_customer(db, current_user.id, customer_id)
+    except loyalty_service.LoyaltyError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+class RedeemRequest(BaseModel):
+    reward_id: int
+
+
+@router.post("/loyalty/customers/{customer_id}/redeem")
+def redeem_reward(
+    customer_id: int,
+    body: RedeemRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    try:
+        result = loyalty_service.redeem(db, current_user.id, customer_id, body.reward_id)
+    except loyalty_service.LoyaltyError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    posthog_client.capture(current_user.id, "loyalty_redeemed", {
+        "points_spent": result["points_spent"],
+    })
+    return result
+
+
+@router.get("/loyalty/customers/{customer_id}/history")
+def customer_redemption_history(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import loyalty_service
+    return {"redemptions": loyalty_service.redemption_history(db, current_user.id, customer_id)}
+
+
+# --- Scheduling + Time Clock (Restaurant OS Wave D) ---
+
+class ShiftCreate(BaseModel):
+    staff_id: int
+    date: date
+    start_time: str
+    end_time: str
+    role: str = ""
+    notes: str = ""
+
+
+class ShiftUpdate(BaseModel):
+    date: Optional[date] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    role: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get("/schedule")
+def get_schedule(
+    week_start: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Weekly shift grid. Defaults to the current week (Monday start)."""
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    if week_start is None:
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+    return scheduling_service.week_schedule(db, current_user.id, week_start)
+
+
+@router.post("/schedule/shifts", status_code=201)
+def create_shift(
+    body: ShiftCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    try:
+        s = scheduling_service.create_shift(
+            db, current_user.id, staff_id=body.staff_id, on_date=body.date,
+            start_time=body.start_time, end_time=body.end_time,
+            role=body.role, notes=body.notes,
+        )
+    except scheduling_service.SchedulingError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"id": s.id, "staff_id": s.staff_id, "date": str(s.date),
+            "start_time": s.start_time, "end_time": s.end_time, "role": s.role}
+
+
+@router.patch("/schedule/shifts/{shift_id}")
+def update_shift(
+    shift_id: int,
+    body: ShiftUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    s = scheduling_service.update_shift(db, current_user.id, shift_id, **body.model_dump(exclude_none=True))
+    if not s:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    return {"id": s.id, "staff_id": s.staff_id, "date": str(s.date),
+            "start_time": s.start_time, "end_time": s.end_time, "role": s.role}
+
+
+@router.delete("/schedule/shifts/{shift_id}", status_code=204)
+def delete_shift(
+    shift_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    if not scheduling_service.delete_shift(db, current_user.id, shift_id):
+        raise HTTPException(status_code=404, detail="Shift not found")
+
+
+@router.get("/clock/status")
+def clock_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Who's currently on the clock."""
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    return {"on_clock": scheduling_service.clock_status(db, current_user.id)}
+
+
+class ClockRequest(BaseModel):
+    staff_id: int
+    break_minutes: int = 0
+
+
+@router.post("/clock/in")
+def clock_in(
+    body: ClockRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    try:
+        p = scheduling_service.clock_in(db, current_user.id, body.staff_id)
+    except scheduling_service.SchedulingError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"punch_id": p.id, "staff_id": p.staff_id, "clock_in": p.clock_in.isoformat()}
+
+
+@router.post("/clock/out")
+def clock_out(
+    body: ClockRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    try:
+        p = scheduling_service.clock_out(db, current_user.id, body.staff_id, break_minutes=body.break_minutes)
+    except scheduling_service.SchedulingError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    worked = (p.clock_out - p.clock_in).total_seconds() / 3600.0 - (p.break_minutes or 0) / 60.0
+    return {"punch_id": p.id, "staff_id": p.staff_id,
+            "clock_out": p.clock_out.isoformat(), "hours_worked": round(max(0.0, worked), 2)}
+
+
+# --- Operations: tasks + checklists (Restaurant OS Wave E) ---
+
+class OpsTaskCreate(BaseModel):
+    title: str
+    category: str = "general"
+    assignee: str = ""
+    due_date: Optional[date] = None
+
+
+class ChecklistCreate(BaseModel):
+    name: str
+    category: str = "general"
+    items: list[str] = []
+
+
+@router.get("/operations/tasks")
+def ops_today(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Today's operational tasks (open + done) with overdue count."""
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    return operations_service.today_tasks(db, current_user.id)
+
+
+@router.post("/operations/tasks", status_code=201)
+def ops_create_task(
+    body: OpsTaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    try:
+        t = operations_service.create_task(
+            db, current_user.id, title=body.title, category=body.category,
+            assignee=body.assignee, due_date=body.due_date,
+        )
+    except operations_service.OperationsError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return operations_service._task_dict(t)
+
+
+@router.patch("/operations/tasks/{task_id}")
+def ops_toggle_task(
+    task_id: int,
+    done: bool,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    t = operations_service.set_done(db, current_user.id, task_id, done)
+    if not t:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return operations_service._task_dict(t)
+
+
+@router.delete("/operations/tasks/{task_id}", status_code=204)
+def ops_delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    if not operations_service.delete_task(db, current_user.id, task_id):
+        raise HTTPException(status_code=404, detail="Task not found")
+
+
+@router.get("/operations/checklists")
+def ops_list_checklists(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    return operations_service.list_templates(db, current_user.id)
+
+
+@router.post("/operations/checklists", status_code=201)
+def ops_create_checklist(
+    body: ChecklistCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    try:
+        return operations_service.create_template(
+            db, current_user.id, name=body.name, category=body.category, items=body.items,
+        )
+    except operations_service.OperationsError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+@router.delete("/operations/checklists/{template_id}", status_code=204)
+def ops_delete_checklist(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    if not operations_service.delete_template(db, current_user.id, template_id):
+        raise HTTPException(status_code=404, detail="Checklist not found")
+
+
+@router.post("/operations/checklists/{template_id}/instantiate")
+def ops_instantiate_checklist(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create today's tasks from a checklist template in one tap."""
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    try:
+        return operations_service.instantiate(db, current_user.id, template_id)
+    except operations_service.OperationsError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+# --- POS integration: Square (real system-of-record data) ---
+
+@router.get("/pos/status")
+def pos_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    return square_pos_service.status(db, current_user.id)
+
+
+@router.get("/pos/square/start")
+def pos_square_start(current_user: User = Depends(get_current_user)):
+    """Returns the Square authorize URL for the SPA to navigate to."""
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    if not square_pos_service.is_configured():
+        raise HTTPException(status_code=503, detail="Square is not configured on this server.")
+    return {"authorize_url": square_pos_service.build_authorize_url(current_user.id)}
+
+
+@router.get("/pos/square/callback")
+def pos_square_callback(
+    code: str = "",
+    state: str = "",
+    db: Session = Depends(get_db),
+):
+    """Square redirects here after the merchant approves. Identity comes
+    from the signed state (no auth header on a browser redirect)."""
+    from fastapi.responses import RedirectResponse
+    from ...services import square_pos_service
+    dest = f"{settings.frontend_url.rstrip('/')}/restaurant/integrations"
+    if not code or not state:
+        return RedirectResponse(url=f"{dest}?pos=error")
+    try:
+        user_id = square_pos_service.verify_state(state)
+        token_response = square_pos_service.exchange_code(code)
+        square_pos_service.save_connection(db, user_id, token_response)
+    except Exception:
+        return RedirectResponse(url=f"{dest}?pos=error")
+    return RedirectResponse(url=f"{dest}?pos=connected")
+
+
+@router.post("/pos/sync")
+def pos_sync(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pull the merchant's catalog + last-30-day orders into SavoryMind."""
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    try:
+        stats = square_pos_service.sync(db, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    posthog_client.capture(current_user.id, "pos_synced", {"orders": stats.get("orders", 0)})
+    return stats
+
+
+@router.post("/pos/disconnect", status_code=204)
+def pos_disconnect(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import square_pos_service
+    square_pos_service.disconnect(db, current_user.id)
+
+
+# --- ML: what's trending (velocity from POS-fed sales) ---
+
+@router.get("/trending")
+def whats_trending(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Menu items ranked by sales momentum (rising/falling) over the last
+    two weeks. Sharpens as POS data flows in."""
+    _require_restaurant(current_user)
+    from ...services import menu_trending_service
+    return menu_trending_service.trending(db, current_user.id)

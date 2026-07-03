@@ -162,7 +162,11 @@
     "quickActionStaff": "Staff",
     "quickActionReports": "Report",
     "billing": "Fatturazione",
-    "billingSub": "Gestisci abbonamento e pagamento."
+    "billingSub": "Gestisci abbonamento e pagamento.",
+    "operations": "Operazioni",
+    "operationsSub": "Attività, checklist e conformità.",
+    "integrations": "Integrazioni",
+    "integrationsSub": "Collega il POS (Square)."
   },
   "notifications": {
     "title": "Notifiche",
@@ -691,7 +695,15 @@
     "menuSmsOff": "No",
     "emptyTitle": "Ancora nessun cliente",
     "emptyBody": "Aggiungi i tuoi clienti abituali per inviare loro il menù di oggi via SMS e ricordare cosa amano.",
-    "noResults": "Nessun risultato per questa ricerca."
+    "noResults": "Nessun risultato per questa ricerca.",
+    "giEyebrow": "Intelligenza ospiti AI",
+    "giTitle": "Riconquista questi clienti",
+    "giLapsed": "{{days}} giorni dall'ultima visita",
+    "giWinBack": "Riconquista",
+    "giSent": "Inviato ✓",
+    "giSendSms": "Invia SMS",
+    "giNoPhone": "Nessun telefono — aggiungilo per inviare.",
+    "giConfirm": "Inviare un SMS di riconquista a {{name}} ({{days}} giorni)?"
   },
   "restaurantBillingPage": {
     "title": "SavoryMind per Ristoranti",
@@ -728,7 +740,9 @@
     "lapsedTitle": "Il tuo abbonamento è scaduto",
     "lapsedSub": "Rinnova per mantenere attivi SMS menù, allerte e analisi.",
     "actionPlanEyebrow": "Piano d'azione AI di oggi",
-    "actionPlanTitle": "Fai questo oggi"
+    "actionPlanTitle": "Fai questo oggi",
+    "trendingEyebrow": "Cosa va forte",
+    "trendingTitle": "Slancio del tuo menù"
   },
   "upgradePage": {
     "title": "SavoryMind Premium",
@@ -858,6 +872,56 @@
     "primaryDineOut": "Mangia fuori",
     "primaryDineOutSub": "Trova un ristorante stasera",
     "primaryCook": "Cucina qualcosa",
-    "primaryCookSub": "Idee ricette dalla tua dispensa"
+    "primaryCookSub": "Idee ricette dalla tua dispensa",
+    "mlTitle": "Scelti per te",
+    "mlSub": "Imparato da ciò che piace a te e a chi ti somiglia."
+  },
+  "staffPage": {
+    "wfEyebrow": "Forza lavoro AI",
+    "wfTitle": "Segnali del team su cui agire",
+    "wfAtRisk": "{{name}} potrebbe lasciare",
+    "wfOvertime": "{{name}} verso gli straordinari (~{{hours}}h)"
+  },
+  "opsPage": {
+    "title": "Operazioni",
+    "subtitle": "Attività, checklist e conformità.",
+    "overdue": "{{count}} in ritardo — completa prima del servizio.",
+    "checklists": "Checklist",
+    "newChecklist": "Nuova checklist",
+    "checklistNamePh": "Nome checklist (es. Apertura)",
+    "checklistItemsPh": "Una voce per riga\nApri le porte\nAccendi la griglia",
+    "noChecklists": "Ancora nessuna checklist.",
+    "runToday": "Usa oggi",
+    "taskPh": "Aggiungi un'attività…",
+    "addTask": "Aggiungi",
+    "allClear": "Tutto a posto.",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "cat_general": "Generale",
+    "cat_opening": "Apertura",
+    "cat_closing": "Chiusura",
+    "cat_prep": "Preparazione",
+    "cat_compliance": "Conformità",
+    "cat_maintenance": "Manutenzione"
+  },
+  "integrationsPage": {
+    "title": "Integrazioni",
+    "subtitle": "Collega il POS: SavoryMind userà i dati di vendita reali.",
+    "square": "Square POS",
+    "squareDesc": "Sincronizza catalogo, ordini e incassi in automatico.",
+    "statusConnected": "Collegato",
+    "statusOff": "Non collegato",
+    "notConfigured": "Square non è ancora configurato su questo server — chiedi all'admin le chiavi SQUARE_*.",
+    "merchant": "Esercente",
+    "lastSync": "Ultima sync",
+    "syncSummary": "{{items}} articoli · {{orders}} ordini · ${{revenue}} sincronizzati",
+    "connectSquare": "Collega Square",
+    "syncNow": "Sincronizza",
+    "syncing": "Sincronizzo…",
+    "disconnect": "Scollega",
+    "connected": "Square collegato — avvia una sync per importare i dati.",
+    "connectError": "Impossibile collegare Square. Riprova.",
+    "syncDone": "Sincronizzati {{items}} articoli e {{orders}} ordini.",
+    "whatItDoes": "La sync importa il catalogo Square nel tuo menù e gli ordini degli ultimi 30 giorni in analisi e previsioni — sostituendo i numeri manuali."
   }
 }
