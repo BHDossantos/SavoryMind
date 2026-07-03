@@ -652,3 +652,133 @@ def customer_redemption_history(
     _require_restaurant(current_user)
     from ...services import loyalty_service
     return {"redemptions": loyalty_service.redemption_history(db, current_user.id, customer_id)}
+
+
+# --- Scheduling + Time Clock (Restaurant OS Wave D) ---
+
+class ShiftCreate(BaseModel):
+    staff_id: int
+    date: date
+    start_time: str
+    end_time: str
+    role: str = ""
+    notes: str = ""
+
+
+class ShiftUpdate(BaseModel):
+    date: Optional[date] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    role: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get("/schedule")
+def get_schedule(
+    week_start: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Weekly shift grid. Defaults to the current week (Monday start)."""
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    if week_start is None:
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+    return scheduling_service.week_schedule(db, current_user.id, week_start)
+
+
+@router.post("/schedule/shifts", status_code=201)
+def create_shift(
+    body: ShiftCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    try:
+        s = scheduling_service.create_shift(
+            db, current_user.id, staff_id=body.staff_id, on_date=body.date,
+            start_time=body.start_time, end_time=body.end_time,
+            role=body.role, notes=body.notes,
+        )
+    except scheduling_service.SchedulingError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"id": s.id, "staff_id": s.staff_id, "date": str(s.date),
+            "start_time": s.start_time, "end_time": s.end_time, "role": s.role}
+
+
+@router.patch("/schedule/shifts/{shift_id}")
+def update_shift(
+    shift_id: int,
+    body: ShiftUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    s = scheduling_service.update_shift(db, current_user.id, shift_id, **body.model_dump(exclude_none=True))
+    if not s:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    return {"id": s.id, "staff_id": s.staff_id, "date": str(s.date),
+            "start_time": s.start_time, "end_time": s.end_time, "role": s.role}
+
+
+@router.delete("/schedule/shifts/{shift_id}", status_code=204)
+def delete_shift(
+    shift_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    if not scheduling_service.delete_shift(db, current_user.id, shift_id):
+        raise HTTPException(status_code=404, detail="Shift not found")
+
+
+@router.get("/clock/status")
+def clock_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Who's currently on the clock."""
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    return {"on_clock": scheduling_service.clock_status(db, current_user.id)}
+
+
+class ClockRequest(BaseModel):
+    staff_id: int
+    break_minutes: int = 0
+
+
+@router.post("/clock/in")
+def clock_in(
+    body: ClockRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    try:
+        p = scheduling_service.clock_in(db, current_user.id, body.staff_id)
+    except scheduling_service.SchedulingError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"punch_id": p.id, "staff_id": p.staff_id, "clock_in": p.clock_in.isoformat()}
+
+
+@router.post("/clock/out")
+def clock_out(
+    body: ClockRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import scheduling_service
+    try:
+        p = scheduling_service.clock_out(db, current_user.id, body.staff_id, break_minutes=body.break_minutes)
+    except scheduling_service.SchedulingError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    worked = (p.clock_out - p.clock_in).total_seconds() / 3600.0 - (p.break_minutes or 0) / 60.0
+    return {"punch_id": p.id, "staff_id": p.staff_id,
+            "clock_out": p.clock_out.isoformat(), "hours_worked": round(max(0.0, worked), 2)}

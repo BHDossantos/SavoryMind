@@ -38,13 +38,29 @@ export default function StaffScreen() {
   const [formError, setFormError] = useState(null);
   const [intel, setIntel] = useState(null);
 
+  const [onClock, setOnClock] = useState([]);
+  const [clockBusy, setClockBusy] = useState(null);
+
   const load = async () => {
     try { setStaff(await api.getStaff()); setError(null); }
     catch (e) { setError(e.message); }
     finally { setLoading(false); }
     api.getStaffIntelligence().then(setIntel).catch(() => {});
+    api.getClockStatus().then((c) => setOnClock(c.on_clock || [])).catch(() => {});
   };
   useFocusEffect(useCallback(() => { load(); }, []));
+
+  const isOnClock = (id) => onClock.some((o) => o.staff_id === id);
+  const togglePunch = async (s) => {
+    setClockBusy(s.id);
+    try {
+      if (isOnClock(s.id)) await api.clockOut(s.id);
+      else await api.clockIn(s.id);
+      const c = await api.getClockStatus();
+      setOnClock(c.on_clock || []);
+    } catch (e) { Alert.alert(e.message || 'Failed'); }
+    finally { setClockBusy(null); }
+  };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -121,6 +137,17 @@ export default function StaffScreen() {
                 {m.orders_handled > 0 && <Text style={styles.stat}>📦 {m.orders_handled} orders</Text>}
               </View>
               {m.notes ? <Text style={styles.notes}>{m.notes}</Text> : null}
+              <TouchableOpacity
+                style={[clockStyles.btn, isOnClock(m.id) ? clockStyles.btnOn : clockStyles.btnOff]}
+                onPress={() => togglePunch(m)}
+                disabled={clockBusy === m.id}
+              >
+                {clockBusy === m.id
+                  ? <ActivityIndicator color={isOnClock(m.id) ? '#fff' : C.gray[600]} size="small" />
+                  : <Text style={[clockStyles.btnText, isOnClock(m.id) && { color: '#fff' }]}>
+                      {isOnClock(m.id) ? '🟢 Clock out' : '⚪ Clock in'}
+                    </Text>}
+              </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={() => handleDelete(m)} style={{ padding: 4, alignSelf: 'flex-start' }}>
               <Text>🗑️</Text>
@@ -218,4 +245,11 @@ const wfStyles = StyleSheet.create({
   row:      { borderWidth: 1, borderRadius: 10, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6 },
   rowTitle: { fontSize: 13, fontWeight: '700', color: C.gray[900] },
   rowSub:   { fontSize: 11, color: C.gray[600], marginTop: 2 },
+});
+
+const clockStyles = StyleSheet.create({
+  btn:     { marginTop: 8, alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
+  btnOn:   { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+  btnOff:  { backgroundColor: '#fff', borderColor: '#d1d5db' },
+  btnText: { fontSize: 12, fontWeight: '700', color: '#374151' },
 });

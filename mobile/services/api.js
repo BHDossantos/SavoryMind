@@ -238,6 +238,9 @@ export const api = {
   getStaff: () => request('/api/restaurant/staff'),
   getStaffSummary: () => request('/api/restaurant/staff/summary'),
   getStaffIntelligence: () => request('/api/restaurant/staff/intelligence'),
+  getClockStatus: () => request('/api/restaurant/clock/status'),
+  clockIn: (staffId) => request('/api/restaurant/clock/in', { method: 'POST', body: JSON.stringify({ staff_id: staffId }) }),
+  clockOut: (staffId) => request('/api/restaurant/clock/out', { method: 'POST', body: JSON.stringify({ staff_id: staffId, break_minutes: 0 }) }),
   createStaff: (data) => request('/api/restaurant/staff', { method: 'POST', body: JSON.stringify(data) }),
   deleteStaff: (id) => request(`/api/restaurant/staff/${id}`, { method: 'DELETE' }),
 

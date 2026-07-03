@@ -25,7 +25,8 @@
     "foodLover": "Food Lover",
     "foodExplorer": "Food Explorer",
     "flavor": "Flavor",
-    "billing": "Billing"
+    "billing": "Billing",
+    "schedule": "Schedule"
   },
   "common": {
     "loading": "Loading…",
@@ -2302,5 +2303,23 @@
   },
   "sharePage": {
     "fromFriend": "A friend's SavoryMind vibe. Want to discover yours?"
+  },
+  "schedulePage": {
+    "title": "Schedule & Time Clock",
+    "subtitle": "Plan shifts and track hours.",
+    "weekOf": "Week of {{date}}",
+    "clockEyebrow": "Live",
+    "clockTitle": "Time clock",
+    "clockIn": "Clock in",
+    "clockOut": "Clock out",
+    "noStaff": "Add staff members first.",
+    "add": "Add",
+    "addShift": "Add shift · {{date}}",
+    "staff": "Staff",
+    "start": "Start",
+    "end": "End",
+    "save": "Save",
+    "cancel": "Cancel",
+    "weeklyHours": "Hours this week"
   }
 }

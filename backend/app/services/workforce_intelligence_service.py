@@ -99,15 +99,20 @@ def build(db: Session, user_id: int) -> dict[str, Any]:
     busy window."""
     staff = db.query(Staff).filter(Staff.user_id == user_id, Staff.active == True).all()  # noqa: E712
 
-    # Overtime: anyone whose estimated weekly hours is at/over threshold.
+    # Overtime: prefer real clocked hours from the time-punch trail; fall
+    # back to the shift-band estimate when a staffer has no punches yet.
+    from . import scheduling_service
     overtime = []
     for s in staff:
-        hrs = _estimate_weekly_hours(s)
+        real = scheduling_service.hours_last_7_days(db, user_id, s.id)
+        hrs = real if real > 0 else _estimate_weekly_hours(s)
+        source = "clocked" if real > 0 else "estimated"
         if hrs >= OVERTIME_THRESHOLD_HRS:
             overtime.append({
                 "id": s.id, "name": s.name, "role": s.role,
-                "estimated_weekly_hours": hrs,
-                "over_by": hrs - OVERTIME_THRESHOLD_HRS,
+                "estimated_weekly_hours": round(hrs, 1),
+                "over_by": round(hrs - OVERTIME_THRESHOLD_HRS, 1),
+                "source": source,
                 "recommendation": "Redistribute the next shift to a teammate under 40h.",
             })
     overtime.sort(key=lambda x: x["estimated_weekly_hours"], reverse=True)

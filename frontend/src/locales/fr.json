@@ -25,7 +25,8 @@
     "foodLover": "Amateur de cuisine",
     "foodExplorer": "Explorateur culinaire",
     "flavor": "Flavor",
-    "billing": "Facturation"
+    "billing": "Facturation",
+    "schedule": "Planning"
   },
   "common": {
     "loading": "Chargement…",
@@ -2302,5 +2303,23 @@
   },
   "sharePage": {
     "fromFriend": "L'ambiance SavoryMind d'un ami. Vous voulez découvrir la vôtre ?"
+  },
+  "schedulePage": {
+    "title": "Planning et Pointage",
+    "subtitle": "Planifiez les shifts et suivez les heures.",
+    "weekOf": "Semaine du {{date}}",
+    "clockEyebrow": "En direct",
+    "clockTitle": "Pointeuse",
+    "clockIn": "Pointer",
+    "clockOut": "Dépointer",
+    "noStaff": "Ajoutez d'abord du personnel.",
+    "add": "Ajouter",
+    "addShift": "Ajouter un shift · {{date}}",
+    "staff": "Personnel",
+    "start": "Début",
+    "end": "Fin",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "weeklyHours": "Heures cette semaine"
   }
 }

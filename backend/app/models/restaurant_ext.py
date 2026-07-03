@@ -157,3 +157,31 @@ class LoyaltyRedemption(Base):
     reward_name  = Column(String(120), nullable=False)
     points_spent = Column(Integer, nullable=False)
     redeemed_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Shift(Base):
+    """A planned shift for a staff member. Backs the weekly schedule grid."""
+    __tablename__ = "shifts"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    staff_id   = Column(Integer, ForeignKey("staff.id"), nullable=False, index=True)
+    date       = Column(Date, nullable=False, index=True)
+    start_time = Column(String(5), nullable=False)   # "09:00"
+    end_time   = Column(String(5), nullable=False)   # "17:00"
+    role       = Column(String(40), nullable=True)
+    notes      = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class TimePunch(Base):
+    """A clock-in/out event. clock_out null = currently on the clock.
+    Paired into worked hours by scheduling_service."""
+    __tablename__ = "time_punches"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    staff_id      = Column(Integer, ForeignKey("staff.id"), nullable=False, index=True)
+    clock_in      = Column(DateTime, nullable=False, default=datetime.utcnow)
+    clock_out     = Column(DateTime, nullable=True)
+    break_minutes = Column(Integer, nullable=False, default=0, server_default="0")

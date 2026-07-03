@@ -25,7 +25,8 @@
     "foodLover": "Amante de la comida",
     "foodExplorer": "Explorador gastronómico",
     "flavor": "Flavor",
-    "billing": "Facturación"
+    "billing": "Facturación",
+    "schedule": "Horario"
   },
   "common": {
     "loading": "Cargando…",
@@ -2302,5 +2303,23 @@
   },
   "sharePage": {
     "fromFriend": "El vibe SavoryMind de un amigo. ¿Quieres descubrir el tuyo?"
+  },
+  "schedulePage": {
+    "title": "Horario y Fichaje",
+    "subtitle": "Planifica turnos y controla horas.",
+    "weekOf": "Semana del {{date}}",
+    "clockEyebrow": "En vivo",
+    "clockTitle": "Fichaje",
+    "clockIn": "Entrar",
+    "clockOut": "Salir",
+    "noStaff": "Añade personal primero.",
+    "add": "Añadir",
+    "addShift": "Añadir turno · {{date}}",
+    "staff": "Personal",
+    "start": "Inicio",
+    "end": "Fin",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "weeklyHours": "Horas esta semana"
   }
 }

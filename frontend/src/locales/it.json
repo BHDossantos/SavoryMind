@@ -25,7 +25,8 @@
     "foodLover": "Appassionato di cucina",
     "foodExplorer": "Esploratore gastronomico",
     "flavor": "Flavor",
-    "billing": "Fatturazione"
+    "billing": "Fatturazione",
+    "schedule": "Turni"
   },
   "common": {
     "loading": "Caricamento…",
@@ -2302,5 +2303,23 @@
   },
   "sharePage": {
     "fromFriend": "Il vibe SavoryMind di un amico. Vuoi scoprire il tuo?"
+  },
+  "schedulePage": {
+    "title": "Turni e Timbrature",
+    "subtitle": "Pianifica i turni e traccia le ore.",
+    "weekOf": "Settimana del {{date}}",
+    "clockEyebrow": "Live",
+    "clockTitle": "Timbratore",
+    "clockIn": "Entra",
+    "clockOut": "Esci",
+    "noStaff": "Aggiungi prima il personale.",
+    "add": "Aggiungi",
+    "addShift": "Aggiungi turno · {{date}}",
+    "staff": "Personale",
+    "start": "Inizio",
+    "end": "Fine",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "weeklyHours": "Ore questa settimana"
   }
 }

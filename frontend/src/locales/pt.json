@@ -25,7 +25,8 @@
     "foodLover": "Apaixonado por comida",
     "foodExplorer": "Explorador gastronómico",
     "flavor": "Flavor",
-    "billing": "Faturamento"
+    "billing": "Faturamento",
+    "schedule": "Escala"
   },
   "common": {
     "loading": "A carregar…",
@@ -2302,5 +2303,23 @@
   },
   "sharePage": {
     "fromFriend": "O vibe SavoryMind de um amigo. Quer descobrir o seu?"
+  },
+  "schedulePage": {
+    "title": "Escala e Ponto",
+    "subtitle": "Planeie turnos e controle horas.",
+    "weekOf": "Semana de {{date}}",
+    "clockEyebrow": "Ao vivo",
+    "clockTitle": "Ponto",
+    "clockIn": "Entrar",
+    "clockOut": "Sair",
+    "noStaff": "Adicione a equipe primeiro.",
+    "add": "Adicionar",
+    "addShift": "Adicionar turno · {{date}}",
+    "staff": "Equipe",
+    "start": "Início",
+    "end": "Fim",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "weeklyHours": "Horas esta semana"
   }
 }
