@@ -782,3 +782,127 @@ def clock_out(
     worked = (p.clock_out - p.clock_in).total_seconds() / 3600.0 - (p.break_minutes or 0) / 60.0
     return {"punch_id": p.id, "staff_id": p.staff_id,
             "clock_out": p.clock_out.isoformat(), "hours_worked": round(max(0.0, worked), 2)}
+
+
+# --- Operations: tasks + checklists (Restaurant OS Wave E) ---
+
+class OpsTaskCreate(BaseModel):
+    title: str
+    category: str = "general"
+    assignee: str = ""
+    due_date: Optional[date] = None
+
+
+class ChecklistCreate(BaseModel):
+    name: str
+    category: str = "general"
+    items: list[str] = []
+
+
+@router.get("/operations/tasks")
+def ops_today(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Today's operational tasks (open + done) with overdue count."""
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    return operations_service.today_tasks(db, current_user.id)
+
+
+@router.post("/operations/tasks", status_code=201)
+def ops_create_task(
+    body: OpsTaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    try:
+        t = operations_service.create_task(
+            db, current_user.id, title=body.title, category=body.category,
+            assignee=body.assignee, due_date=body.due_date,
+        )
+    except operations_service.OperationsError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return operations_service._task_dict(t)
+
+
+@router.patch("/operations/tasks/{task_id}")
+def ops_toggle_task(
+    task_id: int,
+    done: bool,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    t = operations_service.set_done(db, current_user.id, task_id, done)
+    if not t:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return operations_service._task_dict(t)
+
+
+@router.delete("/operations/tasks/{task_id}", status_code=204)
+def ops_delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    if not operations_service.delete_task(db, current_user.id, task_id):
+        raise HTTPException(status_code=404, detail="Task not found")
+
+
+@router.get("/operations/checklists")
+def ops_list_checklists(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    return operations_service.list_templates(db, current_user.id)
+
+
+@router.post("/operations/checklists", status_code=201)
+def ops_create_checklist(
+    body: ChecklistCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    try:
+        return operations_service.create_template(
+            db, current_user.id, name=body.name, category=body.category, items=body.items,
+        )
+    except operations_service.OperationsError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+@router.delete("/operations/checklists/{template_id}", status_code=204)
+def ops_delete_checklist(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    if not operations_service.delete_template(db, current_user.id, template_id):
+        raise HTTPException(status_code=404, detail="Checklist not found")
+
+
+@router.post("/operations/checklists/{template_id}/instantiate")
+def ops_instantiate_checklist(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create today's tasks from a checklist template in one tap."""
+    _require_restaurant(current_user)
+    from ...services import operations_service
+    try:
+        return operations_service.instantiate(db, current_user.id, template_id)
+    except operations_service.OperationsError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))

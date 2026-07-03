@@ -26,7 +26,8 @@
     "foodExplorer": "Explorateur culinaire",
     "flavor": "Flavor",
     "billing": "Facturation",
-    "schedule": "Planning"
+    "schedule": "Planning",
+    "operations": "Opérations"
   },
   "common": {
     "loading": "Chargement…",
@@ -2321,5 +2322,27 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "weeklyHours": "Heures cette semaine"
+  },
+  "opsPage": {
+    "title": "Opérations",
+    "subtitle": "Tâches, checklists et conformité.",
+    "overdue": "{{count}} en retard — à terminer avant le service.",
+    "checklists": "Checklists",
+    "newChecklist": "Nouvelle checklist",
+    "checklistNamePh": "Nom (ex. Ouverture)",
+    "checklistItemsPh": "Un élément par ligne\nDéverrouiller les portes\nAllumer le grill",
+    "noChecklists": "Aucune checklist.",
+    "runToday": "Utiliser aujourd'hui",
+    "taskPh": "Ajouter une tâche…",
+    "addTask": "Ajouter",
+    "allClear": "Tout est en ordre.",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "cat_general": "Général",
+    "cat_opening": "Ouverture",
+    "cat_closing": "Fermeture",
+    "cat_prep": "Préparation",
+    "cat_compliance": "Conformité",
+    "cat_maintenance": "Maintenance"
   }
 }

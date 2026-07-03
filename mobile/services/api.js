@@ -241,6 +241,12 @@ export const api = {
   getClockStatus: () => request('/api/restaurant/clock/status'),
   clockIn: (staffId) => request('/api/restaurant/clock/in', { method: 'POST', body: JSON.stringify({ staff_id: staffId }) }),
   clockOut: (staffId) => request('/api/restaurant/clock/out', { method: 'POST', body: JSON.stringify({ staff_id: staffId, break_minutes: 0 }) }),
+  getOpsTasks: () => request('/api/restaurant/operations/tasks'),
+  createOpsTask: (body) => request('/api/restaurant/operations/tasks', { method: 'POST', body: JSON.stringify(body) }),
+  toggleOpsTask: (id, done) => request(`/api/restaurant/operations/tasks/${id}?done=${done}`, { method: 'PATCH' }),
+  deleteOpsTask: (id) => request(`/api/restaurant/operations/tasks/${id}`, { method: 'DELETE' }),
+  getChecklists: () => request('/api/restaurant/operations/checklists'),
+  instantiateChecklist: (id) => request(`/api/restaurant/operations/checklists/${id}/instantiate`, { method: 'POST' }),
   createStaff: (data) => request('/api/restaurant/staff', { method: 'POST', body: JSON.stringify(data) }),
   deleteStaff: (id) => request(`/api/restaurant/staff/${id}`, { method: 'DELETE' }),
 

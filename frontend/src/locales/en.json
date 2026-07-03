@@ -26,7 +26,8 @@
     "foodExplorer": "Food Explorer",
     "flavor": "Flavor",
     "billing": "Billing",
-    "schedule": "Schedule"
+    "schedule": "Schedule",
+    "operations": "Operations"
   },
   "common": {
     "loading": "Loading…",
@@ -2321,5 +2322,27 @@
     "save": "Save",
     "cancel": "Cancel",
     "weeklyHours": "Hours this week"
+  },
+  "opsPage": {
+    "title": "Operations",
+    "subtitle": "Tasks, checklists and compliance.",
+    "overdue": "{{count}} overdue — clear before service.",
+    "checklists": "Checklists",
+    "newChecklist": "New checklist",
+    "checklistNamePh": "Checklist name (e.g. Opening)",
+    "checklistItemsPh": "One item per line\nUnlock doors\nTurn on grill",
+    "noChecklists": "No checklists yet.",
+    "runToday": "Run today",
+    "taskPh": "Add a task…",
+    "addTask": "Add",
+    "allClear": "All clear — nothing pending.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "cat_general": "General",
+    "cat_opening": "Opening",
+    "cat_closing": "Closing",
+    "cat_prep": "Prep",
+    "cat_compliance": "Compliance",
+    "cat_maintenance": "Maintenance"
   }
 }

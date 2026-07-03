@@ -26,7 +26,8 @@
     "foodExplorer": "Esploratore gastronomico",
     "flavor": "Flavor",
     "billing": "Fatturazione",
-    "schedule": "Turni"
+    "schedule": "Turni",
+    "operations": "Operazioni"
   },
   "common": {
     "loading": "Caricamento…",
@@ -2321,5 +2322,27 @@
     "save": "Salva",
     "cancel": "Annulla",
     "weeklyHours": "Ore questa settimana"
+  },
+  "opsPage": {
+    "title": "Operazioni",
+    "subtitle": "Attività, checklist e conformità.",
+    "overdue": "{{count}} in ritardo — completa prima del servizio.",
+    "checklists": "Checklist",
+    "newChecklist": "Nuova checklist",
+    "checklistNamePh": "Nome checklist (es. Apertura)",
+    "checklistItemsPh": "Una voce per riga\nApri le porte\nAccendi la griglia",
+    "noChecklists": "Ancora nessuna checklist.",
+    "runToday": "Usa oggi",
+    "taskPh": "Aggiungi un'attività…",
+    "addTask": "Aggiungi",
+    "allClear": "Tutto a posto.",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "cat_general": "Generale",
+    "cat_opening": "Apertura",
+    "cat_closing": "Chiusura",
+    "cat_prep": "Preparazione",
+    "cat_compliance": "Conformità",
+    "cat_maintenance": "Manutenzione"
   }
 }

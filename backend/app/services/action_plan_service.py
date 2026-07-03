@@ -252,6 +252,28 @@ def _workforce_action(db: Session, user_id: int) -> dict | None:
     return None
 
 
+def _ops_action(db: Session, user_id: int, today: date) -> dict | None:
+    """Surface overdue operational tasks as one Action Plan card."""
+    try:
+        from . import operations_service
+        overdue = operations_service.overdue_tasks(db, user_id, today=today)
+    except Exception:
+        return None
+    if not overdue:
+        return None
+    top = overdue[0]
+    n = len(overdue)
+    return _action(
+        kind="ops_overdue",
+        title=f"{n} overdue task{'s' if n != 1 else ''}",
+        body=f"Oldest: “{top.title}” — due {top.due_date}. Clear the backlog before service.",
+        icon="✅",
+        severity=SEV_MEDIUM,
+        cta_label="Open operations",
+        cta_route="/restaurant/operations",
+    )
+
+
 def build_action_plan(db: Session, user: User, *, today: date | None = None) -> list[dict]:
     """Compose the day's Action Plan. Returns up to 5 cards, sorted so the
     operator's eye lands on revenue-impacting items first."""
@@ -272,6 +294,9 @@ def build_action_plan(db: Session, user: User, *, today: date | None = None) -> 
     workforce = _workforce_action(db, user.id)
     if workforce:
         actions.append(workforce)
+    ops = _ops_action(db, user.id, today)
+    if ops:
+        actions.append(ops)
 
     # Severity → sort key. high before medium before low; tie-broken by
     # estimated_gain (bigger wins first).

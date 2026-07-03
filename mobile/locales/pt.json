@@ -162,7 +162,9 @@
     "quickActionStaff": "Pessoal",
     "quickActionReports": "Relatórios",
     "billing": "Faturação",
-    "billingSub": "Gerencie a assinatura e o pagamento."
+    "billingSub": "Gerencie a assinatura e o pagamento.",
+    "operations": "Operações",
+    "operationsSub": "Tarefas, listas e conformidade."
   },
   "notifications": {
     "title": "Notificações",
@@ -873,5 +875,27 @@
     "wfTitle": "Sinais da equipe para agir",
     "wfAtRisk": "{{name}} pode sair",
     "wfOvertime": "{{name}} perto de horas extras (~{{hours}}h)"
+  },
+  "opsPage": {
+    "title": "Operações",
+    "subtitle": "Tarefas, listas e conformidade.",
+    "overdue": "{{count}} atrasadas — conclua antes do serviço.",
+    "checklists": "Listas",
+    "newChecklist": "Nova lista",
+    "checklistNamePh": "Nome (ex. Abertura)",
+    "checklistItemsPh": "Um item por linha\nAbrir portas\nLigar a grelha",
+    "noChecklists": "Ainda sem listas.",
+    "runToday": "Usar hoje",
+    "taskPh": "Adicionar tarefa…",
+    "addTask": "Adicionar",
+    "allClear": "Tudo em ordem.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "cat_general": "Geral",
+    "cat_opening": "Abertura",
+    "cat_closing": "Fecho",
+    "cat_prep": "Preparação",
+    "cat_compliance": "Conformidade",
+    "cat_maintenance": "Manutenção"
   }
 }

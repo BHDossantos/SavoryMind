@@ -162,7 +162,9 @@
     "quickActionStaff": "Staff",
     "quickActionReports": "Reports",
     "billing": "Billing",
-    "billingSub": "Manage your subscription and payment."
+    "billingSub": "Manage your subscription and payment.",
+    "operations": "Operations",
+    "operationsSub": "Tasks, checklists & compliance."
   },
   "notifications": {
     "title": "Notifications",
@@ -873,5 +875,27 @@
     "wfTitle": "Team signals worth acting on",
     "wfAtRisk": "{{name}} may be at flight risk",
     "wfOvertime": "{{name}} nearing overtime (~{{hours}}h)"
+  },
+  "opsPage": {
+    "title": "Operations",
+    "subtitle": "Tasks, checklists and compliance.",
+    "overdue": "{{count}} overdue — clear before service.",
+    "checklists": "Checklists",
+    "newChecklist": "New checklist",
+    "checklistNamePh": "Checklist name (e.g. Opening)",
+    "checklistItemsPh": "One item per line\nUnlock doors\nTurn on grill",
+    "noChecklists": "No checklists yet.",
+    "runToday": "Run today",
+    "taskPh": "Add a task…",
+    "addTask": "Add",
+    "allClear": "All clear — nothing pending.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "cat_general": "General",
+    "cat_opening": "Opening",
+    "cat_closing": "Closing",
+    "cat_prep": "Prep",
+    "cat_compliance": "Compliance",
+    "cat_maintenance": "Maintenance"
   }
 }

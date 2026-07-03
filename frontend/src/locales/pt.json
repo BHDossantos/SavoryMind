@@ -26,7 +26,8 @@
     "foodExplorer": "Explorador gastronómico",
     "flavor": "Flavor",
     "billing": "Faturamento",
-    "schedule": "Escala"
+    "schedule": "Escala",
+    "operations": "Operações"
   },
   "common": {
     "loading": "A carregar…",
@@ -2321,5 +2322,27 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "weeklyHours": "Horas esta semana"
+  },
+  "opsPage": {
+    "title": "Operações",
+    "subtitle": "Tarefas, listas e conformidade.",
+    "overdue": "{{count}} atrasadas — conclua antes do serviço.",
+    "checklists": "Listas",
+    "newChecklist": "Nova lista",
+    "checklistNamePh": "Nome (ex. Abertura)",
+    "checklistItemsPh": "Um item por linha\nAbrir portas\nLigar a grelha",
+    "noChecklists": "Ainda sem listas.",
+    "runToday": "Usar hoje",
+    "taskPh": "Adicionar tarefa…",
+    "addTask": "Adicionar",
+    "allClear": "Tudo em ordem.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "cat_general": "Geral",
+    "cat_opening": "Abertura",
+    "cat_closing": "Fecho",
+    "cat_prep": "Preparação",
+    "cat_compliance": "Conformidade",
+    "cat_maintenance": "Manutenção"
   }
 }

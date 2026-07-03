@@ -185,3 +185,41 @@ class TimePunch(Base):
     clock_in      = Column(DateTime, nullable=False, default=datetime.utcnow)
     clock_out     = Column(DateTime, nullable=True)
     break_minutes = Column(Integer, nullable=False, default=0, server_default="0")
+
+
+class OpsTask(Base):
+    """An operational task — one-off or instantiated from a checklist.
+    Backs the Operations page's today-view + overdue Action Plan card."""
+    __tablename__ = "ops_tasks"
+
+    id                 = Column(Integer, primary_key=True, index=True)
+    user_id            = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title              = Column(String(200), nullable=False)
+    category           = Column(String(40), nullable=False, default="general", server_default="general")
+    assignee           = Column(String(120), nullable=True)
+    due_date           = Column(Date, nullable=True, index=True)
+    done               = Column(Boolean, nullable=False, default=False, server_default="0")
+    done_at            = Column(DateTime, nullable=True)
+    source_template_id = Column(Integer, nullable=True)
+    created_at         = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ChecklistTemplate(Base):
+    """A reusable checklist (Opening / Closing / Compliance) the operator
+    instantiates into ops_tasks for a day."""
+    __tablename__ = "checklist_templates"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name       = Column(String(120), nullable=False)
+    category   = Column(String(40), nullable=False, default="general", server_default="general")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ChecklistItem(Base):
+    __tablename__ = "checklist_items"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("checklist_templates.id"), nullable=False, index=True)
+    label       = Column(String(200), nullable=False)
+    position    = Column(Integer, nullable=False, default=0, server_default="0")
