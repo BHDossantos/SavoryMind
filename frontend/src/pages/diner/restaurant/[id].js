@@ -30,6 +30,9 @@ export default function RestaurantProfile() {
   const [selectedDate, setSelectedDate] = useState(today());
   const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [menu, setMenu] = useState([]);
+  const [reviews, setReviews] = useState(null);
+  const [showFullMenu, setShowFullMenu] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +40,9 @@ export default function RestaurantProfile() {
       .then(setRestaurant)
       .catch(() => {})
       .finally(() => setLoading(false));
+    // Menu + reviews are additive — the profile renders fine without them.
+    api.getRestaurantMenu(id).then((m) => setMenu(m.items || [])).catch(() => {});
+    api.getRestaurantReviews(id).then(setReviews).catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -92,10 +98,17 @@ export default function RestaurantProfile() {
               <h1 className="text-2xl font-bold text-gray-900">{r.name}</h1>
               <span className="text-sm text-gray-500 font-medium flex-shrink-0">{PRICE_LABELS[r.price_level] || "$$"}</span>
             </div>
+            {r.review_count > 0 && (
+              <p className="text-sm font-semibold text-amber-600 mt-0.5">
+                ★ {r.rating} · {t("restaurantDetailPage.reviewCount", { count: r.review_count })}
+              </p>
+            )}
             <p className="text-sm text-gray-500 mt-0.5">
               {(r.cuisine || []).join(" · ")}
               {r.city && <span> · 📍 {r.city}{r.country ? `, ${r.country}` : ""}</span>}
             </p>
+            {r.street_address && <p className="text-sm text-gray-500 mt-0.5">📍 {r.street_address}</p>}
+            {r.opening_hours && <p className="text-sm text-gray-500 mt-0.5">🕐 {r.opening_hours}</p>}
             {r.dining_style && STYLE_KEY[r.dining_style] && (
               <span className="inline-block mt-2 text-xs bg-diner-50 text-diner-700 px-2.5 py-0.5 rounded-full capitalize">
                 {t(STYLE_KEY[r.dining_style])}
@@ -163,6 +176,52 @@ export default function RestaurantProfile() {
           </>
         )}
       </div>
+
+      {menu.length > 0 && (
+        <div className="bg-white rounded-2xl border border-diner-100 shadow-sm p-6 mt-5">
+          <h2 className="font-semibold text-gray-800 mb-3">{t("restaurantDetailPage.menu")}</h2>
+          <div className="divide-y divide-gray-100">
+            {(showFullMenu ? menu : menu.slice(0, 8)).map((m) => (
+              <div key={m.id} className="py-2.5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{m.name}</p>
+                  {m.description && <p className="text-xs text-gray-500 mt-0.5">{m.description}</p>}
+                </div>
+                <span className="text-sm font-semibold text-gray-700 flex-shrink-0">
+                  {typeof m.price === "number" ? m.price.toFixed(2) : m.price}
+                </span>
+              </div>
+            ))}
+          </div>
+          {menu.length > 8 && (
+            <button
+              onClick={() => setShowFullMenu((v) => !v)}
+              className="mt-3 w-full text-sm font-semibold text-diner-600 hover:underline"
+            >
+              {showFullMenu
+                ? t("restaurantDetailPage.showLess")
+                : t("restaurantDetailPage.showAllDishes", { count: menu.length })}
+            </button>
+          )}
+        </div>
+      )}
+
+      {reviews && reviews.review_count > 0 && (
+        <div className="bg-white rounded-2xl border border-diner-100 shadow-sm p-6 mt-5">
+          <h2 className="font-semibold text-gray-800 mb-3">
+            {t("restaurantDetailPage.reviews")} · <span className="text-amber-600">★ {reviews.average_rating}</span> ({reviews.review_count})
+          </h2>
+          <div className="divide-y divide-gray-100">
+            {reviews.reviews.slice(0, 6).map((rv, i) => (
+              <div key={i} className="py-3">
+                <p className="text-amber-500 text-sm">{"★".repeat(Math.round(rv.rating))}</p>
+                {rv.comment && <p className="text-sm text-gray-700 mt-1">{rv.comment}</p>}
+                <p className="text-xs text-gray-400 mt-1">{rv.diner_name}{rv.date ? ` · ${rv.date}` : ""}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -28,6 +28,9 @@ class User(Base):
     country          = Column(String(100), nullable=True)
     latitude         = Column(Float, nullable=True)
     longitude        = Column(Float, nullable=True)
+    # Public-profile fields (restaurants): shown to diners on discover/profile.
+    street_address   = Column(String(250), nullable=True)
+    opening_hours    = Column(Text, nullable=True)  # free text, e.g. "Tue–Sun 12:00–23:00"
 
     # Preferences stored as JSON strings
     music_genres        = Column(Text, nullable=True)  # ["Jazz","Pop",...]

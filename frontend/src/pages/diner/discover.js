@@ -83,16 +83,35 @@ export default function DiscoverPage() {
   const [error, setError]       = useState(null);
   const [query, setQuery]       = useState("");
 
-  const search = async (m = mood, c = cuisine, ct = city) => {
+  const [coords, setCoords] = useState(null);   // {lat, lng} once "Near me" granted
+  const [locating, setLocating] = useState(false);
+
+  const search = async (m = mood, c = cuisine, ct = city, geo = coords) => {
     setLoading(true); setError(null);
     try {
       const params = {};
       if (m) params.mood = m;
       if (c.trim()) params.cuisine = c.trim();
       if (ct.trim()) params.city = ct.trim();
+      if (geo) { params.lat = geo.lat; params.lng = geo.lng; }
       setResults(await api.discoverRestaurants(params));
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
+  };
+
+  const nearMe = () => {
+    if (coords) { setCoords(null); search(mood, cuisine, city, null); return; }
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCoords(geo); setLocating(false);
+        search(mood, cuisine, city, geo);
+      },
+      () => setLocating(false),
+      { timeout: 8000 },
+    );
   };
 
   useEffect(() => { search(); }, []);
@@ -141,6 +160,12 @@ export default function DiscoverPage() {
             placeholder={t("discoverPage.cityPh")}
             className="border border-diner-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-diner-400 w-36"
           />
+          <button onClick={nearMe} disabled={locating}
+            className={`text-xs px-3 py-2 rounded-xl font-semibold border transition-all ${
+              coords ? "bg-diner-600 text-white border-diner-600" : "bg-white text-gray-600 border-diner-200 hover:border-diner-400"
+            }`}>
+            {locating ? "…" : `📍 ${t("discoverPage.nearMe")}`}
+          </button>
           <button onClick={() => search(mood, cuisine, city)} disabled={loading}
             className="bg-diner-600 text-white text-sm font-semibold px-5 py-2 rounded-xl hover:bg-diner-700 disabled:opacity-60">
             {loading ? t("discoverPage.searching") : t("discoverPage.search")}
@@ -203,6 +228,14 @@ export default function DiscoverPage() {
                       {(r.cuisine || []).slice(0, 2).join(" · ")}
                       {r.city && <span> · 📍 {r.city}</span>}
                     </p>
+                    {r.review_count > 0 && (
+                      <p className="text-xs font-semibold text-amber-600 mt-0.5">
+                        ★ {r.rating} ({r.review_count})
+                      </p>
+                    )}
+                    {r.distance_km != null && (
+                      <p className="text-[11px] text-gray-400 mt-0.5">{r.distance_km} km</p>
+                    )}
                   </div>
                 </div>
 

@@ -28,6 +28,8 @@ export default function GuestBookingPage() {
 
   const [restaurant, setRestaurant] = useState(null);
   const [upcoming,   setUpcoming]   = useState([]);
+  const [menu,       setMenu]       = useState([]);
+  const [showMenu,   setShowMenu]   = useState(false);
   const [loadErr,    setLoadErr]    = useState(null);
   const [loading,    setLoading]    = useState(true);
 
@@ -60,6 +62,7 @@ export default function GuestBookingPage() {
       .then((data) => {
         setRestaurant(data.restaurant);
         setUpcoming(data.upcoming || []);
+        setMenu(data.menu || []);
         const firstWithSlots = (data.upcoming || []).find((d) => d.slots && d.slots.length > 0);
         if (firstWithSlots) setSelectedDate(firstWithSlots.date);
       })
@@ -146,10 +149,18 @@ export default function GuestBookingPage() {
             <h1 className="text-2xl font-extrabold text-gray-900 mt-2">
               {restaurant?.restaurant_name || restaurant?.display_name}
             </h1>
+            {restaurant?.review_count > 0 && (
+              <p className="text-sm font-semibold text-amber-600 mt-1">
+                ★ {restaurant.rating} · {restaurant.review_count} {t("guestBookingPage.reviews")}
+              </p>
+            )}
             {(restaurant?.city || restaurant?.country) && (
               <p className="text-sm text-gray-500 mt-1">
-                {[restaurant?.city, restaurant?.country].filter(Boolean).join(", ")}
+                {[restaurant?.street_address, restaurant?.city, restaurant?.country].filter(Boolean).join(", ")}
               </p>
+            )}
+            {restaurant?.opening_hours && (
+              <p className="text-xs text-gray-400 mt-1">🕐 {restaurant.opening_hours}</p>
             )}
             {cuisines.length > 0 && (
               <div className="flex flex-wrap justify-center gap-1 mt-3">
@@ -287,6 +298,31 @@ export default function GuestBookingPage() {
                 {t("guestBookingPage.footnote")}
               </p>
             </form>
+          )}
+
+          {menu.length > 0 && !result && (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-5">
+              <button type="button" onClick={() => setShowMenu((v) => !v)}
+                className="w-full flex items-center justify-between font-semibold text-gray-800">
+                <span>{t("guestBookingPage.menuTitle")}</span>
+                <span className="text-gray-400">{showMenu ? "▲" : "▼"}</span>
+              </button>
+              {showMenu && (
+                <div className="divide-y divide-gray-100 mt-3">
+                  {menu.map((m) => (
+                    <div key={m.id} className="py-2.5 flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{m.name}</p>
+                        {m.description && <p className="text-xs text-gray-500 mt-0.5">{m.description}</p>}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700 flex-shrink-0">
+                        {typeof m.price === "number" ? m.price.toFixed(2) : m.price}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

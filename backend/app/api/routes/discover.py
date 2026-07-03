@@ -51,9 +51,15 @@ def list_restaurants(
     cuisine: str = "",
     city: str = "",
     mood: str = "",
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    radius_km: Optional[float] = None,
     db: Session = Depends(get_db),
 ):
-    return discover_service.get_restaurants(db, cuisine=cuisine, city=city, mood=mood)
+    return discover_service.get_restaurants(
+        db, cuisine=cuisine, city=city, mood=mood,
+        lat=lat, lng=lng, radius_km=radius_km,
+    )
 
 
 @router.get("/restaurants/{restaurant_id}")
@@ -62,6 +68,20 @@ def get_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
     if not r:
         raise HTTPException(status_code=404, detail="Restaurant not found.")
     return r
+
+
+@router.get("/restaurants/{restaurant_id}/menu")
+def get_restaurant_menu(restaurant_id: int, db: Session = Depends(get_db)):
+    if not discover_service.get_restaurant(db, restaurant_id):
+        raise HTTPException(status_code=404, detail="Restaurant not found.")
+    return {"items": discover_service.get_public_menu(db, restaurant_id)}
+
+
+@router.get("/restaurants/{restaurant_id}/reviews")
+def get_restaurant_reviews(restaurant_id: int, db: Session = Depends(get_db)):
+    if not discover_service.get_restaurant(db, restaurant_id):
+        raise HTTPException(status_code=404, detail="Restaurant not found.")
+    return discover_service.get_public_reviews(db, restaurant_id)
 
 
 @router.get("/availability/{restaurant_id}")

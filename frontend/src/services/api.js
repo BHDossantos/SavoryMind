@@ -327,6 +327,8 @@ export const api = {
   // Diner — Discovery (real registered restaurants)
   discoverRestaurants: (params = {}) => request(`/api/discover/restaurants?${new URLSearchParams(params).toString()}`),
   getRestaurant: (id) => request(`/api/discover/restaurants/${id}`),
+  getRestaurantMenu: (id) => request(`/api/discover/restaurants/${id}/menu`),
+  getRestaurantReviews: (id) => request(`/api/discover/restaurants/${id}/reviews`),
   getAvailability: (id, date) => request(`/api/discover/availability/${id}?check_date=${date}`),
   requestBooking: (data) => request("/api/discover/book", { method: "POST", body: JSON.stringify(data) }),
   getExperiencePlan: (params = {}) => request(`/api/diner/experience-plan?${new URLSearchParams(params).toString()}`),

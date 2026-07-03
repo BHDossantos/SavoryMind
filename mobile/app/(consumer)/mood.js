@@ -93,11 +93,14 @@ export default function MoodToMealScreen() {
 
   const bookAt = (r) => {
     track('wedge_mood_restaurant_click', { slug: r.slug, platform: 'mobile' });
-    // The guest-booking page lives on the web — open it in a browser
-    // so a non-account-holder can complete the reservation. expo-web-
-    // browser would be tighter UX but isn't a dependency of this screen
-    // yet; native Linking handles the universal-link gracefully.
-    require('react-native').Linking.openURL(`https://savorymind.net/r/${r.slug}`);
+    // Mobile users are always authenticated, so book natively on the
+    // in-app restaurant screen (live slots + one-tap booking). The web
+    // /r/{slug} page stays the path for logged-out web guests only.
+    if (r.id) {
+      router.push(`/(diner)/restaurant/${r.id}`);
+    } else {
+      require('react-native').Linking.openURL(`https://savorymind.net/r/${r.slug}`);
+    }
   };
 
   if (result) {

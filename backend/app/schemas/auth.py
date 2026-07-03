@@ -78,6 +78,8 @@ class UserResponse(BaseModel):
     country:             Optional[str]  = None
     latitude:            Optional[float] = None
     longitude:           Optional[float] = None
+    street_address:      Optional[str]  = None
+    opening_hours:       Optional[str]  = None
     music_genres:        Optional[str]  = None
     cuisine_preferences: Optional[str]  = None
     dietary_preferences: Optional[str]  = None
@@ -147,6 +149,8 @@ class ProfileUpdate(BaseModel):
     country:             Optional[str]   = None
     latitude:            Optional[float] = None
     longitude:           Optional[float] = None
+    street_address:      Optional[str]   = None
+    opening_hours:       Optional[str]   = None
     music_genres:        Optional[str]   = None
     cuisine_preferences: Optional[str]   = None
     dietary_preferences: Optional[str]   = None

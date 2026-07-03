@@ -468,7 +468,12 @@
     "menuSmsBadge": "SMS menu",
     "menuSmsBadgeHint": "Réservation venue du SMS du menu du jour.",
     "repeatBadge": "Visite {{count}}",
-    "repeatBadgeHint": "{{count}} réservations précédentes."
+    "repeatBadgeHint": "{{count}} réservations précédentes.",
+    "publicProfileHeadline": "Votre profil public",
+    "publicProfileSubtitle": "Adresse et horaires affichés aux convives sur votre profil et votre page de réservation.",
+    "publicProfileAddressPh": "Adresse, ex. 1 rue de Rivoli",
+    "publicProfileHoursPh": "Horaires, ex. Mar–Dim 12:00–23:00",
+    "publicProfileSaved": "Profil public mis à jour."
   },
   "crmPage": {
     "title": "👥 CRM",
@@ -1597,7 +1602,8 @@
     "save": "Enregistrer",
     "unsave": "Retirer des favoris",
     "saveHint": "Enregistrer dans les favoris",
-    "savedHint": "Enregistré — appuyez pour retirer"
+    "savedHint": "Enregistré — appuyez pour retirer",
+    "nearMe": "Près de moi"
   },
   "bookDinerPage": {
     "title": "📅 Réserver une table",
@@ -1875,7 +1881,13 @@
     "slotsAvailable_one": "{{count}} créneau disponible",
     "slotsAvailable_other": "{{count}} créneaux disponibles",
     "slotLeft": "{{n}} restants",
-    "bookTable": "📅 Réserver une table"
+    "bookTable": "📅 Réserver une table",
+    "menu": "Menu",
+    "reviews": "Avis",
+    "reviewCount_other": "{{count}} avis",
+    "showLess": "Voir moins",
+    "showAllDishes": "Voir les {{count}} plats",
+    "reviewCount_one": "{{count}} avis"
   },
   "notFoundPage": {
     "code": "404",
@@ -2191,7 +2203,9 @@
     "confirmedMsg": "Rendez-vous le {{date}} à {{time}} chez {{name}}.",
     "pendingTitle": "Demande envoyée",
     "pendingMsg": "L'équipe de {{name}} confirmera sous peu.",
-    "confirmationFootnote": "Vous recevrez une confirmation par SMS ou téléphone si besoin."
+    "confirmationFootnote": "Vous recevrez une confirmation par SMS ou téléphone si besoin.",
+    "reviews": "avis",
+    "menuTitle": "Menu"
   },
   "moodPage": {
     "title": "Mood to meal",

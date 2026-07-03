@@ -12,9 +12,11 @@ jest.mock('expo-router', () => ({
 
 jest.mock('../../../../services/api', () => ({
   api: {
-    getRestaurant:   jest.fn(),
-    getAvailability: jest.fn(),
-    requestBooking:  jest.fn(),
+    getRestaurant:        jest.fn(),
+    getAvailability:      jest.fn(),
+    requestBooking:       jest.fn(),
+    getRestaurantMenu:    jest.fn(),
+    getRestaurantReviews: jest.fn(),
   },
 }));
 
@@ -29,6 +31,10 @@ const RestaurantDetail = require('../[id]').default;
 
 beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset());
+  // Menu + reviews are fire-and-forget on mount; default them to empty
+  // so each test only has to stub what it asserts on.
+  api.getRestaurantMenu.mockResolvedValue({ items: [] });
+  api.getRestaurantReviews.mockResolvedValue({ average_rating: 0, review_count: 0, reviews: [] });
 });
 
 

@@ -25,6 +25,7 @@ export default function Discover() {
   const [cuisine, setCuisine] = useState('');
   const [budget, setBudget]   = useState('mid');
   const [results, setResults] = useState([]);
+  const [savedIds, setSavedIds] = useState(new Set());
   const [plan, setPlan]       = useState(null);
   const [loading, setLoading] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
@@ -76,7 +77,33 @@ export default function Discover() {
     finally { setPlanLoading(false); }
   };
 
-  useFocusEffect(useCallback(() => { search(); }, []));
+  const loadSaved = async () => {
+    try {
+      const rows = await api.listSavedRestaurants();
+      setSavedIds(new Set((rows || []).map((s) => s.restaurant_id)));
+    } catch {}
+  };
+
+  const toggleSave = async (r) => {
+    // Optimistic flip; revert on failure.
+    const was = savedIds.has(r.id);
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      was ? next.delete(r.id) : next.add(r.id);
+      return next;
+    });
+    try {
+      was ? await api.unsaveRestaurant(r.id) : await api.saveRestaurant(r.id);
+    } catch {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        was ? next.add(r.id) : next.delete(r.id);
+        return next;
+      });
+    }
+  };
+
+  useFocusEffect(useCallback(() => { search(); loadSaved(); }, []));
 
   return (
     <SafeScreen onRefresh={search} refreshing={refreshing}>
@@ -165,6 +192,8 @@ export default function Discover() {
             <RestaurantCard
               key={r.id}
               r={r}
+              saved={savedIds.has(r.id)}
+              onToggleSave={() => toggleSave(r)}
               onPress={() => router.push(`/(diner)/restaurant/${r.id}`)}
             />
           ))}
@@ -182,7 +211,7 @@ export default function Discover() {
   );
 }
 
-function RestaurantCard({ r, onPress }) {
+function RestaurantCard({ r, onPress, saved, onToggleSave }) {
   const cuisines = (r.cuisine || []).join(' · ');
   const subtitle = [cuisines, PRICE_LABELS[r.price_level] || '$$', r.city && `📍 ${r.city}`]
     .filter(Boolean).join(' · ');
@@ -193,7 +222,18 @@ function RestaurantCard({ r, onPress }) {
         <View style={s.cardInfo}>
           <Text style={s.cardName}>{r.name}</Text>
           <Text style={s.cardCuisine} numberOfLines={1}>{subtitle}</Text>
+          {r.review_count > 0 && (
+            <Text style={s.cardRating}>★ {r.rating} · {r.review_count} review{r.review_count === 1 ? '' : 's'}</Text>
+          )}
+          {r.distance_km != null && (
+            <Text style={s.cardDistance}>{r.distance_km} km away</Text>
+          )}
         </View>
+        {onToggleSave && (
+          <TouchableOpacity onPress={onToggleSave} hitSlop={10}>
+            <Text style={{ fontSize: 22 }}>{saved ? '❤️' : '🤍'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
       {!!r.bio && <Text style={s.cardDesc} numberOfLines={2}>{r.bio}</Text>}
       <View style={s.tagRow}>
@@ -261,6 +301,8 @@ const s = StyleSheet.create({
   cardInfo:       { flex: 1 },
   cardName:       { fontSize: 16, fontWeight: '700', color: C.gray[900] },
   cardCuisine:    { fontSize: 12, color: C.gray[500] },
+  cardRating:     { fontSize: 12, color: '#b45309', fontWeight: '700', marginTop: 2 },
+  cardDistance:   { fontSize: 11, color: C.gray[400], marginTop: 2 },
   cardDesc:       { fontSize: 13, color: C.gray[600], marginBottom: 8, lineHeight: 18 },
   tagRow:         { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   tag:            { backgroundColor: C.gray[100], borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
