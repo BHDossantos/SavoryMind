@@ -9,3 +9,4 @@ from .auth_revocation import RefreshTokenRevocation
 from .inventory import InventoryItem, InventoryAdjustment
 from .pos import POSConnection
 from .loss import LossEstimate
+from .feature_override import FeatureOverride
