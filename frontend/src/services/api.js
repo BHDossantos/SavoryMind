@@ -242,6 +242,28 @@ export const api = {
   // Restaurant — Predictions
   getPredictions: () => request("/api/restaurant/predictions"),
 
+  // Restaurant — Loss Discovery ("money number in 15 minutes", P1)
+  getLossAuditQuestions: () => request("/api/loss/audit-questions"),
+  runLossEstimate: (body = {}) => request("/api/loss/estimate", { method: "POST", body: JSON.stringify(body) }),
+  getLatestLoss: () => request("/api/loss/latest"),
+  // Sales export upload (Path A). Multipart: the browser MUST set the
+  // Content-Type (with the multipart boundary) itself, so we never set it
+  // by hand here — same pattern as snapMenu. `formData` carries `file`
+  // plus optional `overrides` / `audit` JSON-string fields.
+  importSales: async (formData) => {
+    const headers = {};
+    if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
+    const res = await fetch(`${getBaseUrl()}/api/loss/import`, {
+      method: "POST", headers, body: formData, credentials: "include",
+    });
+    if (!res.ok) {
+      let detail = `Request failed (${res.status})`;
+      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  },
+
   // Consumer — Wine Pairing
   createWinePairing: (data) => request("/api/consumer/wine-pairing", { method: "POST", body: JSON.stringify(data) }),
   getWinePairings: () => request("/api/consumer/wine-pairing"),

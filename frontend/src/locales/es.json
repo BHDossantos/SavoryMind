@@ -28,7 +28,8 @@
     "billing": "Facturación",
     "schedule": "Horario",
     "operations": "Operaciones",
-    "integrations": "Integraciones"
+    "integrations": "Integraciones",
+    "lossDiscovery": "Descubrir pérdidas"
   },
   "common": {
     "loading": "Cargando…",
@@ -2383,5 +2384,227 @@
     "connectError": "No se pudo conectar Square. Inténtalo de nuevo.",
     "syncDone": "Sincronizados {{items}} artículos y {{orders}} pedidos.",
     "whatItDoes": "La sync importa tu catálogo de Square al menú y tus últimos 30 días de pedidos a analíticas y previsiones — sustituyendo los números manuales."
+  },
+  "lossDiscovery": {
+    "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "back": "Atrás",
+    "continue": "Continuar",
+    "saving": "Guardando…",
+    "loadingQuestions": "Cargando preguntas…",
+    "step1Eyebrow": "Paso 1 de 3",
+    "step1Title": "Tu restaurante de un vistazo",
+    "step1Subtitle": "Cuatro toques. Solo para calibrar la estimación — no hacen falta cifras exactas.",
+    "profileCoversLabel": "Cubiertos al día",
+    "profileTicketLabel": "Ticket medio",
+    "profileStaffLabel": "Personas en cocina y sala",
+    "profilePurchasesLabel": "Compras de alimentos al mes",
+    "ranges": {
+      "covers": {
+        "a": "Menos de 50",
+        "b": "50–100",
+        "c": "100–200",
+        "d": "Más de 200"
+      },
+      "ticket": {
+        "a": "Menos de 15 €",
+        "b": "15–30 €",
+        "c": "30–50 €",
+        "d": "Más de 50 €"
+      },
+      "staff": {
+        "a": "1–3",
+        "b": "4–8",
+        "c": "9–15",
+        "d": "16 o más"
+      },
+      "purchases": {
+        "a": "Menos de 3.000 €",
+        "b": "3.000–8.000 €",
+        "c": "8.000–20.000 €",
+        "d": "Más de 20.000 €"
+      }
+    },
+    "step2Eyebrow": "Paso 2 de 3",
+    "step2Title": "¿Cómo quieres encontrar las pérdidas?",
+    "step2Subtitle": "Elige lo más cómodo. Siempre podrás afinar la estimación más adelante.",
+    "pathATitle": "Sube un export de ventas (CSV)",
+    "pathADesc": "CSV o Excel de tu TPV o sistema. La estimación más precisa.",
+    "pathABadge": "Más preciso",
+    "pathBTitle": "Responde 12 preguntas",
+    "pathBDesc": "Sin archivos. Dos minutos de preguntas sobre tu cocina.",
+    "pathBBadge": "2 minutos",
+    "pathCTitle": "Conecta tu TPV",
+    "pathCDesc": "Sincronización automática con tu punto de venta.",
+    "pathCBadge": "Muy pronto",
+    "uploadTitle": "Sube tu export de ventas",
+    "uploadSubtitle": "Elige un archivo CSV o Excel: detectamos las columnas.",
+    "uploadChoose": "Elegir archivo",
+    "uploadAnalyze": "Analizar archivo",
+    "uploadAnalyzing": "Analizando…",
+    "importFilePicked": "Archivo seleccionado: {{name}}",
+    "importFailedTitle": "No pudimos leer el archivo",
+    "importFailedReason": "Motivo: {{reason}}",
+    "importTryPathB": "Responde las 12 preguntas",
+    "importReportTitle": "Informe de importación",
+    "importRowsImported": "{{count}} filas importadas",
+    "importRowsSkipped": "{{count}} filas descartadas",
+    "importMappingTitle": "Columnas reconocidas",
+    "importSeeEstimate": "Ver mi estimación",
+    "column": {
+      "date": "Fecha",
+      "item": "Plato",
+      "qty": "Cantidad",
+      "price": "Precio",
+      "revenue": "Ingresos",
+      "category": "Categoría"
+    },
+    "auditEyebrow": "Paso 3 de 3",
+    "auditTitle": "Unas preguntas sobre tu cocina",
+    "auditProgress": "{{current}} de {{total}}",
+    "auditSubmit": "Calcular mi estimación",
+    "auditCalculating": "Calculando…",
+    "auditIncomplete": "Responde todas las preguntas para continuar",
+    "questions": {
+      "waste_tracking": {
+        "prompt": "¿Cómo registras el desperdicio en cocina?",
+        "options": {
+          "digital": "En digital (app/sistema)",
+          "paper": "En papel",
+          "mental": "De memoria",
+          "never": "No lo registro"
+        }
+      },
+      "inventory_frequency": {
+        "prompt": "¿Con qué frecuencia haces inventario?",
+        "options": {
+          "daily": "Cada día",
+          "weekly": "Cada semana",
+          "monthly": "Cada mes",
+          "never": "Nunca"
+        }
+      },
+      "leftover_policy": {
+        "prompt": "¿Qué pasa con las sobras al final del servicio?",
+        "options": {
+          "repurposed": "Se reaprovechan",
+          "staff_meal": "Se usan como comida del personal",
+          "sometimes_tossed": "A veces se tiran",
+          "tossed": "Se tiran"
+        }
+      },
+      "supplier_check": {
+        "prompt": "¿Controlas las entregas de proveedores?",
+        "options": {
+          "always": "Siempre",
+          "sometimes": "A veces",
+          "never": "Nunca"
+        }
+      },
+      "par_levels": {
+        "prompt": "¿Tienes niveles de reposición (par level)?",
+        "options": {
+          "yes_followed": "Sí, y los seguimos",
+          "yes_ignored": "Sí, pero no los seguimos",
+          "no": "No"
+        }
+      },
+      "portion_control": {
+        "prompt": "¿Cómo controlas las porciones?",
+        "options": {
+          "scales_recipes": "Báscula y recetas",
+          "eyeballed_trained": "A ojo, personal formado",
+          "eyeballed": "A ojo",
+          "no_standard": "Sin estándar"
+        }
+      },
+      "top_dish_portion": {
+        "prompt": "¿Las porciones de tus platos top respetan la receta?",
+        "options": {
+          "matches": "Sí, coinciden",
+          "slightly_over": "Ligeramente generosas",
+          "often_over": "A menudo generosas"
+        }
+      },
+      "menu_food_cost": {
+        "prompt": "¿Conoces el food cost de tus platos?",
+        "options": {
+          "every_dish": "De cada plato",
+          "some_dishes": "De algunos platos",
+          "none": "De ninguno"
+        }
+      },
+      "prep_duplication": {
+        "prompt": "¿El personal prepara a veces lo mismo dos veces?",
+        "options": {
+          "never": "Nunca",
+          "rarely": "Rara vez",
+          "often": "A menudo"
+        }
+      },
+      "prep_method": {
+        "prompt": "¿Cómo gestionáis el mise en place?",
+        "options": {
+          "planned_miseenplace": "Mise en place planificado",
+          "loose": "De forma aproximada",
+          "adhoc": "Sobre la marcha"
+        }
+      },
+      "counting_method": {
+        "prompt": "¿Cómo contáis el stock?",
+        "options": {
+          "app": "Con una app",
+          "spreadsheet": "Con una hoja de cálculo",
+          "paper": "En papel",
+          "memory": "De memoria"
+        }
+      },
+      "staff_training": {
+        "prompt": "¿Con qué frecuencia formas al personal?",
+        "options": {
+          "regular": "Con regularidad",
+          "onboarding_only": "Solo al inicio",
+          "none": "Nunca"
+        }
+      }
+    },
+    "revealEyebrow": "Tu estimación",
+    "revealGuaranteeEyebrow": "Buenas noticias",
+    "headline": "Estás perdiendo entre {{low}} y {{high}} al mes",
+    "headlineSub": "Una estimación honesta basada en {{path}}. Cada cifra se explica abajo.",
+    "pathProfile": "el perfil de tu restaurante",
+    "pathAudit": "tus respuestas",
+    "pathImport": "tus datos de ventas",
+    "guaranteeHeadline": "Tu cocina ya es muy eficiente",
+    "guaranteeSub": "No encontramos pérdidas relevantes que recuperar — esto es lo que monitorearemos gratis.",
+    "perMonth": "al mes",
+    "confidence": {
+      "low": "estimación prudente",
+      "medium": "estimación",
+      "high": "dato real"
+    },
+    "categories": {
+      "food_waste": "Desperdicio de alimentos",
+      "over_portioning": "Porciones excesivas",
+      "staff_time": "Tiempo del personal"
+    },
+    "industryBand": "sector: 4–10%",
+    "showEvidence": "Cómo lo calculamos",
+    "hideEvidence": "Ocultar detalles",
+    "evidenceFoodWaste": "{{low}}–{{high}} de {{purchases}} en compras mensuales",
+    "evidenceFoodWasteEstimated": "(estimado a partir de ingresos)",
+    "evidenceOverPortion": "{{pct}} de exceso medio en las porciones",
+    "evidenceStaff": "{{hours}} h/semana × {{staff}} personas × {{wage}}/h",
+    "emptyBreakdown": "Ninguna categoría tiene datos suficientes. Añade más información para afinar la estimación.",
+    "ctaActivate": "Activar el plan de recuperación",
+    "ctaMonitorFree": "Activar monitoreo gratuito",
+    "honestNote": "Basado en datos del sector y tus respuestas. Mejora a medida que añades datos reales.",
+    "cardEyebrow": "Pérdidas estimadas",
+    "cardBand": "Estás perdiendo entre {{low}} y {{high}} al mes",
+    "cardRefine": "Afinar →",
+    "cardEmptyTitle": "Descubre cuánto estás perdiendo",
+    "cardEmptySub": "En 15 minutos, una estimación honesta de desperdicio, porciones y tiempo del personal.",
+    "cardEmptyCta": "Descubre cuánto estás perdiendo →",
+    "cardGuarantee": "Tu cocina ya es muy eficiente"
   }
 }

@@ -12,6 +12,7 @@ function useNavLinks() {
   const { t } = useTranslation();
   return [
     { href: "/dashboard",               labelKey: "nav.dashboard",       icon: "📊" },
+    { href: "/restaurant/loss-discovery", labelKey: "nav.lossDiscovery", icon: "💸" },
     { href: "/restaurant/assistant",    labelKey: "nav.flavor",          icon: "👨‍🍳" },
     { href: "/menu",                    labelKey: "nav.menu",            icon: "🍽️" },
     { href: "/sentiment",               labelKey: "nav.sentiment",       icon: "💬" },
