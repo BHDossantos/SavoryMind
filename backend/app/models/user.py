@@ -78,6 +78,15 @@ class User(Base):
     available_time_slots = Column(Text, nullable=True)    # comma-sep "12:00,19:00,20:00"
     booking_window_days  = Column(Integer, default=60)
 
+    # Loss Estimate Engine inputs (P1 money-number onboarding). Representative
+    # values captured as ranges in the UI; the engine applies a low/high band.
+    # All nullable — a fresh restaurant hasn't answered these yet.
+    covers_per_day          = Column(Integer, nullable=True)   # avg covers served/day
+    avg_ticket_eur          = Column(Float,   nullable=True)   # avg spend per cover, €
+    staff_count             = Column(Integer, nullable=True)   # total team size
+    monthly_food_purchases_eur = Column(Float, nullable=True)  # € food purchased/month
+    avg_hourly_wage_eur     = Column(Float, nullable=True)     # configurable, default 9 in engine
+
     # Onboarding gate
     onboarding_completed = Column(Boolean, default=False)
 
