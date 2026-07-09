@@ -29,7 +29,13 @@
     "schedule": "Schedule",
     "operations": "Operations",
     "integrations": "Integrations",
-    "lossDiscovery": "Loss Discovery"
+    "lossDiscovery": "Loss Discovery",
+    "groupLosses": "Losses & Waste",
+    "groupCoaching": "Staff Coaching",
+    "groupMenu": "Menu & Margins",
+    "groupSettings": "Settings & Billing",
+    "otherTools": "Other tools",
+    "upgradeToUnlock": "Upgrade to unlock"
   },
   "common": {
     "loading": "Loading…",

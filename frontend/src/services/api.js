@@ -159,6 +159,11 @@ export const api = {
   createCheckout: () => request("/api/billing/checkout", { method: "POST" }),
   createBillingPortal: () => request("/api/billing/portal", { method: "POST" }),
 
+  // Feature-flag entitlements — { tier, features: {feature: bool}, overrides: {} }.
+  // Drives the sidebar "Altri strumenti" locks. Callers default to UNLOCKED on
+  // failure so a fetch error never hard-blocks the owner.
+  getEntitlements: () => request("/api/billing/entitlements"),
+
   // Restaurant €99/mo subscription
   getRestaurantBillingStatus: () => request("/api/billing/restaurant/status"),
   createRestaurantCheckout: () => request("/api/billing/restaurant/checkout", { method: "POST" }),

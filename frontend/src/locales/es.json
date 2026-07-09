@@ -29,7 +29,13 @@
     "schedule": "Horario",
     "operations": "Operaciones",
     "integrations": "Integraciones",
-    "lossDiscovery": "Descubrir pérdidas"
+    "lossDiscovery": "Descubrir pérdidas",
+    "groupLosses": "Pérdidas y desperdicio",
+    "groupCoaching": "Coaching del personal",
+    "groupMenu": "Menú y márgenes",
+    "groupSettings": "Ajustes y facturación",
+    "otherTools": "Otras herramientas",
+    "upgradeToUnlock": "Mejora tu plan para desbloquear"
   },
   "common": {
     "loading": "Cargando…",

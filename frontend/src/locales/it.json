@@ -29,7 +29,13 @@
     "schedule": "Turni",
     "operations": "Operazioni",
     "integrations": "Integrazioni",
-    "lossDiscovery": "Scopri le perdite"
+    "lossDiscovery": "Scopri le perdite",
+    "groupLosses": "Perdite & Sprechi",
+    "groupCoaching": "Coaching Staff",
+    "groupMenu": "Menu & Margini",
+    "groupSettings": "Impostazioni & Billing",
+    "otherTools": "Altri strumenti",
+    "upgradeToUnlock": "Passa a un piano superiore per sbloccare"
   },
   "common": {
     "loading": "Caricamento…",

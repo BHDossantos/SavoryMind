@@ -29,7 +29,13 @@
     "schedule": "Planning",
     "operations": "Opérations",
     "integrations": "Intégrations",
-    "lossDiscovery": "Découvrir les pertes"
+    "lossDiscovery": "Découvrir les pertes",
+    "groupLosses": "Pertes & Gaspillage",
+    "groupCoaching": "Coaching du personnel",
+    "groupMenu": "Menu & Marges",
+    "groupSettings": "Paramètres & Facturation",
+    "otherTools": "Autres outils",
+    "upgradeToUnlock": "Passez à un forfait supérieur pour débloquer"
   },
   "common": {
     "loading": "Chargement…",

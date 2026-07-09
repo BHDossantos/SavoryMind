@@ -29,7 +29,13 @@
     "schedule": "Escala",
     "operations": "Operações",
     "integrations": "Integrações",
-    "lossDiscovery": "Descobrir perdas"
+    "lossDiscovery": "Descobrir perdas",
+    "groupLosses": "Perdas & Desperdício",
+    "groupCoaching": "Coaching da equipa",
+    "groupMenu": "Ementa & Margens",
+    "groupSettings": "Definições & Faturação",
+    "otherTools": "Outras ferramentas",
+    "upgradeToUnlock": "Faça upgrade para desbloquear"
   },
   "common": {
     "loading": "A carregar…",
