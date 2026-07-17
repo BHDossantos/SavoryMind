@@ -216,3 +216,24 @@ def test_audit_questions_endpoint(client):
     res = client.get("/api/loss/audit-questions", headers=auth_headers(token))
     assert res.status_code == 200
     assert len(res.json()["questions"]) == 12
+
+
+def test_public_estimate_no_auth_matches_engine(client):
+    # The public calculator (lead magnet) needs no account and returns the
+    # same shape/number as onboarding for identical inputs.
+    body = {"covers_per_day": 120, "avg_ticket_eur": 35.0, "staff_count": 8,
+            "monthly_food_purchases_eur": 24000.0, "audit": WORST_AUDIT}
+    res = client.post("/api/loss/public-estimate", json=body)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_monthly_loss_high"] > 0
+    engine = loss_engine.estimate(
+        {"covers_per_day": 120, "avg_ticket_eur": 35.0, "staff_count": 8,
+         "monthly_food_purchases_eur": 24000.0}, audit=WORST_AUDIT)
+    assert data["total_monthly_loss_high"] == engine["total_monthly_loss_high"]
+
+
+def test_public_estimate_empty_is_honest_zero(client):
+    res = client.post("/api/loss/public-estimate", json={})
+    assert res.status_code == 200
+    assert res.json()["total_monthly_loss_high"] == 0.0

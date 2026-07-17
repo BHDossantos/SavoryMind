@@ -41,6 +41,29 @@ def audit_questions():
     }
 
 
+class PublicEstimateBody(BaseModel):
+    covers_per_day: Optional[int] = None
+    avg_ticket_eur: Optional[float] = None
+    staff_count: Optional[int] = None
+    monthly_food_purchases_eur: Optional[float] = None
+    audit: Optional[dict] = None
+
+
+@router.post("/public-estimate")
+def public_estimate(body: PublicEstimateBody):
+    """Public, no-auth waste calculator (P3 lead magnet). Same engine as
+    onboarding Path B so the calculator's number matches what the operator
+    sees after signup — one source of truth. Nothing is persisted; the
+    email-gated PDF/capture happens at the frontend/marketing layer."""
+    profile = {
+        "covers_per_day": body.covers_per_day,
+        "avg_ticket_eur": body.avg_ticket_eur,
+        "staff_count": body.staff_count,
+        "monthly_food_purchases_eur": body.monthly_food_purchases_eur,
+    }
+    return loss_engine.estimate(profile, audit=body.audit)
+
+
 class EstimateBody(BaseModel):
     audit: Optional[dict] = None  # {question_id: option_key}
 
