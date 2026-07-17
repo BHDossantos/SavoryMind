@@ -115,6 +115,56 @@ class Staff(Base):
     punctuality_score = Column(Float, default=100.0)  # 0-100
     notes = Column(Text, nullable=True)
     active = Column(Boolean, default=True)
+    # Coaching engine v2 (P2). All nullable — existing staff rows keep working.
+    hourly_cost = Column(Float, nullable=True)          # € labour cost/hr
+    whatsapp_number = Column(String(32), nullable=True) # E.164, only after consent
+    whatsapp_consent_at = Column(DateTime, nullable=True)  # GDPR consent timestamp
+    language = Column(String(10), nullable=True)        # plan language, e.g. "it"
+
+
+class Incident(Base):
+    """A single quantified loss event attributed to a staff member — the
+    structured, explicit source of coaching signal (vs. the implicit
+    FoodWasteLog/DishTimeLog). Every euro in a coaching plan traces back
+    to rows here (notes §6.1)."""
+    __tablename__ = "incidents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # owner/tenant
+    staff_id = Column(Integer, ForeignKey("staff.id"), nullable=False, index=True)
+    type = Column(String(20), nullable=False)   # waste|portioning|speed|punctuality|quality
+    occurred_at = Column(Date, nullable=False, default=datetime.utcnow)
+    quantity = Column(Float, nullable=True)      # e.g. kg, minutes
+    unit = Column(String(20), nullable=True)     # "kg" | "min" | ...
+    euro_impact = Column(Float, nullable=False, default=0.0)
+    cause_tags = Column(Text, nullable=True)     # JSON array of tag strings
+    source = Column(String(20), nullable=False, default="manual")  # manual|import|inferred
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CoachingPlan(Base):
+    """A dignity-preserving, owner-approved coaching plan for one staff
+    member over a period. Draft until the owner approves; approved plans
+    are delivered (WhatsApp/in-app). Every € figure references incidents."""
+    __tablename__ = "coaching_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    staff_id = Column(Integer, ForeignKey("staff.id"), nullable=False, index=True)
+    period = Column(String(20), nullable=False)   # e.g. "2026-W27"
+    priority = Column(String(10), nullable=False, default="medium")  # high|medium|low
+    title = Column(String(200), nullable=False)
+    summary = Column(Text, nullable=False)
+    euro_impact_total = Column(Float, nullable=False, default=0.0)
+    expected_recovery = Column(Float, nullable=True)
+    actions_json = Column(Text, nullable=False, default="[]")  # [{text, done, due_hint}]
+    language = Column(String(10), nullable=False, default="it")
+    status = Column(String(10), nullable=False, default="draft")  # draft|active|completed
+    generated_by_model = Column(Boolean, nullable=False, default=False)
+    reviewed_by_owner = Column(Boolean, nullable=False, default=False)
+    delivered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class SalesLog(Base):
