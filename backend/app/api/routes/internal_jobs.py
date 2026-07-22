@@ -194,3 +194,80 @@ def ml_retrain(
     stats = ml_recommender_service.retrain(db)
     logger.info("ml-retrain stats: %s", stats)
     return stats
+
+
+@router.post("/coaching-regenerate")
+@limiter.limit("60/minute")
+def coaching_regenerate(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook (weekly): refresh each restaurant's draft coaching plans
+    from the last 30 days of incidents. Plans stay draft until the owner
+    approves — this only keeps the drafts current."""
+    from ...services import coaching_service
+    from ...models.user import User
+    owners = db.query(User).filter(User.account_type == "restaurant").all()
+    total = 0
+    for owner in owners:
+        try:
+            total += len(coaching_service.generate_all(db, owner))
+        except Exception:
+            logger.exception("coaching-regenerate failed for user %s", owner.id)
+    stats = {"restaurants": len(owners), "plans_refreshed": total}
+    logger.info("coaching-regenerate stats: %s", stats)
+    return stats
+
+
+@router.post("/owner-weekly-report")
+@limiter.limit("60/minute")
+def owner_weekly_report(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook (Sunday evening): WhatsApp each opted-in owner their
+    weekly losses + recovered € summary. No-op per owner without a
+    consented number / configured provider."""
+    from ...services import coaching_service, whatsapp_service
+    from ...models.user import User
+    owners = db.query(User).filter(User.account_type == "restaurant").all()
+    sent = 0
+    for owner in owners:
+        if not (owner.phone and whatsapp_service.is_configured()):
+            continue
+        try:
+            stats = coaching_service.recovered_this_month(db, owner.id)
+            body = whatsapp_service.owner_weekly_body(stats, owner.language or "it")
+            if whatsapp_service.send(db, user_id=owner.id, to=owner.phone,
+                                     template="owner_weekly", body=body):
+                sent += 1
+        except Exception:
+            logger.exception("owner-weekly-report failed for user %s", owner.id)
+    stats = {"owners": len(owners), "sent": sent}
+    logger.info("owner-weekly-report stats: %s", stats)
+    return stats
+
+
+@router.post("/marketing-triggers")
+@limiter.limit("60/minute")
+def marketing_triggers(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook (daily): detect birthday + lapsed-guest marketing triggers
+    across all restaurants and notify each owner. Idempotent per trigger."""
+    from ...services import marketing_automation_service
+    from ...models.user import User
+    owners = db.query(User).filter(User.account_type == "restaurant").all()
+    total = 0
+    for owner in owners:
+        try:
+            total += len(marketing_automation_service.run_triggers(db, owner))
+        except Exception:
+            logger.exception("marketing-triggers failed for user %s", owner.id)
+    stats = {"restaurants": len(owners), "new_triggers": total}
+    logger.info("marketing-triggers stats: %s", stats)
+    return stats

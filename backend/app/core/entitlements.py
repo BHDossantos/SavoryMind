@@ -71,14 +71,29 @@ def current_tier(user: User) -> str:
     return TIER_PRO
 
 
-def has_feature(user: User, feature: str) -> bool:
+def has_feature(user: User, feature: str, overrides: dict | None = None) -> bool:
+    """True when the feature is unlocked. A per-account override (from the
+    feature_overrides table) wins over the tier default in both directions —
+    it can grant a locked feature or revoke an unlocked one."""
+    if overrides and feature in overrides:
+        return bool(overrides[feature])
     needed = FEATURE_MIN_TIER.get(feature, TIER_STARTER)
     return TIER_RANK[current_tier(user)] >= TIER_RANK[needed]
 
 
-def entitlements_for(user: User) -> dict:
+def entitlements_for(user: User, overrides: dict | None = None) -> dict:
     tier = current_tier(user)
     return {
         "tier": tier,
-        "features": {f: has_feature(user, f) for f in FEATURE_MIN_TIER},
+        "features": {f: has_feature(user, f, overrides) for f in FEATURE_MIN_TIER},
+        "overrides": dict(overrides or {}),
     }
+
+
+def overrides_map(db, user_id: int) -> dict:
+    """Load {feature: enabled} overrides for a restaurant. Deploy-free flag
+    control: flip a feature_overrides row and the entitlement changes on the
+    next request — no release needed (notes §5.2)."""
+    from ..models.feature_override import FeatureOverride
+    rows = db.query(FeatureOverride).filter(FeatureOverride.user_id == user_id).all()
+    return {r.feature: r.enabled for r in rows}

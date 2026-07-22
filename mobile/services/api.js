@@ -240,6 +240,22 @@ export const api = {
 
   getStaff: () => request('/api/restaurant/staff'),
   getStaffSummary: () => request('/api/restaurant/staff/summary'),
+
+  // ── P2 — Staff coaching engine ─────────────────────────────────────
+  // Quick-log an incident during service. Body:
+  //   { staff_id, type, euro_impact, quantity?, unit?, cause_tags?, notes? }
+  // type ∈ waste|portioning|speed|punctuality|quality.
+  logIncident: (body) => request('/api/coaching/incidents', { method: 'POST', body: JSON.stringify(body) }),
+  // Coaching plans. Pass status (draft|active|completed) to filter, or
+  // omit for all. Plans are LLM-generated drafts until the owner approves.
+  getCoachingPlans: (status) => request(`/api/coaching/plans${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  // Generate draft plans from the last 30 days of incidents (LLM service).
+  generateCoachingPlans: () => request('/api/coaching/plans/generate', { method: 'POST' }),
+  // One-tap owner approval — moves a draft plan to active (delivered).
+  approveCoachingPlan: (id) => request(`/api/coaching/plans/${id}/approve`, { method: 'POST' }),
+  // Money recovered this period — feeds the dashboard counter.
+  getRecovered: () => request('/api/coaching/recovered'),
+
   getStaffIntelligence: () => request('/api/restaurant/staff/intelligence'),
   getClockStatus: () => request('/api/restaurant/clock/status'),
   clockIn: (staffId) => request('/api/restaurant/clock/in', { method: 'POST', body: JSON.stringify({ staff_id: staffId }) }),

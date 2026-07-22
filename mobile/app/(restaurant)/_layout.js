@@ -23,6 +23,7 @@ export default function RestaurantLayout() {
       <Tabs.Screen name="recommendations" options={{ href: null }} />
       {/* Hidden from the tab bar — reachable from the More screen. */}
       <Tabs.Screen name="employees"       options={{ href: null }} />
+      <Tabs.Screen name="coaching"        options={{ href: null }} />
       <Tabs.Screen name="inventory"       options={{ href: null }} />
       <Tabs.Screen name="billing"         options={{ href: null }} />
       <Tabs.Screen name="operations"      options={{ href: null }} />

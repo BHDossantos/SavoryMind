@@ -377,6 +377,106 @@ def action_plan(
     return {"actions": actions}
 
 
+@router.get("/health-score")
+def health_score(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Restaurant Health Score (AI-OS M2): overall 0-100 + Financial/
+    Operations/Customer/Staff/Marketing sub-scores with explainable
+    drivers. Honest: unmeasured dimensions are excluded, not padded."""
+    _require_restaurant(current_user)
+    from ...services import health_score_service
+    result = health_score_service.health_score(db, current_user.id)
+    posthog_client.capture(current_user.id, "health_score_viewed",
+                           {"overall": result["overall"], "band": result["band"]})
+    return result
+
+
+@router.get("/command-center")
+def command_center(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI Command Center (AI-OS M1): the 'Buongiorno' single-glance hero —
+    yesterday revenue/profit, rating, today's reservations, busy hours,
+    predicted revenue, inventory/staff alerts, and recommendation count."""
+    _require_restaurant(current_user)
+    from ...services import command_center_service
+    return command_center_service.build(db, current_user)
+
+
+@router.get("/forecast/reservations")
+def forecast_reservations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M11: predicted reservations / covers / walk-ins / revenue for
+    tomorrow, from same-weekday booking history."""
+    _require_restaurant(current_user)
+    from ...services import forecasting_service
+    return forecasting_service.reservations_forecast(db, current_user.id)
+
+
+@router.get("/forecast/inventory")
+def forecast_inventory(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M4: per-SKU usage velocity → days-until-stockout + reorder
+    list, from the append-only adjustment ledger (no recipe needed)."""
+    _require_restaurant(current_user)
+    from ...services import forecasting_service
+    return forecasting_service.inventory_forecast(db, current_user.id)
+
+
+@router.get("/digital-twin")
+def digital_twin(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M18: the unified snapshot — what happened yesterday, why,
+    what happens tomorrow, what to do today (with € impact), and the
+    health score, fused from all the underlying engines."""
+    _require_restaurant(current_user)
+    from ...services import digital_twin_service
+    result = digital_twin_service.snapshot(db, current_user)
+    posthog_client.capture(current_user.id, "digital_twin_viewed",
+                           {"health": result["health"]["overall"]})
+    return result
+
+
+@router.get("/marketing/triggers")
+def marketing_triggers(
+    status: str = "suggested",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M8: owner-facing marketing triggers (birthday / lapsed guest)
+    the automation detected — each a one-click send."""
+    _require_restaurant(current_user)
+    from ...services import marketing_automation_service
+    # Refresh on read so a newly-eligible customer surfaces immediately.
+    marketing_automation_service.run_triggers(db, current_user)
+    return {"triggers": marketing_automation_service.list_triggers(db, current_user.id, status)}
+
+
+@router.post("/marketing/triggers/{trigger_id}/{status}")
+def update_marketing_trigger(
+    trigger_id: int,
+    status: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    if status not in ("sent", "dismissed", "suggested"):
+        raise HTTPException(status_code=400, detail="Invalid status.")
+    from ...services import marketing_automation_service
+    if not marketing_automation_service.mark(db, current_user.id, trigger_id, status):
+        raise HTTPException(status_code=404, detail="Trigger not found.")
+    return {"id": trigger_id, "status": status}
+
+
 # --- Audit log + Entitlements ---
 
 @router.get("/audit-log")

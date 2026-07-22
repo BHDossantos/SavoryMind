@@ -159,6 +159,11 @@ export const api = {
   createCheckout: () => request("/api/billing/checkout", { method: "POST" }),
   createBillingPortal: () => request("/api/billing/portal", { method: "POST" }),
 
+  // Feature-flag entitlements — { tier, features: {feature: bool}, overrides: {} }.
+  // Drives the sidebar "Altri strumenti" locks. Callers default to UNLOCKED on
+  // failure so a fetch error never hard-blocks the owner.
+  getEntitlements: () => request("/api/billing/entitlements"),
+
   // Restaurant €99/mo subscription
   getRestaurantBillingStatus: () => request("/api/billing/restaurant/status"),
   createRestaurantCheckout: () => request("/api/billing/restaurant/checkout", { method: "POST" }),
@@ -241,6 +246,45 @@ export const api = {
 
   // Restaurant — Predictions
   getPredictions: () => request("/api/restaurant/predictions"),
+
+  // Restaurant — Staff Coaching Engine (P2). Incidents are the primary data
+  // source (quick-logged during service); plans are LLM/rule-generated,
+  // owner-approved, and delivered. Restaurant JWT is auto-attached by request().
+  logIncident: (body) => request("/api/coaching/incidents", { method: "POST", body: JSON.stringify(body) }),
+  getIncidents: (staffId, days = 30) =>
+    request(`/api/coaching/incidents?staff_id=${encodeURIComponent(staffId)}&days=${days}`),
+  generateCoachingPlans: (staffId) =>
+    request(`/api/coaching/plans/generate${staffId ? `?staff_id=${encodeURIComponent(staffId)}` : ""}`, { method: "POST" }),
+  getCoachingPlans: (status) =>
+    request(`/api/coaching/plans${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+  approveCoachingPlan: (id) => request(`/api/coaching/plans/${id}/approve`, { method: "POST" }),
+  approveAllCoachingPlans: () => request("/api/coaching/plans/approve-all", { method: "POST" }),
+  getRecovered: () => request("/api/coaching/recovered"),
+  updateStaffCoaching: (id, body) => request(`/api/coaching/staff/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  setStaffWhatsapp: (id, number) =>
+    request(`/api/coaching/staff/${id}/whatsapp`, { method: "POST", body: JSON.stringify({ whatsapp_number: number }) }),
+
+  // Restaurant — Loss Discovery ("money number in 15 minutes", P1)
+  getLossAuditQuestions: () => request("/api/loss/audit-questions"),
+  runLossEstimate: (body = {}) => request("/api/loss/estimate", { method: "POST", body: JSON.stringify(body) }),
+  getLatestLoss: () => request("/api/loss/latest"),
+  // Sales export upload (Path A). Multipart: the browser MUST set the
+  // Content-Type (with the multipart boundary) itself, so we never set it
+  // by hand here — same pattern as snapMenu. `formData` carries `file`
+  // plus optional `overrides` / `audit` JSON-string fields.
+  importSales: async (formData) => {
+    const headers = {};
+    if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
+    const res = await fetch(`${getBaseUrl()}/api/loss/import`, {
+      method: "POST", headers, body: formData, credentials: "include",
+    });
+    if (!res.ok) {
+      let detail = `Request failed (${res.status})`;
+      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  },
 
   // Consumer — Wine Pairing
   createWinePairing: (data) => request("/api/consumer/wine-pairing", { method: "POST", body: JSON.stringify(data) }),

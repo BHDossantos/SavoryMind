@@ -60,12 +60,18 @@ def billing_status(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/entitlements")
-def billing_entitlements(current_user: User = Depends(get_current_user)):
+def billing_entitlements(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Per-feature gating map the frontend consults before rendering a
     gated module. Same shape regardless of account type so a single
-    helper can read it from the consumer + restaurant UIs."""
+    helper can read it from the consumer + restaurant UIs. Per-account
+    overrides (feature_overrides table) are layered on top of the tier
+    defaults so a feature can be toggled without a deploy."""
     from ...core import entitlements
-    return entitlements.entitlements_for(current_user)
+    overrides = entitlements.overrides_map(db, current_user.id)
+    return entitlements.entitlements_for(current_user, overrides)
 
 
 @router.post("/checkout")

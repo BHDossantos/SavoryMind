@@ -7,6 +7,7 @@ import {
 import MetricCard from "../components/MetricCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import { fmtEur } from "../components/restaurant/LossReveal";
 import { api } from "../services/api";
 
 const PIE_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa"];
@@ -99,6 +100,142 @@ function TrendingCard({ trending }) {
   );
 }
 
+// The "money number" hero — the dashboard's top surface (notes §5.1). Reads
+// the latest persisted loss estimate. Three states, all sell the next action:
+//  - estimate present   → the band + a link to refine
+//  - guarantee-triggered → honest "already efficient" framing, no scary number
+//  - no estimate yet    → prominent empty-state CTA into the Loss Discovery flow
+function LossEstimateCard() {
+  const { t, i18n } = useTranslation();
+  const [estimate, setEstimate] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    api.getLatestLoss()
+      .then((d) => { if (alive) setEstimate(d); })
+      .catch(() => { if (alive) setError(true); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mb-6 rounded-2xl border border-brand-100 bg-white p-5 animate-pulse">
+        <div className="h-3 w-28 bg-brand-100 rounded mb-3" />
+        <div className="h-6 w-64 bg-gray-100 rounded" />
+      </div>
+    );
+  }
+
+  // On error, fall back to the empty-state CTA rather than a blank/broken card —
+  // the discovery flow is still reachable and that's the action that matters.
+  if (!estimate || error) {
+    return (
+      <Link
+        href="/restaurant/loss-discovery"
+        className="group mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 p-5 text-white shadow-sm hover:shadow-md transition-all"
+      >
+        <span className="text-4xl flex-shrink-0" aria-hidden>💸</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base">{t("lossDiscovery.cardEmptyTitle")}</p>
+          <p className="text-xs text-white/80 mt-0.5 leading-relaxed">{t("lossDiscovery.cardEmptySub")}</p>
+        </div>
+        <span className="text-sm font-semibold flex-shrink-0 group-hover:translate-x-1 transition-transform">
+          {t("lossDiscovery.cardEmptyCta")}
+        </span>
+      </Link>
+    );
+  }
+
+  const guarantee = estimate.guarantee_triggered;
+  const low = fmtEur(estimate.total_monthly_loss_low, i18n.language);
+  const high = fmtEur(estimate.total_monthly_loss_high, i18n.language);
+
+  return (
+    <Link
+      href="/restaurant/loss-discovery"
+      className={`mb-6 flex items-center gap-4 rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all ${
+        guarantee
+          ? "border-green-200 bg-gradient-to-br from-green-50 to-white"
+          : "border-brand-200 bg-gradient-to-br from-brand-50 to-white"
+      }`}
+    >
+      <span className="text-4xl flex-shrink-0" aria-hidden>{guarantee ? "✅" : "💸"}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-500 mb-0.5">
+          {t("lossDiscovery.cardEyebrow")}
+        </p>
+        <p className="text-xl font-extrabold text-gray-900 leading-snug">
+          {guarantee ? t("lossDiscovery.cardGuarantee") : t("lossDiscovery.cardBand", { low, high })}
+        </p>
+      </div>
+      <span className="text-xs px-4 py-2 rounded-xl bg-brand-600 text-white font-semibold flex-shrink-0">
+        {t("lossDiscovery.cardRefine")}
+      </span>
+    </Link>
+  );
+}
+
+// Recovered-€ counter (P2-COACHING §6.3). Compact companion to the loss hero:
+// the loss card shows what's bleeding, this shows what the coaching loop has
+// stopped this month. Honest empty state — a brand-new account with no prior
+// baseline sees an encouraging hint, never a hollow "€0".
+function RecoveredCard() {
+  const { t, i18n } = useTranslation();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    api.getRecovered()
+      .then((d) => { if (alive) setData(d); })
+      .catch(() => { if (alive) setError(true); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-green-100 bg-white p-4 animate-pulse">
+        <div className="h-3 w-24 bg-green-100 rounded mb-3" />
+        <div className="h-6 w-32 bg-gray-100 rounded" />
+      </div>
+    );
+  }
+
+  if (error || !data) return null;
+
+  const recovered = Number(data.recovered_this_month) || 0;
+  const priorLoss = Number(data.prior_month_loss) || 0;
+  const noBaseline = recovered === 0 && priorLoss === 0;
+
+  return (
+    <Link
+      href="/restaurant/coaching"
+      className="flex items-center gap-3 rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-4 shadow-sm hover:shadow-md transition-all"
+    >
+      <span className="text-3xl flex-shrink-0" aria-hidden>💚</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-0.5">
+          {t("coaching.recoveredEyebrow")}
+        </p>
+        {noBaseline ? (
+          <p className="text-sm font-semibold text-gray-600 leading-snug">
+            {t("coaching.recoveredEmptyHint")}
+          </p>
+        ) : (
+          <p className="text-xl font-extrabold text-green-700 leading-snug">
+            {fmtEur(recovered, i18n.language)}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
@@ -169,6 +306,16 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Money-number hero — the pivot's top surface, above all existing
+          content. Paired with the recovered-€ counter: loss found vs. loss
+          stopped, side by side. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 items-start">
+        <div className="lg:col-span-2 [&>*]:mb-0">
+          <LossEstimateCard />
+        </div>
+        <RecoveredCard />
+      </div>
+
       {lapsed && (
         <Link
           href="/restaurant/billing"

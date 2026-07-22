@@ -115,6 +115,12 @@ class UserResponse(BaseModel):
     serves_cocktails:    Optional[bool] = None
     serves_beer:         Optional[bool] = None
     phone:               Optional[str]  = None
+    # Loss Estimate Engine inputs (P1 money-number onboarding)
+    covers_per_day:             Optional[int]   = None
+    avg_ticket_eur:             Optional[float] = None
+    staff_count:                Optional[int]   = None
+    monthly_food_purchases_eur: Optional[float] = None
+    avg_hourly_wage_eur:        Optional[float] = None
     # Public booking slug — restaurants only, server-assigned, read-only for the client.
     slug:                Optional[str]  = None
     # Today's menu — restaurant edits via PATCH /api/auth/profile.
@@ -186,6 +192,12 @@ class ProfileUpdate(BaseModel):
     serves_cocktails:    Optional[bool]  = None
     serves_beer:         Optional[bool]  = None
     phone:               Optional[str]   = None
+    # Loss Estimate Engine inputs (P1 money-number onboarding)
+    covers_per_day:             Optional[int]   = None
+    avg_ticket_eur:             Optional[float] = None
+    staff_count:                Optional[int]   = None
+    monthly_food_purchases_eur: Optional[float] = None
+    avg_hourly_wage_eur:        Optional[float] = None
     # Today's menu — restaurant publishes the body via PATCH /api/auth/profile.
     # The daily cron SMSs it to opted-in CRM customers at ~11am restaurant-local.
     menu_of_the_day:     Optional[str]   = None
