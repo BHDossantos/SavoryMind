@@ -446,6 +446,37 @@ def digital_twin(
     return result
 
 
+@router.get("/marketing/triggers")
+def marketing_triggers(
+    status: str = "suggested",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M8: owner-facing marketing triggers (birthday / lapsed guest)
+    the automation detected — each a one-click send."""
+    _require_restaurant(current_user)
+    from ...services import marketing_automation_service
+    # Refresh on read so a newly-eligible customer surfaces immediately.
+    marketing_automation_service.run_triggers(db, current_user)
+    return {"triggers": marketing_automation_service.list_triggers(db, current_user.id, status)}
+
+
+@router.post("/marketing/triggers/{trigger_id}/{status}")
+def update_marketing_trigger(
+    trigger_id: int,
+    status: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_restaurant(current_user)
+    if status not in ("sent", "dismissed", "suggested"):
+        raise HTTPException(status_code=400, detail="Invalid status.")
+    from ...services import marketing_automation_service
+    if not marketing_automation_service.mark(db, current_user.id, trigger_id, status):
+        raise HTTPException(status_code=404, detail="Trigger not found.")
+    return {"id": trigger_id, "status": status}
+
+
 # --- Audit log + Entitlements ---
 
 @router.get("/audit-log")

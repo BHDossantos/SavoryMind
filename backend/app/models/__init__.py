@@ -10,4 +10,5 @@ from .inventory import InventoryItem, InventoryAdjustment
 from .pos import POSConnection
 from .loss import LossEstimate
 from .messaging import MessageLog
+from .marketing import MarketingTrigger
 from .feature_override import FeatureOverride

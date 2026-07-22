@@ -248,3 +248,26 @@ def owner_weekly_report(
     stats = {"owners": len(owners), "sent": sent}
     logger.info("owner-weekly-report stats: %s", stats)
     return stats
+
+
+@router.post("/marketing-triggers")
+@limiter.limit("60/minute")
+def marketing_triggers(
+    request: Request,
+    db: Session = Depends(get_db),
+    _scheduler_email: str = Depends(require_scheduler),
+):
+    """Cron hook (daily): detect birthday + lapsed-guest marketing triggers
+    across all restaurants and notify each owner. Idempotent per trigger."""
+    from ...services import marketing_automation_service
+    from ...models.user import User
+    owners = db.query(User).filter(User.account_type == "restaurant").all()
+    total = 0
+    for owner in owners:
+        try:
+            total += len(marketing_automation_service.run_triggers(db, owner))
+        except Exception:
+            logger.exception("marketing-triggers failed for user %s", owner.id)
+    stats = {"restaurants": len(owners), "new_triggers": total}
+    logger.info("marketing-triggers stats: %s", stats)
+    return stats
