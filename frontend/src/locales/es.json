@@ -2673,5 +2673,53 @@
       "recipe_deviation": "Recipe deviation",
       "plating": "Plating"
     }
+  },
+  "aios": {
+    "yesterdayRevenue": "Ayer",
+    "yesterdayProfit": "Beneficio ayer",
+    "noYesterday": "Sin datos de ayer",
+    "rating": "Valoración",
+    "reservationsToday": "Cubiertos hoy",
+    "predictedToday": "Previsto hoy",
+    "forecastTag": "est.",
+    "busyHours": "Peak hours",
+    "recommendations": "actions",
+    "inventoryAlerts": "low stock",
+    "staffShortages": "understaffed",
+    "healthTitle": "Salud del restaurante",
+    "healthLearning": "Still learning your business.",
+    "band": {
+      "excellent": "Excelente",
+      "good": "Bueno",
+      "fair": "Regular",
+      "needs_attention": "A mejorar",
+      "learning": "Aprendiendo"
+    },
+    "dim": {
+      "financial": "Finanzas",
+      "operations": "Operaciones",
+      "customer": "Clientes",
+      "staff": "Personal",
+      "marketing": "Marketing"
+    },
+    "tomorrowTitle": "Mañana",
+    "tomorrowEmpty": "Not enough history for a forecast yet.",
+    "openTwin": "Abrir el gemelo digital",
+    "covers": "cubiertos",
+    "toReorder": "to reorder",
+    "twinLoading": "Loading the digital twin…",
+    "twinError": "Data unavailable.",
+    "twinEyebrow": "Gemelo digital",
+    "whatHappened": "Qué pasó ayer",
+    "weekdayBaseline": "Weekday average",
+    "why": "Por qué",
+    "tomorrow": "Mañana",
+    "walkIns": "Walk-ins",
+    "expectedRevenue": "Expected revenue",
+    "predictedSales": "Predicted sales",
+    "todayActions": "Qué hacer hoy",
+    "actionValue": "Potential ~{{value}}",
+    "noActions": "No urgent actions today.",
+    "backToDashboard": "Volver al panel"
   }
 }

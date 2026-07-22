@@ -236,6 +236,175 @@ function RecoveredCard() {
   );
 }
 
+// ── AI-OS: Command Center hero — the "Buongiorno" single-glance strip. ──────
+const HEALTH_BAND_STYLE = {
+  excellent: "text-green-700", good: "text-green-600",
+  fair: "text-amber-600", needs_attention: "text-red-600", learning: "text-gray-500",
+};
+
+function CommandCenterHero() {
+  const { t, i18n } = useTranslation();
+  const [cc, setCc] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    api.getCommandCenter()
+      .then((d) => { if (alive) setCc(d); })
+      .catch(() => {})
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) {
+    return <div className="rounded-2xl border border-brand-100 bg-white p-6 mb-6 animate-pulse h-28" />;
+  }
+  if (!cc) return null;
+
+  const y = cc.yesterday || {};
+  const tiles = [];
+  if (y.has_data) {
+    tiles.push({ label: t("aios.yesterdayRevenue"), value: fmtEur(y.revenue || 0, i18n.language), strong: true });
+    if (y.profit != null) tiles.push({ label: t("aios.yesterdayProfit"), value: fmtEur(y.profit, i18n.language) });
+  } else {
+    tiles.push({ label: t("aios.yesterdayRevenue"), value: t("aios.noYesterday") });
+  }
+  if (cc.rating != null) tiles.push({ label: t("aios.rating"), value: `★ ${cc.rating}` });
+  tiles.push({ label: t("aios.reservationsToday"), value: cc.reservations_today ?? 0 });
+  if (cc.predicted_revenue_today != null)
+    tiles.push({ label: t("aios.predictedToday"), value: fmtEur(cc.predicted_revenue_today, i18n.language), forecast: true });
+
+  return (
+    <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-6 mb-6 shadow-sm">
+      <p className="text-sm text-gray-500">{cc.greeting},</p>
+      <h2 className="text-xl font-extrabold text-gray-900">{cc.restaurant_name}</h2>
+      <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+        {tiles.map((tile, i) => (
+          <div key={i}>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{tile.label}</p>
+            <p className={`${tile.strong ? "text-2xl" : "text-lg"} font-bold ${tile.forecast ? "text-brand-600" : "text-gray-900"}`}>
+              {tile.value}{tile.forecast && <span className="text-[10px] ml-1 text-gray-400">{t("aios.forecastTag")}</span>}
+            </p>
+          </div>
+        ))}
+      </div>
+      {(cc.inventory_alerts > 0 || cc.staff_shortages > 0 || cc.recommendations > 0 || cc.busy_hours) && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {cc.busy_hours && <Chip>{t("aios.busyHours")}: {cc.busy_hours}</Chip>}
+          {cc.recommendations > 0 && <Chip tone="brand">{cc.recommendations} {t("aios.recommendations")}</Chip>}
+          {cc.inventory_alerts > 0 && <Chip tone="amber">{cc.inventory_alerts} {t("aios.inventoryAlerts")}</Chip>}
+          {cc.staff_shortages > 0 && <Chip tone="red">{cc.staff_shortages} {t("aios.staffShortages")}</Chip>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Chip({ children, tone = "gray" }) {
+  const styles = {
+    gray: "bg-gray-100 text-gray-600", brand: "bg-brand-100 text-brand-700",
+    amber: "bg-amber-100 text-amber-800", red: "bg-red-100 text-red-800",
+  };
+  return <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${styles[tone]}`}>{children}</span>;
+}
+
+// ── AI-OS: Health Score card (M2). ─────────────────────────────────────────
+const DIM_ORDER = ["financial", "operations", "customer", "staff", "marketing"];
+
+function HealthScoreCard() {
+  const { t } = useTranslation();
+  const [h, setH] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    api.getHealthScore()
+      .then((d) => { if (alive) setH(d); })
+      .catch(() => {})
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) return <div className="rounded-2xl border border-brand-100 bg-white p-5 animate-pulse h-40" />;
+  if (!h) return null;
+
+  const measured = DIM_ORDER.filter((k) => h.dimensions?.[k]?.score != null);
+  return (
+    <div className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{t("aios.healthTitle")}</p>
+      <div className="flex items-baseline gap-2">
+        <span className={`text-4xl font-extrabold ${HEALTH_BAND_STYLE[h.band] || "text-gray-700"}`}>
+          {h.overall != null ? h.overall : "—"}
+        </span>
+        {h.overall != null && <span className="text-gray-400 text-sm">/100</span>}
+        <span className={`ml-auto text-xs font-semibold ${HEALTH_BAND_STYLE[h.band]}`}>
+          {t(`aios.band.${h.band}`)}
+        </span>
+      </div>
+      <div className="mt-4 space-y-2">
+        {measured.map((k) => {
+          const d = h.dimensions[k];
+          return (
+            <div key={k}>
+              <div className="flex justify-between text-xs text-gray-600 mb-0.5">
+                <span>{t(`aios.dim.${k}`)}</span><span className="font-semibold">{Math.round(d.score)}</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-brand-500 rounded-full" style={{ width: `${d.score}%` }} />
+              </div>
+            </div>
+          );
+        })}
+        {measured.length === 0 && <p className="text-sm text-gray-500">{t("aios.healthLearning")}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── AI-OS: Tomorrow forecast + Digital Twin link. ──────────────────────────
+function ForecastCard() {
+  const { t, i18n } = useTranslation();
+  const [res, setRes] = useState(null);
+  const [inv, setInv] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      api.getReservationsForecast().catch(() => null),
+      api.getInventoryForecast().catch(() => null),
+    ]).then(([r, i]) => { if (alive) { setRes(r); setInv(i); } })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) return <div className="rounded-2xl border border-brand-100 bg-white p-5 animate-pulse h-40" />;
+  const reorder = inv?.reorder_soon?.length || 0;
+  const hasRes = res?.has_data;
+  if (!hasRes && !reorder) {
+    return (
+      <Link href="/restaurant/digital-twin" className="block rounded-2xl border border-brand-100 bg-white p-5 shadow-sm hover:shadow-md transition">
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{t("aios.tomorrowTitle")}</p>
+        <p className="text-sm text-gray-500">{t("aios.tomorrowEmpty")}</p>
+        <p className="mt-3 text-sm font-semibold text-brand-600">{t("aios.openTwin")} →</p>
+      </Link>
+    );
+  }
+  return (
+    <Link href="/restaurant/digital-twin" className="block rounded-2xl border border-brand-100 bg-white p-5 shadow-sm hover:shadow-md transition">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{t("aios.tomorrowTitle")}</p>
+      {hasRes && (
+        <p className="text-lg font-bold text-gray-900">
+          ~{res.predicted_covers} {t("aios.covers")}
+          {res.expected_revenue != null && <span className="text-brand-600"> · {fmtEur(res.expected_revenue, i18n.language)}</span>}
+        </p>
+      )}
+      {reorder > 0 && <p className="text-sm text-amber-700 mt-1">{reorder} {t("aios.toReorder")}</p>}
+      <p className="mt-3 text-sm font-semibold text-brand-600">{t("aios.openTwin")} →</p>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
@@ -306,9 +475,17 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Money-number hero — the pivot's top surface, above all existing
-          content. Paired with the recovered-€ counter: loss found vs. loss
-          stopped, side by side. */}
+      {/* AI-OS Command Center — the single-glance "Buongiorno" hero, the very
+          first thing an owner sees on login. */}
+      <CommandCenterHero />
+
+      {/* Health Score + tomorrow forecast — the AI brain at a glance. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+        <HealthScoreCard />
+        <ForecastCard />
+      </div>
+
+      {/* Money-number hero — loss found vs. loss stopped, side by side. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 items-start">
         <div className="lg:col-span-2 [&>*]:mb-0">
           <LossEstimateCard />

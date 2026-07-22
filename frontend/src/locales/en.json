@@ -2673,5 +2673,53 @@
       "recipe_deviation": "Recipe deviation",
       "plating": "Plating"
     }
+  },
+  "aios": {
+    "yesterdayRevenue": "Yesterday",
+    "yesterdayProfit": "Profit yesterday",
+    "noYesterday": "No data for yesterday",
+    "rating": "Rating",
+    "reservationsToday": "Covers today",
+    "predictedToday": "Predicted today",
+    "forecastTag": "est.",
+    "busyHours": "Peak hours",
+    "recommendations": "actions",
+    "inventoryAlerts": "low stock",
+    "staffShortages": "understaffed",
+    "healthTitle": "Restaurant health",
+    "healthLearning": "Still learning your business.",
+    "band": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "needs_attention": "Needs attention",
+      "learning": "Learning"
+    },
+    "dim": {
+      "financial": "Financial",
+      "operations": "Operations",
+      "customer": "Customer",
+      "staff": "Staff",
+      "marketing": "Marketing"
+    },
+    "tomorrowTitle": "Tomorrow",
+    "tomorrowEmpty": "Not enough history for a forecast yet.",
+    "openTwin": "Open the digital twin",
+    "covers": "covers",
+    "toReorder": "to reorder",
+    "twinLoading": "Loading the digital twin…",
+    "twinError": "Data unavailable.",
+    "twinEyebrow": "Digital twin",
+    "whatHappened": "What happened yesterday",
+    "weekdayBaseline": "Weekday average",
+    "why": "Why",
+    "tomorrow": "Tomorrow",
+    "walkIns": "Walk-ins",
+    "expectedRevenue": "Expected revenue",
+    "predictedSales": "Predicted sales",
+    "todayActions": "What to do today",
+    "actionValue": "Potential ~{{value}}",
+    "noActions": "No urgent actions today.",
+    "backToDashboard": "Back to dashboard"
   }
 }
