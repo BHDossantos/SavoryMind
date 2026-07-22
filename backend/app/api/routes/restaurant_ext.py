@@ -406,6 +406,30 @@ def command_center(
     return command_center_service.build(db, current_user)
 
 
+@router.get("/forecast/reservations")
+def forecast_reservations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M11: predicted reservations / covers / walk-ins / revenue for
+    tomorrow, from same-weekday booking history."""
+    _require_restaurant(current_user)
+    from ...services import forecasting_service
+    return forecasting_service.reservations_forecast(db, current_user.id)
+
+
+@router.get("/forecast/inventory")
+def forecast_inventory(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M4: per-SKU usage velocity → days-until-stockout + reorder
+    list, from the append-only adjustment ledger (no recipe needed)."""
+    _require_restaurant(current_user)
+    from ...services import forecasting_service
+    return forecasting_service.inventory_forecast(db, current_user.id)
+
+
 # --- Audit log + Entitlements ---
 
 @router.get("/audit-log")
