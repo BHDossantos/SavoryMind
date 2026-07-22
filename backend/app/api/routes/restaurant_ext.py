@@ -393,6 +393,19 @@ def health_score(
     return result
 
 
+@router.get("/command-center")
+def command_center(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI Command Center (AI-OS M1): the 'Buongiorno' single-glance hero —
+    yesterday revenue/profit, rating, today's reservations, busy hours,
+    predicted revenue, inventory/staff alerts, and recommendation count."""
+    _require_restaurant(current_user)
+    from ...services import command_center_service
+    return command_center_service.build(db, current_user)
+
+
 # --- Audit log + Entitlements ---
 
 @router.get("/audit-log")
