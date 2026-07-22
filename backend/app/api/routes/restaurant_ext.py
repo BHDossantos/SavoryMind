@@ -377,6 +377,22 @@ def action_plan(
     return {"actions": actions}
 
 
+@router.get("/health-score")
+def health_score(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Restaurant Health Score (AI-OS M2): overall 0-100 + Financial/
+    Operations/Customer/Staff/Marketing sub-scores with explainable
+    drivers. Honest: unmeasured dimensions are excluded, not padded."""
+    _require_restaurant(current_user)
+    from ...services import health_score_service
+    result = health_score_service.health_score(db, current_user.id)
+    posthog_client.capture(current_user.id, "health_score_viewed",
+                           {"overall": result["overall"], "band": result["band"]})
+    return result
+
+
 # --- Audit log + Entitlements ---
 
 @router.get("/audit-log")
