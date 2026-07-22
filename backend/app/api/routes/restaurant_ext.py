@@ -430,6 +430,22 @@ def forecast_inventory(
     return forecasting_service.inventory_forecast(db, current_user.id)
 
 
+@router.get("/digital-twin")
+def digital_twin(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI-OS M18: the unified snapshot — what happened yesterday, why,
+    what happens tomorrow, what to do today (with € impact), and the
+    health score, fused from all the underlying engines."""
+    _require_restaurant(current_user)
+    from ...services import digital_twin_service
+    result = digital_twin_service.snapshot(db, current_user)
+    posthog_client.capture(current_user.id, "digital_twin_viewed",
+                           {"health": result["health"]["overall"]})
+    return result
+
+
 # --- Audit log + Entitlements ---
 
 @router.get("/audit-log")
