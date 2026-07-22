@@ -2673,5 +2673,53 @@
       "recipe_deviation": "Ricetta non rispettata",
       "plating": "Impiattamento"
     }
+  },
+  "aios": {
+    "yesterdayRevenue": "Ieri",
+    "yesterdayProfit": "Utile ieri",
+    "noYesterday": "Nessun dato di ieri",
+    "rating": "Valutazione",
+    "reservationsToday": "Coperti oggi",
+    "predictedToday": "Previsto oggi",
+    "forecastTag": "stima",
+    "busyHours": "Ore di punta",
+    "recommendations": "azioni",
+    "inventoryAlerts": "scorte basse",
+    "staffShortages": "turni scoperti",
+    "healthTitle": "Salute del ristorante",
+    "healthLearning": "Stiamo ancora imparando la tua attività.",
+    "band": {
+      "excellent": "Eccellente",
+      "good": "Buono",
+      "fair": "Discreto",
+      "needs_attention": "Da migliorare",
+      "learning": "In apprendimento"
+    },
+    "dim": {
+      "financial": "Finanza",
+      "operations": "Operazioni",
+      "customer": "Clienti",
+      "staff": "Staff",
+      "marketing": "Marketing"
+    },
+    "tomorrowTitle": "Domani",
+    "tomorrowEmpty": "Storico insufficiente per una previsione.",
+    "openTwin": "Apri il gemello digitale",
+    "covers": "coperti",
+    "toReorder": "da riordinare",
+    "twinLoading": "Carico il gemello digitale…",
+    "twinError": "Dati non disponibili.",
+    "twinEyebrow": "Gemello digitale",
+    "whatHappened": "Cosa è successo ieri",
+    "weekdayBaseline": "Media del giorno",
+    "why": "Perché",
+    "tomorrow": "Domani",
+    "walkIns": "Walk-in",
+    "expectedRevenue": "Incasso previsto",
+    "predictedSales": "Vendite previste",
+    "todayActions": "Cosa fare oggi",
+    "actionValue": "Potenziale ~{{value}}",
+    "noActions": "Nessuna azione urgente oggi.",
+    "backToDashboard": "Torna alla dashboard"
   }
 }
