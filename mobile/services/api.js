@@ -221,6 +221,16 @@ export const api = {
   getMenuBroadcastStats: () => request('/api/restaurant/menu-broadcasts/stats'),
   getActionPlan: () => request('/api/restaurant/action-plan'),
   getTrending: () => request('/api/restaurant/trending'),
+
+  // ── AI-OS surfaces ─────────────────────────────────────────────────
+  // Operator-facing "AI operating system" endpoints. All read-only and
+  // honest about missing data (has_data flags, null scores) so the mobile
+  // UI can render learning / empty states rather than fake zeros.
+  getCommandCenter:        () => request('/api/restaurant/command-center'),
+  getHealthScore:          () => request('/api/restaurant/health-score'),
+  getDigitalTwin:          () => request('/api/restaurant/digital-twin'),
+  getReservationsForecast: () => request('/api/restaurant/forecast/reservations'),
+  getInventoryForecast:    () => request('/api/restaurant/forecast/inventory'),
   getMlSuggestions: () => request('/api/consumer/ml-suggestions'),
   getAtRiskGuests: () => request('/api/restaurant/crm/at-risk'),
   draftWinback: (id, body) => request(`/api/restaurant/crm/${id}/winback`, { method: 'POST', body: JSON.stringify(body) }),
