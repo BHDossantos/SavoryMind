@@ -178,6 +178,64 @@ function LossEstimateCard() {
   );
 }
 
+// Recovered-€ counter (P2-COACHING §6.3). Compact companion to the loss hero:
+// the loss card shows what's bleeding, this shows what the coaching loop has
+// stopped this month. Honest empty state — a brand-new account with no prior
+// baseline sees an encouraging hint, never a hollow "€0".
+function RecoveredCard() {
+  const { t, i18n } = useTranslation();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    api.getRecovered()
+      .then((d) => { if (alive) setData(d); })
+      .catch(() => { if (alive) setError(true); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-green-100 bg-white p-4 animate-pulse">
+        <div className="h-3 w-24 bg-green-100 rounded mb-3" />
+        <div className="h-6 w-32 bg-gray-100 rounded" />
+      </div>
+    );
+  }
+
+  if (error || !data) return null;
+
+  const recovered = Number(data.recovered_this_month) || 0;
+  const priorLoss = Number(data.prior_month_loss) || 0;
+  const noBaseline = recovered === 0 && priorLoss === 0;
+
+  return (
+    <Link
+      href="/restaurant/coaching"
+      className="flex items-center gap-3 rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-4 shadow-sm hover:shadow-md transition-all"
+    >
+      <span className="text-3xl flex-shrink-0" aria-hidden>💚</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-0.5">
+          {t("coaching.recoveredEyebrow")}
+        </p>
+        {noBaseline ? (
+          <p className="text-sm font-semibold text-gray-600 leading-snug">
+            {t("coaching.recoveredEmptyHint")}
+          </p>
+        ) : (
+          <p className="text-xl font-extrabold text-green-700 leading-snug">
+            {fmtEur(recovered, i18n.language)}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
@@ -248,8 +306,15 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Money-number hero — the pivot's top surface, above all existing content. */}
-      <LossEstimateCard />
+      {/* Money-number hero — the pivot's top surface, above all existing
+          content. Paired with the recovered-€ counter: loss found vs. loss
+          stopped, side by side. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 items-start">
+        <div className="lg:col-span-2 [&>*]:mb-0">
+          <LossEstimateCard />
+        </div>
+        <RecoveredCard />
+      </div>
 
       {lapsed && (
         <Link

@@ -36,8 +36,9 @@ const GROUPS_TOP = [
     key: "coaching",
     labelKey: "nav.groupCoaching",
     icon: "🧑‍🍳",
-    lead: "/restaurant/staff",
+    lead: "/restaurant/coaching",
     children: [
+      { href: "/restaurant/coaching", labelKey: "nav.coaching", icon: "🎯" },
       { href: "/restaurant/staff", labelKey: "nav.staff", icon: "👥" },
       { href: "/restaurant/stafftime", labelKey: "nav.stafftime", icon: "⏱️" },
       { href: "/restaurant/training", labelKey: "nav.training", icon: "🎓" },

@@ -35,6 +35,7 @@ export default function MoreScreen() {
   const FEATURES = [
     { icon: '📅', title: t('restaurantFeatures.bookings'),      sub: t('restaurantFeatures.bookingsSub'),      screen: 'bookings' },
     { icon: '👥', title: t('restaurantFeatures.crm'),            sub: t('restaurantFeatures.crmSub'),           screen: 'crm' },
+    { icon: '🎯', title: t('restaurantFeatures.coaching'),      sub: t('restaurantFeatures.coachingSub'),      screen: 'coaching' },
     { icon: '🧑‍🍳', title: t('restaurantFeatures.staff'),      sub: t('restaurantFeatures.staffSub'),         screen: 'staff' },
     { icon: '👥', title: t('restaurantFeatures.employees'),      sub: t('restaurantFeatures.employeesSub'),     screen: 'employees' },
     { icon: '🔮', title: t('restaurantFeatures.forecast'),       sub: t('restaurantFeatures.forecastSub'),      screen: 'predictions' },

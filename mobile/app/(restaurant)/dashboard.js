@@ -8,6 +8,7 @@ import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 function greetingKey() {
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [billingStatus, setBillingStatus] = useState(null);
   const [actionPlan, setActionPlan] = useState([]);
   const [trending, setTrending] = useState(null);
+  const [recovered, setRecovered] = useState(null);
 
   // Pull the billing status so we can surface a renew nudge when the
   // subscription lapses. Silent on failure — billing being off is fine.
@@ -36,6 +38,9 @@ export default function Dashboard() {
     api.getRestaurantBillingStatus().then(setBillingStatus).catch(() => {});
     api.getActionPlan().then((r) => setActionPlan(r?.actions || [])).catch(() => {});
     api.getTrending().then(setTrending).catch(() => {});
+    // P2 coaching — money recovered this month for the counter. Silent on
+    // failure so a coaching-less account doesn't see an error.
+    api.getRecovered().then(setRecovered).catch(() => {});
   }, [user?.account_type]);
 
   // Quick actions strip. Per-render so labels re-translate on language

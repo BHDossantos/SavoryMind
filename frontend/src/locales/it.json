@@ -35,7 +35,8 @@
     "groupMenu": "Menu & Margini",
     "groupSettings": "Impostazioni & Billing",
     "otherTools": "Altri strumenti",
-    "upgradeToUnlock": "Passa a un piano superiore per sbloccare"
+    "upgradeToUnlock": "Passa a un piano superiore per sbloccare",
+    "coaching": "Coaching"
   },
   "common": {
     "loading": "Caricamento…",
@@ -2612,5 +2613,65 @@
     "cardEmptySub": "In 15 minuti, una stima onesta di sprechi, porzioni e tempo dello staff.",
     "cardEmptyCta": "Scopri quanto stai perdendo →",
     "cardGuarantee": "La tua cucina è già molto efficiente"
+  },
+  "coaching": {
+    "title": "Coaching Staff",
+    "subtitle": "Registra episodi in pochi secondi e trasformali in piani di crescita.",
+    "quickLogEyebrow": "Registro rapido",
+    "quickLogTitle": "Cosa è successo?",
+    "stepWho": "Chi",
+    "stepWhat": "Cosa",
+    "stepHowMuch": "Quanto (€)",
+    "logButton": "Registra",
+    "logged": "✓ Registrato",
+    "logError": "Impossibile registrare l'episodio.",
+    "noStaff": "Aggiungi prima un membro dello staff.",
+    "unknownStaff": "Staff",
+    "detailsToggle": "Aggiungi dettagli",
+    "quantity": "Quantità",
+    "causeTags": "Cause",
+    "notes": "Note",
+    "notesPlaceholder": "Dettagli opzionali…",
+    "plansTitle": "Piani di coaching",
+    "plansSub": "Rivedi e approva. I piani partono solo dopo la tua conferma.",
+    "generateButton": "Genera piani",
+    "generateError": "Generazione non riuscita.",
+    "draftsLabel": "Bozze",
+    "activeLabel": "Attivi",
+    "approve": "Approva",
+    "approveError": "Approvazione non riuscita.",
+    "aiBadge": "AI",
+    "autoBadge": "auto",
+    "loading": "Caricamento…",
+    "plansEmptyTitle": "Nessun piano ancora",
+    "plansEmptyBody": "Registra qualche episodio, poi genera i piani.",
+    "statusActive": "Attivo",
+    "statusCompleted": "Completato",
+    "recoveredEyebrow": "Recuperato questo mese",
+    "recoveredEmptyHint": "Registra episodi per iniziare a misurare i recuperi.",
+    "recoveredTitle": "Recuperato questo mese",
+    "approveAll": "Approva tutti",
+    "type": {
+      "waste": "Sprechi",
+      "portioning": "Porzioni",
+      "speed": "Tempi",
+      "punctuality": "Puntualità",
+      "quality": "Qualità"
+    },
+    "priority": {
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Bassa"
+    },
+    "cause": {
+      "over_portioning": "Porzioni eccessive",
+      "cooking_error": "Errore di cottura",
+      "spoilage": "Deterioramento",
+      "prep_waste": "Sprechi di preparazione",
+      "slow_ticket": "Ticket lento",
+      "late_arrival": "Ritardo",
+      "recipe_deviation": "Ricetta non rispettata",
+      "plating": "Impiattamento"
+    }
   }
 }

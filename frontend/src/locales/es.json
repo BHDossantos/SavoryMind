@@ -35,7 +35,8 @@
     "groupMenu": "Menú y márgenes",
     "groupSettings": "Ajustes y facturación",
     "otherTools": "Otras herramientas",
-    "upgradeToUnlock": "Mejora tu plan para desbloquear"
+    "upgradeToUnlock": "Mejora tu plan para desbloquear",
+    "coaching": "Coaching"
   },
   "common": {
     "loading": "Cargando…",
@@ -2612,5 +2613,65 @@
     "cardEmptySub": "En 15 minutos, una estimación honesta de desperdicio, porciones y tiempo del personal.",
     "cardEmptyCta": "Descubre cuánto estás perdiendo →",
     "cardGuarantee": "Tu cocina ya es muy eficiente"
+  },
+  "coaching": {
+    "title": "Coaching de personal",
+    "subtitle": "Registra incidencias en segundos y conviértelas en planes de mejora.",
+    "quickLogEyebrow": "Quick log",
+    "quickLogTitle": "¿Qué pasó?",
+    "stepWho": "Quién",
+    "stepWhat": "Qué",
+    "stepHowMuch": "Cuánto (€)",
+    "logButton": "Registrar",
+    "logged": "✓ Registrado",
+    "logError": "Couldn't log the incident.",
+    "noStaff": "Add a staff member first.",
+    "unknownStaff": "Staff",
+    "detailsToggle": "Add details",
+    "quantity": "Quantity",
+    "causeTags": "Causes",
+    "notes": "Notes",
+    "notesPlaceholder": "Optional details…",
+    "plansTitle": "Planes de coaching",
+    "plansSub": "Review and approve. Plans only start after your confirmation.",
+    "generateButton": "Generar planes",
+    "generateError": "Generation failed.",
+    "draftsLabel": "Drafts",
+    "activeLabel": "Active",
+    "approve": "Aprobar",
+    "approveError": "Approval failed.",
+    "aiBadge": "AI",
+    "autoBadge": "auto",
+    "loading": "Loading…",
+    "plansEmptyTitle": "No plans yet",
+    "plansEmptyBody": "Log a few incidents, then generate plans.",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "recoveredEyebrow": "Recuperado este mes",
+    "recoveredEmptyHint": "Log incidents to start measuring recovery.",
+    "recoveredTitle": "Recuperado este mes",
+    "approveAll": "Aprobar todos",
+    "type": {
+      "waste": "Desperdicio",
+      "portioning": "Porciones",
+      "speed": "Tiempos",
+      "punctuality": "Puntualidad",
+      "quality": "Calidad"
+    },
+    "priority": {
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja"
+    },
+    "cause": {
+      "over_portioning": "Over-portioning",
+      "cooking_error": "Cooking error",
+      "spoilage": "Spoilage",
+      "prep_waste": "Prep waste",
+      "slow_ticket": "Slow ticket",
+      "late_arrival": "Late arrival",
+      "recipe_deviation": "Recipe deviation",
+      "plating": "Plating"
+    }
   }
 }
