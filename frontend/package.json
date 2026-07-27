@@ -13,7 +13,7 @@
     "clsx": "^2.1.1",
     "i18next": "^26.2.0",
     "i18next-browser-languagedetector": "^8.2.1",
-    "next": "^15.5.15",
+    "next": "^15.5.22",
     "next-auth": "^4.24.14",
     "posthog-js": "^1.200.0",
     "qrcode": "^1.5.4",
