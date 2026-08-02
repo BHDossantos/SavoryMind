@@ -48,21 +48,25 @@ def test_reservations_forecast_no_history(client, db_session):
     assert fc["predicted_reservations"] is None
 
 
-def test_reservations_expected_revenue_uses_avg_ticket(client, db_session):
+def test_reservations_expected_revenue_is_weekday_avg_daily_revenue(client, db_session):
+    # Expected revenue = actual average daily revenue on the SAME weekday as
+    # tomorrow — NOT covers × price-per-dish (which understates 2-4×).
     token, owner = _restaurant(client, db_session, "fc3@example.com")
+    db_session.query(Booking).filter(Booking.user_id == owner.id).delete()
+    db_session.query(SalesLog).filter(SalesLog.user_id == owner.id).delete()
     tomorrow = date.today() + timedelta(days=1)
     for w in range(1, 4):
-        d = tomorrow - timedelta(days=7 * w)
+        d = tomorrow - timedelta(days=7 * w)  # same weekday as tomorrow
         db_session.add(Booking(user_id=owner.id, customer_name="X", date=d,
                                time_slot="20:00", party_size=4, status="confirmed",
                                source="online"))
-    # Avg ticket €25 from 30d sales.
-    db_session.add(SalesLog(user_id=owner.id, item_name="Dish", quantity=4, revenue=100.0,
-                            sale_date=date.today(), hour_of_day=20, day_of_week=1))
+        # €800 of real revenue on each of those 3 same-weekday days (multi-item).
+        db_session.add(SalesLog(user_id=owner.id, item_name="Dish", quantity=32, revenue=800.0,
+                                sale_date=d, hour_of_day=20, day_of_week=d.weekday()))
     db_session.commit()
     fc = forecasting_service.reservations_forecast(db_session, owner.id)
-    assert fc["expected_revenue"] is not None
-    assert fc["expected_revenue"] > 0
+    # Weekday avg daily revenue = €800 — reflects total spend, not €25/dish × covers.
+    assert fc["expected_revenue"] == 800.0
 
 
 # ── Inventory ─────────────────────────────────────────────────────────────────
@@ -72,13 +76,16 @@ def test_inventory_forecast_usage_velocity(client, db_session):
     item = InventoryItem(user_id=owner.id, name="Chicken", category="food", unit="kg",
                          par_level=10.0)
     db_session.add(item); db_session.commit(); db_session.refresh(item)
-    # Delivery of 56kg, then 28kg used over the window → ~1kg/day, ~28kg left.
+    # Delivery 48kg, then 20kg used SPREAD across a 20-day span → 1kg/day, 28kg left.
     db_session.add(InventoryAdjustment(item_id=item.id, user_id=owner.id,
-                                       adjustment_type="delivery", delta=56.0,
-                                       created_at=datetime.utcnow() - timedelta(days=27)))
+                                       adjustment_type="delivery", delta=48.0,
+                                       created_at=datetime.utcnow() - timedelta(days=20)))
     db_session.add(InventoryAdjustment(item_id=item.id, user_id=owner.id,
-                                       adjustment_type="usage", delta=-28.0,
-                                       created_at=datetime.utcnow() - timedelta(days=1)))
+                                       adjustment_type="usage", delta=-10.0,
+                                       created_at=datetime.utcnow() - timedelta(days=20)))
+    db_session.add(InventoryAdjustment(item_id=item.id, user_id=owner.id,
+                                       adjustment_type="usage", delta=-10.0,
+                                       created_at=datetime.utcnow() - timedelta(days=10)))
     db_session.commit()
     fc = forecasting_service.inventory_forecast(db_session, owner.id)
     assert fc["has_data"] is True
@@ -86,6 +93,30 @@ def test_inventory_forecast_usage_velocity(client, db_session):
     assert chicken["on_hand"] == 28.0
     assert chicken["daily_use"] == 1.0
     assert chicken["days_until_stockout"] == 28.0
+
+
+def test_inventory_short_history_does_not_overstate_runway(client, db_session):
+    # Regression: a SKU tracked only 4 days must divide usage by ~4, not 28.
+    token, owner = _restaurant(client, db_session, "fc-short@example.com")
+    item = InventoryItem(user_id=owner.id, name="Basil", category="food", unit="kg",
+                         par_level=1.0)
+    db_session.add(item); db_session.commit(); db_session.refresh(item)
+    db_session.add(InventoryAdjustment(item_id=item.id, user_id=owner.id,
+                                       adjustment_type="delivery", delta=12.0,
+                                       created_at=datetime.utcnow() - timedelta(days=4)))
+    db_session.add(InventoryAdjustment(item_id=item.id, user_id=owner.id,
+                                       adjustment_type="usage", delta=-4.0,
+                                       created_at=datetime.utcnow() - timedelta(days=4)))
+    db_session.add(InventoryAdjustment(item_id=item.id, user_id=owner.id,
+                                       adjustment_type="usage", delta=-4.0,
+                                       created_at=datetime.utcnow() - timedelta(days=1)))
+    db_session.commit()
+    fc = forecasting_service.inventory_forecast(db_session, owner.id)
+    basil = next(i for i in fc["items"] if i["name"] == "Basil")
+    # 8kg used over a 4-day span → 2kg/day, 4kg left → 2 days, NOT 8/28→14 days.
+    assert basil["daily_use"] == 2.0
+    assert basil["days_until_stockout"] == 2.0
+    assert basil["reorder_now"] is True
 
 
 def test_inventory_reorder_flag_when_low(client, db_session):

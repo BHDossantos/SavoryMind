@@ -233,9 +233,12 @@ export const api = {
   getSchedule: (weekStart) => request(`/api/restaurant/schedule${weekStart ? `?week_start=${weekStart}` : ""}`),
   createShift: (body) => request("/api/restaurant/schedule/shifts", { method: "POST", body: JSON.stringify(body) }),
   deleteShift: (id) => request(`/api/restaurant/schedule/shifts/${id}`, { method: "DELETE" }),
-  getClockStatus: () => request("/api/restaurant/clock/status"),
-  clockIn: (staffId) => request("/api/restaurant/clock/in", { method: "POST", body: JSON.stringify({ staff_id: staffId }) }),
-  clockOut: (staffId, breakMinutes = 0) => request("/api/restaurant/clock/out", { method: "POST", body: JSON.stringify({ staff_id: staffId, break_minutes: breakMinutes }) }),
+  // Restaurant-side time clock (owner punches staff in/out). Distinct names
+  // from the staff-portal self-service trio below — a duplicate key would let
+  // the later definition silently shadow this one and break the schedule page.
+  getRestaurantClockStatus: () => request("/api/restaurant/clock/status"),
+  restaurantClockIn: (staffId) => request("/api/restaurant/clock/in", { method: "POST", body: JSON.stringify({ staff_id: staffId }) }),
+  restaurantClockOut: (staffId, breakMinutes = 0) => request("/api/restaurant/clock/out", { method: "POST", body: JSON.stringify({ staff_id: staffId, break_minutes: breakMinutes }) }),
   getOpsTasks: () => request("/api/restaurant/operations/tasks"),
   createOpsTask: (body) => request("/api/restaurant/operations/tasks", { method: "POST", body: JSON.stringify(body) }),
   toggleOpsTask: (id, done) => request(`/api/restaurant/operations/tasks/${id}?done=${done}`, { method: "PATCH" }),

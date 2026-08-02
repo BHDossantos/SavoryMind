@@ -41,9 +41,14 @@ export default function PredictionsScreen() {
 
   if (loading) return <LoadingSpinner message="Calculating forecast..." color={C.restaurant.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={() => load()} />;
+  // getPredictions() returns null on HTTP 204, or an object without top_items
+  // for a brand-new restaurant — guard before reducing/mapping to avoid a crash.
+  if (!data || !Array.isArray(data.top_items)) {
+    return <ErrorMessage message="Nessuna previsione disponibile ancora." onRetry={() => load()} />;
+  }
 
-  const totalOrders  = data.top_items.reduce((s, i) => s + i.predicted_orders, 0);
-  const totalRevenue = data.top_items.reduce((s, i) => s + i.predicted_revenue, 0);
+  const totalOrders  = data.top_items.reduce((s, i) => s + (i.predicted_orders || 0), 0);
+  const totalRevenue = data.top_items.reduce((s, i) => s + (i.predicted_revenue || 0), 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>

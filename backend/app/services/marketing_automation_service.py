@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..models.restaurant_ext import CRMCustomer
@@ -77,10 +78,17 @@ def _record(db: Session, user_id: int, customer_id: int, ttype: str, period: str
               .first())
     if exists:
         return False
-    db.add(MarketingTrigger(user_id=user_id, customer_id=customer_id,
-                            trigger_type=ttype, period=period, status="suggested"))
-    db.flush()
-    return True
+    # Wrap the insert in a SAVEPOINT so a concurrent request that inserted the
+    # same (customer, type, period) first — the unique constraint — rolls back
+    # only THIS insert, not the whole run, and we treat it as already-recorded
+    # instead of surfacing a 500. (run_triggers can fire on a GET.)
+    try:
+        with db.begin_nested():
+            db.add(MarketingTrigger(user_id=user_id, customer_id=customer_id,
+                                    trigger_type=ttype, period=period, status="suggested"))
+        return True
+    except IntegrityError:
+        return False
 
 
 def list_triggers(db: Session, owner_id: int, status: str = "suggested") -> list[dict]:
