@@ -325,7 +325,7 @@ export default function Dashboard() {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   {a.estimated_gain > 0 && (
-                    <Text style={actionStyles.gain}>+${a.estimated_gain.toFixed(0)}</Text>
+                    <Text style={actionStyles.gain}>+{formatEuro(a.estimated_gain, 'it', { decimals: 0 })}</Text>
                   )}
                   <Text style={actionStyles.cta}>{a.cta_label} →</Text>
                 </View>

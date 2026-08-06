@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 import { useFocusEffect } from 'expo-router';
 
 // Category enum values stay in English — they're the canonical strings
@@ -118,7 +119,7 @@ export default function MenuScreen() {
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemCat}>{CAT_LABEL[item.category] || item.category}</Text>
               <View style={styles.itemMeta}>
-                <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                <Text style={styles.itemPrice}>{formatEuro(item.price)}</Text>
                 <MarginBadge margin={item.profit_margin} />
                 <Text style={styles.itemOrders}>{t('menuScreen.ordersN', { count: item.orders_last_30_days })}</Text>
               </View>

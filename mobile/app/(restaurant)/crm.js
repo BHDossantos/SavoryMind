@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 
 const EMPTY = { name: '', email: '', phone: '', notes: '', menu_sms_opt_in: false };
 
@@ -141,7 +142,7 @@ export default function CRMScreen() {
           {[
             { label: 'Total Customers', value: summary.total_customers },
             { label: 'VIP Regulars', value: summary.vip_count ?? customers.filter(c => (c.tags || '').includes('vip')).length },
-            { label: 'Avg Spend', value: `$${(summary.avg_spend ?? 0).toFixed(0)}` },
+            { label: 'Avg Spend', value: formatEuro(summary.avg_spend ?? 0, 'it', { decimals: 0 }) },
           ].map(s => (
             <View key={s.label} style={styles.statCard}>
               <Text style={styles.statValue}>{s.value}</Text>
@@ -184,7 +185,7 @@ export default function CRMScreen() {
                 <Text style={styles.name}>{c.name}</Text>
                 {(c.tags || '').split(',').filter(Boolean).map(t => <Tag key={t} label={t.trim()} />)}
               </View>
-              <Text style={styles.meta}>{c.total_visits} visits · ${(c.total_spend || 0).toFixed(0)} total · avg ${c.total_visits > 0 ? (c.total_spend / c.total_visits).toFixed(0) : 0}/visit</Text>
+              <Text style={styles.meta}>{c.total_visits} visits · {formatEuro(c.total_spend || 0, 'it', { decimals: 0 })} total · avg {formatEuro(c.total_visits > 0 ? c.total_spend / c.total_visits : 0, 'it', { decimals: 0 })}/visit</Text>
               {c.last_visit && <Text style={styles.sub}>Last visit: {c.last_visit}</Text>}
               {c.favorite_items && <Text style={styles.sub}>Favourites: {c.favorite_items}</Text>}
               <View style={styles.smsToggleRow}>
