@@ -10,6 +10,7 @@ we never message a diner automatically, which keeps it GDPR-clean.
 """
 from __future__ import annotations
 
+import calendar
 from datetime import date, timedelta
 
 from sqlalchemy.exc import IntegrityError
@@ -30,6 +31,12 @@ def _birthday_within(bday: date | None, today: date, days: int) -> bool:
     for d in range(days + 1):
         t = today + timedelta(days=d)
         if t.month == bday.month and t.day == bday.day:
+            return True
+        # A Feb-29 birthday has no calendar day in a non-leap year — celebrate
+        # it on Feb 28 so leap-day guests still get their trigger every year.
+        if (bday.month == 2 and bday.day == 29
+                and t.month == 2 and t.day == 28
+                and not calendar.isleap(t.year)):
             return True
     return False
 
