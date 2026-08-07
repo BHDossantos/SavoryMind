@@ -235,7 +235,7 @@ export default function ConsumerDashboard() {
           behavior and pairing history (insights/engine.py). ── */}
       {recs.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-800 mb-3">Recommended for you</h2>
+          <h2 className="font-semibold text-gray-800 mb-3">{t("consumerDashboard.recommendedForYou")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {recs.slice(0, 6).map((r, i) => (
               <Link key={i} href={recHref(r.action)}

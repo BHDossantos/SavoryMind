@@ -256,7 +256,8 @@
     "primaryCook": "Cuisinez quelque chose",
     "primaryCookSub": "Idées de recettes du garde-manger",
     "mlTitle": "Choisi pour vous",
-    "mlSub": "Appris de ce que vous et vos semblables aimez."
+    "mlSub": "Appris de ce que vous et vos semblables aimez.",
+    "recommendedForYou": "Recommandé pour vous"
   },
   "sentimentPage": {
     "title": "Sentiment des clients",
@@ -2213,7 +2214,9 @@
     "pendingMsg": "L'équipe de {{name}} confirmera sous peu.",
     "confirmationFootnote": "Vous recevrez une confirmation par SMS ou téléphone si besoin.",
     "reviews": "avis",
-    "menuTitle": "Menu"
+    "menuTitle": "Menu",
+    "loadError": "Une erreur s'est produite lors du chargement de la page.",
+    "retry": "Réessayer"
   },
   "moodPage": {
     "title": "Mood to meal",
