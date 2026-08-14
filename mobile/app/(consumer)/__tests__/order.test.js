@@ -45,7 +45,7 @@ beforeEach(() => {
 describe('Order screen', () => {
   test('renders craving grid on first paint', async () => {
     const { findByText } = render(<OrderScreen />);
-    expect(await findByText('What are you hungry for?')).toBeDefined();
+    expect(await findByText('What are you hungry for tonight?')).toBeDefined();
     expect(await findByText('Spicy & Bold')).toBeDefined();
     expect(api.getDeliveryDishes).not.toHaveBeenCalled();
   });
