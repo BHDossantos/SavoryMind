@@ -40,7 +40,7 @@ const MOODS = [
   { id: "business",    labelKey: "discoverPage.moodBusiness" },
   { id: "family",      labelKey: "discoverPage.moodFamily" },
 ];
-const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const PRICE_LABELS = { 1: "€", 2: "€€", 3: "€€€", 4: "€€€€" };
 const STYLE_ICONS = {
   fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
   pub: "🍺", cafe: "☕", fast_casual: "🌯",
@@ -213,7 +213,7 @@ export default function DiscoverPage() {
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-bold text-gray-900 truncate">{r.name}</h3>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-gray-500">{PRICE_LABELS[r.price_level] || "$$"}</span>
+                        <span className="text-xs text-gray-500">{PRICE_LABELS[r.price_level] || "€€"}</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleSave(r.id); }}
                           className="text-base hover:scale-110 transition-transform"
