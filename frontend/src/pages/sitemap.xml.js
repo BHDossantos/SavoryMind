@@ -20,6 +20,7 @@ const LOCALIZED_PAIRS = [
 // Single-locale marketing + legal/support routes.
 const SINGLE_ROUTES = [
   "/ristoranti",
+  "/calcolatore-spreco",
   "/come-funziona",
   "/case-studies",
   "/contatti",
