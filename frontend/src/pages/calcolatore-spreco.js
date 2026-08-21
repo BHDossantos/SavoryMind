@@ -49,6 +49,7 @@ const FAQS = [
 
 export default function CalcolatoreSpreco() {
   const [vals, setVals] = useState({});
+  const [lastBody, setLastBody] = useState({});
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -63,6 +64,7 @@ export default function CalcolatoreSpreco() {
       if (raw !== "" && !Number.isNaN(Number(raw))) body[f.key] = Number(raw);
     }
     try {
+      setLastBody(body);
       setResult(await api.submitPublicEstimate(body));
     } catch {
       setError(true);
@@ -157,7 +159,7 @@ export default function CalcolatoreSpreco() {
             )}
           </div>
 
-          {result && <Result result={result} />}
+          {result && <Result result={result} body={lastBody} />}
         </section>
 
         {/* Crawlable FAQ */}
@@ -177,7 +179,7 @@ export default function CalcolatoreSpreco() {
   );
 }
 
-function Result({ result }) {
+function Result({ result, body }) {
   const low = Number(result.total_monthly_loss_low) || 0;
   const high = Number(result.total_monthly_loss_high) || 0;
   const breakdown = result.breakdown || [];
@@ -237,6 +239,80 @@ function Result({ result }) {
           Collega le vendite e ricevi la scoperta completa + i piani per recuperarlo.
         </p>
       </div>
+
+      <LeadForm body={body} result={result} />
+    </div>
+  );
+}
+
+function LeadForm({ body, result }) {
+  const [email, setEmail] = useState("");
+  const [restaurant, setRestaurant] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | sending | done | error
+
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const submit = async () => {
+    if (!valid) return;
+    setStatus("sending");
+    try {
+      await api.submitLead({
+        email: email.trim(),
+        restaurant_name: restaurant.trim() || undefined,
+        ...body,
+        band_low: result.total_monthly_loss_low,
+        band_high: result.total_monthly_loss_high,
+        source: "calcolatore",
+      });
+      setStatus("done");
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  if (status === "done") {
+    return (
+      <div className="mt-6 border-t border-brand-100 pt-5 text-center">
+        <p className="font-semibold text-green-700">Fatto — ti scriviamo a breve 📩</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Ti invieremo il report dettagliato e come iniziare a recuperare queste perdite.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 border-t border-brand-100 pt-5">
+      <p className="text-sm font-semibold text-gray-800">Vuoi il report dettagliato via email?</p>
+      <p className="text-xs text-gray-500 mt-0.5 mb-3">
+        Nessuno spam — solo la tua analisi e i prossimi passi. Puoi disiscriverti quando vuoi.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="text"
+          value={restaurant}
+          onChange={(e) => setRestaurant(e.target.value)}
+          placeholder="Nome del ristorante (facoltativo)"
+          className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+        />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="La tua email"
+          className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+        />
+        <button
+          onClick={submit}
+          disabled={!valid || status === "sending"}
+          className="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 transition whitespace-nowrap"
+        >
+          {status === "sending" ? "Invio…" : "Invia"}
+        </button>
+      </div>
+      {status === "error" && (
+        <p className="text-xs text-red-600 mt-2">Invio non riuscito. Riprova tra un momento.</p>
+      )}
     </div>
   );
 }

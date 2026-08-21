@@ -290,6 +290,16 @@ export const api = {
       if (!r.ok) throw new Error("estimate_failed");
       return r.json();
     }),
+  // Public lead capture from the calculator — bare fetch, no token.
+  submitLead: (body) =>
+    fetch(`${getBaseUrl()}/api/loss/lead`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => {
+      if (!r.ok) throw new Error("lead_failed");
+      return r.json();
+    }),
   // Sales export upload (Path A). Multipart: the browser MUST set the
   // Content-Type (with the multipart boundary) itself, so we never set it
   // by hand here — same pattern as snapMenu. `formData` carries `file`
