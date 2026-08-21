@@ -21,6 +21,7 @@ const LOCALIZED_PAIRS = [
 const SINGLE_ROUTES = [
   "/ristoranti",
   "/calcolatore-spreco",
+  "/ridurre-lo-spreco",
   "/come-funziona",
   "/case-studies",
   "/contatti",
