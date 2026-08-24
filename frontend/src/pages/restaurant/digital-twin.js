@@ -106,7 +106,7 @@ export default function DigitalTwinPage() {
           </span>
           <span className="text-sm text-gray-400">/100</span>
           <span className={`ml-auto text-sm font-semibold ${BAND_STYLE[twin.health?.band]}`}>
-            {t(`aios.band.${twin.health?.band}`)}
+            {twin.health?.band && t(`aios.band.${twin.health.band}`)}
           </span>
         </div>
       </Section>

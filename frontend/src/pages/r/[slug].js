@@ -118,6 +118,24 @@ export default function GuestBookingPage() {
       </div>
     );
   }
+  // Any other load failure (transient 500, network blip) — show an error with
+  // a retry, never a blank, unusable booking form on this public surface.
+  if (loadErr || !restaurant) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center">
+          <p className="text-5xl mb-4">⚠️</p>
+          <h1 className="text-xl font-bold text-gray-900">{t("guestBookingPage.loadError")}</h1>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold"
+          >
+            {t("guestBookingPage.retry")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

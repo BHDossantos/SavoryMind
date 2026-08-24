@@ -7,7 +7,9 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 
 // Indicative price shown on the card. The amount actually charged comes from
 // the Stripe Price (STRIPE_PRICE_ID) — keep this label in sync with it.
-const PRICE_LABEL = "$9.99";
+// EUR to match the rest of the product (pricing page, restaurant billing,
+// Italy pilot); European formatting (comma decimal).
+const PRICE_LABEL = "€9,99";
 
 export default function UpgradePage() {
   const router = useRouter();

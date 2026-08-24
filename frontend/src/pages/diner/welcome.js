@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
-const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const PRICE_LABELS = { 1: "€", 2: "€€", 3: "€€€", 4: "€€€€" };
 const STYLE_ICONS = {
   fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
   pub: "🍺", cafe: "☕", fast_casual: "🌯",
@@ -176,7 +176,7 @@ export default function DinerWelcomePage() {
                   <div className="mb-1">
                     <h3 className="font-bold text-gray-900 text-xs leading-tight">{r.name}</h3>
                   </div>
-                  <p className="text-xs text-gray-500 mb-2">{(r.cuisine || []).slice(0, 2).join(", ")} · {PRICE_LABELS[r.price_level] || "$$"}</p>
+                  <p className="text-xs text-gray-500 mb-2">{(r.cuisine || []).slice(0, 2).join(", ")} · {PRICE_LABELS[r.price_level] || "€€"}</p>
                   <button onClick={() => setReserving(r)}
                     className="w-full text-xs bg-diner-600 text-white font-semibold py-1.5 rounded-lg hover:bg-diner-700 transition-colors">
                     {t("dinerWelcomePage.reserve")}

@@ -31,7 +31,7 @@ export default function Schedule() {
 
   const load = () => {
     setLoading(true); setError(null);
-    Promise.all([api.getSchedule(weekStart), api.getStaff(), api.getClockStatus()])
+    Promise.all([api.getSchedule(weekStart), api.getStaff(), api.getRestaurantClockStatus()])
       .then(([sch, st, clk]) => { setData(sch); setStaff(st); setOnClock(clk.on_clock || []); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -43,9 +43,9 @@ export default function Schedule() {
   const punch = async (staffId) => {
     setBusy(true);
     try {
-      if (isOnClock(staffId)) await api.clockOut(staffId);
-      else await api.clockIn(staffId);
-      const clk = await api.getClockStatus();
+      if (isOnClock(staffId)) await api.restaurantClockOut(staffId);
+      else await api.restaurantClockIn(staffId);
+      const clk = await api.getRestaurantClockStatus();
       setOnClock(clk.on_clock || []);
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }

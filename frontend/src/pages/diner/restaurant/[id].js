@@ -16,7 +16,7 @@ const STYLE_KEY = {
   cafe:        "discoverPage.styleCafe",
   fast_casual: "discoverPage.styleFastCasual",
 };
-const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const PRICE_LABELS = { 1: "€", 2: "€€", 3: "€€€", 4: "€€€€" };
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -96,7 +96,7 @@ export default function RestaurantProfile() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h1 className="text-2xl font-bold text-gray-900">{r.name}</h1>
-              <span className="text-sm text-gray-500 font-medium flex-shrink-0">{PRICE_LABELS[r.price_level] || "$$"}</span>
+              <span className="text-sm text-gray-500 font-medium flex-shrink-0">{PRICE_LABELS[r.price_level] || "€€"}</span>
             </div>
             {r.review_count > 0 && (
               <p className="text-sm font-semibold text-amber-600 mt-0.5">

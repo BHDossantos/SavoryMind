@@ -256,7 +256,8 @@
     "primaryCook": "Cozinhe algo",
     "primaryCookSub": "Ideias de receita da sua despensa",
     "mlTitle": "Escolhido para você",
-    "mlSub": "Aprendido do que você e pessoas como você gostam."
+    "mlSub": "Aprendido do que você e pessoas como você gostam.",
+    "recommendedForYou": "Recomendado para você"
   },
   "sentimentPage": {
     "title": "Opiniões de clientes",
@@ -2213,7 +2214,9 @@
     "pendingMsg": "A equipe de {{name}} confirmará em breve.",
     "confirmationFootnote": "Você receberá uma confirmação por SMS ou telefone se necessário.",
     "reviews": "avaliações",
-    "menuTitle": "Menu"
+    "menuTitle": "Menu",
+    "loadError": "Algo deu errado ao carregar a página.",
+    "retry": "Tentar novamente"
   },
   "moodPage": {
     "title": "Mood to meal",

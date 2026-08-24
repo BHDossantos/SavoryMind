@@ -56,9 +56,12 @@ def reservations_forecast(db: Session, user_id: int) -> dict:
     walkin_share = (sum(1 for b in same_dow if b.source != "online") / len(same_dow))
     predicted_walk_ins = round(avg_covers * walkin_share * 0.5)  # conservative
 
-    # Expected revenue = covers × average ticket (from sales history).
-    avg_ticket = _avg_ticket(db, user_id)
-    expected_revenue = round(avg_covers * avg_ticket, 2) if avg_ticket else None
+    # Expected revenue = what this restaurant typically earns on this weekday
+    # (average actual daily revenue), NOT covers × per-dish price. Sales-log
+    # rows are per-item, so dividing revenue by item quantity gives price per
+    # dish, not per cover — multiplying that by covers understates by the
+    # dishes-per-cover factor. Weekday average daily revenue is the honest number.
+    expected_revenue = _weekday_avg_revenue(db, user_id, dow)
 
     confidence = "high" if n_days >= 6 else "medium" if n_days >= 3 else "low"
     return {
@@ -73,14 +76,16 @@ def reservations_forecast(db: Session, user_id: int) -> dict:
     }
 
 
-def _avg_ticket(db: Session, user_id: int) -> float | None:
-    since = date.today() - timedelta(days=30)
-    rev, units = (db.query(func.coalesce(func.sum(SalesLog.revenue), 0.0),
-                           func.coalesce(func.sum(SalesLog.quantity), 0))
-                  .filter(SalesLog.user_id == user_id, SalesLog.sale_date >= since).first())
-    if not units:
+def _weekday_avg_revenue(db: Session, user_id: int, dow: int) -> float | None:
+    """Average actual daily revenue on the given weekday over ~12 weeks."""
+    lookback = date.today() - timedelta(days=84)
+    rows = (db.query(SalesLog.sale_date, func.sum(SalesLog.revenue))
+            .filter(SalesLog.user_id == user_id, SalesLog.sale_date >= lookback)
+            .group_by(SalesLog.sale_date).all())
+    same = [r[1] or 0 for r in rows if r[0].weekday() == dow]
+    if not same:
         return None
-    return round(rev / units, 2)
+    return round(sum(same) / len(same), 2)
 
 
 _DOW_IT = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
@@ -107,10 +112,18 @@ def inventory_forecast(db: Session, user_id: int, horizon_days: int = 7) -> dict
         on_hand = sum(a.delta for a in adjustments)
         # Usage velocity: average daily consumption over the window (usage+waste,
         # which are negative deltas). Positive number = units/day consumed.
-        recent_use = sum(-a.delta for a in adjustments
-                         if a.created_at and a.created_at >= since
-                         and a.adjustment_type in ("usage", "waste") and a.delta < 0)
-        daily_use = recent_use / 28.0
+        use_rows = [a for a in adjustments
+                    if a.created_at and a.created_at >= since
+                    and a.adjustment_type in ("usage", "waste") and a.delta < 0]
+        recent_use = sum(-a.delta for a in use_rows)
+        # Divide by the actual span of history, not a flat 28 — a SKU tracked
+        # for only 4 days must not look like it has weeks of runway.
+        if use_rows:
+            earliest = min(a.created_at for a in use_rows)
+            span_days = max(1.0, min(28.0, (datetime.utcnow() - earliest).days or 1))
+        else:
+            span_days = 28.0
+        daily_use = recent_use / span_days
         days_left = round(on_hand / daily_use, 1) if daily_use > 0 else None
         needed = round(daily_use * horizon_days, 2)
         forecasts.append({

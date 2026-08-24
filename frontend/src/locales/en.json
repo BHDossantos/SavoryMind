@@ -256,7 +256,8 @@
     "primaryCook": "Cook something",
     "primaryCookSub": "Recipe ideas from your pantry",
     "mlTitle": "Picked for you",
-    "mlSub": "Learned from what you and people like you enjoy."
+    "mlSub": "Learned from what you and people like you enjoy.",
+    "recommendedForYou": "Recommended for you"
   },
   "sentimentPage": {
     "title": "Customer Sentiment",
@@ -1368,11 +1369,11 @@
     "bAny": "Any",
     "bAnySub": "All prices",
     "bBudget": "Budget",
-    "bBudgetSub": "Under $15",
+    "bBudgetSub": "Under €15",
     "bMid": "Mid",
-    "bMidSub": "$15–$25",
+    "bMidSub": "€15–€25",
     "bTreat": "Treat",
-    "bTreatSub": "$25+",
+    "bTreatSub": "€25+",
     "back": "← Back",
     "chooseDish": "Choose a dish",
     "matchedToCraving": "Matched to your craving — we'll find who delivers after.",
@@ -2213,7 +2214,9 @@
     "pendingMsg": "The team at {{name}} will confirm shortly.",
     "confirmationFootnote": "You'll get a confirmation by text or phone if needed.",
     "reviews": "reviews",
-    "menuTitle": "Menu"
+    "menuTitle": "Menu",
+    "loadError": "Something went wrong loading this page.",
+    "retry": "Try again"
   },
   "moodPage": {
     "title": "Mood to meal",

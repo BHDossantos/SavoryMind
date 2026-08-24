@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 
 const CAT_EMOJI = { Mains: '🍽️', Starters: '🥗', Desserts: '🍰', Drinks: '🍹' };
 
@@ -72,7 +73,7 @@ export default function ReportsScreen() {
         {/* Top-line summary */}
         <View style={styles.summaryRow}>
           {[
-            { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+            { label: 'Total Revenue', value: formatEuro(totalRevenue, 'it', { decimals: 0 }) },
             { label: 'Total Orders', value: totalOrders.toLocaleString() },
             { label: 'Avg Margin', value: `${avgMargin}%` },
           ].map(m => (
@@ -89,11 +90,11 @@ export default function ReportsScreen() {
           <View key={c.category} style={styles.catCard}>
             <View style={styles.catHeader}>
               <Text style={styles.catName}>{CAT_EMOJI[c.category] || '📊'} {c.category}</Text>
-              <Text style={styles.catRevenue}>${c.total_revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
+              <Text style={styles.catRevenue}>{formatEuro(c.total_revenue, 'it', { decimals: 0 })}</Text>
             </View>
             <View style={styles.catStats}>
               <MetricRow label="Items" value={c.item_count} />
-              <MetricRow label="Avg Price" value={`$${c.avg_price.toFixed(2)}`} />
+              <MetricRow label="Avg Price" value={formatEuro(c.avg_price)} />
               <MetricRow label="Avg Margin" value={`${c.avg_margin.toFixed(1)}%`} accent={c.avg_margin >= 60 ? C.green : c.avg_margin >= 40 ? C.amber : C.red} />
               <MetricRow label="Orders" value={c.total_orders} />
               <MetricRow label="Avg Rating" value={`${c.avg_rating.toFixed(1)} ⭐`} />
@@ -112,7 +113,7 @@ export default function ReportsScreen() {
                   <Text style={styles.rankName}>{item.name}</Text>
                   <Text style={styles.rankCat}>{item.category}</Text>
                 </View>
-                <Text style={styles.rankValue}>${item.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
+                <Text style={styles.rankValue}>{formatEuro(item.value, 'it', { decimals: 0 })}</Text>
               </View>
             ))}
           </>

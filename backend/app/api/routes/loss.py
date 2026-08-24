@@ -64,6 +64,53 @@ def public_estimate(body: PublicEstimateBody):
     return loss_engine.estimate(profile, audit=body.audit)
 
 
+class LeadBody(BaseModel):
+    email: str
+    restaurant_name: Optional[str] = None
+    covers_per_day: Optional[int] = None
+    avg_ticket_eur: Optional[float] = None
+    staff_count: Optional[int] = None
+    monthly_food_purchases_eur: Optional[float] = None
+    band_low: Optional[float] = None
+    band_high: Optional[float] = None
+    source: Optional[str] = None
+
+
+def _valid_email(email: str) -> bool:
+    email = (email or "").strip()
+    if not (3 < len(email) <= 255) or email.count("@") != 1:
+        return False
+    local, _, domain = email.partition("@")
+    return bool(local) and "." in domain and not domain.startswith(".") and not domain.endswith(".")
+
+
+@router.post("/lead")
+def capture_lead(body: LeadBody, db: Session = Depends(get_db)):
+    """Public, no-auth lead capture from the waste calculator. Turns funnel
+    traffic into a contactable prospect, tied to the € number they saw."""
+    from ...models.marketing import MarketingLead
+    if not _valid_email(body.email):
+        raise HTTPException(status_code=422, detail="Invalid email address.")
+    lead = MarketingLead(
+        email=body.email.strip().lower(),
+        restaurant_name=(body.restaurant_name or None),
+        source=(body.source or "calcolatore")[:40],
+        profile={
+            "covers_per_day": body.covers_per_day,
+            "avg_ticket_eur": body.avg_ticket_eur,
+            "staff_count": body.staff_count,
+            "monthly_food_purchases_eur": body.monthly_food_purchases_eur,
+        },
+        band_low=body.band_low,
+        band_high=body.band_high,
+    )
+    db.add(lead)
+    db.commit()
+    posthog_client.capture(f"lead:{lead.email}", "calculator_lead_captured",
+                           {"source": lead.source, "band_high": body.band_high})
+    return {"ok": True, "id": lead.id}
+
+
 class EstimateBody(BaseModel):
     audit: Optional[dict] = None  # {question_id: option_key}
 

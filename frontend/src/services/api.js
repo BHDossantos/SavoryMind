@@ -233,9 +233,12 @@ export const api = {
   getSchedule: (weekStart) => request(`/api/restaurant/schedule${weekStart ? `?week_start=${weekStart}` : ""}`),
   createShift: (body) => request("/api/restaurant/schedule/shifts", { method: "POST", body: JSON.stringify(body) }),
   deleteShift: (id) => request(`/api/restaurant/schedule/shifts/${id}`, { method: "DELETE" }),
-  getClockStatus: () => request("/api/restaurant/clock/status"),
-  clockIn: (staffId) => request("/api/restaurant/clock/in", { method: "POST", body: JSON.stringify({ staff_id: staffId }) }),
-  clockOut: (staffId, breakMinutes = 0) => request("/api/restaurant/clock/out", { method: "POST", body: JSON.stringify({ staff_id: staffId, break_minutes: breakMinutes }) }),
+  // Restaurant-side time clock (owner punches staff in/out). Distinct names
+  // from the staff-portal self-service trio below — a duplicate key would let
+  // the later definition silently shadow this one and break the schedule page.
+  getRestaurantClockStatus: () => request("/api/restaurant/clock/status"),
+  restaurantClockIn: (staffId) => request("/api/restaurant/clock/in", { method: "POST", body: JSON.stringify({ staff_id: staffId }) }),
+  restaurantClockOut: (staffId, breakMinutes = 0) => request("/api/restaurant/clock/out", { method: "POST", body: JSON.stringify({ staff_id: staffId, break_minutes: breakMinutes }) }),
   getOpsTasks: () => request("/api/restaurant/operations/tasks"),
   createOpsTask: (body) => request("/api/restaurant/operations/tasks", { method: "POST", body: JSON.stringify(body) }),
   toggleOpsTask: (id, done) => request(`/api/restaurant/operations/tasks/${id}?done=${done}`, { method: "PATCH" }),
@@ -276,6 +279,27 @@ export const api = {
   getLossAuditQuestions: () => request("/api/loss/audit-questions"),
   runLossEstimate: (body = {}) => request("/api/loss/estimate", { method: "POST", body: JSON.stringify(body) }),
   getLatestLoss: () => request("/api/loss/latest"),
+  // Public, no-auth waste calculator (marketing lead magnet). Bare fetch —
+  // this endpoint needs no token and must work for anonymous visitors.
+  submitPublicEstimate: (body) =>
+    fetch(`${getBaseUrl()}/api/loss/public-estimate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => {
+      if (!r.ok) throw new Error("estimate_failed");
+      return r.json();
+    }),
+  // Public lead capture from the calculator — bare fetch, no token.
+  submitLead: (body) =>
+    fetch(`${getBaseUrl()}/api/loss/lead`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => {
+      if (!r.ok) throw new Error("lead_failed");
+      return r.json();
+    }),
   // Sales export upload (Path A). Multipart: the browser MUST set the
   // Content-Type (with the multipart boundary) itself, so we never set it
   // by hand here — same pattern as snapMenu. `formData` carries `file`

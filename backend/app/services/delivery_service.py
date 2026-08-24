@@ -98,7 +98,7 @@ def get_dishes_for_craving(craving_id: str, budget: str = "") -> list[dict]:
             "emoji":   r.get("image_emoji", "🍽️"),
             "cuisine": r.get("cuisine", ""),
             "time":    f"{r.get('time_minutes', 30)} min",
-            "price":   f"${price:.0f}",
+            "price":   f"€{price:.0f}",
             "price_val": price,
             "rating":  round(4.4 + (r.get("id", 0) % 6) * 0.1, 1),  # 4.4–4.9
             "difficulty": r.get("difficulty", "Medium"),
@@ -112,12 +112,17 @@ def get_dishes_for_craving(craving_id: str, budget: str = "") -> list[dict]:
 
 def get_restaurants_for_cuisine(cuisine: str) -> list[dict]:
     """Return 3 restaurants that serve the given cuisine, ranked by rating."""
-    # Find best catalog match
+    # Find best catalog match. An empty/whitespace cuisine must NOT substring-
+    # match the first key (e.g. "" in "italian" is always True) — go to default.
+    cuisine = (cuisine or "").strip()
     catalog = None
-    for key in RESTAURANT_CATALOG:
-        if key.lower() in cuisine.lower() or cuisine.lower() in key.lower():
-            catalog = RESTAURANT_CATALOG[key]
-            break
+    if cuisine:
+        for key in RESTAURANT_CATALOG:
+            if key == "default":
+                continue
+            if key.lower() in cuisine.lower() or cuisine.lower() in key.lower():
+                catalog = RESTAURANT_CATALOG[key]
+                break
     if not catalog:
         catalog = RESTAURANT_CATALOG["default"]
 
@@ -132,8 +137,12 @@ def get_restaurants_for_cuisine(cuisine: str) -> list[dict]:
             "reviews":  r["reviews"],
             "dist_km":  r["dist_km"],
             "eta":      f"{lo}–{hi} min",
-            "fee":      "Free delivery" if r["fee"] == 0 else f"${r['fee']:.2f} delivery",
+            "fee":      "Free delivery" if r["fee"] == 0 else f"€{r['fee']:.2f} delivery",
             "fee_val":  r["fee"],
-            "best_match": i == 0,
         })
-    return sorted(result, key=lambda x: (-x["rating"], x["fee_val"]))
+    # Rank first, THEN badge — the "Best match" must sit on the actual top
+    # restaurant, not whatever happened to be first in the catalog.
+    result.sort(key=lambda x: (-x["rating"], x["fee_val"]))
+    for i, r in enumerate(result):
+        r["best_match"] = (i == 0)
+    return result
