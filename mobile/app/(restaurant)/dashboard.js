@@ -96,7 +96,7 @@ export default function Dashboard() {
 
   const load = async () => {
     try {
-      setStats(await api.getDashboardStats());
+      setStats((await api.getDashboardStats()) || {});  // 204 → {} so metric cards render zeros, not crash
       setError(null);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); setRefreshing(false); }
@@ -278,7 +278,7 @@ export default function Dashboard() {
       )}
 
       {/* What's trending — sales momentum (ML velocity from POS data). */}
-      {trending && trending.has_data && (trending.rising.length > 0 || trending.falling.length > 0) && (
+      {trending && trending.has_data && ((trending.rising?.length > 0) || (trending.falling?.length > 0)) && (
         <View style={trendStyles.section}>
           <Text style={trendStyles.eyebrow}>{t('restaurantDashboard.trendingEyebrow')}</Text>
           <Text style={trendStyles.title}>📈 {t('restaurantDashboard.trendingTitle')}</Text>
@@ -315,7 +315,7 @@ export default function Dashboard() {
               <TouchableOpacity
                 key={`${a.kind}-${idx}`}
                 style={[actionStyles.card, { backgroundColor: bg, borderColor: bd }]}
-                onPress={() => router.push(a.cta_route.replace('/restaurant', ''))}
+                onPress={() => a.cta_route && router.push(a.cta_route.replace('/restaurant', ''))}
                 activeOpacity={0.85}
               >
                 <Text style={actionStyles.icon}>{a.icon}</Text>
@@ -325,7 +325,7 @@ export default function Dashboard() {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   {a.estimated_gain > 0 && (
-                    <Text style={actionStyles.gain}>+${a.estimated_gain.toFixed(0)}</Text>
+                    <Text style={actionStyles.gain}>+{formatEuro(a.estimated_gain, 'it', { decimals: 0 })}</Text>
                   )}
                   <Text style={actionStyles.cta}>{a.cta_label} →</Text>
                 </View>
@@ -369,9 +369,9 @@ export default function Dashboard() {
 
       <Text style={styles.section}>{t('dashboard.last30Days')}</Text>
 
-      <MetricCard label={t('dashboard.totalRevenue')}     value={`$${(stats.total_revenue || 0).toLocaleString()}`}   accent={C.restaurant.primary} />
+      <MetricCard label={t('dashboard.totalRevenue')}     value={eur(stats.total_revenue)}                            accent={C.restaurant.primary} />
       <MetricCard label={t('dashboard.totalOrders')}      value={(stats.total_orders || 0).toLocaleString()}          accent={C.restaurant.dark} />
-      <MetricCard label={t('dashboard.avgOrderValue')}    value={`$${(stats.avg_order_value || 0).toFixed(2)}`}       accent="#f59e0b" />
+      <MetricCard label={t('dashboard.avgOrderValue')}    value={eur(stats.avg_order_value, 2)}                       accent="#f59e0b" />
       <MetricCard label={t('dashboard.avgProfitMargin')}  value={`${(stats.avg_profit_margin || 0).toFixed(1)}%`}     accent={C.green} />
       <MetricCard label={t('dashboard.avgRating')}        value={`⭐ ${(stats.avg_rating || 0).toFixed(1)}`}          accent="#8b5cf6" />
       {stats.top_item && (

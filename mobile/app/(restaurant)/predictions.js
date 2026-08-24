@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 
 const TREND_ICON = { up: '↑', down: '↓', stable: '→' };
 const TREND_COLOR = { up: C.green, down: C.red, stable: C.gray[400] };
@@ -41,9 +42,14 @@ export default function PredictionsScreen() {
 
   if (loading) return <LoadingSpinner message="Calculating forecast..." color={C.restaurant.primary} />;
   if (error)   return <ErrorMessage message={error} onRetry={() => load()} />;
+  // getPredictions() returns null on HTTP 204, or an object without top_items
+  // for a brand-new restaurant — guard before reducing/mapping to avoid a crash.
+  if (!data || !Array.isArray(data.top_items)) {
+    return <ErrorMessage message="Nessuna previsione disponibile ancora." onRetry={() => load()} />;
+  }
 
-  const totalOrders  = data.top_items.reduce((s, i) => s + i.predicted_orders, 0);
-  const totalRevenue = data.top_items.reduce((s, i) => s + i.predicted_revenue, 0);
+  const totalOrders  = data.top_items.reduce((s, i) => s + (i.predicted_orders || 0), 0);
+  const totalRevenue = data.top_items.reduce((s, i) => s + (i.predicted_revenue || 0), 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -71,7 +77,7 @@ export default function PredictionsScreen() {
             <Text style={styles.totalLabel}>Predicted Orders</Text>
           </View>
           <View style={styles.totalCard}>
-            <Text style={styles.totalValue}>${totalRevenue.toFixed(0)}</Text>
+            <Text style={styles.totalValue}>{formatEuro(totalRevenue, 'it', { decimals: 0 })}</Text>
             <Text style={styles.totalLabel}>Predicted Revenue</Text>
           </View>
         </View>
@@ -89,7 +95,7 @@ export default function PredictionsScreen() {
                   {TREND_ICON[item.trend]} {item.trend}
                 </Text>
               </View>
-              <Text style={styles.itemMeta}>{item.predicted_orders} orders · ${item.predicted_revenue.toFixed(0)} revenue · {item.category}</Text>
+              <Text style={styles.itemMeta}>{item.predicted_orders} orders · {formatEuro(item.predicted_revenue, 'it', { decimals: 0 })} revenue · {item.category}</Text>
               <Text style={styles.confLabel}>Confidence</Text>
               <ConfidenceBar value={item.confidence} />
             </View>

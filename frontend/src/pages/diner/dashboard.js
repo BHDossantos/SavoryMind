@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
-const PRICE_LABELS = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
+const PRICE_LABELS = { 1: "€", 2: "€€", 3: "€€€", 4: "€€€€" };
 const STYLE_ICONS = {
   fine_dining: "🕯️", casual_fine: "🍷", bistro: "🥖", casual: "🍔",
   pub: "🍺", cafe: "☕", fast_casual: "🌯",
@@ -47,7 +47,7 @@ function RestaurantCard({ r, onReserve }) {
       <div className="p-3 flex flex-col flex-1">
         <div className="flex items-start justify-between gap-1 mb-0.5">
           <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">{r.name}</h3>
-          <span className="text-xs text-gray-400 flex-shrink-0">{PRICE_LABELS[r.price_level] || "$$"}</span>
+          <span className="text-xs text-gray-400 flex-shrink-0">{PRICE_LABELS[r.price_level] || "€€"}</span>
         </div>
         <p className="text-xs text-gray-500 mb-1 truncate">
           {(r.cuisine || []).slice(0, 2).join(" · ")}
@@ -339,7 +339,7 @@ export default function DinerDashboard() {
                 <p className="font-bold text-gray-900">{plan.restaurant.name}</p>
                 <p className="text-sm text-gray-500">
                   {(plan.restaurant.cuisine || []).slice(0, 2).join(" · ")}
-                  {" · "}{PRICE_LABELS[plan.restaurant.price_level] || "$$"}
+                  {" · "}{PRICE_LABELS[plan.restaurant.price_level] || "€€"}
                   {plan.restaurant.city && ` · 📍 ${plan.restaurant.city}`}
                 </p>
               </div>

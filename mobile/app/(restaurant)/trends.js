@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 import { useFocusEffect } from 'expo-router';
 
 const TABS = ['Menu Trends', 'Global Trends'];
@@ -85,7 +86,7 @@ function Section({ title, items, emptyMsg }) {
         <View key={i} style={s.itemCard}>
           <View style={s.itemHeader}>
             <Text style={s.itemName}>{item.name}</Text>
-            <Text style={s.itemPrice}>${item.price}</Text>
+            <Text style={s.itemPrice}>{formatEuro(item.price)}</Text>
           </View>
           <Text style={s.itemMeta}>
             {item.category} · {item.orders} orders · {item.margin}% margin · {item.reviews} reviews
