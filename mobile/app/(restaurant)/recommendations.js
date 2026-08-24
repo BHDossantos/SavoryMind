@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 import { useFocusEffect } from 'expo-router';
 
 const TYPE_CONFIG = {
@@ -43,7 +44,7 @@ export default function RecommendationsScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <Text style={styles.title}>{t('screens.recommendations.title')}</Text>
-        {totalGain > 0 && <Text style={styles.gain}>+${totalGain.toLocaleString()}/mo potential</Text>}
+        {totalGain > 0 && <Text style={styles.gain}>+{formatEuro(totalGain, 'it', { decimals: 0 })}/mo potential</Text>}
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
@@ -80,7 +81,7 @@ export default function RecommendationsScreen() {
                   <Text style={[styles.recType, { color: cfg.color }]}>{cfg.label}</Text>
                 </View>
                 {rec.potential_monthly_gain > 0 && (
-                  <Text style={styles.gain2}>+${rec.potential_monthly_gain.toLocaleString()}</Text>
+                  <Text style={styles.gain2}>+{formatEuro(rec.potential_monthly_gain, 'it', { decimals: 0 })}</Text>
                 )}
               </View>
               <Text style={styles.message}>{rec.message}</Text>

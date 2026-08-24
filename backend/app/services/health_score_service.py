@@ -133,8 +133,10 @@ def _staff(db: Session, uid: int) -> dict:
     staff = db.query(Staff).filter(Staff.user_id == uid, Staff.active == True).all()  # noqa: E712
     if not staff:
         return _dim(None, "unknown", ["Nessun membro dello staff registrato."])
-    avg_punct = sum((s.punctuality_score or 100) for s in staff) / len(staff)
-    avg_rating = sum((s.rating or 4.0) for s in staff) / len(staff)
+    # Use `is not None` — a legitimate 0 (worst punctuality/rating) must not be
+    # silently upgraded to the neutral default by `or`.
+    avg_punct = sum((s.punctuality_score if s.punctuality_score is not None else 100) for s in staff) / len(staff)
+    avg_rating = sum((s.rating if s.rating is not None else 4.0) for s in staff) / len(staff)
     score = _clamp(avg_punct * 0.5 + (avg_rating / 5.0 * 100) * 0.5)
     return _dim(score, "ok", [
         f"Puntualità media: {avg_punct:.0f}%",

@@ -70,13 +70,16 @@ export default function ConsumerDashboard() {
 
   useEffect(() => {
     api.getMlSuggestions().then((d) => setMlSuggestions(d.suggestions || [])).catch(() => {});
+    // Per-call fallbacks so one flaky/failed endpoint degrades only its own
+    // section — a single failure must NOT blank the whole dashboard (all six
+    // states are []-initialized, so [] is the correct empty for each).
     Promise.all([
-      api.getWinePairings(),
-      api.getMusicMoods(),
-      api.getConsumerRecommendations(),
-      api.getConnections(),
-      api.getPantry(),
-      api.getMemories(),
+      api.getWinePairings().catch(() => []),
+      api.getMusicMoods().catch(() => []),
+      api.getConsumerRecommendations().catch(() => []),
+      api.getConnections().catch(() => []),
+      api.getPantry().catch(() => []),
+      api.getMemories().catch(() => []),
     ])
       .then(([p, m, r, c, pt, mem]) => {
         setPairings(p); setMoods(m); setRecs(r); setConnections(c);
@@ -235,7 +238,7 @@ export default function ConsumerDashboard() {
           behavior and pairing history (insights/engine.py). ── */}
       {recs.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-800 mb-3">Recommended for you</h2>
+          <h2 className="font-semibold text-gray-800 mb-3">{t("consumerDashboard.recommendedForYou")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {recs.slice(0, 6).map((r, i) => (
               <Link key={i} href={recHref(r.action)}

@@ -10,8 +10,10 @@ we never message a diner automatically, which keeps it GDPR-clean.
 """
 from __future__ import annotations
 
+import calendar
 from datetime import date, timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..models.restaurant_ext import CRMCustomer
@@ -29,6 +31,12 @@ def _birthday_within(bday: date | None, today: date, days: int) -> bool:
     for d in range(days + 1):
         t = today + timedelta(days=d)
         if t.month == bday.month and t.day == bday.day:
+            return True
+        # A Feb-29 birthday has no calendar day in a non-leap year — celebrate
+        # it on Feb 28 so leap-day guests still get their trigger every year.
+        if (bday.month == 2 and bday.day == 29
+                and t.month == 2 and t.day == 28
+                and not calendar.isleap(t.year)):
             return True
     return False
 
@@ -77,10 +85,17 @@ def _record(db: Session, user_id: int, customer_id: int, ttype: str, period: str
               .first())
     if exists:
         return False
-    db.add(MarketingTrigger(user_id=user_id, customer_id=customer_id,
-                            trigger_type=ttype, period=period, status="suggested"))
-    db.flush()
-    return True
+    # Wrap the insert in a SAVEPOINT so a concurrent request that inserted the
+    # same (customer, type, period) first — the unique constraint — rolls back
+    # only THIS insert, not the whole run, and we treat it as already-recorded
+    # instead of surfacing a 500. (run_triggers can fire on a GET.)
+    try:
+        with db.begin_nested():
+            db.add(MarketingTrigger(user_id=user_id, customer_id=customer_id,
+                                    trigger_type=ttype, period=period, status="suggested"))
+        return True
+    except IntegrityError:
+        return False
 
 
 def list_triggers(db: Session, owner_id: int, status: str = "suggested") -> list[dict]:

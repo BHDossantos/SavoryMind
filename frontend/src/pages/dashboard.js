@@ -23,7 +23,7 @@ const SEVERITY_STYLES = {
 // publish today's menu. Tappable straight to the destination, with a dollar
 // estimate where we have one.
 function ActionPlanCard({ actions }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <section className="mb-8 rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
@@ -43,7 +43,7 @@ function ActionPlanCard({ actions }) {
           return (
             <Link
               key={`${a.kind}-${idx}`}
-              href={a.cta_route}
+              href={a.cta_route || "#"}
               className={`flex items-center gap-3 rounded-xl border ${s.border} ${s.bg} px-3 py-3 hover:shadow-sm transition-shadow`}
             >
               <span className="text-xl flex-shrink-0" aria-hidden>{a.icon}</span>
@@ -53,7 +53,7 @@ function ActionPlanCard({ actions }) {
               </div>
               <div className="flex-shrink-0 text-right">
                 {a.estimated_gain > 0 && (
-                  <p className="text-xs font-bold text-green-700">+${a.estimated_gain.toFixed(0)}</p>
+                  <p className="text-xs font-bold text-green-700">+{fmtEur(a.estimated_gain, i18n.language)}</p>
                 )}
                 <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${s.chip} mt-1`}>
                   {a.cta_label}
@@ -338,7 +338,7 @@ function HealthScoreCard() {
         </span>
         {h.overall != null && <span className="text-gray-400 text-sm">/100</span>}
         <span className={`ml-auto text-xs font-semibold ${HEALTH_BAND_STYLE[h.band]}`}>
-          {t(`aios.band.${h.band}`)}
+          {h.band && t(`aios.band.${h.band}`)}
         </span>
       </div>
       <div className="mt-4 space-y-2">
@@ -406,7 +406,7 @@ function ForecastCard() {
 }
 
 export default function Dashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [stats, setStats] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [sentimentSummary, setSentimentSummary] = useState(null);
@@ -580,7 +580,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <MetricCard
           title={t("restaurantDashboard.revenue30")}
-          value={`$${stats.total_revenue_30_days.toLocaleString()}`}
+          value={fmtEur(stats.total_revenue_30_days, i18n.language)}
           icon="💰"
           color="orange"
         />

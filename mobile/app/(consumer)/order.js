@@ -18,24 +18,25 @@ import { api } from '../../services/api';
 // also fakes it. When real ordering ships this is the file that gets
 // the actual checkout call.
 const CRAVINGS = [
-  { id: 'rich_warm',   emoji: '🍲', label: 'Rich & Warm',     desc: 'Stews, braised mains, hearty bowls' },
-  { id: 'light_fresh', emoji: '🥗', label: 'Light & Fresh',   desc: 'Salads, grain bowls, sushi, poke' },
-  { id: 'spicy_bold',  emoji: '🌶️', label: 'Spicy & Bold',    desc: 'Curries, tacos, Korean, Thai' },
-  { id: 'comfort',     emoji: '🍕', label: 'Comfort Food',    desc: 'Pizza, burgers, pasta, fried chicken' },
-  { id: 'fast_easy',   emoji: '⚡', label: 'Fast & Easy',     desc: 'Ready in 25 min or less' },
-  { id: 'sweet_treat', emoji: '🍰', label: 'Something Sweet', desc: 'Desserts, pastries, waffles' },
+  { id: 'rich_warm',   emoji: '🍲', labelKey: 'orderPage.crRichWarm',   descKey: 'orderPage.crRichWarmDesc'   },
+  { id: 'light_fresh', emoji: '🥗', labelKey: 'orderPage.crLightFresh', descKey: 'orderPage.crLightFreshDesc' },
+  { id: 'spicy_bold',  emoji: '🌶️', labelKey: 'orderPage.crSpicyBold',  descKey: 'orderPage.crSpicyBoldDesc'  },
+  { id: 'comfort',     emoji: '🍕', labelKey: 'orderPage.crComfort',    descKey: 'orderPage.crComfortDesc'    },
+  { id: 'fast_easy',   emoji: '⚡', labelKey: 'orderPage.crFastEasy',   descKey: 'orderPage.crFastEasyDesc'   },
+  { id: 'sweet_treat', emoji: '🍰', labelKey: 'orderPage.crSweet',      descKey: 'orderPage.crSweetDesc'      },
 ];
 
 const BUDGETS = [
-  { id: '',         label: 'Any',    sub: 'All prices' },
-  { id: 'budget',   label: 'Budget', sub: 'Under $15' },
-  { id: 'midrange', label: 'Mid',    sub: '$15–$25' },
-  { id: 'treat',    label: 'Treat',  sub: '$25+' },
+  { id: '',         labelKey: 'orderPage.bAny'    },
+  { id: 'budget',   labelKey: 'orderPage.bBudget' },
+  { id: 'midrange', labelKey: 'orderPage.bMid'    },
+  { id: 'treat',    labelKey: 'orderPage.bTreat'  },
 ];
 
 
 function Steps({ current }) {
-  const steps = ['Craving', 'Dish', 'Restaurant', 'Order'];
+  const { t } = useTranslation();
+  const steps = ['orderPage.stepCraving', 'orderPage.stepDish', 'orderPage.stepRestaurant', 'orderPage.stepOrder'];
   return (
     <View style={styles.stepRow}>
       {steps.map((s, i) => (
@@ -45,7 +46,7 @@ function Steps({ current }) {
               {i < current ? '✓' : i + 1}
             </Text>
           </View>
-          <Text style={[styles.stepLabel, i <= current && styles.stepLabelActive]}>{s}</Text>
+          <Text style={[styles.stepLabel, i <= current && styles.stepLabelActive]}>{t(s)}</Text>
         </View>
       ))}
     </View>
@@ -80,7 +81,7 @@ export default function OrderScreen() {
     try {
       const data = await api.getDeliveryDishes(c.id, budget);
       setDishes(data.dishes || []);
-      if (!data.dishes?.length) setDishError('No dishes found — try a different craving.');
+      if (!data.dishes?.length) setDishError(t('orderPage.noDishesFound'));
     } catch (e) {
       setDishError(e.message);
     } finally {
@@ -95,7 +96,7 @@ export default function OrderScreen() {
       const data = await api.getDeliveryRestaurants(d.cuisine);
       setRestaurants(data.restaurants || []);
     } catch (e) {
-      setRestError(e.message || 'Failed to load restaurants.');
+      setRestError(e.message || t('orderPage.errLoadRestaurants'));
     } finally {
       setRestLoading(false);
     }
@@ -121,14 +122,11 @@ export default function OrderScreen() {
     return (
       <View style={styles.successScreen} testID="order-success">
         <Text style={styles.successEmoji}>🛵</Text>
-        <Text style={styles.successTitle}>Order placed!</Text>
-        <Text style={styles.successSub}>
-          Your <Text style={{ fontWeight: '700' }}>{dish?.name}</Text> from{' '}
-          <Text style={{ fontWeight: '700' }}>{restaurant?.name}</Text> is on its way.
-        </Text>
-        <Text style={styles.successEta}>Estimated delivery: {restaurant?.eta}</Text>
+        <Text style={styles.successTitle}>{t('orderPage.orderPlaced')}</Text>
+        <Text style={styles.successSub}>{t('orderPage.orderOnWay', { dish: dish?.name, restaurant: restaurant?.name })}</Text>
+        <Text style={styles.successEta}>{t('orderPage.estDelivery', { eta: restaurant?.eta })}</Text>
         <TouchableOpacity onPress={reset} style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>Order something else</Text>
+          <Text style={styles.primaryBtnText}>{t('orderPage.orderSomethingElse')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -138,7 +136,7 @@ export default function OrderScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
         <Text style={styles.title}>{t('screens.order.title')}</Text>
-        <Text style={styles.subtitle}>What are you feeling, {firstName}?</Text>
+        <Text style={styles.subtitle}>{t('orderPage.greeting', { name: firstName })}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -146,11 +144,11 @@ export default function OrderScreen() {
 
         {step === 0 && (
           <View>
-            <Text style={styles.sectionTitle}>What are you hungry for?</Text>
-            <Text style={styles.sectionSub}>We'll find dishes — then show who delivers them best.</Text>
+            <Text style={styles.sectionTitle}>{t('orderPage.hungryFor')}</Text>
+            <Text style={styles.sectionSub}>{t('orderPage.willFindDishes')}</Text>
 
             <View style={styles.budgetRow}>
-              <Text style={styles.budgetLabel}>Budget:</Text>
+              <Text style={styles.budgetLabel}>{t('orderPage.budgetLabel')}</Text>
               {BUDGETS.map((b) => (
                 <TouchableOpacity
                   key={b.id || 'any'}
@@ -159,7 +157,7 @@ export default function OrderScreen() {
                   testID={`budget-${b.id || 'any'}`}
                 >
                   <Text style={[styles.budgetChipText, budget === b.id && styles.budgetChipTextActive]}>
-                    {b.label}
+                    {t(b.labelKey)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -174,8 +172,8 @@ export default function OrderScreen() {
                   testID={`craving-${c.id}`}
                 >
                   <Text style={styles.cravingEmoji}>{c.emoji}</Text>
-                  <Text style={styles.cravingLabel}>{c.label}</Text>
-                  <Text style={styles.cravingDesc}>{c.desc}</Text>
+                  <Text style={styles.cravingLabel}>{t(c.labelKey)}</Text>
+                  <Text style={styles.cravingDesc}>{t(c.descKey)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -184,17 +182,17 @@ export default function OrderScreen() {
 
         {step === 1 && craving && (
           <View>
-            <BackChip onPress={() => setStep(0)} chipLabel={`${craving.emoji} ${craving.label}`} />
+            <BackChip onPress={() => setStep(0)} chipLabel={`${craving.emoji} ${t(craving.labelKey)}`} />
 
-            <Text style={styles.sectionTitle}>Choose a dish</Text>
-            <Text style={styles.sectionSub}>Matched to your craving — we'll find who delivers after.</Text>
+            <Text style={styles.sectionTitle}>{t('orderPage.chooseDish')}</Text>
+            <Text style={styles.sectionSub}>{t('orderPage.matchedToCraving')}</Text>
 
             {dishLoading && <ActivityIndicator size="large" color={C.consumer.primary} style={{ marginVertical: 24 }} />}
             {dishError && (
               <View style={styles.emptyCenter}>
                 <Text style={styles.emptyText}>{dishError}</Text>
                 <TouchableOpacity onPress={() => setStep(0)}>
-                  <Text style={styles.linkText}>← Try another craving</Text>
+                  <Text style={styles.linkText}>{t('orderPage.tryAnotherCraving')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -228,8 +226,8 @@ export default function OrderScreen() {
           <View>
             <BackChip onPress={() => setStep(1)} chipLabel={`${dish.emoji} ${dish.name}`} />
 
-            <Text style={styles.sectionTitle}>Who delivers this best?</Text>
-            <Text style={styles.sectionSub}>Ranked by rating and speed.</Text>
+            <Text style={styles.sectionTitle}>{t('orderPage.whoDelivers')}</Text>
+            <Text style={styles.sectionSub}>{t('orderPage.rankedBy')}</Text>
 
             {restLoading && <ActivityIndicator size="large" color={C.consumer.primary} style={{ marginVertical: 24 }} />}
             {restError && (
@@ -250,7 +248,7 @@ export default function OrderScreen() {
                     <Text style={styles.restName}>{r.name}</Text>
                     {r.best_match && (
                       <View style={styles.bestMatchBadge}>
-                        <Text style={styles.bestMatchText}>Best match</Text>
+                        <Text style={styles.bestMatchText}>{t('orderPage.bestMatch')}</Text>
                       </View>
                     )}
                   </View>
@@ -266,15 +264,15 @@ export default function OrderScreen() {
 
         {step === 3 && dish && restaurant && (
           <View>
-            <BackChip onPress={() => setStep(2)} chipLabel={`from ${restaurant.name}`} />
+            <BackChip onPress={() => setStep(2)} chipLabel={restaurant.name} />
 
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryHeader}>Your order</Text>
+              <Text style={styles.summaryHeader}>{t('orderPage.yourOrder')}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                 <Text style={{ fontSize: 28 }}>{dish.emoji}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.dishName}>{dish.name}</Text>
-                  <Text style={styles.dishMeta}>{dish.cuisine} · from {restaurant.name}</Text>
+                  <Text style={styles.dishMeta}>{t('orderPage.fromRestaurant', { cuisine: dish.cuisine, restaurant: restaurant.name })}</Text>
                 </View>
                 <Text style={styles.dishPrice}>{dish.price}</Text>
               </View>
@@ -287,21 +285,21 @@ export default function OrderScreen() {
               </View>
             </View>
 
-            <Text style={styles.formLabel}>Delivery address *</Text>
+            <Text style={styles.formLabel}>{t('orderPage.delivAddress')}</Text>
             <TextInput
               value={address}
               onChangeText={setAddress}
-              placeholder="Enter your address…"
+              placeholder={t('orderPage.addressPh')}
               placeholderTextColor={C.gray[400]}
               style={styles.formInput}
               testID="address-input"
             />
 
-            <Text style={styles.formLabel}>Note for the kitchen (optional)</Text>
+            <Text style={styles.formLabel}>{t('orderPage.noteKitchen')} {t('orderPage.optional')}</Text>
             <TextInput
               value={note}
               onChangeText={setNote}
-              placeholder="Allergies, spice level, special requests…"
+              placeholder={t('orderPage.notePh')}
               placeholderTextColor={C.gray[400]}
               style={[styles.formInput, { minHeight: 60 }]}
               multiline
@@ -314,8 +312,8 @@ export default function OrderScreen() {
               testID="place-order-btn"
             >
               {submitting
-                ? <Text style={styles.primaryBtnText}>🛵 Placing order…</Text>
-                : <Text style={styles.primaryBtnText}>Place order · {dish.price}</Text>}
+                ? <Text style={styles.primaryBtnText}>🛵 {t('orderPage.placingOrder')}</Text>
+                : <Text style={styles.primaryBtnText}>{t('orderPage.placeOrder', { price: dish.price })}</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -326,10 +324,11 @@ export default function OrderScreen() {
 
 
 function BackChip({ onPress, chipLabel }) {
+  const { t } = useTranslation();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
       <TouchableOpacity onPress={onPress} testID="back-chip">
-        <Text style={styles.backText}>← Back</Text>
+        <Text style={styles.backText}>{t('orderPage.back')}</Text>
       </TouchableOpacity>
       <View style={styles.contextChip}>
         <Text style={styles.contextChipText}>{chipLabel}</Text>

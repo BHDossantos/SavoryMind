@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
 import { C } from '../../constants/colors';
+import { formatEuro } from '../../utils/euro';
 
 const REASONS = ['Over-portioned', 'Cooking error', 'Spoilage', 'Over-ordered', 'Plate return', 'Other'];
 const EMPTY = { item_name: '', quantity_kg: '', estimated_cost: '', reason: 'Spoilage', staff_name: '', notes: '' };
@@ -60,7 +61,7 @@ export default function WasteScreen() {
       <View style={styles.topBar}>
         <View>
           <Text style={styles.title}>{t('screens.waste.title')}</Text>
-          {summary && <Text style={styles.sub}>${summary.total_cost.toFixed(2)} total · {summary.total_kg.toFixed(1)} kg</Text>}
+          {summary && <Text style={styles.sub}>{formatEuro(summary.total_cost)} total · {summary.total_kg.toFixed(1)} kg</Text>}
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setForm(EMPTY); setFormError(null); setShowForm(true); }}>
           <Text style={styles.addBtnText}>+ Log</Text>
@@ -72,7 +73,7 @@ export default function WasteScreen() {
           {summary.by_staff.map(s => (
             <View key={s.name} style={styles.staffCard}>
               <Text style={styles.staffName}>{s.name.split(' ')[0]}</Text>
-              <Text style={styles.staffCost}>${s.total_cost.toFixed(0)}</Text>
+              <Text style={styles.staffCost}>{formatEuro(s.total_cost, 'it', { decimals: 0 })}</Text>
               <Text style={styles.staffInc}>{s.incidents} incidents</Text>
             </View>
           ))}
@@ -83,7 +84,7 @@ export default function WasteScreen() {
         {logs.map(log => (
           <View key={log.id} style={styles.card}>
             <View style={styles.costBadge}>
-              <Text style={styles.costText}>${log.estimated_cost.toFixed(0)}</Text>
+              <Text style={styles.costText}>{formatEuro(log.estimated_cost, 'it', { decimals: 0 })}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.itemName}>{log.item_name}</Text>

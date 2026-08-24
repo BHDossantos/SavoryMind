@@ -77,6 +77,20 @@ def test_list_and_mark_trigger(client, db_session):
     assert all(t["id"] != tid for t in again["triggers"])
 
 
+def test_leap_day_birthday_fires_in_non_leap_year():
+    # Pure-function regression: a Feb-29 birthday has no calendar day in a
+    # non-leap year, so it must fall back to Feb 28 or a leap-day guest never
+    # gets a birthday trigger.
+    leap_bday = date(2000, 2, 29)
+    # 2025 is NOT a leap year — window Feb 25 → Mar 3 includes Feb 28.
+    assert mkt._birthday_within(leap_bday, date(2025, 2, 25), 7) is True
+    # 2024 IS a leap year — matches the real Feb 29.
+    assert mkt._birthday_within(leap_bday, date(2024, 2, 25), 7) is True
+    # Ordinary birthday still behaves: in-window True, out-of-window False.
+    assert mkt._birthday_within(date(1990, 6, 15), date(2025, 6, 10), 7) is True
+    assert mkt._birthday_within(date(1990, 6, 15), date(2025, 1, 1), 7) is False
+
+
 def test_marketing_requires_restaurant(client):
     token, _ = register_user(client, email="mkt-consumer@example.com", account_type="consumer")
     assert client.get("/api/restaurant/marketing/triggers", headers=auth_headers(token)).status_code == 403

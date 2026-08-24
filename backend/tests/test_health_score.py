@@ -81,6 +81,21 @@ def test_lapsed_customers_lower_customer_score(client, db_session):
     assert lapsed["dimensions"]["customer"]["score"] < active["dimensions"]["customer"]["score"]
 
 
+def test_zero_punctuality_not_masked_as_default(client, db_session):
+    # Regression: a legitimate 0 punctuality must drag the staff score down,
+    # not be silently upgraded to the neutral 100 default by `or`.
+    _, good = _restaurant(client, db_session, "hs-good@example.com")
+    _, bad = _restaurant(client, db_session, "hs-bad@example.com")
+    db_session.add(Staff(user_id=good.id, name="OnTime", role="server", shift="pm",
+                         punctuality_score=100, rating=5.0))
+    db_session.add(Staff(user_id=bad.id, name="Late", role="server", shift="pm",
+                         punctuality_score=0, rating=5.0))
+    db_session.commit()
+    good_s = health_score_service.health_score(db_session, good.id)["dimensions"]["staff"]["score"]
+    bad_s = health_score_service.health_score(db_session, bad.id)["dimensions"]["staff"]["score"]
+    assert bad_s < good_s  # 0 punctuality is not treated as 100
+
+
 def test_overall_weighted_and_banded(client, db_session):
     token, owner = _restaurant(client, db_session, "hs-band@example.com")
     db_session.add(Staff(user_id=owner.id, name="Top", role="chef", shift="full",

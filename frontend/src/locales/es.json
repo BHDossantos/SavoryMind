@@ -256,7 +256,8 @@
     "primaryCook": "Cocina algo",
     "primaryCookSub": "Ideas de receta de tu despensa",
     "mlTitle": "Elegido para ti",
-    "mlSub": "Aprendido de lo que te gusta a ti y a gente como tú."
+    "mlSub": "Aprendido de lo que te gusta a ti y a gente como tú.",
+    "recommendedForYou": "Recomendado para ti"
   },
   "sentimentPage": {
     "title": "Opiniones de clientes",
@@ -1368,11 +1369,11 @@
     "bAny": "Cualquiera",
     "bAnySub": "Todos los precios",
     "bBudget": "Económico",
-    "bBudgetSub": "Menos de 15 $",
+    "bBudgetSub": "Menos de 15 €",
     "bMid": "Medio",
-    "bMidSub": "15 $–25 $",
+    "bMidSub": "15 €–25 €",
     "bTreat": "Capricho",
-    "bTreatSub": "25 $+",
+    "bTreatSub": "25 €+",
     "back": "← Atrás",
     "chooseDish": "Elige un plato",
     "matchedToCraving": "Coincide con tu antojo — encontraremos quién lo entrega después.",
@@ -2213,7 +2214,9 @@
     "pendingMsg": "El equipo de {{name}} la confirmará en breve.",
     "confirmationFootnote": "Recibirás una confirmación por mensaje o llamada si hace falta.",
     "reviews": "reseñas",
-    "menuTitle": "Menú"
+    "menuTitle": "Menú",
+    "loadError": "Algo salió mal al cargar la página.",
+    "retry": "Reintentar"
   },
   "moodPage": {
     "title": "Mood to meal",

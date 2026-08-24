@@ -12,7 +12,7 @@ never leaks pilot data until Bruno opts in.
 from __future__ import annotations
 
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -87,3 +87,27 @@ def pilots(db: Session = Depends(get_db), _admin: User = Depends(require_admin))
     rows.sort(key=lambda x: (x["recovered_this_month"], x["incidents_30d"]), reverse=True)
     totals["total_recovered"] = round(totals["total_recovered"], 2)
     return {"totals": totals, "restaurants": rows}
+
+
+@router.get("/leads")
+def leads(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
+    """Captured calculator leads (marketing_leads), newest first — the output
+    of the /calcolatore-spreco funnel, so Bruno can follow up. Read-only."""
+    from ...models.marketing import MarketingLead
+    since = datetime.utcnow() - timedelta(days=7)
+    rows = (db.query(MarketingLead)
+            .order_by(MarketingLead.created_at.desc())
+            .limit(500).all())
+    return {
+        "total": db.query(MarketingLead).count(),
+        "last_7d": db.query(MarketingLead).filter(MarketingLead.created_at >= since).count(),
+        "leads": [{
+            "id": l.id,
+            "email": l.email,
+            "restaurant_name": l.restaurant_name,
+            "source": l.source,
+            "profile": l.profile,
+            "loss_band": [l.band_low, l.band_high],
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+        } for l in rows],
+    }
