@@ -230,6 +230,16 @@ export default function HomeIT() {
           <p className="text-base font-semibold text-stone-500 mt-6">
             Se non troviamo almeno €500/mese di perdite recuperabili, non paghi.
           </p>
+          <p className="text-sm text-stone-500 mt-3">
+            Oppure{" "}
+            <Link
+              href="/calcolatore-spreco"
+              onClick={() => track("marketing_cta_click", { page: "home_it", cta: "hero_calculator" })}
+              className="font-bold text-brand-700 hover:text-brand-600 underline"
+            >
+              calcola subito quanto stai perdendo →
+            </Link>
+          </p>
         </div>
       </section>
 
