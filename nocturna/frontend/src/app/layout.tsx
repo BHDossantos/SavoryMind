@@ -87,7 +87,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
           <InstallPrompt />
           <footer className="border-t border-white/5 mt-20 py-10 text-center text-xs text-gold-500/60">
-            © {new Date().getFullYear()} {SITE_NAME} · Plan beautifully · Drink responsibly
+            <div>© {new Date().getFullYear()} {SITE_NAME} · Plan beautifully · Drink responsibly</div>
+            <div className="mt-2 flex justify-center gap-4">
+              <a href="/privacy" className="hover:text-gold-400">Privacy</a>
+              <a href="/terms" className="hover:text-gold-400">Terms</a>
+            </div>
           </footer>
         </I18nProvider>
       </body>

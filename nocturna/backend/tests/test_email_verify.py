@@ -231,3 +231,36 @@ def test_bootstrap_admin_is_verified(tmp_path):
         _wipe(d)
     finally:
         d.close()
+
+
+# Account deletion (App Store 5.1.1(v)) --------------------------------------
+
+
+def test_delete_me_removes_account_and_dependents(client):
+    r = _signup(client)
+    auth = {"Authorization": f"Bearer {r['access_token']}"}
+    uid = r["user_id"]
+
+    # Attach a subscription + partner profile that must not survive.
+    from app.core.db import SessionLocal
+    from app.models import PartnerProfile, Subscription
+    d = SessionLocal()
+    d.add(Subscription(user_id=uid, tier="premium_user", status="active"))
+    d.add(PartnerProfile(user_id=uid, venue_ids=[]))
+    d.commit(); d.close()
+
+    r2 = client.request("DELETE", "/api/auth/me", headers=auth)
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["ok"] is True
+
+    d = SessionLocal()
+    try:
+        assert d.query(User).filter(User.id == uid).first() is None
+        assert d.query(Subscription).filter(Subscription.user_id == uid).count() == 0
+        assert d.query(PartnerProfile).filter(PartnerProfile.user_id == uid).count() == 0
+    finally:
+        d.close()
+
+    # The old JWT no longer resolves to a user.
+    r3 = client.get("/api/auth/me", headers=auth)
+    assert r3.status_code == 401

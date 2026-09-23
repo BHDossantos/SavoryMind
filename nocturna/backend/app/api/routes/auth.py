@@ -119,6 +119,28 @@ def update_me(payload: dict, user: User = Depends(get_current_user), db: Session
     return {"ok": True}
 
 
+@router.delete("/me")
+def delete_me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Permanently delete the calling user's account.
+
+    Required by App Store guideline 5.1.1(v) — any app with account
+    creation must offer in-app account deletion. Operational records
+    (bookings, plans, payments, reviews) carry ondelete=SET NULL so they
+    survive anonymised. Subscription + partner profile are deleted
+    explicitly rather than via FK cascade because SQLite (dev) doesn't
+    enforce ON DELETE by default.
+    """
+    from app.models import PartnerProfile, Subscription
+
+    email = user.email
+    db.query(Subscription).filter(Subscription.user_id == user.id).delete()
+    db.query(PartnerProfile).filter(PartnerProfile.user_id == user.id).delete()
+    db.delete(user)
+    db.commit()
+    log.info("account deleted: %s", email)
+    return {"ok": True, "deleted": email}
+
+
 # Email verification --------------------------------------------------------
 
 
