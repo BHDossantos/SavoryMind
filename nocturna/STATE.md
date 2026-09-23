@@ -9,9 +9,9 @@
 
 ## Last shipped
 
-- **Commit:** `7ba9b1c`
-- **Title:** feat(nocturna): GSD t-email-verify — email verification on signup
-- **Phase:** 12 · Auth hardening
+- **Commit:** `20486d0`
+- **Title:** feat(nocturna): GSD t-store-release — App Store + Play Store release prep
+- **Phase:** 13 · Store release prep
 
 ## In flight
 
@@ -21,9 +21,9 @@ None. Working tree clean.
 
 | Check | Status | Notes |
 |---|---|---|
-| `pytest tests` (backend) | **68 passed** | bcrypt 4.0.1 pinned; +11 new in test_email_verify.py |
+| `pytest tests` (backend) | **69 passed** | bcrypt 4.0.1 pinned; +1 account-deletion test |
 | `tsc --noEmit` (frontend) | **clean** | |
-| `next build` (frontend) | **clean** | 40 routes; new /verify/[token] ƒ; sitemap + robots static |
+| `next build` (frontend) | **clean** | 42 routes; /privacy + /terms static |
 | `playwright test --list` | **3 specs** | Browser binary not installed in this sandbox |
 
 ## Production health
@@ -56,9 +56,20 @@ _APP_BASE_URL=https://placeholder.example
   haven't been backfilled yet. `t-real-photos` is still open and needs
   a human curation pass.
 
+## Store release — remaining human steps
+
+Code-side prep shipped in Phase 13. To actually appear in the stores
+(see `mobile/STORE_SUBMISSION.md` for the full runbook):
+
+1. Enroll: Apple Developer ($99/yr) + Google Play ($25) + free Expo account.
+2. Deploy backend, replace `REPLACE-WITH-YOUR-nocturna-api.run.app` in
+   `mobile/eas.json` + fallback in `mobile/app.config.js`.
+3. `eas init` → export EAS_PROJECT_ID → `eas build` → `eas submit` per platform.
+4. Create + verify the `review@nocturna.app` demo account; capture screenshots.
+
 ## Available task IDs
 
-From `ROADMAP.md` Phase 13:
+From `ROADMAP.md` Phase 14:
 
 - `t-streaming-chat` — stream AI concierge tokens
 - `t-rate-limit-redis` — distributed rate limiter

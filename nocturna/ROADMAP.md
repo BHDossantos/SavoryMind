@@ -86,7 +86,20 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   `/verify/[token]` page. Bootstrap admin auto-verified so dev login
   keeps working. 11 new pytest cases; total 68.
 
-## Phase 13 · Open
+## Phase 13 · Store release prep [shipped — `20486d0`]
+
+- `20486d0` — task **`t-store-release`** shipped (user-requested: publish
+  to App Store + Play Store): dynamic `app.config.js` (variant bundle ids,
+  env-driven https API URL, permissions + usage strings), `eas.json`
+  build/submit profiles, generated store assets (icon / adaptive /
+  splash / notification PNGs), in-app account deletion (`DELETE
+  /api/auth/me` + web/mobile UI — App Store 5.1.1(v)), `/privacy` +
+  `/terms` pages linked in footer + sitemap, paste-ready listing copy
+  (EN + IT) with privacy-form answers, and `STORE_SUBMISSION.md`
+  runbook. Remaining human steps: Apple/Play/Expo accounts + `eas init`
+  → `eas build` → `eas submit` per the runbook. 69 backend tests.
+
+## Phase 14 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and
