@@ -42,6 +42,7 @@ const STRINGS = {
       { label: "Ristoranti", href: "/ristoranti" },
       { label: "Prezzi", href: "/pricing" },
       { label: "Come funziona", href: "/come-funziona" },
+      { label: "Calcolatore spreco", href: "/calcolatore-spreco" },
       { label: "Case study", href: "/case-studies" },
       { label: "Contatti", href: "/contatti" },
     ],
@@ -57,6 +58,7 @@ const STRINGS = {
       { label: "Il prodotto per ristoranti", href: "/ristoranti" },
       { label: "Prezzi", href: "/pricing" },
       { label: "Come funziona", href: "/come-funziona" },
+      { label: "Calcolatore spreco", href: "/calcolatore-spreco" },
       { label: "Case study", href: "/case-studies" },
     ],
     company: [
@@ -75,6 +77,7 @@ const STRINGS = {
       { label: "Restaurants", href: "/ristoranti" },
       { label: "Pricing", href: "/en/pricing" },
       { label: "How it works", href: "/come-funziona" },
+      { label: "Waste calculator", href: "/calcolatore-spreco" },
       { label: "Case studies", href: "/case-studies" },
       { label: "Contact", href: "/contatti" },
     ],
@@ -90,6 +93,7 @@ const STRINGS = {
       { label: "The product for restaurants", href: "/ristoranti" },
       { label: "Pricing", href: "/en/pricing" },
       { label: "How it works", href: "/come-funziona" },
+      { label: "Waste calculator", href: "/calcolatore-spreco" },
       { label: "Case studies", href: "/case-studies" },
     ],
     company: [
