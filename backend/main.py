@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import Depends, FastAPI
@@ -63,6 +64,30 @@ def _run_alembic_migrations():
         alembic_command.upgrade(cfg, "head")
 
 
+def _retry_migrations_until_current():
+    """Background reconciliation after a failed startup migration.
+
+    If the database was briefly unreachable at boot, `_run_alembic_migrations`
+    is swallowed so the container still starts and listens — but the schema
+    would then stay stale for the life of the instance, and `/health`
+    (a bare `SELECT 1`) would still report 200, leaving the revision active
+    but schema-incompatible. This keeps retrying with capped backoff so the
+    schema self-heals the moment the DB comes back, instead of requiring a
+    manual restart.
+    """
+    import time
+    delay = 5
+    while True:
+        time.sleep(delay)
+        try:
+            _run_alembic_migrations()
+            logger.info("Background migration retry succeeded — schema is now current.")
+            return
+        except Exception:
+            delay = min(delay * 2, 300)  # 5s → … → cap 5 min
+            logger.warning("Background migration retry failed; next attempt in %ss.", delay)
+
+
 def _seed_demo_restaurants():
     """Populate the diner Discover directory with seed restaurant accounts.
 
@@ -119,13 +144,21 @@ async def lifespan(app: FastAPI):
     # being ready before the first request, are unaffected — on SQLite they
     # always succeed. The engine's connect timeout keeps an unreachable
     # production DB from hanging here.)
+    # Run migrations synchronously first — tests and a normal boot rely on the
+    # schema being ready before the first request. If it fails (e.g. the DB is
+    # briefly unreachable at boot) DON'T crash startup: the app must come up and
+    # listen on $PORT. Instead retry in the BACKGROUND so the schema self-heals
+    # once the DB recovers, rather than serving forever with a stale schema.
     try:
         _run_alembic_migrations()
     except Exception:
         logger.exception(
-            "Startup migrations failed — the app is UP and listening; "
-            "database-backed endpoints may error until the DB is reachable."
+            "Startup migrations failed — app is UP and listening; retrying "
+            "migrations in the background until the database is reachable."
         )
+        threading.Thread(
+            target=_retry_migrations_until_current, name="migration-retry", daemon=True
+        ).start()
     if is_prod:
         _seed_demo_restaurants()  # already best-effort / swallows its own errors
     yield
