@@ -108,9 +108,26 @@ async def lifespan(app: FastAPI):
             "Generate a fresh key with `python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"` "
             "and set it as an env var before deploying to production."
         )
-    _run_alembic_migrations()
+    # DB-dependent startup (migrations + seed) must NEVER crash or hang app
+    # startup. Previously `_run_alembic_migrations()` ran here unguarded: a
+    # failing migration or an unreachable database made uvicorn abort startup,
+    # so the container never listened on $PORT and Cloud Run failed every
+    # deploy ("container failed to start") — a cold start could take the whole
+    # service down. Now a failure is logged and swallowed: the app comes up and
+    # listens; DB-backed endpoints recover once the database is reachable.
+    # (Migrations still run synchronously so tests, which rely on the schema
+    # being ready before the first request, are unaffected — on SQLite they
+    # always succeed. The engine's connect timeout keeps an unreachable
+    # production DB from hanging here.)
+    try:
+        _run_alembic_migrations()
+    except Exception:
+        logger.exception(
+            "Startup migrations failed — the app is UP and listening; "
+            "database-backed endpoints may error until the DB is reachable."
+        )
     if is_prod:
-        _seed_demo_restaurants()
+        _seed_demo_restaurants()  # already best-effort / swallows its own errors
     yield
 
 
