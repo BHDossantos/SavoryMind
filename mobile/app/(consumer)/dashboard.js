@@ -49,13 +49,16 @@ export default function ConsumerDashboard() {
 
   const load = async () => {
     try {
+      // Per-call fallbacks so one flaky/failed endpoint degrades only its own
+      // section instead of blanking the whole dashboard (parity with web).
       const [p, m, n] = await Promise.all([
-        api.getWinePairings(),
-        api.getMusicMoods(),
+        api.getWinePairings().catch(() => []),
+        api.getMusicMoods().catch(() => []),
         // Notifications is optional — never block the dashboard on it.
         api.getNotifications().catch(() => null),
       ]);
-      setPairings(p.slice(0, 3)); setMoods(m.slice(0, 3));
+      setPairings(Array.isArray(p) ? p.slice(0, 3) : []);
+      setMoods(Array.isArray(m) ? m.slice(0, 3) : []);
       const list = Array.isArray(n) ? n : n?.notifications || [];
       setUnreadCount(list.filter((x) => !x.read).length);
     } catch {}
