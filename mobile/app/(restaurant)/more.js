@@ -33,6 +33,8 @@ export default function MoreScreen() {
   // Features list. Derived per-render so labels re-translate on
   // language switch; icon + screen route stay static.
   const FEATURES = [
+    { icon: '🧾', title: t('orders.takeTitle'),    sub: t('orders.takeSub'),    screen: 'take-order' },
+    { icon: '👨‍🍳', title: t('orders.kitchenTitle'), sub: t('orders.kitchenSub'), screen: 'kitchen-display' },
     { icon: '📅', title: t('restaurantFeatures.bookings'),      sub: t('restaurantFeatures.bookingsSub'),      screen: 'bookings' },
     { icon: '👥', title: t('restaurantFeatures.crm'),            sub: t('restaurantFeatures.crmSub'),           screen: 'crm' },
     { icon: '🎯', title: t('restaurantFeatures.coaching'),      sub: t('restaurantFeatures.coachingSub'),      screen: 'coaching' },

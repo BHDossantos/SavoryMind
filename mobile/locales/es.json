@@ -1094,5 +1094,46 @@
     "crFastEasyDesc": "Listo en 25 min o menos",
     "crSweet": "Algo dulce",
     "crSweetDesc": "Postres, bollería, gofres"
+  },
+  "orders": {
+    "takeTitle": "Tomar pedido",
+    "tableNumber": "Número de mesa",
+    "tablePlaceholder": "ej. 5",
+    "tapToAdd": "Toca para añadir",
+    "noMenu": "Sin platos en el menú.",
+    "total": "Total",
+    "sending": "Enviando…",
+    "sendToKitchen": "Enviar a cocina ({{count}})",
+    "openTabs": "Mesas abiertas",
+    "noOpen": "Sin pedidos abiertos.",
+    "table": "Mesa",
+    "dishes": "platos",
+    "close": "Cerrar",
+    "openKitchen": "Abrir la cocina",
+    "sentTitle": "Pedido enviado",
+    "sentBody": "Mesa {{table}} enviada a cocina.",
+    "errTitle": "Error",
+    "errBody": "Inténtalo de nuevo.",
+    "kitchenTitle": "Cocina",
+    "active": "activos",
+    "allStations": "Todas",
+    "kitchenClear": "Todo al día 🎉",
+    "minShort": "min",
+    "status": {
+      "open": "abierto",
+      "submitted": "en cocina",
+      "served": "servido",
+      "closed": "cerrado",
+      "cancelled": "cancelado"
+    },
+    "itemStatus": {
+      "new": "Nuevo",
+      "preparing": "Preparando",
+      "ready": "Listo",
+      "served": "Servido",
+      "cancelled": "Cancelado"
+    },
+    "takeSub": "Toma pedidos en la mesa",
+    "kitchenSub": "Pantalla de cocina en vivo"
   }
 }

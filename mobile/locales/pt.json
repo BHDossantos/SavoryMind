@@ -1094,5 +1094,46 @@
     "crFastEasyDesc": "Pronto em 25 min ou menos",
     "crSweet": "Algo doce",
     "crSweetDesc": "Sobremesas, pastelaria, waffles"
+  },
+  "orders": {
+    "takeTitle": "Fazer pedido",
+    "tableNumber": "Número da mesa",
+    "tablePlaceholder": "ex. 5",
+    "tapToAdd": "Toque para adicionar",
+    "noMenu": "Sem itens no menu.",
+    "total": "Total",
+    "sending": "Enviando…",
+    "sendToKitchen": "Enviar à cozinha ({{count}})",
+    "openTabs": "Mesas abertas",
+    "noOpen": "Sem pedidos abertos.",
+    "table": "Mesa",
+    "dishes": "pratos",
+    "close": "Fechar",
+    "openKitchen": "Abrir a cozinha",
+    "sentTitle": "Pedido enviado",
+    "sentBody": "Mesa {{table}} enviada à cozinha.",
+    "errTitle": "Erro",
+    "errBody": "Tente novamente.",
+    "kitchenTitle": "Cozinha",
+    "active": "ativos",
+    "allStations": "Todas",
+    "kitchenClear": "Tudo em dia 🎉",
+    "minShort": "min",
+    "status": {
+      "open": "aberto",
+      "submitted": "na cozinha",
+      "served": "servido",
+      "closed": "fechado",
+      "cancelled": "cancelado"
+    },
+    "itemStatus": {
+      "new": "Novo",
+      "preparing": "Preparando",
+      "ready": "Pronto",
+      "served": "Servido",
+      "cancelled": "Cancelado"
+    },
+    "takeSub": "Faça pedidos na mesa",
+    "kitchenSub": "Tela de cozinha ao vivo"
   }
 }

@@ -30,6 +30,9 @@ export default function RestaurantLayout() {
       <Tabs.Screen name="integrations"    options={{ href: null }} />
       {/* AI-OS Digital Twin — reachable from the dashboard teaser card. */}
       <Tabs.Screen name="digital-twin"    options={{ href: null }} />
+      {/* Live ordering + kitchen display — reachable from More / the dashboard. */}
+      <Tabs.Screen name="take-order"      options={{ href: null }} />
+      <Tabs.Screen name="kitchen-display" options={{ href: null }} />
     </Tabs>
   );
 }
