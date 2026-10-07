@@ -19,10 +19,10 @@ the parts only you can do (account, secrets, DNS).
    Confirm the plans (the DB must be a **paid plan so daily backups are on**),
    then **Apply**.
 
-## 2. Set the 19 secrets 🔑
-Render prompts for every `sync: false` var. Two are **generated fresh**, the
-rest are your existing provider keys (reuse them):
+## 2. Set the secrets 🔑
+Render prompts for every `sync: false` var. Set them per service.
 
+### Backend (`savorymind-api`)
 **Generate new** (don't reuse old GCP values):
 - `SECRET_KEY` — `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 - `TOKEN_ENCRYPTION_KEY` — `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
@@ -35,6 +35,19 @@ rest are your existing provider keys (reuse them):
 `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `TWILIO_ACCOUNT_SID`,
 `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_PHONE`.
 (`DATABASE_URL` is wired automatically from the Render DB — don't set it.)
+
+### Frontend (`savorymind-web`) — web login needs these
+Without them, production **NextAuth has no secret, Google login shows as
+unavailable, and the social-login bridge is rejected by the backend (403)** —
+i.e. web sign-in is broken. (The mobile app logs in directly and is unaffected.)
+- `NEXTAUTH_SECRET` — **generate new**: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
+- `GOOGLE_CLIENT_SECRET` — reuse (same Google OAuth app as the backend)
+- `NEXT_PUBLIC_POSTHOG_KEY` — reuse, or leave blank (analytics just no-ops)
+
+`GOOGLE_CLIENT_ID` and `SOCIAL_LOGIN_SECRET` are **pulled automatically from
+the backend** (`fromService` in the Blueprint), so the frontend's social
+secret always matches the backend's — don't set them on the frontend by hand.
+`NEXTAUTH_URL` and `BACKEND_URL` are set to the real domains in the Blueprint.
 
 > The Stripe restaurant/consumer **Price IDs are still unset** — the billing
 > tiers stay dormant until you create them (see `docs/NEEDS-BRUNO.md`). That's

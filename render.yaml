@@ -112,3 +112,25 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://api.savorymind.net
+      - key: BACKEND_URL                 # server-side target for the social-login bridge (defaults to localhost otherwise)
+        value: https://api.savorymind.net
+      - key: NEXTAUTH_URL                # NextAuth canonical site URL (OAuth callback base)
+        value: https://savorymind.net
+      # ── Frontend auth secrets (set once in the dashboard) ──
+      - key: NEXTAUTH_SECRET             # required by NextAuth v4 in production
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET        # Google provider (authorization-code flow)
+        sync: false
+      - key: NEXT_PUBLIC_POSTHOG_KEY     # analytics; no-op if left blank
+        sync: false
+      # ── Shared from the backend so the values are always identical ──
+      - key: GOOGLE_CLIENT_ID            # same OAuth app as the backend
+        fromService:
+          type: web
+          name: savorymind-api
+          envVarKey: GOOGLE_CLIENT_ID
+      - key: SOCIAL_LOGIN_SECRET         # MUST equal the backend's — /api/auth/social rejects a mismatch (403)
+        fromService:
+          type: web
+          name: savorymind-api
+          envVarKey: SOCIAL_LOGIN_SECRET
