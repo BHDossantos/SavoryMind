@@ -115,9 +115,60 @@ def test_close_and_list_active(client, db_session):
     o = client.post("/api/orders", headers=auth_headers(token), json={
         "table_number": 9, "items": [{"name": "Caffè"}]}).json()
     assert any(x["id"] == o["id"] for x in client.get("/api/orders", headers=auth_headers(token)).json()["orders"])
-    client.post(f"/api/orders/{o['id']}/close", headers=auth_headers(token))
+    # An unsubmitted ("open") tab has nothing in the kitchen → it can be abandoned.
+    assert client.post(f"/api/orders/{o['id']}/close", headers=auth_headers(token)).status_code == 200
     # Closed orders drop out of the default active list.
     assert not any(x["id"] == o["id"] for x in client.get("/api/orders", headers=auth_headers(token)).json()["orders"])
+
+
+def test_atomic_create_and_submit(client, db_session):
+    # One request creates the order AND sends it to the kitchen (no separate submit).
+    token, owner = _restaurant(client, db_session, "ord-atomic@example.com")
+    mi = _menu_item(db_session, owner.id, "Risotto", "Primi", 13.0)
+    o = client.post("/api/orders", headers=auth_headers(token), json={
+        "table_number": 6, "submit": True, "items": [{"menu_item_id": mi.id}]}).json()
+    assert o["status"] == "submitted"
+    # It shows up in the kitchen immediately, without a submit call.
+    assert client.get("/api/orders/kitchen", headers=auth_headers(token)).json()["total_active"] == 1
+    # submit=True with no items stays open (nothing to send).
+    empty = client.post("/api/orders", headers=auth_headers(token), json={
+        "table_number": 8, "submit": True}).json()
+    assert empty["status"] == "open"
+
+
+def test_cannot_close_submitted_order_with_active_items(client, db_session):
+    # A tab sent to the kitchen can't be closed while lines are still cooking —
+    # that would silently drop live tickets from the KDS.
+    token, owner = _restaurant(client, db_session, "ord-close@example.com")
+    mi = _menu_item(db_session, owner.id, "Bistecca", "Secondi", 22.0)
+    o = client.post("/api/orders", headers=auth_headers(token), json={
+        "table_number": 11, "submit": True, "items": [{"menu_item_id": mi.id}]}).json()
+    r = client.post(f"/api/orders/{o['id']}/close", headers=auth_headers(token))
+    assert r.status_code == 409, r.text
+    # Still active in the kitchen.
+    assert client.get("/api/orders/kitchen", headers=auth_headers(token)).json()["total_active"] == 1
+    # Serve the item → now it closes.
+    item_id = o["items"][0]["id"]
+    client.post(f"/api/orders/items/{item_id}/status", headers=auth_headers(token), json={"status": "served"})
+    assert client.post(f"/api/orders/{o['id']}/close", headers=auth_headers(token)).status_code == 200
+
+
+def test_item_status_cannot_go_backward(client, db_session):
+    # A stale second KDS screen must not drag a served line back to an earlier state.
+    token, owner = _restaurant(client, db_session, "ord-mono@example.com")
+    mi = _menu_item(db_session, owner.id, "Gelato", "Dolci", 5.0)
+    o = client.post("/api/orders", headers=auth_headers(token), json={
+        "table_number": 12, "submit": True, "items": [{"menu_item_id": mi.id}]}).json()
+    item_id = o["items"][0]["id"]
+    hdr = auth_headers(token)
+    assert client.post(f"/api/orders/items/{item_id}/status", headers=hdr, json={"status": "ready"}).status_code == 200
+    # Backward (ready → preparing) is rejected as a stale write.
+    assert client.post(f"/api/orders/items/{item_id}/status", headers=hdr, json={"status": "preparing"}).status_code == 409
+    # Forward still works; re-sending the same state is idempotent.
+    assert client.post(f"/api/orders/items/{item_id}/status", headers=hdr, json={"status": "ready"}).status_code == 200
+    assert client.post(f"/api/orders/items/{item_id}/status", headers=hdr, json={"status": "served"}).status_code == 200
+    # A served line can no longer be dragged back.
+    assert client.post(f"/api/orders/items/{item_id}/status", headers=hdr, json={"status": "ready"}).status_code == 409
 
 
 def test_tenant_isolation(client, db_session):

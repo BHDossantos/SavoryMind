@@ -56,11 +56,13 @@ export default function TakeOrderScreen() {
     if (!tbl || cart.length === 0) return;
     setSubmitting(true);
     try {
-      const created = await api.createOrder({
+      // Atomic create-and-send: one request, so a failed/lost response can't
+      // leave a half-open order behind (no separate submit step to fail alone).
+      await api.createOrder({
         table_number: tbl,
         items: cart.map((x) => ({ menu_item_id: x.menu_item_id, quantity: x.quantity })),
+        submit: true,
       });
-      await api.submitOrder(created.id);
       setTable(''); setCart([]);
       await load();
       Alert.alert(t('orders.sentTitle'), t('orders.sentBody', { table: tbl }));
@@ -70,7 +72,10 @@ export default function TakeOrderScreen() {
   };
 
   const closeOrder = async (id) => {
-    try { await api.closeOrder(id); await load(); } catch (e) { setError(e.message); }
+    // Backend rejects closing a tab with lines still cooking (409) so kitchen
+    // tickets never vanish — surface that message instead of silently failing.
+    try { await api.closeOrder(id); await load(); }
+    catch (e) { Alert.alert(t('orders.cantCloseTitle'), e.message || t('orders.errBody')); }
   };
 
   if (loading) return <SafeScreen><ActivityIndicator style={{ marginTop: 40 }} color={C.restaurant.primary} /></SafeScreen>;

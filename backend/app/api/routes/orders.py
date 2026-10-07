@@ -40,6 +40,7 @@ class OrderIn(BaseModel):
     server_name: Optional[str] = None
     notes: Optional[str] = None
     items: Optional[list[ItemIn]] = None
+    submit: Optional[bool] = False   # create + send to the kitchen in one atomic request
 
 
 class ItemsIn(BaseModel):
@@ -61,6 +62,7 @@ def create_order(body: OrderIn, db: Session = Depends(get_db), current_user: Use
         order = order_service.create_order(
             db, current_user.id, body.table_number,
             server_name=body.server_name, notes=body.notes, items=_specs(body.items),
+            submit=bool(body.submit),
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -118,6 +120,8 @@ def close_order(order_id: int, db: Session = Depends(get_db), current_user: User
     _require_restaurant(current_user)
     try:
         order = order_service.close_order(db, current_user.id, order_id)
+    except order_service.OrderConflict as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return order_service.order_dict(db, order)
@@ -139,6 +143,8 @@ def set_item_status(item_id: int, body: StatusIn, db: Session = Depends(get_db),
     _require_restaurant(current_user)
     try:
         item = order_service.set_item_status(db, current_user.id, item_id, body.status)
+    except order_service.OrderConflict as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     return order_service._item_dict(item)

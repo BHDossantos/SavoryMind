@@ -1113,6 +1113,7 @@
     "sentTitle": "Commande envoyée",
     "sentBody": "Table {{table}} envoyée en cuisine.",
     "errTitle": "Erreur",
+    "cantCloseTitle": "Impossible de fermer la table",
     "errBody": "Réessayez.",
     "kitchenTitle": "Cuisine",
     "active": "actifs",

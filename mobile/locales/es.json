@@ -1113,6 +1113,7 @@
     "sentTitle": "Pedido enviado",
     "sentBody": "Mesa {{table}} enviada a cocina.",
     "errTitle": "Error",
+    "cantCloseTitle": "No se puede cerrar la mesa",
     "errBody": "Inténtalo de nuevo.",
     "kitchenTitle": "Cocina",
     "active": "activos",

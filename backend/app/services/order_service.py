@@ -17,6 +17,35 @@ from ..models.orders import Order, OrderItem, ITEM_STATUSES
 _ACTIVE_ITEM = ("new", "preparing", "ready")          # still relevant to the kitchen
 _ACTIVE_ORDER = ("open", "submitted", "served")       # not yet closed/cancelled
 
+# Kitchen progress is monotonic: a line only moves forward (or is cancelled).
+# This rank lets us reject stale backward writes from a second KDS screen that
+# still shows an older state (e.g. one station marks "served", another that
+# still shows "preparing" must not be able to drag it back to "ready").
+_ITEM_RANK = {"new": 0, "preparing": 1, "ready": 2, "served": 3}
+
+
+class OrderConflict(Exception):
+    """A requested transition conflicts with the current state (maps to HTTP 409).
+
+    Deliberately *not* a ValueError so the routes' existing
+    `except ValueError` (bad input → 404/422) doesn't swallow it.
+    """
+
+
+def _check_item_transition(current: str, new: str) -> None:
+    """Allow forward (or idempotent same-state) moves and cancellation of an
+    active line; reject stale backward writes and resurrecting a dead line."""
+    if new == current:
+        return  # idempotent — a duplicate bump is harmless
+    if new == "cancelled":
+        if current == "served":
+            raise OrderConflict("Cannot cancel an item that is already served.")
+        return  # a still-active line may always be voided
+    if current == "cancelled":
+        raise OrderConflict("Cannot reactivate a cancelled item.")
+    if _ITEM_RANK[new] < _ITEM_RANK[current]:
+        raise OrderConflict(f"Cannot move item from '{current}' back to '{new}'.")
+
 
 def _station_for(category: str | None) -> str:
     c = (category or "").strip().lower()
@@ -48,12 +77,19 @@ def _resolve_item(db: Session, user_id: int, spec: dict) -> OrderItem:
 
 
 def create_order(db: Session, user_id: int, table_number: int, *, server_name=None,
-                 notes=None, items: list[dict] | None = None) -> Order:
-    order = Order(user_id=user_id, table_number=int(table_number), status="open",
+                 notes=None, items: list[dict] | None = None, submit: bool = False) -> Order:
+    """Create a tab. With ``submit=True`` and at least one item, the order is
+    created *and* sent to the kitchen in a single transaction — so a server's
+    "send" is one atomic request. A dropped response can at worst be retried
+    without leaving a half-open order behind (there is no separate submit call
+    that could fail on its own)."""
+    specs = items or []
+    status = "submitted" if (submit and specs) else "open"
+    order = Order(user_id=user_id, table_number=int(table_number), status=status,
                   server_name=(server_name or None), notes=(notes or None))
     db.add(order)
     db.flush()  # get order.id
-    for spec in (items or []):
+    for spec in specs:
         it = _resolve_item(db, user_id, spec)
         it.order_id = order.id
         db.add(it)
@@ -99,10 +135,16 @@ def set_item_status(db: Session, user_id: int, item_id: int, status: str) -> Ord
     item = db.query(OrderItem).filter(OrderItem.id == item_id, OrderItem.user_id == user_id).first()
     if not item:
         raise ValueError("Order item not found.")
+    _check_item_transition(item.status, status)
+    # Lock the parent order row *first* so two stations completing the last two
+    # items concurrently serialize: the second transaction blocks here until the
+    # first commits, then sees its sibling already "served" and flips the order.
+    # (FOR UPDATE is a no-op on SQLite, which is fine — the test suite is
+    # single-threaded; it matters on Postgres in production.)
+    order = db.query(Order).filter(Order.id == item.order_id).with_for_update().first()
     item.status = status
     item.updated_at = datetime.datetime.utcnow()
     # If the order is now fully served (every non-cancelled item served), mark it served.
-    order = db.query(Order).filter(Order.id == item.order_id).first()
     if order and order.status in ("open", "submitted"):
         siblings = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
         live = [s for s in siblings if s.status != "cancelled"]
@@ -114,8 +156,19 @@ def set_item_status(db: Session, user_id: int, item_id: int, status: str) -> Ord
     return item
 
 
-def close_order(db: Session, user_id: int, order_id: int) -> Order:
+def close_order(db: Session, user_id: int, order_id: int, *, force: bool = False) -> Order:
+    """Settle a tab. A tab that was sent to the kitchen (submitted/served) can't
+    be closed while lines are still cooking — those tickets would silently vanish
+    from the KDS. Serve or cancel them first (or pass ``force``). An unsent "open"
+    tab has nothing in the kitchen, so it can always be abandoned."""
     order = _get_owned_order(db, user_id, order_id)
+    if not force and order.status in ("submitted", "served"):
+        active = (db.query(OrderItem)
+                  .filter(OrderItem.order_id == order.id, OrderItem.status.in_(_ACTIVE_ITEM))
+                  .count())
+        if active:
+            raise OrderConflict(
+                f"{active} item(s) still active in the kitchen — serve or cancel them before closing.")
     order.status = "closed"
     order.closed_at = datetime.datetime.utcnow()
     order.updated_at = order.closed_at
@@ -153,6 +206,7 @@ def order_dict(db: Session, order: Order) -> dict:
         "items": [_item_dict(i) for i in items],
         "item_count": sum(i.quantity for i in items if i.status != "cancelled"),
         "line_count": len([i for i in items if i.status != "cancelled"]),
+        "active_item_count": len([i for i in items if i.status in _ACTIVE_ITEM]),
         "total": round(total, 2),
     }
 

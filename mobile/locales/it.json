@@ -1113,6 +1113,7 @@
     "sentTitle": "Ordine inviato",
     "sentBody": "Tavolo {{table}} inviato in cucina.",
     "errTitle": "Errore",
+    "cantCloseTitle": "Impossibile chiudere il tavolo",
     "errBody": "Riprova.",
     "kitchenTitle": "Cucina",
     "active": "attivi",

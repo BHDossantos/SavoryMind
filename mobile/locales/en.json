@@ -1113,6 +1113,7 @@
     "sentTitle": "Order sent",
     "sentBody": "Table {{table}} sent to the kitchen.",
     "errTitle": "Error",
+    "cantCloseTitle": "Can't close table",
     "errBody": "Please try again.",
     "kitchenTitle": "Kitchen",
     "active": "active",
