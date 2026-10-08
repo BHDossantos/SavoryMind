@@ -151,14 +151,14 @@ export default function KitchenTimes() {
       )}
 
       {/* Log table */}
-      <div className="card overflow-hidden p-0">
+      <div className="card overflow-x-auto p-0">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-800">{t("kitchenPage.allEntries")}</h2>
         </div>
         {loading ? <p className="p-5 text-sm text-gray-400">{t("kitchenPage.loading")}</p> : logs.length === 0 ? (
           <p className="p-8 text-center text-gray-400 text-sm">{t("kitchenPage.noEntries")}</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">{t("kitchenPage.colDish")}</th>

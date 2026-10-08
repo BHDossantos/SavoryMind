@@ -195,7 +195,7 @@ export default function Signup() {
           <h1 className="text-xl font-bold text-gray-900 mb-5">{t("auth.chooseExperience")}</h1>
 
           {/* Type selector */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             {TYPES.map((type) => (
               <button
                 key={type.id}

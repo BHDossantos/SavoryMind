@@ -176,7 +176,7 @@ export default function MenuPage() {
       {showForm && (
         <div className="card mb-6">
           <h2 className="text-base font-semibold mb-4">{editingItem ? t("menuPage.editTitle", { name: editingItem.name }) : t("menuPage.newTitle")}</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { label: t("menuPage.name"),        key: "name", type: "text", required: true },
               { label: t("menuPage.price"),       key: "price", type: "number", required: true },

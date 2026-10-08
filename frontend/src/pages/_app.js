@@ -38,6 +38,10 @@ const PUBLIC_ROUTES = [
   "/case-studies",
   "/contatti",
   "/per-chi-ama-il-cibo",
+  // SEO landing pages (waste calculator + waste-reduction guide). Public so
+  // crawlers and logged-out visitors get the real content, not a login wall.
+  "/calcolatore-spreco",
+  "/ridurre-lo-spreco",
   "/sitemap.xml",
   // Public anonymous-feedback flow — a diner scans an employee's printed
   // QR code and lands here. No account required.
