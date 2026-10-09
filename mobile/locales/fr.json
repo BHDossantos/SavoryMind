@@ -1094,5 +1094,47 @@
     "crFastEasyDesc": "Prêt en 25 min ou moins",
     "crSweet": "Quelque chose de sucré",
     "crSweetDesc": "Desserts, pâtisseries, gaufres"
+  },
+  "orders": {
+    "takeTitle": "Prendre commande",
+    "tableNumber": "Numéro de table",
+    "tablePlaceholder": "ex. 5",
+    "tapToAdd": "Appuyez pour ajouter",
+    "noMenu": "Aucun plat au menu.",
+    "total": "Total",
+    "sending": "Envoi…",
+    "sendToKitchen": "Envoyer en cuisine ({{count}})",
+    "openTabs": "Tables ouvertes",
+    "noOpen": "Aucune commande ouverte.",
+    "table": "Table",
+    "dishes": "plats",
+    "close": "Fermer",
+    "openKitchen": "Ouvrir la cuisine",
+    "sentTitle": "Commande envoyée",
+    "sentBody": "Table {{table}} envoyée en cuisine.",
+    "errTitle": "Erreur",
+    "cantCloseTitle": "Impossible de fermer la table",
+    "errBody": "Réessayez.",
+    "kitchenTitle": "Cuisine",
+    "active": "actifs",
+    "allStations": "Toutes",
+    "kitchenClear": "Tout est à jour 🎉",
+    "minShort": "min",
+    "status": {
+      "open": "ouverte",
+      "submitted": "en cuisine",
+      "served": "servie",
+      "closed": "fermée",
+      "cancelled": "annulée"
+    },
+    "itemStatus": {
+      "new": "Nouveau",
+      "preparing": "En préparation",
+      "ready": "Prêt",
+      "served": "Servi",
+      "cancelled": "Annulé"
+    },
+    "takeSub": "Prenez les commandes à table",
+    "kitchenSub": "Écran cuisine en direct"
   }
 }

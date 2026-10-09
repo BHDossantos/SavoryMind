@@ -1094,5 +1094,47 @@
     "crFastEasyDesc": "Ready in 25 min or less",
     "crSweet": "Something Sweet",
     "crSweetDesc": "Desserts, pastries, waffles"
+  },
+  "orders": {
+    "takeTitle": "Take order",
+    "tableNumber": "Table number",
+    "tablePlaceholder": "e.g. 5",
+    "tapToAdd": "Tap to add",
+    "noMenu": "No menu items.",
+    "total": "Total",
+    "sending": "Sending…",
+    "sendToKitchen": "Send to kitchen ({{count}})",
+    "openTabs": "Open tabs",
+    "noOpen": "No open orders.",
+    "table": "Table",
+    "dishes": "dishes",
+    "close": "Close",
+    "openKitchen": "Open the kitchen",
+    "sentTitle": "Order sent",
+    "sentBody": "Table {{table}} sent to the kitchen.",
+    "errTitle": "Error",
+    "cantCloseTitle": "Can't close table",
+    "errBody": "Please try again.",
+    "kitchenTitle": "Kitchen",
+    "active": "active",
+    "allStations": "All",
+    "kitchenClear": "All caught up 🎉",
+    "minShort": "m",
+    "status": {
+      "open": "open",
+      "submitted": "in kitchen",
+      "served": "served",
+      "closed": "closed",
+      "cancelled": "cancelled"
+    },
+    "itemStatus": {
+      "new": "New",
+      "preparing": "Preparing",
+      "ready": "Ready",
+      "served": "Served",
+      "cancelled": "Cancelled"
+    },
+    "takeSub": "Take orders at the table",
+    "kitchenSub": "Live kitchen display"
   }
 }

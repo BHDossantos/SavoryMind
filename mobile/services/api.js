@@ -192,6 +192,16 @@ export const api = {
   createMenuItem: (data) => request('/api/menu', { method: 'POST', body: JSON.stringify(data) }),
   updateMenuItem: (id, data) => request(`/api/menu/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteMenuItem: (id) => request(`/api/menu/${id}`, { method: 'DELETE' }),
+
+  // Live table ordering + kitchen display (KDS)
+  createOrder: (data) => request('/api/orders', { method: 'POST', body: JSON.stringify(data) }),
+  listOrders: (status) => request(`/api/orders${status ? `?status=${status}` : ''}`),
+  getOrder: (id) => request(`/api/orders/${id}`),
+  addOrderItems: (id, items) => request(`/api/orders/${id}/items`, { method: 'POST', body: JSON.stringify({ items }) }),
+  submitOrder: (id) => request(`/api/orders/${id}/submit`, { method: 'POST' }),
+  closeOrder: (id) => request(`/api/orders/${id}/close`, { method: 'POST' }),
+  getKitchen: (station) => request(`/api/orders/kitchen${station ? `?station=${encodeURIComponent(station)}` : ''}`),
+  setOrderItemStatus: (itemId, status) => request(`/api/orders/items/${itemId}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
   getRecommendations: () => request('/api/menu/recommendations/all'),
 
   // Reviews
