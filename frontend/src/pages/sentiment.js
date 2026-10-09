@@ -285,7 +285,7 @@ export default function SentimentPage() {
       {showForm && (
         <div className="card mb-6">
           <h2 className="text-base font-semibold mb-4">{t("sentimentPage.submitReviewTitle")}</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t("sentimentPage.customerName")}</label>
               <input required value={form.customer_name} onChange={(e) => handleFieldChange("customer_name", e.target.value)}

@@ -137,8 +137,8 @@ export default function InventoryPage() {
       )}
 
       {sortedItems.length > 0 && (
-        <div className="card overflow-hidden p-0">
-          <table className="w-full text-sm">
+        <div className="card overflow-x-auto p-0">
+          <table className="w-full text-sm min-w-[640px]">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="text-left px-4 py-3">{t("inventoryPage.colName")}</th>

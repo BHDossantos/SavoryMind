@@ -24,6 +24,9 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* Explicit mobile viewport — don't rely on the framework default,
+            so phone rendering stays correct even if a page overrides <Head>. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="SavoryMind" />
         <meta property="og:title" content={TITLE} />
