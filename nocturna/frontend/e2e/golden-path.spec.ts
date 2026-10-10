@@ -41,7 +41,8 @@ test.describe('Nocturna golden path', () => {
     // 4. Book this plan
     await planCards.first().getByRole('link', { name: /Book this plan/ }).click();
     await page.waitForURL(/\/bookings\/new\?plan_id=/);
-    await expect(page.getByRole('heading', { name: /Book your night/ })).toBeVisible();
+    // "Book your night" is the kicker (<p class="label">), not a heading.
+    await expect(page.getByText('Book your night')).toBeVisible();
 
     await page.getByLabel('Name').fill('E2E Buyer');
     await page.getByLabel('Phone').fill('+39 333 0000001');

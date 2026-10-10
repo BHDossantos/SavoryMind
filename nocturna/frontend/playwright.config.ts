@@ -15,6 +15,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     actionTimeout: 8_000,
     navigationTimeout: 20_000,
+    // CI sandboxes often pre-install a Chromium that doesn't match this
+    // @playwright/test version's expected build. Point at it explicitly:
+    //   CHROMIUM_BIN=/opt/pw-browsers/chromium npx playwright test
+    ...(process.env.CHROMIUM_BIN
+      ? { launchOptions: { executablePath: process.env.CHROMIUM_BIN } }
+      : {}),
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

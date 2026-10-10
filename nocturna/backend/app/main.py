@@ -33,6 +33,22 @@ settings = get_settings()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 log = logging.getLogger("nocturna")
 
+# Error monitoring — env-gated like every other provider: no DSN, no Sentry.
+_SENTRY_DSN = os.getenv("NOCTURNA_SENTRY_DSN")
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=_SENTRY_DSN,
+            environment=settings.APP_ENV,
+            traces_sample_rate=float(os.getenv("NOCTURNA_SENTRY_TRACES_RATE", "0.1")),
+            send_default_pii=False,  # never ship emails/phones to Sentry
+        )
+        log.info("Sentry enabled (env=%s)", settings.APP_ENV)
+    except ImportError:
+        log.warning("NOCTURNA_SENTRY_DSN set but sentry-sdk not installed — skipping")
+
 app = FastAPI(title=settings.APP_NAME, version="0.1.0")
 
 app.add_middleware(

@@ -138,7 +138,30 @@ curl -X POST "https://nocturna-api-….run.app/api/cron/reminders" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
-## Verifying a deploy
+## Verifying a deploy (automated)
+
+Run the smoke script against the deployed URLs — it exercises health,
+seeding, the planner, a guest booking, and the share round-trip, plus the
+web app's legal/SEO endpoints:
+
+```bash
+python3 nocturna/scripts/smoke.py \
+  https://nocturna-api-….run.app \
+  https://nocturna-web-….run.app
+```
+
+Exit code 0 = green. It creates one clearly-labelled test booking
+("SMOKE TEST — ignore") — reject it from /admin/bookings afterwards.
+
+## Error monitoring (optional)
+
+Set `_SENTRY_DSN` (Cloud Build substitution → `NOCTURNA_SENTRY_DSN` env)
+to enable Sentry on the backend. PII is never sent
+(`send_default_pii=False`); traces sample at 10% by default
+(`NOCTURNA_SENTRY_TRACES_RATE`). Unset = silent no-op, like every other
+provider integration.
+
+## Verifying a deploy (manual)
 
 ```bash
 curl https://nocturna-api-….run.app/api/health

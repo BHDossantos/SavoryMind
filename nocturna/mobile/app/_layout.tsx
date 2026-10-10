@@ -17,7 +17,7 @@ export default function RootLayout() {
       }}>
         <Stack.Screen name="index" options={{ title: 'Nocturna' }} />
         <Stack.Screen name="plan/new" options={{ title: 'Plan your night' }} />
-        <Stack.Screen name="plan/[id]" options={{ title: 'Your night' }} />
+        <Stack.Screen name="plan/[id]/index" options={{ title: 'Your night' }} />
         <Stack.Screen name="plan/[id]/bookings" options={{ title: 'Bookings' }} />
         <Stack.Screen name="venues/[slug]" options={{ title: 'Venue' }} />
         <Stack.Screen name="bookings/new" options={{ title: 'Booking request' }} />

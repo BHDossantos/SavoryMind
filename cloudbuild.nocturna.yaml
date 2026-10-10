@@ -48,6 +48,7 @@ substitutions:
   _POSTHOG_HOST: "https://eu.i.posthog.com"
   _SITE_URL: ""
   _CRON_TOKEN: ""
+  _SENTRY_DSN: ""
   _DATABASE_URL: ""
 
 steps:
@@ -114,6 +115,7 @@ steps:
         [ -n "$_SENDGRID_KEY" ]         && ENV_VARS="${ENV_VARS}@NOCTURNA_SENDGRID_KEY=$_SENDGRID_KEY"
         [ -n "$_SENDGRID_FROM" ]        && ENV_VARS="${ENV_VARS}@NOCTURNA_SENDGRID_FROM=$_SENDGRID_FROM"
         [ -n "$_CRON_TOKEN" ]           && ENV_VARS="${ENV_VARS}@NOCTURNA_CRON_TOKEN=$_CRON_TOKEN"
+        [ -n "$_SENTRY_DSN" ]           && ENV_VARS="${ENV_VARS}@NOCTURNA_SENTRY_DSN=$_SENTRY_DSN"
 
         gcloud run deploy nocturna-api \
           --image gcr.io/$PROJECT_ID/nocturna-api \

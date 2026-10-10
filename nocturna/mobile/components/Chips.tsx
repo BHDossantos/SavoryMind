@@ -8,7 +8,7 @@ export function Chips<T extends string>({ value, options, multi, onChange, getLa
   onChange: (v: any) => void;
   getLabel?: (v: T) => string;
 }) {
-  const opts = (options as any[]).map((o) => typeof o === 'string' ? { value: o, label: getLabel ? getLabel(o) : o.replace(/_/g, ' ') } : o);
+  const opts = (options as any[]).map((o) => typeof o === 'string' ? { value: o, label: getLabel ? getLabel(o as T) : o.replace(/_/g, ' ') } : o);
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
       {opts.map(o => {

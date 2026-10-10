@@ -14,6 +14,17 @@ npm run e2e          # headless
 npm run e2e:ui       # interactive UI mode
 ```
 
+On CI images with a pre-installed Playwright Chromium whose build doesn't
+match this @playwright/test version, point at the headless shell binary:
+
+```bash
+CI=1 CHROMIUM_BIN=/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell \
+  npx playwright test
+```
+
+(Newer full-Chromium builds removed `--headless=old`, which this Playwright
+version passes — the standalone headless shell still accepts it.)
+
 `playwright.config.ts` boots both servers via `webServer`; on a workstation
 they stay up across runs. In CI, set `CI=1` so Playwright spawns fresh ones
 and tears them down.
