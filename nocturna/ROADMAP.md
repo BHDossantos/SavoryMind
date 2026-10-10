@@ -99,7 +99,18 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   runbook. Remaining human steps: Apple/Play/Expo accounts + `eas init`
   → `eas build` → `eas submit` per the runbook. 69 backend tests.
 
-## Phase 14 · Open
+## Phase 14 · Launch hardening [shipped — `6741468`]
+
+- `6741468` — task **`t-launch-hardening`** shipped: Playwright e2e suite
+  executed for the first time (3/3 pass in a real browser — full golden
+  path verified; one spec bug found + fixed); mobile app typechecked for
+  the first time (1 type error fixed, 12 SDK-54 version mismatches
+  aligned, route nesting normalised to `plan/[id]/index.tsx`,
+  package-lock committed); `scripts/smoke.py` deploy smoke test (verified
+  7/7 against a live local server); env-gated Sentry on the backend with
+  `_SENTRY_DSN` cloudbuild substitution.
+
+## Phase 15 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and

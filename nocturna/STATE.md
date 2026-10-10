@@ -9,9 +9,9 @@
 
 ## Last shipped
 
-- **Commit:** `20486d0`
-- **Title:** feat(nocturna): GSD t-store-release — App Store + Play Store release prep
-- **Phase:** 13 · Store release prep
+- **Commit:** `6741468`
+- **Title:** feat(nocturna): GSD t-launch-hardening — e2e verified, mobile fixed, smoke + Sentry
+- **Phase:** 14 · Launch hardening
 
 ## In flight
 
@@ -23,8 +23,10 @@ None. Working tree clean.
 |---|---|---|
 | `pytest tests` (backend) | **69 passed** | bcrypt 4.0.1 pinned; +1 account-deletion test |
 | `tsc --noEmit` (frontend) | **clean** | |
+| `tsc --noEmit` (mobile) | **clean** | First ever — SDK-54-aligned deps, 16/18 expo-doctor |
+| `scripts/smoke.py` | **7/7** | Verified against locally booted uvicorn + seed |
 | `next build` (frontend) | **clean** | 42 routes; /privacy + /terms static |
-| `playwright test --list` | **3 specs** | Browser binary not installed in this sandbox |
+| `playwright test` | **3/3 PASS** | Executed in real Chromium via CHROMIUM_BIN headless shell |
 
 ## Production health
 
@@ -69,7 +71,7 @@ Code-side prep shipped in Phase 13. To actually appear in the stores
 
 ## Available task IDs
 
-From `ROADMAP.md` Phase 14:
+From `ROADMAP.md` Phase 15:
 
 - `t-streaming-chat` — stream AI concierge tokens
 - `t-rate-limit-redis` — distributed rate limiter
