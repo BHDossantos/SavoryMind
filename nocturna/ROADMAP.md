@@ -110,7 +110,18 @@ exports (bookings / payments / commissions). Saved venues / favourites.
   7/7 against a live local server); env-gated Sentry on the backend with
   `_SENTRY_DSN` cloudbuild substitution.
 
-## Phase 15 · Open
+## Phase 15 · Re-platform [shipped — `cdbcdc9`]
+
+- `cdbcdc9` — task **`t-replatform`** shipped (user correction: infra is
+  Supabase, not Google Cloud): render.yaml Blueprint for the FastAPI
+  backend (Docker, persistent /data disk for uploads), vercel.json for
+  the Next.js frontend, GitHub Actions reminder cron replacing Cloud
+  Scheduler, nocturna-ci.yml (pytest + web tsc/build + mobile tsc),
+  DEPLOY.md rewritten around Supabase → Render → Vercel (~$7/mo launch),
+  Cloud Run demoted to legacy appendix. Zero app-code changes — the app
+  was env-driven from day one.
+
+## Phase 16 · Open
 
 Open work captured as XML task blocks. Pick the highest-leverage one
 (or any), execute it, verify, atomic commit, then mark **[shipped]** and

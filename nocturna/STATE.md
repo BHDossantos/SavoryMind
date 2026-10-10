@@ -9,9 +9,9 @@
 
 ## Last shipped
 
-- **Commit:** `6741468`
-- **Title:** feat(nocturna): GSD t-launch-hardening — e2e verified, mobile fixed, smoke + Sentry
-- **Phase:** 14 · Launch hardening
+- **Commit:** `cdbcdc9`
+- **Title:** feat(nocturna): GSD t-replatform — Supabase + Render + Vercel deploy path
+- **Phase:** 15 · Re-platform
 
 ## In flight
 
@@ -30,18 +30,15 @@ None. Working tree clean.
 
 ## Production health
 
-Untested in production. Cloud Build config (`cloudbuild.nocturna.yaml`)
-now has 10 steps and parses cleanly. The new `provision-scheduler` step
-auto-creates the reminder Cloud Scheduler job when `_CRON_TOKEN` is set.
-Verify a deploy with:
+Untested in production. Primary path is now **Supabase (Postgres) +
+Render (API via render.yaml) + Vercel (web) + GitHub Actions (reminder
+cron)** — see DEPLOY.md. The user's Supabase account has a paused free
+project that can be restored, or create a fresh "Nocturna" project.
+Cloud Run (`cloudbuild.nocturna.yaml`) is a legacy appendix. Verify any
+deploy with:
 
 ```bash
-gcloud builds submit --config=cloudbuild.nocturna.yaml \
-  --substitutions=\
-_REGION=europe-west1,\
-_SECRET_KEY=$(openssl rand -hex 32),\
-_CRON_TOKEN=$(openssl rand -hex 24),\
-_APP_BASE_URL=https://placeholder.example
+python3 nocturna/scripts/smoke.py https://<api-url> https://<web-url>
 ```
 
 ## Open questions / known issues
@@ -72,7 +69,7 @@ Code-side prep shipped in Phase 13. To actually appear in the stores
 
 ## Available task IDs
 
-From `ROADMAP.md` Phase 15:
+From `ROADMAP.md` Phase 16:
 
 - `t-streaming-chat` — stream AI concierge tokens
 - `t-rate-limit-redis` — distributed rate limiter
