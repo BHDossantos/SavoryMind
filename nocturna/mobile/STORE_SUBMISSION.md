@@ -20,11 +20,11 @@ What remains needs **your accounts and ~4 commands**. Follow in order.
 
 Apple enrollment can take 24–48h (identity verification). Start it first.
 
-**Deploy the backend first** (`DEPLOY.md`) — you need the real
-`https://nocturna-api-….run.app` URL for the builds. Then replace the
-`REPLACE-WITH-YOUR-nocturna-api.run.app` placeholders in
-`mobile/eas.json` (both `preview` and `production` profiles) and the
-fallback in `mobile/app.config.js`.
+**Deploy the backend first** (`DEPLOY.md` — Supabase + Render + Vercel) —
+you need the real `https://nocturna-api….onrender.com` URL for the builds.
+Then replace the `REPLACE-WITH-YOUR-nocturna-api.onrender.com`
+placeholders in `mobile/eas.json` (both `preview` and `production`
+profiles) and the fallback in `mobile/app.config.js`.
 
 ## 1 · Initialise EAS (once)
 

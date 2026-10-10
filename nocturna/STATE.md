@@ -64,8 +64,9 @@ Code-side prep shipped in Phase 13. To actually appear in the stores
 (see `mobile/STORE_SUBMISSION.md` for the full runbook):
 
 1. Enroll: Apple Developer ($99/yr) + Google Play ($25) + free Expo account.
-2. Deploy backend, replace `REPLACE-WITH-YOUR-nocturna-api.run.app` in
-   `mobile/eas.json` + fallback in `mobile/app.config.js`.
+2. Deploy backend (Supabase + Render + Vercel — see DEPLOY.md), replace
+   `REPLACE-WITH-YOUR-nocturna-api.onrender.com` in `mobile/eas.json` +
+   fallback in `mobile/app.config.js`.
 3. `eas init` → export EAS_PROJECT_ID → `eas build` → `eas submit` per platform.
 4. Create + verify the `review@nocturna.app` demo account; capture screenshots.
 

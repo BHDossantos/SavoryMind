@@ -1,182 +1,141 @@
 # Deploying Nocturna
 
-Cloud Build config: [`cloudbuild.nocturna.yaml`](../cloudbuild.nocturna.yaml) at the repo root.
-Deploys `nocturna-api` (FastAPI) and `nocturna-web` (Next.js) to Cloud Run, side-by-side
-with SavoryMind, sharing nothing except the project + region.
+**Primary stack (what this project actually targets):**
 
-## One-time setup
+| Layer | Host | Config |
+|---|---|---|
+| Database | **Supabase Postgres** | connection string → Render env |
+| Backend (FastAPI) | **Render** (Docker) | [`render.yaml`](../render.yaml) at repo root |
+| Frontend (Next.js) | **Vercel** | `nocturna/frontend` + [`vercel.json`](./frontend/vercel.json) |
+| Reminder cron | **GitHub Actions** | [`.github/workflows/nocturna-reminders.yml`](../.github/workflows/nocturna-reminders.yml) |
+| Mobile builds | **Expo EAS** | `nocturna/mobile/STORE_SUBMISSION.md` |
 
-1. **Enable services**
-   ```bash
-   gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
-     containerregistry.googleapis.com storage.googleapis.com
+The app was built env-driven from day one, so no code changes are needed
+for any host — only environment variables. (A legacy Google Cloud Run
+path still exists in `cloudbuild.nocturna.yaml`; see the appendix.)
+
+---
+
+## 1 · Database — Supabase
+
+1. In the [Supabase dashboard](https://supabase.com/dashboard), restore
+   your paused project or create a new one named **Nocturna**.
+2. Project → **Connect** → copy the **Transaction pooler** URI (port 6543):
+
    ```
-2. **Grant Cloud Build the Cloud Run admin role** so it can deploy:
-   ```bash
-   PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
-   gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
-     --role=roles/run.admin
-   gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
-     --role=roles/iam.serviceAccountUser
+   postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
    ```
 
-## First deploy (placeholder URLs, then real ones)
+That's it. The backend creates its own tables on first boot
+(`Base.metadata.create_all`) and seeds 10 cities, ~90 venues, and the
+bootstrap admin. No migrations to run by hand.
 
-```bash
-gcloud builds submit \
-  --config=cloudbuild.nocturna.yaml \
-  --substitutions=\
-_REGION=europe-west1,\
-_SECRET_KEY=$(openssl rand -hex 32),\
-_ADMIN_EMAIL=admin@nocturna.app,\
-_ADMIN_PASSWORD=$(openssl rand -base64 24),\
-_APP_BASE_URL=https://placeholder.example
-```
+> RLS note: the backend connects as `postgres` via its own API layer, so
+> Supabase Row Level Security is not used. Don't expose the anon key —
+> this deployment uses Supabase purely as managed Postgres.
 
-The build prints both Cloud Run URLs on the last step. Re-run with the real
-`_APP_BASE_URL=https://nocturna-web-…run.app` so CORS + Stripe success URLs
-are correct.
+## 2 · Backend — Render
 
-## Optional integrations
+1. Render dashboard → **New → Blueprint** → select this GitHub repo.
+   Render reads [`render.yaml`](../render.yaml) and provisions
+   `nocturna-api` (Docker build from `nocturna/backend/Dockerfile`,
+   health-checked on `/api/health`, 1 GB persistent disk mounted at
+   `/data` for photo uploads).
+2. Fill the prompted secrets:
+   - `NOCTURNA_DATABASE_URL` — the Supabase pooler URI from step 1
+   - `NOCTURNA_ADMIN_BOOTSTRAP_PASSWORD` — pick one, rotate after first login
+   - `NOCTURNA_APP_BASE_URL` + `NOCTURNA_CORS_ORIGINS` — your Vercel URL
+     (placeholder first, update after step 3)
+   - optional provider keys (Stripe, Twilio, SendGrid, Anthropic, Sentry) —
+     every one falls back gracefully when unset
+3. Deploy. Note the service URL, e.g. `https://nocturna-api.onrender.com`.
 
-Add any of these to `--substitutions=` when ready. All are optional — the
-backend gracefully falls back to console-logged notifications and a mock
-checkout if they're absent.
+## 3 · Frontend — Vercel
 
-| Substitution | What it enables |
-|---|---|
-| `_STRIPE_SECRET_KEY` | Real Stripe checkout + webhook (use `sk_live_*` or `sk_test_*`) |
-| `_STRIPE_WEBHOOK_SECRET` | Signature verification for the webhook endpoint at `/api/payments/webhook` |
-| `_ANTHROPIC_API_KEY` | Claude-powered AI concierge with `generate_plan` tool-use |
-| `_TWILIO_SID` / `_TWILIO_TOKEN` / `_TWILIO_FROM_SMS` | SMS via Twilio |
-| `_TWILIO_FROM_WHATSAPP` | WhatsApp via Twilio (defaults to sandbox sender) |
-| `_SENDGRID_KEY` / `_SENDGRID_FROM` | Transactional email via SendGrid |
-| `_MAPBOX_TOKEN` | Real Mapbox maps; without it the SVG fallback renders |
-| `_DATABASE_URL` | Override to a Cloud SQL Postgres URL for production scale |
+1. Vercel dashboard → **Add New → Project** → import this repo.
+2. **Root Directory:** `nocturna/frontend` (framework auto-detected: Next.js).
+3. Environment variables:
 
-## Database
+   | Var | Value |
+   |---|---|
+   | `NEXT_PUBLIC_API_URL` | the Render URL from step 2 |
+   | `NEXT_PUBLIC_SITE_URL` | this deployment's public URL (set after first deploy) |
+   | `NEXT_PUBLIC_MAPBOX_TOKEN` | optional — SVG fallback without it |
+   | `NEXT_PUBLIC_POSTHOG_KEY` / `_HOST` | optional |
 
-By default the build provisions a GCS bucket and mounts it as a volume so the
-backend can use **SQLite at `/data/nocturna.db`**. Cheap and zero-ops, but
-single-instance only.
+4. Deploy, then go back to Render and set `NOCTURNA_APP_BASE_URL` +
+   `NOCTURNA_CORS_ORIGINS=["https://<your-vercel-url>"]` to the real URL.
 
-For production with multiple instances, move to **Cloud SQL Postgres**:
+## 4 · Reminder cron — GitHub Actions
 
-```bash
-gcloud sql instances create nocturna-db \
-  --database-version=POSTGRES_16 --tier=db-g1-small --region=europe-west1
-gcloud sql databases create nocturna --instance=nocturna-db
-gcloud sql users create nocturna --instance=nocturna-db --password='…'
-# pass via _DATABASE_URL=postgresql+psycopg2://nocturna:…@/nocturna?host=/cloudsql/PROJECT:REGION:nocturna-db
-```
+The workflow pings `POST /api/cron/reminders` every 15 min (idempotent).
+Add two repo secrets (Settings → Secrets and variables → Actions):
 
-When `_DATABASE_URL` is set, the build skips the GCS bucket step automatically.
+- `NOCTURNA_API_URL` — the Render URL
+- `NOCTURNA_CRON_TOKEN` — copy the value Render generated for the
+  `NOCTURNA_CRON_TOKEN` env var
 
-## Webhook setup (Stripe)
+Until the secrets exist the workflow exits as a no-op warning, so it's
+safe to merge first and wire later. Trigger a manual run (workflow_dispatch)
+to test.
 
-1. Deploy once with `_STRIPE_SECRET_KEY` set.
-2. In the Stripe Dashboard, add a webhook to `https://nocturna-api-….run.app/api/payments/webhook`
-   listening for: `checkout.session.completed`, `payment_intent.succeeded`,
+## 5 · Stripe webhook
+
+1. Stripe Dashboard → Webhooks → add endpoint
+   `https://<render-url>/api/payments/webhook`, listening for:
+   `checkout.session.completed`, `payment_intent.succeeded`,
    `payment_intent.payment_failed`, `invoice.payment_succeeded`,
    `charge.refunded`, `customer.subscription.*`.
-3. Copy the resulting `whsec_…` into `_STRIPE_WEBHOOK_SECRET` and redeploy.
-4. Trigger a test event from the Stripe Dashboard — verify it shows up in the
-   admin notifications log at `/admin/notifications`.
+2. Copy the `whsec_…` into Render env `NOCTURNA_STRIPE_WEBHOOK_SECRET`
+   (and the API key into `NOCTURNA_STRIPE_SECRET_KEY`). Redeploy.
+3. Send a test event from Stripe; check `/admin/notifications` for the
+   receipt email log.
 
-## Booking reminders (Cloud Scheduler)
-
-Nocturna has a reminder cron at `POST /api/cron/reminders` that scans bookings
-starting in the next 60 minutes (`window_min` defaults to 30) and sends a
-templated SMS + email + push if not already reminded. Idempotent — `reminder_sent_at`
-is stamped on each Booking.
-
-Authenticate with the bootstrap admin JWT, or with a shared secret in the
-`X-Cron-Token` header. The backend reads the secret from
-`NOCTURNA_CRON_TOKEN`; the same value is passed to the build via the
-`_CRON_TOKEN` substitution.
-
-### Auto-provisioned (recommended)
-
-Set `_CRON_TOKEN` on your Cloud Build trigger and the build will
-**create or update** a Cloud Scheduler job named `nocturna-reminders`
-running every 15 minutes in `Europe/Rome` against the deployed API URL.
-Re-deploys are safe — the job is updated in place.
-
-```bash
-gcloud builds submit --config=cloudbuild.nocturna.yaml \
-  --substitutions=\
-_REGION=europe-west1,\
-_SECRET_KEY=$(openssl rand -hex 32),\
-_CRON_TOKEN=$(openssl rand -hex 24),\
-_APP_BASE_URL=https://nocturna-web-….run.app
-```
-
-The build step is a no-op when `_CRON_TOKEN` is unset (so PR-trigger
-builds without the secret keep working).
-
-### Manual (fallback)
-
-If you'd rather provision the job by hand:
-
-```bash
-gcloud scheduler jobs create http nocturna-reminders \
-  --schedule="*/15 * * * *" \
-  --location=$REGION \
-  --uri="https://nocturna-api-….run.app/api/cron/reminders" \
-  --http-method=POST \
-  --headers="X-Cron-Token=$CRON_TOKEN,Content-Type=application/json" \
-  --message-body='{}' \
-  --time-zone="Europe/Rome"
-```
-
-You can also kick it manually from any admin context:
-
-```bash
-curl -X POST "https://nocturna-api-….run.app/api/cron/reminders" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-```
-
-## Verifying a deploy (automated)
-
-Run the smoke script against the deployed URLs — it exercises health,
-seeding, the planner, a guest booking, and the share round-trip, plus the
-web app's legal/SEO endpoints:
+## 6 · Verifying a deploy (automated)
 
 ```bash
 python3 nocturna/scripts/smoke.py \
-  https://nocturna-api-….run.app \
-  https://nocturna-web-….run.app
+  https://nocturna-api.onrender.com \
+  https://<your-vercel-url>
 ```
 
-Exit code 0 = green. It creates one clearly-labelled test booking
-("SMOKE TEST — ignore") — reject it from /admin/bookings afterwards.
+Exit 0 = green. It exercises health → seeding → planner → guest booking →
+share round-trip plus the web legal/SEO endpoints, and creates one
+clearly-labelled test booking ("SMOKE TEST — ignore") — reject it from
+`/admin/bookings` afterwards.
 
-## Error monitoring (optional)
+## 7 · Error monitoring (optional)
 
-Set `_SENTRY_DSN` (Cloud Build substitution → `NOCTURNA_SENTRY_DSN` env)
-to enable Sentry on the backend. PII is never sent
-(`send_default_pii=False`); traces sample at 10% by default
-(`NOCTURNA_SENTRY_TRACES_RATE`). Unset = silent no-op, like every other
-provider integration.
+Set `NOCTURNA_SENTRY_DSN` on Render to enable Sentry on the backend.
+PII is never sent (`send_default_pii=False`); traces sample at 10%
+(`NOCTURNA_SENTRY_TRACES_RATE`).
 
-## Verifying a deploy (manual)
+## 8 · Mobile
+
+Nothing in this document affects EAS — follow
+[`mobile/STORE_SUBMISSION.md`](./mobile/STORE_SUBMISSION.md). Set
+`NOCTURNA_API_URL` in `mobile/eas.json` build profiles to the Render URL.
+
+## Costs at launch
+
+| Item | Monthly |
+|---|---|
+| Supabase (free tier) | $0 |
+| Render starter | $7 (or $0 on free with cold starts) |
+| Vercel hobby | $0 |
+| GitHub Actions cron | $0 (public repo) / pennies (private) |
+| **Total** | **~$7/mo** until traffic justifies more |
+
+---
+
+## Appendix · Legacy Google Cloud Run path
+
+`cloudbuild.nocturna.yaml` (repo root) still deploys the same containers
+to Cloud Run with SQLite-on-GCS or Cloud SQL, auto-provisioning a Cloud
+Scheduler reminder job. It is kept for teams already on GCP; it is **not**
+the primary path. Run with:
 
 ```bash
-curl https://nocturna-api-….run.app/api/health
-# {"status":"ok","app":"Nocturna"}
-
-curl https://nocturna-api-….run.app/api/cities | jq 'length'
-# 10
-
-curl https://nocturna-api-….run.app/api/venues/trending?city=rome | jq 'length'
-# 8 (or up to your seeded count)
-```
-
-Then load the web URL in a browser, complete the planner quiz, and watch the
-backend logs:
-
-```bash
-gcloud run services logs tail nocturna-api --region=europe-west1
+gcloud builds submit --config=cloudbuild.nocturna.yaml \
+  --substitutions=_REGION=europe-west1,_SECRET_KEY=$(openssl rand -hex 32),_CRON_TOKEN=$(openssl rand -hex 24),_APP_BASE_URL=https://placeholder.example
 ```

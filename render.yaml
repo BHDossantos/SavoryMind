@@ -1,0 +1,73 @@
+# Render Blueprint — deploys the Nocturna FastAPI backend.
+#
+# One-time setup:
+#   1. Render dashboard → New → Blueprint → pick this repo. Render reads
+#      this file from the repo root and provisions everything below.
+#   2. Fill the env vars marked sync:false (secrets) when prompted.
+#
+# DATABASE_URL comes from Supabase: Project → Connect → "Transaction pooler"
+# URI (port 6543), e.g.
+#   postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+# The backend creates its own tables on first boot (SQLAlchemy create_all)
+# and seeds 10 cities + ~90 venues + the bootstrap admin.
+
+services:
+  - type: web
+    name: nocturna-api
+    runtime: docker
+    repo: https://github.com/BHDossantos/SavoryMind
+    rootDir: nocturna/backend
+    dockerfilePath: ./Dockerfile
+    plan: starter            # $7/mo; "free" also works but sleeps after idle
+    region: frankfurt        # closest to Rome; change if your Supabase is us-east
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NOCTURNA_APP_ENV
+        value: prod
+      - key: PORT
+        value: "8001"
+      - key: NOCTURNA_SEED_ON_STARTUP
+        value: "true"
+      - key: NOCTURNA_DATABASE_URL
+        sync: false          # paste the Supabase pooler URI
+      - key: NOCTURNA_SECRET_KEY
+        generateValue: true  # Render generates a random secret
+      - key: NOCTURNA_ADMIN_BOOTSTRAP_EMAIL
+        value: admin@nocturna.app
+      - key: NOCTURNA_ADMIN_BOOTSTRAP_PASSWORD
+        sync: false
+      - key: NOCTURNA_APP_BASE_URL
+        sync: false          # your Vercel URL, e.g. https://nocturna.vercel.app
+      - key: NOCTURNA_CORS_ORIGINS
+        sync: false          # JSON list, e.g. ["https://nocturna.vercel.app"]
+      - key: NOCTURNA_CRON_TOKEN
+        generateValue: true  # read it back from the dashboard for the GitHub cron secret
+      # Optional providers — leave unset for console fallback:
+      - key: NOCTURNA_STRIPE_SECRET_KEY
+        sync: false
+      - key: NOCTURNA_STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: NOCTURNA_TWILIO_SID
+        sync: false
+      - key: NOCTURNA_TWILIO_TOKEN
+        sync: false
+      - key: NOCTURNA_TWILIO_FROM_SMS
+        sync: false
+      - key: NOCTURNA_SENDGRID_KEY
+        sync: false
+      - key: NOCTURNA_SENDGRID_FROM
+        value: no-reply@nocturna.app
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NOCTURNA_SENTRY_DSN
+        sync: false
+      # Photo uploads: local disk (below) keeps the pluggable default.
+      - key: NOCTURNA_STORAGE_BACKEND
+        value: local
+      - key: NOCTURNA_UPLOAD_DIR
+        value: /data/uploads
+    disk:
+      name: nocturna-uploads
+      mountPath: /data
+      sizeGB: 1

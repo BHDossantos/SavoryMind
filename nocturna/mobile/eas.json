@@ -16,7 +16,7 @@
       "channel": "preview",
       "env": {
         "APP_VARIANT": "preview",
-        "NOCTURNA_API_URL": "https://REPLACE-WITH-YOUR-nocturna-api.run.app"
+        "NOCTURNA_API_URL": "https://REPLACE-WITH-YOUR-nocturna-api.onrender.com"
       },
       "android": {
         "buildType": "apk"
@@ -27,7 +27,7 @@
       "channel": "production",
       "env": {
         "APP_VARIANT": "production",
-        "NOCTURNA_API_URL": "https://REPLACE-WITH-YOUR-nocturna-api.run.app"
+        "NOCTURNA_API_URL": "https://REPLACE-WITH-YOUR-nocturna-api.onrender.com"
       },
       "android": {
         "buildType": "app-bundle"

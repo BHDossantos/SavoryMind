@@ -19,7 +19,7 @@ const API_URL =
   process.env.NOCTURNA_API_URL ||
   (VARIANT === 'development'
     ? 'http://localhost:8001'
-    : 'https://api.nocturna.app'); // ← replace with your Cloud Run URL before first store build
+    : 'https://api.nocturna.app'); // ← replace with your Render API URL before first store build
 
 export default {
   expo: {

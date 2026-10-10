@@ -1,0 +1,41 @@
+name: Nocturna booking reminders
+
+# Replaces Cloud Scheduler on the Supabase + Render + Vercel stack:
+# pings the reminder cron endpoint every 15 minutes. The endpoint is
+# idempotent (Booking.reminder_sent_at), so overlapping or delayed runs
+# are safe. GitHub cron has minute-level jitter — fine for a 30-minute
+# reminder window.
+#
+# Repo secrets required (Settings → Secrets and variables → Actions):
+#   NOCTURNA_API_URL     e.g. https://nocturna-api.onrender.com
+#   NOCTURNA_CRON_TOKEN  same value as the Render env var
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: POST /api/cron/reminders
+        env:
+          API_URL: ${{ secrets.NOCTURNA_API_URL }}
+          CRON_TOKEN: ${{ secrets.NOCTURNA_CRON_TOKEN }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$CRON_TOKEN" ]; then
+            echo "::warning::NOCTURNA_API_URL / NOCTURNA_CRON_TOKEN secrets not set — skipping."
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
+            -X POST "$API_URL/api/cron/reminders" \
+            -H "X-Cron-Token: $CRON_TOKEN" \
+            -H "Content-Type: application/json" \
+            --max-time 60 -d '{}')
+          echo "HTTP $code"
+          cat /tmp/resp.json || true
+          [ "$code" = "200" ]
