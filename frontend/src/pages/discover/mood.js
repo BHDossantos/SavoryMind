@@ -152,29 +152,29 @@ export default function MoodToMealPage() {
             <>
               <div className="text-center mb-8">
                 <p className="text-xs font-bold uppercase tracking-widest text-consumer-600 mb-2">SavoryMind</p>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+                <h1 className="font-serif text-4xl sm:text-5xl font-bold text-stone-900 leading-tight">
                   {t("moodPage.tagline")}
                 </h1>
-                <p className="text-sm text-gray-500 mt-3">{t("moodPage.subtagline")}</p>
+                <p className="text-sm text-stone-500 mt-3">{t("moodPage.subtagline")}</p>
               </div>
 
               {/* Progress dots */}
               <div className="flex justify-center gap-1.5 mb-6">
                 {[0, 1, 2, 3, 4].map((i) => (
-                  <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? "w-6 bg-consumer-600" : i < step ? "w-2 bg-consumer-300" : "w-2 bg-gray-200"}`} />
+                  <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? "w-6 bg-consumer-600" : i < step ? "w-2 bg-consumer-300" : "w-2 bg-stone-200"}`} />
                 ))}
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="bg-white rounded-3xl shadow-soft border border-stone-100 p-6">
                 {step === 0 && (
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-4">{t("moodPage.q1")}</p>
+                    <p className="text-sm font-semibold text-stone-800 mb-4">{t("moodPage.q1")}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {MOODS.map((m) => (
                         <button key={m.id} onClick={() => { if (step === 0 && !mood) track("wedge_mood_started", { mood: m.id }); setMood(m.id); setStep(1); }}
-                          className={`p-3 rounded-xl border-2 text-left transition-all ${mood === m.id ? "border-consumer-500 bg-consumer-50" : "border-gray-200 hover:border-consumer-300"}`}>
+                          className={`p-3 rounded-xl border-2 text-left transition-all ${mood === m.id ? "border-consumer-500 bg-consumer-50" : "border-stone-200 hover:border-consumer-300"}`}>
                           <div className="text-2xl">{m.emoji}</div>
-                          <div className="text-xs font-semibold text-gray-800 mt-1">{t(m.labelKey)}</div>
+                          <div className="text-xs font-semibold text-stone-800 mt-1">{t(m.labelKey)}</div>
                         </button>
                       ))}
                     </div>
@@ -183,13 +183,13 @@ export default function MoodToMealPage() {
 
                 {step === 1 && (
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-4">{t("moodPage.q2")}</p>
+                    <p className="text-sm font-semibold text-stone-800 mb-4">{t("moodPage.q2")}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {EXPERIENCES.map((e) => (
                         <button key={e.id} onClick={() => { setExp(e.id); setStep(2); }}
-                          className={`p-3 rounded-xl border-2 text-left transition-all ${exp === e.id ? "border-consumer-500 bg-consumer-50" : "border-gray-200 hover:border-consumer-300"}`}>
+                          className={`p-3 rounded-xl border-2 text-left transition-all ${exp === e.id ? "border-consumer-500 bg-consumer-50" : "border-stone-200 hover:border-consumer-300"}`}>
                           <div className="text-2xl">{e.emoji}</div>
-                          <div className="text-xs font-semibold text-gray-800 mt-1">{t(e.labelKey)}</div>
+                          <div className="text-xs font-semibold text-stone-800 mt-1">{t(e.labelKey)}</div>
                         </button>
                       ))}
                     </div>
@@ -198,13 +198,13 @@ export default function MoodToMealPage() {
 
                 {step === 2 && (
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-4">{t("moodPage.q3")}</p>
+                    <p className="text-sm font-semibold text-stone-800 mb-4">{t("moodPage.q3")}</p>
                     <div className="grid grid-cols-3 gap-2">
                       {BUDGETS.map((b) => (
                         <button key={b.id} onClick={() => { setBudget(b.id); setStep(3); }}
-                          className={`p-4 rounded-xl border-2 text-center transition-all ${budget === b.id ? "border-consumer-500 bg-consumer-50" : "border-gray-200 hover:border-consumer-300"}`}>
-                          <div className="text-2xl font-bold text-gray-900">{b.label}</div>
-                          <div className="text-xs text-gray-500 mt-1">{t(b.subKey)}</div>
+                          className={`p-4 rounded-xl border-2 text-center transition-all ${budget === b.id ? "border-consumer-500 bg-consumer-50" : "border-stone-200 hover:border-consumer-300"}`}>
+                          <div className="text-2xl font-bold text-stone-900">{b.label}</div>
+                          <div className="text-xs text-stone-500 mt-1">{t(b.subKey)}</div>
                         </button>
                       ))}
                     </div>
@@ -214,22 +214,22 @@ export default function MoodToMealPage() {
                 {step === 3 && (
                   <div className="space-y-5">
                     <div>
-                      <p className="text-sm font-semibold text-gray-800 mb-2">{t("moodPage.q4a")}</p>
+                      <p className="text-sm font-semibold text-stone-800 mb-2">{t("moodPage.q4a")}</p>
                       <div className="flex flex-wrap gap-2">
                         {POPULAR_CUISINES.map((c) => (
                           <button key={c} onClick={() => toggleCuisine(c)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${cuisines.includes(c) ? "bg-consumer-600 text-white border-consumer-600" : "border-gray-200 text-gray-600 hover:border-consumer-300"}`}>
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${cuisines.includes(c) ? "bg-consumer-600 text-white border-consumer-600" : "border-stone-200 text-stone-600 hover:border-consumer-300"}`}>
                             {c}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-800 mb-2">{t("moodPage.q4b")}</p>
+                      <p className="text-sm font-semibold text-stone-800 mb-2">{t("moodPage.q4b")}</p>
                       <div className="flex flex-wrap gap-2">
                         {DIETARY.map((d) => (
                           <button key={d.id} onClick={() => toggleDietary(d.id)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${dietary.includes(d.id) ? "bg-consumer-600 text-white border-consumer-600" : "border-gray-200 text-gray-600 hover:border-consumer-300"}`}>
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${dietary.includes(d.id) ? "bg-consumer-600 text-white border-consumer-600" : "border-stone-200 text-stone-600 hover:border-consumer-300"}`}>
                             {t(d.labelKey)}
                           </button>
                         ))}
@@ -245,24 +245,24 @@ export default function MoodToMealPage() {
                 {step === 4 && (
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm font-semibold text-gray-800 mb-2">{t("moodPage.q5")}</p>
+                      <p className="text-sm font-semibold text-stone-800 mb-2">{t("moodPage.q5")}</p>
                       <div className="flex gap-2">
                         <button onClick={() => setAtHome(false)}
-                          className={`flex-1 p-3 rounded-xl border-2 text-center transition-all ${!atHome ? "border-consumer-500 bg-consumer-50" : "border-gray-200"}`}>
+                          className={`flex-1 p-3 rounded-xl border-2 text-center transition-all ${!atHome ? "border-consumer-500 bg-consumer-50" : "border-stone-200"}`}>
                           🍽️ <span className="ml-1 text-sm font-semibold">{t("moodPage.goingOut")}</span>
                         </button>
                         <button onClick={() => setAtHome(true)}
-                          className={`flex-1 p-3 rounded-xl border-2 text-center transition-all ${atHome ? "border-consumer-500 bg-consumer-50" : "border-gray-200"}`}>
+                          className={`flex-1 p-3 rounded-xl border-2 text-center transition-all ${atHome ? "border-consumer-500 bg-consumer-50" : "border-stone-200"}`}>
                           🏠 <span className="ml-1 text-sm font-semibold">{t("moodPage.atHome")}</span>
                         </button>
                       </div>
                     </div>
                     {!atHome && (
                       <div>
-                        <label className="text-xs text-gray-500 mb-1 block">{t("moodPage.locationLabel")}</label>
+                        <label className="text-xs text-stone-500 mb-1 block">{t("moodPage.locationLabel")}</label>
                         <input value={location} onChange={(e) => setLocation(e.target.value)}
                           placeholder={t("moodPage.locationPh")}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400" />
+                          className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-consumer-400" />
                       </div>
                     )}
                     <button onClick={submit} disabled={loading}
@@ -275,7 +275,7 @@ export default function MoodToMealPage() {
 
                 {step > 0 && step < 4 && (
                   <button onClick={() => setStep(step - 1)}
-                    className="mt-5 text-xs text-gray-400 hover:text-gray-600">
+                    className="mt-5 text-xs text-stone-400 hover:text-stone-600">
                     ← {t("moodPage.back")}
                   </button>
                 )}
@@ -287,13 +287,13 @@ export default function MoodToMealPage() {
             <div>
               <div className="text-center mb-6">
                 <p className="text-xs font-bold uppercase tracking-widest text-consumer-600 mb-2">SavoryMind</p>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+                <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 leading-tight">
                   {result.share_title}
                 </h1>
-                <p className="text-sm text-gray-500 mt-2">{result.share_subtitle}</p>
+                <p className="text-sm text-stone-500 mt-2">{result.share_subtitle}</p>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
+              <div className="bg-white rounded-3xl shadow-soft border border-consumer-100 overflow-hidden">
                 <div className="bg-gradient-to-br from-consumer-500 to-consumer-700 text-white p-6">
                   <p className="text-xs font-bold uppercase tracking-widest text-consumer-100 mb-1">{t("moodPage.cardDish")}</p>
                   <p className="text-2xl font-extrabold">{result.dish}</p>
@@ -301,18 +301,18 @@ export default function MoodToMealPage() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">🍷 {t("moodPage.cardDrink")}</p>
-                    <p className="font-bold text-gray-900">{result.drink}</p>
-                    <p className="text-sm text-gray-500">{result.drink_desc}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-1">🍷 {t("moodPage.cardDrink")}</p>
+                    <p className="font-bold text-stone-900">{result.drink}</p>
+                    <p className="text-sm text-stone-500">{result.drink_desc}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">🎵 {t("moodPage.cardMusic")}</p>
-                      <p className="text-sm text-gray-700">{result.music_vibe}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-1">🎵 {t("moodPage.cardMusic")}</p>
+                      <p className="text-sm text-stone-700">{result.music_vibe}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">🍰 {t("moodPage.cardDessert")}</p>
-                      <p className="text-sm text-gray-700">{result.dessert}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-1">🍰 {t("moodPage.cardDessert")}</p>
+                      <p className="text-sm text-stone-700">{result.dessert}</p>
                     </div>
                   </div>
                 </div>
@@ -324,26 +324,26 @@ export default function MoodToMealPage() {
                   ✨ {t("moodPage.share")}
                 </button>
                 <button onClick={reset}
-                  className="border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+                  className="border border-stone-200 text-stone-700 font-semibold py-3 rounded-xl hover:bg-paper transition-colors text-sm">
                   🔄 {t("moodPage.again")}
                 </button>
               </div>
 
               {restaurants.length > 0 && (
-                <div className="mt-6 bg-white rounded-2xl shadow-sm border border-consumer-100 overflow-hidden">
-                  <div className="p-5 border-b border-gray-100">
+                <div className="mt-6 bg-white rounded-3xl shadow-soft border border-consumer-100 overflow-hidden">
+                  <div className="p-5 border-b border-stone-100">
                     <p className="text-xs font-bold uppercase tracking-widest text-consumer-600 mb-1">
                       {t("moodPage.bookTitle")}
                     </p>
-                    <p className="text-sm text-gray-500">{t("moodPage.bookSubtitle")}</p>
+                    <p className="text-sm text-stone-500">{t("moodPage.bookSubtitle")}</p>
                   </div>
                   <ul className="divide-y divide-gray-100">
                     {restaurants.map((r) => (
                       <li key={r.slug} className="flex items-center gap-3 p-4">
                         <span className="text-2xl flex-shrink-0">🍽️</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 truncate">{r.restaurant_name}</p>
-                          <p className="text-xs text-gray-500 truncate">
+                          <p className="font-bold text-stone-900 truncate">{r.restaurant_name}</p>
+                          <p className="text-xs text-stone-500 truncate">
                             {[r.city, r.country].filter(Boolean).join(", ")}
                             {r.dining_style ? ` · ${r.dining_style}` : ""}
                           </p>
@@ -371,8 +371,8 @@ export default function MoodToMealPage() {
             </div>
           )}
 
-          <p className="text-center text-xs text-gray-400 mt-8">
-            <Link href="/" className="hover:text-gray-700">SavoryMind</Link> · {t("moodPage.footer")}
+          <p className="text-center text-xs text-stone-400 mt-8">
+            <Link href="/" className="hover:text-stone-700">SavoryMind</Link> · {t("moodPage.footer")}
           </p>
         </div>
       </div>
