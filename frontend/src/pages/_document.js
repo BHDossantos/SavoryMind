@@ -27,6 +27,13 @@ export default function Document() {
         {/* Explicit mobile viewport — don't rely on the framework default,
             so phone rendering stays correct even if a page overrides <Head>. */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        {/* Editorial type system: Fraunces (warm display serif) + Inter (UI sans) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..600&family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="SavoryMind" />
         <meta property="og:title" content={TITLE} />
