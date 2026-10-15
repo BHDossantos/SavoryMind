@@ -1,18 +1,18 @@
 /**
- * B2B homepage (Italian primary) — the repositioned marketing site
- * (DEVELOPER_NOTES §3). Sells to restaurant owners, Rome-first.
+ * Homepage (Italian primary) — a two-audience landing with tabs.
  *
- * All copy is HARDCODED in the JSX — no react-i18next — so the full text
- * ships in the server-rendered HTML and crawlers/AI answer engines see a
- * real page (the P0 fix in §2). The English mirror lives at /en.
+ * Food Lovers is the DEFAULT tab (we market to diners/home cooks first),
+ * Restaurant Owners is the second tab. Both panels render in the DOM and are
+ * toggled with CSS (`hidden`) rather than unmounted, so the full text of BOTH
+ * audiences ships in the server-rendered HTML and crawlers / AI answer engines
+ * see real content for each. The English mirror lives at /en.
  *
- * Logged-in users are still redirected to their app (OAuth callbacks land
- * on "/"), but the page never blanks while auth hydrates: the marketing
- * HTML always renders.
+ * Logged-in users are still redirected to their app (OAuth callbacks land on
+ * "/"), but the page never blanks while auth hydrates.
  */
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 import MarketingShell, { signupHref } from "../components/marketing/MarketingShell";
@@ -20,6 +20,29 @@ import CarlosCard, { DEMO_PLAN } from "../components/marketing/CarlosCard";
 import PricingTiers from "../components/marketing/PricingTiers";
 import { track } from "../lib/analytics";
 
+// ── Food Lover (consumer) content ──────────────────────────────────────────
+const CONSUMER_FEATURES = [
+  {
+    icon: "🧠",
+    title: "Mood-to-Meal",
+    body:
+      "Dicci come ti senti e che voglia hai — ti diamo una risposta sola, sicura e su misura. Niente liste infinite, un piatto giusto.",
+  },
+  {
+    icon: "📸",
+    title: "Snap-a-Menu",
+    body:
+      "Fotografa un menu sconosciuto, anche all'estero: l'AI lo legge e sceglie il piatto giusto per i tuoi gusti. Ordina come un local, ovunque.",
+  },
+  {
+    icon: "🍷",
+    title: "Gusto, cantina & cucina",
+    body:
+      "Abbinamenti vino, ricette per quello che hai in dispensa, diario del gusto e playlist per la cena — tutto in un posto solo.",
+  },
+];
+
+// ── Restaurant (B2B) content ───────────────────────────────────────────────
 const STEPS = [
   {
     n: "1",
@@ -119,7 +142,7 @@ const ORG_WEBSITE_JSONLD = {
       url: "https://savorymind.net/",
       logo: "https://savorymind.net/api/og/wedge",
       description:
-        "SavoryMind trova le perdite economiche dei ristoranti — sprechi, porzioni, tempi dello staff — e genera piani di coaching personalizzati per fermarle.",
+        "SavoryMind: per chi ama il cibo, l'AI che consiglia cosa mangiare dal tuo umore e da qualsiasi menu; per i ristoranti, trova le perdite economiche e genera coaching per lo staff.",
       address: { "@type": "PostalAddress", addressLocality: "Roma", addressCountry: "IT" },
     },
     {
@@ -146,7 +169,9 @@ const FAQ_JSONLD = {
 export default function HomeIT() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [tab, setTab] = useState("food"); // Food Lovers first by default
   const trialHref = signupHref(router?.query, { type: "restaurant" });
+  const consumerHref = signupHref(router?.query, { type: "consumer" });
 
   // OAuth flows land logged-in users on "/" — send them to their app.
   // No `return null` while loading: the marketing HTML must always render.
@@ -158,13 +183,18 @@ export default function HomeIT() {
     }
   }, [user, loading, router]);
 
+  const tabBtn = (on, activeColor) =>
+    `px-5 py-2.5 rounded-full text-sm sm:text-base font-bold transition-colors whitespace-nowrap ${
+      on ? `${activeColor} text-white shadow` : "text-stone-500 hover:text-stone-800"
+    }`;
+
   return (
     <MarketingShell lang="it" altHref="/en">
       <Head>
-        <title>SavoryMind — Trova le perdite del tuo ristorante, in euro</title>
+        <title>SavoryMind — Dimmi come ti senti, ti dico cosa mangiare</title>
         <meta
           name="description"
-          content="SavoryMind trova le perdite del tuo ristorante — sprechi, porzioni, tempi dello staff — e genera piani di coaching per fermarle. Prova gratis 30 giorni."
+          content="SavoryMind: per chi ama il cibo, l'AI che ti dice cosa mangiare dal tuo umore e da qualsiasi menu. E per i ristoranti, trova le perdite e genera piani di coaching per lo staff. Provalo gratis."
         />
         <link rel="canonical" href="https://savorymind.net/" />
         <link rel="alternate" hrefLang="it-IT" href="https://savorymind.net/" />
@@ -174,17 +204,17 @@ export default function HomeIT() {
         <meta property="og:site_name" content="SavoryMind" />
         <meta property="og:locale" content="it_IT" />
         <meta property="og:url" content="https://savorymind.net/" />
-        <meta property="og:title" content="Il tuo ristorante sta perdendo €500–2.000 al mese. Noi ti mostriamo dove." />
+        <meta property="og:title" content="Dimmi come ti senti. Ti dico cosa mangiare." />
         <meta
           property="og:description"
-          content="Sprechi, porzioni, tempi dello staff: SavoryMind li trova, li quantifica in euro e genera piani di coaching per fermarli."
+          content="L'AI del cibo che legge il tuo umore, i tuoi gusti e qualsiasi menu — e per i ristoranti trova le perdite e genera coaching per lo staff."
         />
         <meta property="og:image" content="https://savorymind.net/api/og/wedge" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="SavoryMind — Trova le perdite del tuo ristorante, in euro" />
+        <meta name="twitter:title" content="SavoryMind — Dimmi come ti senti, ti dico cosa mangiare" />
         <meta
           name="twitter:description"
-          content="Sprechi, porzioni, tempi dello staff: SavoryMind li trova, li quantifica in euro e genera piani di coaching per fermarli."
+          content="L'AI del cibo che legge il tuo umore, i tuoi gusti e qualsiasi menu — e per i ristoranti trova le perdite e genera coaching per lo staff."
         />
         <meta name="twitter:image" content="https://savorymind.net/api/og/wedge" />
         <script
@@ -197,203 +227,293 @@ export default function HomeIT() {
         />
       </Head>
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-        <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-16 pb-14 md:pt-24 md:pb-20 text-center">
-          <p className="inline-flex items-center gap-2 bg-white border border-brand-200 text-brand-700 text-sm font-bold px-4 py-1.5 rounded-full mb-7 shadow-sm">
-            <span aria-hidden="true">🇮🇹</span> Per ristoranti, trattorie e pizzerie — Roma prima di tutto
-          </p>
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-stone-900 leading-[1.12] tracking-tight max-w-4xl mx-auto">
-            Il tuo ristorante sta perdendo €500–2.000 al mese.{" "}
-            <span className="text-brand-600">Noi ti mostriamo dove.</span>
-          </h1>
-          <p className="text-lg md:text-xl text-stone-600 leading-relaxed max-w-2xl mx-auto mt-6">
-            SavoryMind analizza sprechi, porzioni e tempi del tuo staff — e genera piani di coaching
-            personalizzati per fermare le perdite. In 15 minuti vedi la tua prima cifra.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-9">
-            <Link
-              href={trialHref}
-              onClick={() => track("marketing_cta_click", { page: "home_it", cta: "hero_trial" })}
-              className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-lg font-bold px-8 py-4 rounded-2xl shadow-lg shadow-brand-200 transition-colors"
+      {/* ── Audience tabs ────────────────────────────────────────── */}
+      <div className="bg-white border-b border-stone-100">
+        <div className="max-w-6xl mx-auto px-5 sm:px-6 py-5 flex justify-center">
+          <div
+            role="tablist"
+            aria-label="Scegli il tuo percorso"
+            className="inline-flex rounded-full border border-stone-200 bg-stone-50 p-1 shadow-sm"
+          >
+            <button
+              role="tab"
+              aria-selected={tab === "food"}
+              onClick={() => { setTab("food"); track("home_tab", { tab: "food" }); }}
+              className={tabBtn(tab === "food", "bg-consumer-600")}
             >
-              Inizia la prova gratuita di 30 giorni
-            </Link>
-            <Link
-              href="/come-funziona"
-              onClick={() => track("marketing_cta_click", { page: "home_it", cta: "hero_demo" })}
-              className="w-full sm:w-auto bg-white border-2 border-stone-300 hover:border-stone-400 text-stone-800 text-lg font-bold px-8 py-4 rounded-2xl transition-colors"
+              😋 Per chi ama il cibo
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === "resto"}
+              onClick={() => { setTab("resto"); track("home_tab", { tab: "restaurant" }); }}
+              className={tabBtn(tab === "resto", "bg-brand-600")}
             >
-              Guarda la demo di 3 minuti
-            </Link>
+              🍽️ Per i ristoranti
+            </button>
           </div>
-          <p className="text-base font-semibold text-stone-500 mt-6">
-            Se non troviamo almeno €500/mese di perdite recuperabili, non paghi.
-          </p>
         </div>
-      </section>
+      </div>
 
-      {/* ── The Carlos moment ────────────────────────────────────── */}
-      <section className="bg-stone-50 border-y border-stone-100">
-        <div className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-4">Il momento Carlos</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900 leading-tight">
-              Non «lo spreco costa». <br className="hidden md:block" />
-              «Carlos, martedì, €36,90.»
-            </h2>
-            <p className="text-lg text-stone-600 leading-relaxed mt-5">
-              I gestionali ti dicono che qualcosa non va. SavoryMind ti dice <strong>chi</strong>,{" "}
-              <strong>quanto</strong> e <strong>perché</strong> — e poi genera un piano di coaching
-              concreto e rispettoso per ogni persona del tuo staff. Nessuna colpa, solo processi da
-              sistemare: la cucina migliora e le persone crescono.
+      {/* ══════════════ FOOD LOVERS (default) ══════════════ */}
+      <div className={tab === "food" ? "" : "hidden"}>
+        {/* Hero */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-consumer-50 via-white to-white">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-12 pb-14 md:pt-16 md:pb-20 text-center">
+            <p className="inline-flex items-center gap-2 bg-white border border-consumer-200 text-consumer-700 text-sm font-bold px-4 py-1.5 rounded-full mb-7 shadow-sm">
+              <span aria-hidden="true">😋</span> Per chi ama mangiare — a casa o fuori
             </p>
-            <ul className="mt-6 space-y-3 text-base text-stone-700">
-              <li className="flex items-start gap-3">
-                <span className="text-brand-600 font-black mt-0.5" aria-hidden="true">✓</span>
-                Ogni episodio di spreco registrato in 20 secondi, durante il servizio
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-brand-600 font-black mt-0.5" aria-hidden="true">✓</span>
-                Impatto calcolato in euro e chili, mai a sensazione
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-brand-600 font-black mt-0.5" aria-hidden="true">✓</span>
-                Piani approvati da te prima di arrivare allo staff
-              </li>
-            </ul>
-          </div>
-          <CarlosCard plan={DEMO_PLAN} lang="it" />
-        </div>
-      </section>
-
-      {/* ── How it works ─────────────────────────────────────────── */}
-      <section id="come-funziona" className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24">
-        <div className="text-center mb-12">
-          <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Come funziona</p>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
-            Dalla cassa al coaching in tre passaggi
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {STEPS.map((step) => (
-            <div key={step.n} className="bg-white border border-stone-200 rounded-3xl p-7 shadow-sm">
-              <span className="inline-flex w-12 h-12 items-center justify-center rounded-2xl bg-brand-600 text-white text-xl font-extrabold mb-5">
-                {step.n}
-              </span>
-              <h3 className="text-xl font-extrabold text-stone-900 leading-snug">{step.title}</h3>
-              <p className="text-base text-stone-600 leading-relaxed mt-3">{step.body}</p>
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-stone-900 leading-[1.12] tracking-tight max-w-4xl mx-auto">
+              Dimmi come ti senti.{" "}
+              <span className="text-consumer-600">Ti dico cosa mangiare.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-stone-600 leading-relaxed max-w-2xl mx-auto mt-6">
+              SavoryMind legge il tuo umore, i tuoi gusti e qualsiasi menu sulla Terra — e ti dà una
+              risposta sola e sicura. Provalo adesso, senza registrarti.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-9">
+              <Link
+                href="/discover/mood"
+                onClick={() => track("marketing_cta_click", { page: "home_it", cta: "food_try" })}
+                className="w-full sm:w-auto bg-consumer-600 hover:bg-consumer-700 text-white text-lg font-bold px-8 py-4 rounded-2xl shadow-lg shadow-consumer-200 transition-colors"
+              >
+                Provalo gratis ora
+              </Link>
+              <Link
+                href="/per-chi-ama-il-cibo"
+                onClick={() => track("marketing_cta_click", { page: "home_it", cta: "food_learn" })}
+                className="w-full sm:w-auto bg-white border-2 border-stone-300 hover:border-stone-400 text-stone-800 text-lg font-bold px-8 py-4 rounded-2xl transition-colors"
+              >
+                Scopri come funziona
+              </Link>
             </div>
-          ))}
-        </div>
-        <div className="text-center mt-10">
-          <Link href="/come-funziona" className="text-base font-bold text-brand-700 hover:text-brand-600">
-            Guarda la demo di 3 minuti →
-          </Link>
-        </div>
-      </section>
-
-      {/* ── What's included ──────────────────────────────────────── */}
-      <section className="bg-stone-50 border-y border-stone-100">
-        <div className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24">
-          <div className="text-center mb-12">
-            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Cosa è incluso</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
-              Tutto quello che serve, niente di superfluo
-            </h2>
-            <p className="text-lg text-stone-600 mt-4 max-w-2xl mx-auto">
-              Sei moduli chiari, pensati per chi ha un ristorante da mandare avanti — non un software da studiare.
+            <p className="text-base font-semibold text-stone-500 mt-6">
+              Gratis per provare · Nessuna carta richiesta
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {MODULES.map((m) => (
-              <div key={m.title} className="bg-white border border-stone-200 rounded-3xl p-6 hover:border-brand-400 hover:shadow-md transition-all">
-                <span className="text-3xl" aria-hidden="true">{m.icon}</span>
-                <h3 className="text-lg font-extrabold text-stone-900 mt-3">{m.title}</h3>
-                <p className="text-base text-stone-600 leading-relaxed mt-2">{m.body}</p>
+        </section>
+
+        {/* Features */}
+        <section className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-20">
+          <div className="text-center mb-12">
+            <p className="text-sm font-bold uppercase tracking-widest text-consumer-600 mb-3">Come funziona</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
+              Un cervello per il tuo appetito
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {CONSUMER_FEATURES.map((f) => (
+              <div key={f.title} className="bg-white border border-stone-200 rounded-3xl p-7 hover:border-consumer-400 hover:shadow-md transition-all">
+                <span className="text-3xl" aria-hidden="true">{f.icon}</span>
+                <h3 className="text-xl font-extrabold text-stone-900 mt-3">{f.title}</h3>
+                <p className="text-base text-stone-600 leading-relaxed mt-2">{f.body}</p>
               </div>
             ))}
-            <div className="bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-3xl p-6 sm:col-span-2 lg:col-span-3">
-              <span className="text-3xl" aria-hidden="true">🎁</span>
-              <h3 className="text-lg font-extrabold mt-3">E molto altro incluso</h3>
-              <p className="text-base text-brand-100 leading-relaxed mt-2 max-w-3xl">
-                Prenotazioni, CRM clienti, analisi del sentiment delle recensioni, strumenti di
-                marketing e altro ancora — già compresi nel tuo piano, pronti quando ti servono.
-              </p>
-            </div>
           </div>
-          <div className="text-center mt-10">
-            <Link href="/ristoranti" className="text-base font-bold text-brand-700 hover:text-brand-600">
-              Scopri il prodotto in dettaglio →
+          <div className="text-center mt-12">
+            <Link
+              href={consumerHref}
+              onClick={() => track("marketing_cta_click", { page: "home_it", cta: "food_signup" })}
+              className="inline-block bg-stone-900 hover:bg-stone-800 text-white text-base font-bold px-8 py-3.5 rounded-2xl transition-colors"
+            >
+              Crea il tuo profilo gusto gratis
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      {/* ── Pricing ──────────────────────────────────────────────── */}
-      <section id="prezzi" className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24">
-        <div className="text-center mb-12">
-          <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Prezzi</p>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
-            Un piano per ogni cucina
-          </h2>
-          <p className="text-lg text-stone-600 mt-4">
-            Meno di quello che perdi in una settimana di sprechi.
-          </p>
-        </div>
-        <PricingTiers lang="it" />
-      </section>
+      {/* ══════════════ RESTAURANT OWNERS ══════════════ */}
+      <div className={tab === "resto" ? "" : "hidden"}>
+        {/* Hero */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-12 pb-14 md:pt-16 md:pb-20 text-center">
+            <p className="inline-flex items-center gap-2 bg-white border border-brand-200 text-brand-700 text-sm font-bold px-4 py-1.5 rounded-full mb-7 shadow-sm">
+              <span aria-hidden="true">🇮🇹</span> Per ristoranti, trattorie e pizzerie — Roma prima di tutto
+            </p>
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-stone-900 leading-[1.12] tracking-tight max-w-4xl mx-auto">
+              Il tuo ristorante sta perdendo €500–2.000 al mese.{" "}
+              <span className="text-brand-600">Noi ti mostriamo dove.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-stone-600 leading-relaxed max-w-2xl mx-auto mt-6">
+              SavoryMind analizza sprechi, porzioni e tempi del tuo staff — e genera piani di coaching
+              personalizzati per fermare le perdite. In 15 minuti vedi la tua prima cifra.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-9">
+              <Link
+                href={trialHref}
+                onClick={() => track("marketing_cta_click", { page: "home_it", cta: "hero_trial" })}
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-lg font-bold px-8 py-4 rounded-2xl shadow-lg shadow-brand-200 transition-colors"
+              >
+                Inizia la prova gratuita di 30 giorni
+              </Link>
+              <Link
+                href="/come-funziona"
+                onClick={() => track("marketing_cta_click", { page: "home_it", cta: "hero_demo" })}
+                className="w-full sm:w-auto bg-white border-2 border-stone-300 hover:border-stone-400 text-stone-800 text-lg font-bold px-8 py-4 rounded-2xl transition-colors"
+              >
+                Guarda la demo di 3 minuti
+              </Link>
+            </div>
+            <p className="text-base font-semibold text-stone-500 mt-6">
+              Se non troviamo almeno €500/mese di perdite recuperabili, non paghi.
+            </p>
+          </div>
+        </section>
 
-      {/* ── FAQ ──────────────────────────────────────────────────── */}
-      <section id="faq" className="bg-stone-50 border-y border-stone-100">
-        <div className="max-w-3xl mx-auto px-5 sm:px-6 py-16 md:py-24">
-          <div className="text-center mb-10">
-            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Domande frequenti</p>
+        {/* The Carlos moment */}
+        <section className="bg-stone-50 border-y border-stone-100">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-4">Il momento Carlos</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900 leading-tight">
+                Non «lo spreco costa». <br className="hidden md:block" />
+                «Carlos, martedì, €36,90.»
+              </h2>
+              <p className="text-lg text-stone-600 leading-relaxed mt-5">
+                I gestionali ti dicono che qualcosa non va. SavoryMind ti dice <strong>chi</strong>,{" "}
+                <strong>quanto</strong> e <strong>perché</strong> — e poi genera un piano di coaching
+                concreto e rispettoso per ogni persona del tuo staff. Nessuna colpa, solo processi da
+                sistemare: la cucina migliora e le persone crescono.
+              </p>
+              <ul className="mt-6 space-y-3 text-base text-stone-700">
+                <li className="flex items-start gap-3">
+                  <span className="text-brand-600 font-black mt-0.5" aria-hidden="true">✓</span>
+                  Ogni episodio di spreco registrato in 20 secondi, durante il servizio
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-brand-600 font-black mt-0.5" aria-hidden="true">✓</span>
+                  Impatto calcolato in euro e chili, mai a sensazione
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-brand-600 font-black mt-0.5" aria-hidden="true">✓</span>
+                  Piani approvati da te prima di arrivare allo staff
+                </li>
+              </ul>
+            </div>
+            <CarlosCard plan={DEMO_PLAN} lang="it" />
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section id="come-funziona" className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24">
+          <div className="text-center mb-12">
+            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Come funziona</p>
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
-              Le domande che ci fanno tutti i titolari
+              Dalla cassa al coaching in tre passaggi
             </h2>
           </div>
-          <div className="space-y-3">
-            {FAQS.map((f) => (
-              <details key={f.q} className="group bg-white border border-stone-200 rounded-2xl px-6 py-5 open:shadow-md transition-shadow">
-                <summary className="flex items-start justify-between gap-4 cursor-pointer list-none text-lg font-bold text-stone-900 leading-snug">
-                  {f.q}
-                  <span className="text-brand-600 text-xl leading-none mt-0.5 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
-                </summary>
-                <p className="text-base text-stone-600 leading-relaxed mt-3">{f.a}</p>
-              </details>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {STEPS.map((step) => (
+              <div key={step.n} className="bg-white border border-stone-200 rounded-3xl p-7 shadow-sm">
+                <span className="inline-flex w-12 h-12 items-center justify-center rounded-2xl bg-brand-600 text-white text-xl font-extrabold mb-5">
+                  {step.n}
+                </span>
+                <h3 className="text-xl font-extrabold text-stone-900 leading-snug">{step.title}</h3>
+                <p className="text-base text-stone-600 leading-relaxed mt-3">{step.body}</p>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
+          <div className="text-center mt-10">
+            <Link href="/come-funziona" className="text-base font-bold text-brand-700 hover:text-brand-600">
+              Guarda la demo di 3 minuti →
+            </Link>
+          </div>
+        </section>
 
-      {/* ── Final CTA ────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-5 sm:px-6 py-16 md:py-24 text-center">
-        <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900 leading-tight">
-          Scopri quanto stai perdendo. <span className="text-brand-600">Oggi.</span>
-        </h2>
-        <p className="text-lg text-stone-600 mt-4">
-          15 minuti per la prima cifra. 30 giorni per verificarla. Zero rischio.
-        </p>
-        <Link
-          href={trialHref}
-          onClick={() => track("marketing_cta_click", { page: "home_it", cta: "footer_trial" })}
-          className="inline-block mt-8 bg-brand-600 hover:bg-brand-700 text-white text-lg font-bold px-10 py-4 rounded-2xl shadow-lg shadow-brand-200 transition-colors"
-        >
-          Inizia la prova gratuita di 30 giorni
-        </Link>
-        <p className="text-base font-semibold text-stone-500 mt-5">
-          Se non troviamo almeno €500/mese di perdite recuperabili, non paghi.
-        </p>
+        {/* What's included */}
+        <section className="bg-stone-50 border-y border-stone-100">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24">
+            <div className="text-center mb-12">
+              <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Cosa è incluso</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
+                Tutto quello che serve, niente di superfluo
+              </h2>
+              <p className="text-lg text-stone-600 mt-4 max-w-2xl mx-auto">
+                Sei moduli chiari, pensati per chi ha un ristorante da mandare avanti — non un software da studiare.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {MODULES.map((m) => (
+                <div key={m.title} className="bg-white border border-stone-200 rounded-3xl p-6 hover:border-brand-400 hover:shadow-md transition-all">
+                  <span className="text-3xl" aria-hidden="true">{m.icon}</span>
+                  <h3 className="text-lg font-extrabold text-stone-900 mt-3">{m.title}</h3>
+                  <p className="text-base text-stone-600 leading-relaxed mt-2">{m.body}</p>
+                </div>
+              ))}
+              <div className="bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-3xl p-6 sm:col-span-2 lg:col-span-3">
+                <span className="text-3xl" aria-hidden="true">🎁</span>
+                <h3 className="text-lg font-extrabold mt-3">E molto altro incluso</h3>
+                <p className="text-base text-brand-100 leading-relaxed mt-2 max-w-3xl">
+                  Prenotazioni, CRM clienti, analisi del sentiment delle recensioni, strumenti di
+                  marketing e altro ancora — già compresi nel tuo piano, pronti quando ti servono.
+                </p>
+              </div>
+            </div>
+            <div className="text-center mt-10">
+              <Link href="/ristoranti" className="text-base font-bold text-brand-700 hover:text-brand-600">
+                Scopri il prodotto in dettaglio →
+              </Link>
+            </div>
+          </div>
+        </section>
 
-        {/* Secondary consumer path — small by design (§3.1) */}
-        <p className="mt-14 text-base text-stone-500">
-          Ami il cibo?{" "}
-          <Link href="/per-chi-ama-il-cibo" className="font-bold text-consumer-600 hover:text-consumer-700">
-            Scopri l&rsquo;app per chi mangia →
+        {/* Pricing */}
+        <section id="prezzi" className="max-w-6xl mx-auto px-5 sm:px-6 py-16 md:py-24">
+          <div className="text-center mb-12">
+            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Prezzi</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
+              Un piano per ogni cucina
+            </h2>
+            <p className="text-lg text-stone-600 mt-4">
+              Meno di quello che perdi in una settimana di sprechi.
+            </p>
+          </div>
+          <PricingTiers lang="it" />
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="bg-stone-50 border-y border-stone-100">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-16 md:py-24">
+            <div className="text-center mb-10">
+              <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Domande frequenti</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900">
+                Le domande che ci fanno tutti i titolari
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {FAQS.map((f) => (
+                <details key={f.q} className="group bg-white border border-stone-200 rounded-2xl px-6 py-5 open:shadow-md transition-shadow">
+                  <summary className="flex items-start justify-between gap-4 cursor-pointer list-none text-lg font-bold text-stone-900 leading-snug">
+                    {f.q}
+                    <span className="text-brand-600 text-xl leading-none mt-0.5 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                  </summary>
+                  <p className="text-base text-stone-600 leading-relaxed mt-3">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-16 md:py-24 text-center">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-stone-900 leading-tight">
+            Scopri quanto stai perdendo. <span className="text-brand-600">Oggi.</span>
+          </h2>
+          <p className="text-lg text-stone-600 mt-4">
+            15 minuti per la prima cifra. 30 giorni per verificarla. Zero rischio.
+          </p>
+          <Link
+            href={trialHref}
+            onClick={() => track("marketing_cta_click", { page: "home_it", cta: "footer_trial" })}
+            className="inline-block mt-8 bg-brand-600 hover:bg-brand-700 text-white text-lg font-bold px-10 py-4 rounded-2xl shadow-lg shadow-brand-200 transition-colors"
+          >
+            Inizia la prova gratuita di 30 giorni
           </Link>
-        </p>
-      </section>
+          <p className="text-base font-semibold text-stone-500 mt-5">
+            Se non troviamo almeno €500/mese di perdite recuperabili, non paghi.
+          </p>
+        </section>
+      </div>
     </MarketingShell>
   );
 }
