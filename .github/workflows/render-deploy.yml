@@ -1,0 +1,54 @@
+name: Deploy to Render
+
+# Auto-deploys the web + API services to Render AFTER the CI suite passes on
+# main — so only test-passing commits ever reach production. It fires Render
+# "Deploy Hooks" (one secret URL per service), which build the latest main.
+#
+# One-time setup (see docs/AUTOMATION.md):
+#   Render → each service → Settings → Deploy Hook → copy the URL, then add it
+#   as a GitHub Actions secret:
+#     RENDER_DEPLOY_HOOK_API  → savorymind-api
+#     RENDER_DEPLOY_HOOK_WEB  → savorymind-web
+#   Keep Render's own "Auto-Deploy" OFF so you don't deploy twice.
+#
+# If the secrets aren't set yet, the job logs a notice and no-ops — safe to
+# merge before you've wired the hooks.
+
+on:
+  workflow_run:
+    workflows: ["CI"]        # the backend + frontend test workflow (ci.yml)
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Trigger Render deploys
+    runs-on: ubuntu-latest
+    # Only deploy when CI itself passed — never ship a red build.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Trigger Render (API + Web)
+        env:
+          HOOK_API: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+          HOOK_WEB: ${{ secrets.RENDER_DEPLOY_HOOK_WEB }}
+        run: |
+          set -euo pipefail
+          triggered=0
+          if [ -n "${HOOK_API:-}" ]; then
+            echo "▶ Deploying savorymind-api…"
+            curl -fsS -X POST "$HOOK_API" >/dev/null && echo "✓ API deploy triggered" && triggered=1
+          else
+            echo "ℹ RENDER_DEPLOY_HOOK_API not set — skipping API deploy."
+          fi
+          if [ -n "${HOOK_WEB:-}" ]; then
+            echo "▶ Deploying savorymind-web…"
+            curl -fsS -X POST "$HOOK_WEB" >/dev/null && echo "✓ Web deploy triggered" && triggered=1
+          else
+            echo "ℹ RENDER_DEPLOY_HOOK_WEB not set — skipping Web deploy."
+          fi
+          if [ "$triggered" -eq 0 ]; then
+            echo "::notice::No Render deploy hooks configured. Add RENDER_DEPLOY_HOOK_API / RENDER_DEPLOY_HOOK_WEB in repo Settings → Secrets and variables → Actions to enable auto-deploy (see docs/AUTOMATION.md)."
+          fi
