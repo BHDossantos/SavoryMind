@@ -43,6 +43,23 @@ above is recommended because it won't ship a commit whose tests fail.
 > Don't enable **both** native Auto-Deploy **and** the deploy hooks — that
 > double-deploys on every merge. Pick one.
 
+## Monitoring & alerting (so you're never blind again)
+Two layers, both free:
+
+1. **Uptime monitor** — `uptime-monitor.yml` runs every ~10 min, probes
+   `savorymind.net`, `api.savorymind.net`, and `/health` (with retries so a
+   free-tier cold start isn't a false alarm). If anything's down it opens a
+   GitHub issue assigned to you (→ email) and auto-closes it on recovery.
+   Optional: add a `SLACK_WEBHOOK_URL` secret to also ping Slack.
+2. **Render native alerts (recommended, instant)** — in Render, each service →
+   **Settings → Notifications** (or workspace settings): turn on failure/health
+   alerts so Render pages you the moment a deploy fails or the service goes
+   unhealthy. Faster than the 10-min poll and covers the server side.
+
+Together: Render catches server/deploy problems instantly; the uptime monitor
+independently catches DNS/TLS/edge/whole-site outages (the kind that took the
+site down silently before).
+
 ## Rolling back
 Render keeps every deploy. To roll back: service → **Deploys** → pick a previous
 successful deploy → **Rollback**. One click, no git revert needed.

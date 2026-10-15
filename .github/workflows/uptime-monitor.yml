@@ -1,0 +1,116 @@
+name: Uptime monitor
+
+# Synthetic uptime check of the live site + API. If anything is down it opens
+# (once) a GitHub issue — which emails you — and posts to Slack if a webhook is
+# configured; on recovery it comments and closes the issue. This is the safety
+# net that was missing when the old host went dark unnoticed.
+#
+# Primary alerting should still be Render's own health-check alerts (instant,
+# set per service in the dashboard). This is an independent, external cross
+# check that also catches DNS/TLS/edge problems Render can't see.
+#
+# Optional secret: SLACK_WEBHOOK_URL — an Incoming Webhook to also ping Slack.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may delay under load)
+  workflow_dispatch:          # run on demand from the Actions tab
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  WEB_URL: "https://savorymind.net/"
+  API_URL: "https://api.savorymind.net/"
+  API_HEALTH_URL: "https://api.savorymind.net/health"
+  ISSUE_LABEL: "uptime-down"
+  OWNER_HANDLE: "BHDossantos"   # assigned on the alert issue so you get pinged
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe endpoints (with retries to avoid false alarms)
+        id: probe
+        run: |
+          set +e
+          fails=""
+
+          # Check one URL: pass if any of 3 tries returns 200 (generous
+          # timeout absorbs a free-tier cold start). Optionally require a
+          # substring in the body.
+          check() {
+            local name="$1" url="$2" needle="${3:-}"
+            for i in 1 2 3; do
+              body="$(curl -sS -m 40 -w $'\n%{http_code}' "$url" 2>/dev/null)"
+              code="$(printf '%s' "$body" | tail -n1)"
+              if [ "$code" = "200" ]; then
+                if [ -z "$needle" ] || printf '%s' "$body" | grep -q "$needle"; then
+                  echo "✓ $name ($url) → 200"
+                  return 0
+                fi
+              fi
+              sleep 15
+            done
+            echo "✗ $name ($url) → last code: ${code:-none}"
+            return 1
+          }
+
+          check "Web"        "$WEB_URL"                      || fails="${fails}• Web (savorymind.net) is unreachable\n"
+          check "API"        "$API_URL"                      || fails="${fails}• API (api.savorymind.net) is unreachable\n"
+          check "API+DB health" "$API_HEALTH_URL" '"ok"'     || fails="${fails}• API /health failed (app or database)\n"
+
+          if [ -n "$fails" ]; then
+            echo "status=down" >> "$GITHUB_OUTPUT"
+            { echo "detail<<EOF"; printf '%b' "$fails"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          else
+            echo "status=up" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open / update alert issue
+        if: ${{ steps.probe.outputs.status == 'down' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DETAIL: ${{ steps.probe.outputs.detail }}
+        run: |
+          set -e
+          existing="$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number' 2>/dev/null)"
+          ts="$(date -u '+%Y-%m-%d %H:%M UTC')"
+          body="$(printf '🔴 **SavoryMind is DOWN** — detected %s\n\n%b\nThe monitor re-checks every ~10 min and will close this automatically when the site recovers.' "$ts" "$DETAIL")"
+          if [ -z "$existing" ]; then
+            gh issue create \
+              --title "🔴 SavoryMind is DOWN" \
+              --label "$ISSUE_LABEL" \
+              --assignee "$OWNER_HANDLE" \
+              --body "$body" || gh issue create --title "🔴 SavoryMind is DOWN" --label "$ISSUE_LABEL" --body "$body"
+            echo "Opened new downtime issue."
+          else
+            echo "Downtime issue #$existing already open — not re-pinging."
+          fi
+          if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+            payload="$(printf '{"text":"🔴 SavoryMind is DOWN (%s)\n%b"}' "$ts" "$DETAIL")"
+            curl -fsS -X POST -H 'Content-Type: application/json' -d "$payload" "$SLACK_WEBHOOK_URL" >/dev/null || true
+          fi
+
+      - name: Resolve alert issue on recovery
+        if: ${{ steps.probe.outputs.status == 'up' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          set -e
+          existing="$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number' 2>/dev/null)"
+          if [ -n "$existing" ]; then
+            ts="$(date -u '+%Y-%m-%d %H:%M UTC')"
+            gh issue comment "$existing" --body "✅ Recovered — all endpoints returned 200 at $ts. Closing."
+            gh issue close "$existing"
+            echo "Closed downtime issue #$existing."
+            if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+              curl -fsS -X POST -H 'Content-Type: application/json' \
+                -d "$(printf '{"text":"✅ SavoryMind recovered (%s)"}' "$ts")" "$SLACK_WEBHOOK_URL" >/dev/null || true
+            fi
+          else
+            echo "All up. No open downtime issue."
+          fi
