@@ -43,9 +43,32 @@ npx --no-install expo export --platform ios --output-dir dist-ios --max-workers 
 
 Prebuild creates native folders and can update package scripts. Run it in a
 clean disposable checkout; do not commit generated native output unless the
-team deliberately switches to maintaining native projects. Real compilation
-still requires Android SDK/JDK or macOS/Xcode, or an independently authorized
-EAS build.
+team deliberately switches to maintaining native projects. Native compilation is automated separately below; an EAS build remains a
+separate, independently authorized release action.
+
+## Secret-free native compilation
+
+`Mobile Native Validation` compiles Android debug APKs for arm64 devices and
+x86_64 emulators, and an unsigned iOS simulator `.app`. It runs on mobile pull
+requests, main pushes and manual dispatch, with 40-minute job limits and
+commit-specific binary/build-log artifacts.
+
+- Android: Node 22, JDK 17, Android SDK setup and the lockfile-generated
+  Gradle wrapper. SDK 55 targets Android API 36.
+- iOS: `macos-15` with `DEVELOPER_DIR` explicitly set to its installed
+  Xcode 26.2, matching SDK 55's minimum. The runner's default Xcode 16.4
+  is deliberately not used. CocoaPods resolves the generated native project;
+  compilation sets `CODE_SIGNING_ALLOWED=NO` for the simulator.
+- No EAS invocation, store signing, credentials, uploads to stores, or
+  deployment is part of this workflow. GitHub Actions artifacts only.
+- These are debug validation binaries, not release candidates. They require
+  a local Metro development server for JavaScript and deliberately use a
+  non-production API placeholder. The simulator app is not for physical iPhones.
+- Successful compilation still does not prove device flows or store approval.
+
+Toolchain references: [SDK 55 support table](https://docs.expo.dev/versions/v55.0.0/),
+[Expo build infrastructure](https://docs.expo.dev/build-reference/infrastructure/),
+[GitHub macOS 15 toolchains](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md).
 
 ## Release evidence is separate
 
