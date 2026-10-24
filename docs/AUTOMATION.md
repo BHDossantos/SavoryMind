@@ -60,6 +60,26 @@ Together: Render catches server/deploy problems instantly; the uptime monitor
 independently catches DNS/TLS/edge/whole-site outages (the kind that took the
 site down silently before).
 
+## Recurring jobs (reminders, digests, SMS, POS sync, ML)
+These used to run on Google Cloud Scheduler. They now run **in-process** in the
+API via APScheduler (`backend/app/core/scheduler.py`) — no external cron, no
+per-run billing.
+
+**To turn them on:** set **`ENABLE_SCHEDULER=true`** on the **`savorymind-api`**
+service, and make sure that service is on an **always-on plan** (not a
+spin-down free instance — a sleeping API can't run a scheduler). That's it.
+
+Jobs & cadence (all UTC; each service filters by each restaurant's timezone):
+booking-reminders (every 15m), menu-of-the-day + pos-sync (hourly),
+daily-briefing + marketing-triggers (daily ~07:00), inventory-digest +
+weekly-digest + coaching-regenerate (Mondays), ml-retrain (nightly),
+owner-weekly-report (Sunday eve).
+
+Backup / manual trigger: each job also has an HTTP endpoint
+(`POST /internal/jobs/<name>`) protected by a shared secret — set
+`INTERNAL_JOB_SECRET` on the API and call with header
+`X-Internal-Job-Secret: <value>` to run one on demand.
+
 ## Rolling back
 Render keeps every deploy. To roll back: service → **Deploys** → pick a previous
 successful deploy → **Rollback**. One click, no git revert needed.
