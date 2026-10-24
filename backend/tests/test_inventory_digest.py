@@ -228,3 +228,22 @@ def test_internal_endpoint_rejects_wrong_email_claim(client, monkeypatch):
                         headers={"Authorization": "Bearer any-token-here"})
 
     assert r.status_code == 401
+
+
+def test_internal_endpoint_accepts_shared_secret(client, db_session, monkeypatch):
+    """The Render/GitHub cron path: a correct X-Internal-Job-Secret header runs
+    the job, no Google OIDC required."""
+    monkeypatch.setenv("INTERNAL_JOB_SECRET", "s3cr3t-cron-key")
+    r = client.post("/internal/jobs/inventory-digest",
+                    headers={"X-Internal-Job-Secret": "s3cr3t-cron-key"})
+    assert r.status_code == 200
+    assert "restaurants_processed" in r.json()
+
+
+def test_internal_endpoint_rejects_wrong_shared_secret(client, monkeypatch):
+    monkeypatch.setenv("INTERNAL_JOB_SECRET", "s3cr3t-cron-key")
+    # Wrong secret → 401.
+    assert client.post("/internal/jobs/inventory-digest",
+                       headers={"X-Internal-Job-Secret": "nope"}).status_code == 401
+    # Missing secret header → 401 (no OIDC configured either).
+    assert client.post("/internal/jobs/inventory-digest").status_code == 401

@@ -161,7 +161,22 @@ async def lifespan(app: FastAPI):
         ).start()
     if is_prod:
         _seed_demo_restaurants()  # already best-effort / swallows its own errors
+
+    # Recurring jobs (reminders, digests, SMS, POS sync, …). No-ops unless
+    # ENABLE_SCHEDULER is set, so tests/dev/worker instances stay quiet.
+    try:
+        from app.core.scheduler import start_scheduler
+        start_scheduler()
+    except Exception:
+        logger.exception("Scheduler failed to start — app is UP; recurring jobs off.")
+
     yield
+
+    try:
+        from app.core.scheduler import shutdown_scheduler
+        shutdown_scheduler()
+    except Exception:
+        pass
 
 
 app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan)
