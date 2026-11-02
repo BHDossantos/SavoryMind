@@ -20,7 +20,9 @@ Response shape is intentionally identical whether the email is on file
 or not — avoids leaking which addresses have SavoryMind accounts to a
 random attacker probing the form.
 """
-from fastapi import APIRouter, Request
+from html import escape
+
+from fastapi import APIRouter, Request, HTTPException
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -40,6 +42,8 @@ _ADMIN_NOTIFICATION_TO = "privacy@savorymind.net"
 def _admin_email_html(email: str, reason: str | None, user_on_file: bool) -> str:
     """Plain HTML for the admin notification — no template engine for
     something this small. Keep it ugly + readable."""
+    email = escape(email)
+    reason = escape(reason) if reason else None
     reason_block = (
         f"<p><strong>Reason:</strong></p><pre style='white-space:pre-wrap'>{reason}</pre>"
         if reason else
@@ -59,6 +63,7 @@ def _admin_email_html(email: str, reason: str | None, user_on_file: bool) -> str
 
 def _confirmation_email_html(email: str) -> str:
     """Confirmation sent to the requester. Plain language, no marketing."""
+    email = escape(email)
     return f"""
         <p>Hi,</p>
         <p>We've received your request to delete the SavoryMind account associated with
@@ -84,11 +89,14 @@ def request_account_deletion(
     email = body.email.lower().strip()
     user_on_file = db.query(User).filter(User.email == email).first() is not None
 
-    resend_client.send_email(
+    delivered = resend_client.send_email(
         to=_ADMIN_NOTIFICATION_TO,
         subject=f"[deletion-request] {email}",
         html=_admin_email_html(email, body.reason, user_on_file),
     )
+    if not delivered:
+        raise HTTPException(status_code=503, detail="We could not receive your deletion request. Please try again later.")
+
     resend_client.send_email(
         to=email,
         subject="We received your SavoryMind deletion request",

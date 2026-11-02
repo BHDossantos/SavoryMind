@@ -1,3 +1,4 @@
+import AccountDeletion from '../../components/AccountDeletion';
 import { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -129,6 +130,7 @@ export default function ConsumerProfile() {
             </Text>
           </View>
         </TouchableOpacity>
+      <AccountDeletion />
       </ScrollView>
     </View>
   );

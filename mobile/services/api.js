@@ -118,6 +118,7 @@ async function _saveTokensFrom(result) {
 }
 
 export const api = {
+  requestAccountDeletion: (body) => request('/api/account/delete-request', { method: 'POST', body: JSON.stringify(body) }),
   // Auth
   register: async (data) => {
     const result = await request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) });
