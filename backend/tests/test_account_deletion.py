@@ -21,3 +21,13 @@ def test_user_text_is_escaped_in_admin_email():
     html = _admin_email_html('person@example.com', '<a href="https://evil.example">click</a>', False)
     assert '<a href=' not in html
     assert '&lt;a href=' in html
+
+
+def test_acknowledgment_does_not_promise_a_processing_deadline(client):
+    with patch('app.api.routes.account.resend_client.send_email', return_value=True) as send:
+        response = client.post('/api/account/delete-request', json={'email': 'person@example.com'})
+    assert response.status_code == 200
+    assert '30 days' not in response.json()['message']
+    assert 'Deletion has not been confirmed' in response.json()['message']
+    for call in send.call_args_list:
+        assert '30 days' not in call.kwargs['html']

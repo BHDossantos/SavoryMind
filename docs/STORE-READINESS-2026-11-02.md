@@ -23,3 +23,9 @@ This branch is a draft for review, not release authorization. Do not merge or pu
 - `git diff --check` passed.
 
 Policy references checked: https://developer.apple.com/app-store/review/guidelines/ and https://support.google.com/googleplay/android-developer/answer/10281818 . Exceptions vary by storefront/program; no entitlement or eligibility is assumed.
+
+## Review follow-up
+
+Removed unverified deletion deadlines from mobile, API acknowledgments, email templates and the web deletion-request page. Acknowledgments now explicitly distinguish requests from completed erasure. The web success state no longer claims that the separate confirmation email was delivered.
+
+Both mobile membership pages provide cancellation guidance and a user-initiated email composer to the already published hello@savorymind.net address, with a visible manual-address fallback when opening mail fails. There is no checkout/portal link, automatic send, promised response time or cancellation-success claim. Mailbox ownership and staffing remain unverified release gates. This help path is not a replacement for an implemented cancellation-only management flow.

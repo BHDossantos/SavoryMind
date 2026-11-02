@@ -11,5 +11,6 @@ test.each([Upgrade, Billing])('shows existing status without a digital checkout 
   const screen = render(<Screen />);
   expect(await screen.findByText('Your membership is active.')).toBeTruthy();
   expect(screen.getByText('Purchases and plan changes are not available in this app.')).toBeTruthy();
-  expect(screen.queryAllByRole('button')).toHaveLength(0);
+  expect(screen.getAllByRole('button')).toHaveLength(1);
+  expect(screen.getByRole('button', { name: 'Email cancellation help' })).toBeTruthy();
 });

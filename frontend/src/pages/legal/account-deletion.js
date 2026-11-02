@@ -105,12 +105,12 @@ export default function AccountDeletion() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-gray-900">How long it takes</h2>
+              <h2 className="text-xl font-semibold text-gray-900">After you submit</h2>
               <p>
-                We process deletion requests within <strong>30 days</strong>. You'll receive an
-                email confirmation when the request is received and another when deletion is
-                complete. If you change your mind, reply to either email within 30 days and we'll
-                cancel the request.
+                Submitting this form sends a request for review. An acknowledgment does not
+                confirm completed deletion or a processing deadline. To ask about the request
+                or withdraw it before deletion, contact privacy@savorymind.net. Withdrawal is
+                not confirmed until you receive a response.
               </p>
             </section>
 
@@ -121,8 +121,8 @@ export default function AccountDeletion() {
                 <div className="bg-green-50 border border-green-200 rounded p-4 text-green-800">
                   <p className="font-semibold">Request received.</p>
                   <p className="text-sm mt-2">
-                    We've sent a confirmation to <strong>{email}</strong>. We'll process the
-                    deletion within 30 days and email you when it's complete.
+                    Your request for <strong>{email}</strong> was sent for review. Your account
+                    has not been confirmed deleted. A confirmation email may arrive separately.
                   </p>
                 </div>
               ) : (

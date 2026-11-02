@@ -56,8 +56,8 @@ def _admin_email_html(email: str, reason: str | None, user_on_file: bool) -> str
         <p><strong>Account status:</strong> {status}</p>
         {reason_block}
         <hr/>
-        <p>Action required: delete the account + associated data within 30 days, then reply
-        to the requester confirming deletion.</p>
+        <p>Action required: verify ownership and review this request under the applicable
+        deletion and retention requirements. Confirm completion only after deletion is verified.</p>
     """
 
 
@@ -68,7 +68,7 @@ def _confirmation_email_html(email: str) -> str:
         <p>Hi,</p>
         <p>We've received your request to delete the SavoryMind account associated with
         <strong>{email}</strong>.</p>
-        <p>We'll process it within 30 days and reply to this email address once it's done.
+        <p>This message acknowledges your request, not completed deletion or a processing deadline.
         If you have additional context (e.g. which account type, or which related data to
         also remove), just reply to this email.</p>
         <p>If you didn't make this request, you can safely ignore this message — no action
@@ -103,4 +103,4 @@ def request_account_deletion(
         html=_confirmation_email_html(email),
     )
 
-    return {"ok": True, "message": "Request received. We'll process it within 30 days."}
+    return {"ok": True, "message": "Request sent for review. Deletion has not been confirmed."}

@@ -17,6 +17,7 @@ test('asks for confirmation before submitting a deletion request', async () => {
   await act(async () => actions[1].onPress());
   expect(api.requestAccountDeletion).toHaveBeenCalledWith({ email: 'person@example.com' });
   expect(screen.getByText(/Your account has not been deleted yet/)).toBeTruthy();
+  expect(screen.queryByText(/30 days/)).toBeNull();
 });
 test('shows a retryable failure when delivery fails', async () => {
   api.requestAccountDeletion.mockRejectedValue(new Error('Unavailable'));

@@ -13,7 +13,7 @@ export default function AccountDeletion() {
     setMessage('');
     try {
       await api.requestAccountDeletion({ email: user.email });
-      setMessage('Deletion request received. Our team will verify the request and process it within 30 days. Your account has not been deleted yet.');
+      setMessage('Your deletion request was sent for review. This is not confirmation of completed deletion. Your account has not been deleted yet.');
     } catch {
       setMessage('Your deletion request could not be sent. Please try again later.');
     } finally {

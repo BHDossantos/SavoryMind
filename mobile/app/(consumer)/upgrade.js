@@ -1,3 +1,4 @@
+import SubscriptionHelp from '../../components/SubscriptionHelp';
 import { useCallback, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -22,5 +23,6 @@ export default function MembershipStatus() {
       <Text>Purchases and plan changes are not available in this app.</Text>
       <Text>Existing subscriptions continue until cancelled. Account deletion does not cancel a subscription.</Text>
     </View>
+    <SubscriptionHelp />
   </ScrollView>;
 }
