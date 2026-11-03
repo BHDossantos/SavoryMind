@@ -63,3 +63,12 @@ actual SQLite users table lacks AUTOINCREMENT, including an unmigrated database.
 Downgrade intentionally preserves this security property. Never reset SQLite's
 sequence or reuse IDs manually. This does not repair any historical identity
 reuse that occurred before the migration; such a database needs incident review.
+
+For an existing SQLite users table without AUTOINCREMENT, migration 005 now
+refuses before any users-table DDL if `PRAGMA foreign_keys` is enabled. A table
+rebuild can cascade-delete referencing rows or fail under RESTRICT. The migration
+never disables enforcement automatically. Such a database needs a separately
+reviewed offline migration procedure; do not retry by changing production
+connection settings. Already migrated AUTOINCREMENT tables are a read-only no-op.
+Regression tests check actual child payloads with CASCADE and RESTRICT, not only
+`foreign_key_check`, which cannot detect rows that cascaded away.

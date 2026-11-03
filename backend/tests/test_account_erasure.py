@@ -223,3 +223,54 @@ def test_sqlite_identity_migration_preserves_rows_and_prevents_reuse():
         module.upgrade()
         connection.execute(text("INSERT INTO users(email) VALUES ('after-reupgrade@example.com')"))
         assert connection.scalar(text('SELECT id FROM users')) == 44
+
+
+@pytest.mark.parametrize('enforcement', [0, 1])
+@pytest.mark.parametrize('action', ['CASCADE', 'RESTRICT'])
+def test_identity_migration_preserves_referencing_children(enforcement, action):
+    import importlib.util
+    from pathlib import Path
+    from sqlalchemy import create_engine, text, event
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    path = Path(__file__).parents[1] / 'alembic/versions/a31d11e70005_sqlite_user_ids.py'
+    spec = importlib.util.spec_from_file_location('identity_migration', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    engine = create_engine('sqlite://')
+    with engine.connect() as connection:
+        connection.execute(text(f'PRAGMA foreign_keys={enforcement}'))
+        assert connection.scalar(text('PRAGMA foreign_keys')) == enforcement
+        connection.execute(text('CREATE TABLE users (id INTEGER PRIMARY KEY, email VARCHAR NOT NULL UNIQUE)'))
+        connection.execute(text(f'CREATE TABLE child (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE {action}, payload VARCHAR)'))
+        connection.execute(text("INSERT INTO users VALUES (42, 'retained@example.com')"))
+        connection.execute(text("INSERT INTO child VALUES (7, 42, 'preserve-entitlement')"))
+        connection.commit()
+        statements = []
+        def record(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+        event.listen(connection, 'before_cursor_execute', record)
+        module.op = Operations(MigrationContext.configure(connection))
+        for operation in (module.upgrade, module.downgrade, module.upgrade):
+            statements.clear()
+            if enforcement and operation == module.upgrade:
+                with pytest.raises(RuntimeError, match='no users-table DDL performed'):
+                    operation()
+                assert not any(s.startswith(('CREATE ', 'DROP ', 'ALTER ', 'INSERT ', 'UPDATE ', 'DELETE ')) for s in statements)
+            else:
+                operation()
+            connection.commit()
+            assert connection.execute(text('SELECT id, email FROM users')).all() == [(42, 'retained@example.com')]
+            assert connection.execute(text('SELECT id, user_id, payload FROM child')).all() == [(7, 42, 'preserve-entitlement')]
+            assert connection.execute(text('PRAGMA foreign_key_check')).all() == []
+            assert connection.scalar(text('PRAGMA foreign_keys')) == enforcement
+            assert connection.scalar(text("SELECT count(*) FROM sqlite_master WHERE name='_alembic_tmp_users'")) == 0
+        # Already migrated tables require no rebuild even with enforcement on.
+        if not enforcement:
+            connection.commit()
+            connection.execute(text('PRAGMA foreign_keys=ON'))
+            assert connection.scalar(text('PRAGMA foreign_keys')) == 1
+            statements.clear()
+            module.upgrade()
+            assert not any(s.startswith(('CREATE ', 'DROP ', 'ALTER ')) for s in statements)
+            assert connection.scalar(text('SELECT payload FROM child')) == 'preserve-entitlement'
