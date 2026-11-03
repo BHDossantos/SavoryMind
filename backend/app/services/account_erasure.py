@@ -8,10 +8,10 @@ import importlib
 import json
 import pkgutil
 from datetime import datetime
-from sqlalchemy import select, func, inspect, delete
+from sqlalchemy import select, func, inspect, delete, text
 from ..core.database import Base
 from ..models.user import User
-from ..models.account_erasure import AccountErasureRun
+from ..models.account_erasure import AccountErasureRun, AccountErasureReview
 from ..models.account_deletion import AccountDeletionRequest
 
 PRIVATE_TABLES = frozenset({'behavior_logs', 'pantry_items', 'meal_memories', 'wine_pairings', 'music_moods', 'social_connections', 'feature_overrides', 'notifications', 'flavor_memories', 'assistant_conversations', 'store_memberships', 'store_receipts', 'saved_restaurants'})
@@ -32,6 +32,10 @@ def plan(db, request):
     if user is None:
         raise ValueError('Account is absent; inspect the existing run before continuing')
     counts, blockers, row_fingerprints = {}, {}, {}
+    if db.get_bind().dialect.name == 'sqlite':
+        ddl = db.scalar(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")) or ''
+        if 'AUTOINCREMENT' not in ddl.upper():
+            blockers['unsafe_reusable_sqlite_user_identity'] = 1
     if user.account_type not in ('consumer', 'diner'):
         blockers['account_type_requires_review'] = 1
     if user.subscription_status in ('active', 'trialing', 'past_due'):
@@ -109,6 +113,34 @@ def prepare(db, request, *, expected_sha, policy_ref):
         return existing
     run = AccountErasureRun(request_id=request.id, plan_sha=expected_sha, policy_ref=policy_ref, state='prepared')
     db.add(run)
+    db.flush()
+    return run
+
+
+def reprepare(db, request_id, *, previous_sha, expected_sha, policy_ref, review_ref):
+    """Replace only a still-prepared plan after explicit, auditable fresh review."""
+    request = db.query(AccountDeletionRequest).filter_by(id=request_id).populate_existing().with_for_update().one()
+    run = db.query(AccountErasureRun).filter_by(request_id=request_id).populate_existing().with_for_update().one()
+    if run.state != 'prepared':
+        raise ValueError('Only a prepared run can be re-reviewed; erased runs cannot be reset')
+    db.query(User).filter_by(id=request.user_id).populate_existing().with_for_update().one()
+    current = plan(db, request)
+    if not current['supported'] or current['plan_sha'] != expected_sha:
+        raise ValueError('Fresh reviewed plan no longer matches or has blockers')
+    if any(not isinstance(value, str) or not value.strip() or len(value) > 200 for value in (policy_ref, review_ref)):
+        raise ValueError('Policy and review evidence references are required')
+    prior_review = db.query(AccountErasureReview).filter_by(request_id=request_id, previous_plan_sha=previous_sha, new_plan_sha=expected_sha, new_policy_ref=policy_ref, review_ref=review_ref).first()
+    if prior_review and run.plan_sha == expected_sha and run.policy_ref == policy_ref:
+        return run
+    if run.plan_sha != previous_sha:
+        raise ValueError('Prepared plan changed since review; refresh the preview')
+    if previous_sha == expected_sha and run.policy_ref == policy_ref:
+        raise ValueError('Plan is unchanged; use the existing prepared run')
+    db.add(AccountErasureReview(request_id=request_id, previous_plan_sha=run.plan_sha, new_plan_sha=expected_sha, previous_policy_ref=run.policy_ref, new_policy_ref=policy_ref, review_ref=review_ref))
+    run.plan_sha = expected_sha
+    run.policy_ref = policy_ref
+    # No earlier completion evidence may authorize the changed row set.
+    run.evidence = None
     db.flush()
     return run
 

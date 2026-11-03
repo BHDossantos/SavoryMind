@@ -37,3 +37,29 @@ The new `account_erasure_runs` migration durably records preparation and databas
 - Sandbox/staging erasure acceptance, migrations and production rollout approval.
 
 No production data was deleted, no provider credential was changed and no remote provider deletion was attempted. Successful local tests are not proof that the operational deletion workflow is live.
+
+### Re-review after new private activity
+
+A changed row set invalidates the old plan. Preview again; review all new counts,
+blockers and retention/provider requirements. Then use the explicit audited step:
+
+```
+python scripts/account_erasure.py --request-id REQUEST --reprepare --previous-plan-sha OLD_SHA --plan-sha NEW_SHA --policy-ref POLICY_REFERENCE --review-ref REVIEW_REFERENCE
+```
+
+The command compares the previous prepared hash, preserves old/new hashes and
+policy references in `account_erasure_reviews`, and clears previous completion
+evidence. Only a still-prepared run can change; erased runs cannot be reset.
+Retrying the same reviewed transition is idempotent. Evidence references must not
+contain personal data or secrets. Re-run preview if the plan changes again.
+
+### SQLite identity safety
+
+Migration `a31d11e70005` rebuilds SQLite users with AUTOINCREMENT, preserving current
+rows and preventing future reuse of deleted account IDs. Review database backup,
+foreign-key integrity and migration execution before release. PostgreSQL retains
+its existing sequence. The erasure preview and execution fail closed when the
+actual SQLite users table lacks AUTOINCREMENT, including an unmigrated database.
+Downgrade intentionally preserves this security property. Never reset SQLite's
+sequence or reuse IDs manually. This does not repair any historical identity
+reuse that occurred before the migration; such a database needs incident review.
