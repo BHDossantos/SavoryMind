@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-// Reuse the public request flow; this does not claim that data is already deleted.
+// The authenticated endpoint binds identity to the session and durably saves intake.
 export default function AccountDeletion() {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -12,8 +12,8 @@ export default function AccountDeletion() {
     setBusy(true);
     setMessage('');
     try {
-      await api.requestAccountDeletion({ email: user.email });
-      setMessage('Your deletion request was sent for review. This is not confirmation of completed deletion. Your account has not been deleted yet.');
+      const result = await api.requestAccountDeletion({});
+      setMessage(`Your verified deletion request is saved for review. Reference: ${result.request_id}. Your account has not been deleted yet.`);
     } catch {
       setMessage('Your deletion request could not be sent. Please try again later.');
     } finally {

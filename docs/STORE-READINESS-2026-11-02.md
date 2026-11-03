@@ -1,3 +1,5 @@
+> Superseded for billing/deletion by [3 November follow-up](STORE-READINESS-2026-11-03.md). The temporary purchase guard below describes the earlier draft, not the current implementation.
+
 # Store readiness follow-up — 2026-11-02
 
 This branch is a draft for review, not release authorization. Do not merge or push to main as part of this audit: main workflows can deploy and build mobile releases.

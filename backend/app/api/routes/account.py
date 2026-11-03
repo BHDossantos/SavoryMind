@@ -1,106 +1,134 @@
-"""Account lifecycle endpoints.
+"""Durable account deletion intake with separate identity and completion states.
 
-Currently houses POST /api/account/delete-request — the public endpoint
-behind the /legal/account-deletion web form that Play Store / App Store
-review require for any app with user accounts. The endpoint accepts a
-deletion request from anyone (including users who already uninstalled
-the app and therefore can't log in), emails the admin, and emails the
-requester a confirmation.
-
-Why request-only (vs. instant self-service delete):
-  Self-service delete from an unauthenticated endpoint is risky — a
-  bad actor could enumerate and trigger deletes for arbitrary emails.
-  Routing through an admin-reviewed queue + manual deletion keeps the
-  blast radius small for v1. We can graduate to instant self-service
-  once we add a verification step (email link with one-time token).
-
-Rate-limited to 3/hour per IP to prevent abuse.
-
-Response shape is intentionally identical whether the email is on file
-or not — avoids leaking which addresses have SavoryMind accounts to a
-random attacker probing the form.
+Authenticated requests bind to the session user, never a supplied email. Public
+requests require a short-lived email token before entering the actionable queue.
+Mail is notification only: delivery failure cannot discard a committed request.
+No endpoint claims that a request has erased data or cancelled a subscription.
 """
+from datetime import datetime, timedelta
+from hashlib import sha256
 from html import escape
+import secrets
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from fastapi import Depends
 
+from ...core.config import settings
 from ...core.database import get_db
 from ...core.rate_limit import limiter
+from ...core.security import get_current_user
 from ...models.user import User
+from ...models.account_deletion import AccountDeletionRequest
 from ...schemas.account import AccountDeleteRequest
 from ...services import resend_client
 
-
-router = APIRouter(prefix="/account", tags=["account"])
-
-
-_ADMIN_NOTIFICATION_TO = "privacy@savorymind.net"
+router = APIRouter(prefix='/account', tags=['account'])
+_ADMIN_NOTIFICATION_TO = 'privacy@savorymind.net'
 
 
-def _admin_email_html(email: str, reason: str | None, user_on_file: bool) -> str:
-    """Plain HTML for the admin notification — no template engine for
-    something this small. Keep it ugly + readable."""
-    email = escape(email)
-    reason = escape(reason) if reason else None
-    reason_block = (
-        f"<p><strong>Reason:</strong></p><pre style='white-space:pre-wrap'>{reason}</pre>"
-        if reason else
-        "<p><em>(no reason provided)</em></p>"
-    )
-    status = "✅ MATCH — account exists" if user_on_file else "⚠️ NO MATCH — no account with this email"
-    return f"""
-        <h2>SavoryMind: Account Deletion Request</h2>
-        <p><strong>Requester:</strong> {email}</p>
-        <p><strong>Account status:</strong> {status}</p>
-        {reason_block}
-        <hr/>
-        <p>Action required: verify ownership and review this request under the applicable
-        deletion and retention requirements. Confirm completion only after deletion is verified.</p>
-    """
+class VerifyDeletion(BaseModel):
+    token: str = Field(min_length=32, max_length=128)
 
 
-def _confirmation_email_html(email: str) -> str:
-    """Confirmation sent to the requester. Plain language, no marketing."""
-    email = escape(email)
-    return f"""
-        <p>Hi,</p>
-        <p>We've received your request to delete the SavoryMind account associated with
-        <strong>{email}</strong>.</p>
-        <p>This message acknowledges your request, not completed deletion or a processing deadline.
-        If you have additional context (e.g. which account type, or which related data to
-        also remove), just reply to this email.</p>
-        <p>If you didn't make this request, you can safely ignore this message — no action
-        will be taken without your follow-up.</p>
-        <p>— Team SavoryMind</p>
-    """
+class AuthenticatedDeletion(BaseModel):
+    reason: str | None = Field(default=None, max_length=1000)
 
 
-@router.post("/delete-request", status_code=200)
-@limiter.limit("3/hour")
-def request_account_deletion(
-    request: Request,
-    body: AccountDeleteRequest,
-    db: Session = Depends(get_db),
-):
-    """Public deletion-request endpoint. Always returns the same shape
-    regardless of whether the email is on file (avoids enumeration)."""
-    email = body.email.lower().strip()
-    user_on_file = db.query(User).filter(User.email == email).first() is not None
+def _request_row(db: Session, email: str) -> AccountDeletionRequest:
+    row = db.query(AccountDeletionRequest).filter_by(email=email).first()
+    if row is not None:
+        return row
+    row = AccountDeletionRequest(email=email)
+    db.add(row)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return db.query(AccountDeletionRequest).filter_by(email=email).one()
+    db.refresh(row)
+    return row
 
-    delivered = resend_client.send_email(
-        to=_ADMIN_NOTIFICATION_TO,
-        subject=f"[deletion-request] {email}",
-        html=_admin_email_html(email, body.reason, user_on_file),
-    )
+
+def _notify(db: Session, row: AccountDeletionRequest) -> None:
+    if row.notification_sent_at is not None:
+        return
+    # No unverified identity or user free text is sent to an operator as an
+    # actionable deletion instruction. The authenticated database queue is truth.
+    if resend_client.send_email(to=_ADMIN_NOTIFICATION_TO, subject='Verified deletion request pending review',
+                                html=f'<p>Verified deletion request {escape(row.id)} is pending in the database queue. Review applicable retention and provider cleanup before completing it.</p>'):
+        row.notification_sent_at = datetime.utcnow()
+        db.commit()
+
+
+def _payload(row: AccountDeletionRequest) -> dict:
+    return {'ok': True, 'request_id': row.id, 'status': row.status,
+            'message': 'Your verified deletion request is saved for review. Deletion has not been confirmed. This does not cancel a subscription.'}
+
+
+@router.post('/deletion', status_code=200)
+@limiter.limit('3/hour')
+def authenticated_deletion(request: Request, body: AuthenticatedDeletion,
+                           user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = _request_row(db, user.email.lower().strip())
+    if row.user_id is not None and row.user_id != user.id:
+        raise HTTPException(status_code=409, detail='An earlier request needs privacy-team review before another can be submitted.')
+    if row.status == 'awaiting_verification' or row.user_id is None:
+        row.user_id = user.id
+        row.reason = body.reason
+        row.status = 'pending_review'
+        row.verified_at = datetime.utcnow()
+        row.verification_hash = None
+        row.verification_expires_at = None
+        db.commit()
+    _notify(db, row)
+    return _payload(row)
+
+
+@router.get('/deletion')
+def deletion_status(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = db.query(AccountDeletionRequest).filter_by(user_id=user.id).order_by(AccountDeletionRequest.created_at.desc()).first()
+    return _payload(row) if row else {'status': 'none'}
+
+
+@router.post('/delete-request', status_code=200)
+@limiter.limit('3/hour')
+def request_account_deletion(request: Request, body: AccountDeleteRequest, db: Session = Depends(get_db)):
+    row = _request_row(db, body.email.lower().strip())
+    token = secrets.token_urlsafe(32)
+    # A public request cannot reset a verified request or alter its reason.
+    if row.status == 'awaiting_verification':
+        row.reason = body.reason
+        row.verification_hash = sha256(token.encode()).hexdigest()
+        row.verification_expires_at = datetime.utcnow() + timedelta(hours=24)
+        db.commit()
+        # Fragment tokens are not sent to web server access logs. Opening the
+        # page never confirms a request; the recipient must press Confirm.
+        url = settings.frontend_url.rstrip('/') + '/legal/account-deletion#token=' + token
+        html = f'<p>Confirm your account deletion request by opening <a href="{escape(url, quote=True)}">this verification page</a> and pressing Confirm. This link expires in 24 hours. Opening it alone does not confirm or delete anything.</p><p>If you did not request deletion, ignore this email. No deletion request becomes actionable without verification.</p>'
+    else:
+        html = '<p>A verified deletion request is already saved for this address. This message does not confirm completed deletion or a processing deadline.</p>'
+    delivered = resend_client.send_email(to=body.email, subject='Verify your SavoryMind deletion request', html=html)
     if not delivered:
-        raise HTTPException(status_code=503, detail="We could not receive your deletion request. Please try again later.")
+        raise HTTPException(status_code=503, detail='Your request is saved, but the verification email could not be sent. Please retry later or use the signed-in account deletion option.')
+    # Same shape for existing/nonexistent accounts; no account lookup until
+    # possession of the email token has been proved.
+    return {'ok': True, 'message': 'Check your email for the next step. Deletion has not been confirmed.'}
 
-    resend_client.send_email(
-        to=email,
-        subject="We received your SavoryMind deletion request",
-        html=_confirmation_email_html(email),
-    )
 
-    return {"ok": True, "message": "Request sent for review. Deletion has not been confirmed."}
+@router.post('/delete-request/verify', status_code=200)
+@limiter.limit('10/hour')
+def verify_deletion(request: Request, body: VerifyDeletion, db: Session = Depends(get_db)):
+    row = db.query(AccountDeletionRequest).filter_by(verification_hash=sha256(body.token.encode()).hexdigest()).with_for_update().first()
+    if row is None or row.verification_expires_at is None or row.verification_expires_at <= datetime.utcnow() or row.status != 'awaiting_verification':
+        raise HTTPException(status_code=400, detail='This verification link is invalid, expired, or already used. Request a new link if needed.')
+    user = db.query(User).filter_by(email=row.email).first()
+    row.user_id = user.id if user else None
+    row.verified_at = datetime.utcnow()
+    row.status = 'pending_review'
+    row.verification_hash = None
+    row.verification_expires_at = None
+    db.commit()
+    _notify(db, row)
+    return {'ok': True, 'status': 'pending_review', 'message': 'Your verified request is saved for review. Deletion has not been confirmed.'}

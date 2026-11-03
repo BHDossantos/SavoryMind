@@ -8,14 +8,14 @@ jest.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: { email: '
 beforeEach(() => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplementation(() => {}); });
 afterEach(() => jest.restoreAllMocks());
 test('asks for confirmation before submitting a deletion request', async () => {
-  api.requestAccountDeletion.mockResolvedValue({ ok: true });
+  api.requestAccountDeletion.mockResolvedValue({ ok: true, request_id: 'request-123' });
   const screen = render(<AccountDeletion />);
   fireEvent.press(screen.getByText('Delete account'));
   expect(api.requestAccountDeletion).not.toHaveBeenCalled();
   const actions = Alert.alert.mock.calls[0][2];
   expect(actions[0].style).toBe('cancel');
   await act(async () => actions[1].onPress());
-  expect(api.requestAccountDeletion).toHaveBeenCalledWith({ email: 'person@example.com' });
+  expect(api.requestAccountDeletion).toHaveBeenCalledWith({});
   expect(screen.getByText(/Your account has not been deleted yet/)).toBeTruthy();
   expect(screen.queryByText(/30 days/)).toBeNull();
 });

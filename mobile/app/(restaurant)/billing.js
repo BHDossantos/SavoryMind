@@ -1,3 +1,5 @@
+import NativeMembership from '../../components/NativeMembership';
+import CancelSubscription from '../../components/CancelSubscription';
 import SubscriptionHelp from '../../components/SubscriptionHelp';
 import { useCallback, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
@@ -20,9 +22,10 @@ export default function MembershipStatus() {
     {error ? <Text accessibilityRole="alert">We could not load your membership. Please try again later.</Text> :
       <Text>{status ? (status.is_pro ? 'Your membership is active.' : 'No active paid membership.') : 'Loading membership…'}</Text>}
     <View style={{ marginTop: 20 }}>
-      <Text>Purchases and plan changes are not available in this app.</Text>
+      <NativeMembership />
       <Text>Existing subscriptions continue until cancelled. Account deletion does not cancel a subscription.</Text>
     </View>
+    <CancelSubscription status={status} />
     <SubscriptionHelp />
   </ScrollView>;
 }

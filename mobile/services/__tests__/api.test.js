@@ -274,7 +274,7 @@ describe('logout flow', () => {
 test('submits a serialized account deletion request', async () => {
   global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
   await api.requestAccountDeletion({ email: 'person@example.com' });
-  expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/account/delete-request'), expect.objectContaining({
+  expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/account/deletion'), expect.objectContaining({
     method: 'POST', body: JSON.stringify({ email: 'person@example.com' }),
   }));
 });
