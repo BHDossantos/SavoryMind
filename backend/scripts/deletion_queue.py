@@ -18,7 +18,7 @@ from app.services import deletion_queue
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--request-id')
-    parser.add_argument('--offset', type=int, default=0)
+    parser.add_argument('--after', help='next_cursor returned by the previous page')
     parser.add_argument('--limit', type=int, default=100)
     parser.add_argument('--include-unverified', action='store_true', help='Include non-actionable intake for separate triage')
     action = parser.add_mutually_exclusive_group()
@@ -37,7 +37,7 @@ def main():
                 deletion_queue.complete(db, row, json.loads(args.complete.read_text()))
             print(json.dumps({'id': row.id, 'status': row.status, 'direct_record_counts': deletion_queue.inventory(db, row)}))
         else:
-            print(json.dumps(deletion_queue.page(db, offset=args.offset, limit=args.limit, include_unverified=args.include_unverified)))
+            print(json.dumps(deletion_queue.page(db, after=args.after, limit=args.limit, include_unverified=args.include_unverified)))
 
 
 if __name__ == '__main__':

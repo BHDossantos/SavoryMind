@@ -4,8 +4,9 @@ Erasure must be performed under a reviewed plan. Recording completion requires
 an absent account and explicit database/provider/backup/retention evidence.
 """
 import json
+import base64
 from datetime import datetime
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import Session
 from ..core.database import Base
 from ..models.user import User
@@ -57,13 +58,29 @@ def complete(db: Session, row: AccountDeletionRequest, evidence: dict) -> None:
     db.commit()
 
 
-def page(db: Session, *, offset: int = 0, limit: int = 100, include_unverified: bool = False) -> dict:
-    """Actionable requests first; stable pagination never exposes identities."""
-    if offset < 0 or not 1 <= limit <= 100:
-        raise ValueError('offset must be nonnegative and limit between 1 and 100')
+def page(db: Session, *, after: str | None = None, limit: int = 100, include_unverified: bool = False) -> dict:
+    """Keyset pagination remains stable when preceding requests are completed."""
+    if not 1 <= limit <= 100:
+        raise ValueError('limit must be between 1 and 100')
     query = db.query(AccountDeletionRequest).filter(AccountDeletionRequest.status != 'completed')
     if not include_unverified:
         query = query.filter(AccountDeletionRequest.verified_at.isnot(None), AccountDeletionRequest.status.in_(('pending_review', 'on_hold')))
-    rows = query.order_by(AccountDeletionRequest.created_at, AccountDeletionRequest.id).offset(offset).limit(limit + 1).all()
-    return {'requests': [{'id': row.id, 'status': row.status, 'created_at': row.created_at.isoformat(), 'notification_sent': bool(row.notification_sent_at)} for row in rows[:limit]],
-            'next_offset': offset + limit if len(rows) > limit else None}
+    if after is not None:
+        try:
+            if len(after) > 256:
+                raise ValueError('oversized cursor')
+            created, request_id = json.loads(base64.urlsafe_b64decode(after.encode()).decode())
+            created = datetime.fromisoformat(created)
+            if created.tzinfo is not None or not isinstance(request_id, str) or len(request_id) != 36:
+                raise ValueError('invalid cursor')
+        except (ValueError, TypeError, UnicodeError):
+            raise ValueError('Invalid queue cursor') from None
+        query = query.filter(or_(AccountDeletionRequest.created_at > created, and_(AccountDeletionRequest.created_at == created, AccountDeletionRequest.id > request_id)))
+    rows = query.order_by(AccountDeletionRequest.created_at, AccountDeletionRequest.id).limit(limit + 1).all()
+    visible = rows[:limit]
+    cursor = None
+    if len(rows) > limit:
+        last = visible[-1]
+        cursor = base64.urlsafe_b64encode(json.dumps([last.created_at.isoformat(), last.id]).encode()).decode()
+    return {'requests': [{'id': row.id, 'status': row.status, 'created_at': row.created_at.isoformat(), 'notification_sent': bool(row.notification_sent_at)} for row in visible],
+            'next_cursor': cursor}

@@ -138,8 +138,27 @@ def test_actionable_queue_cannot_be_hidden_by_unverified_intake(db_session):
     first = deletion_queue.page(db_session)
     assert len(first['requests']) == 100
     assert {r['status'] for r in first['requests']} == {'pending_review'}
-    second = deletion_queue.page(db_session, offset=first['next_offset'])
-    assert len(second['requests']) == 5 and second['next_offset'] is None
+    second = deletion_queue.page(db_session, after=first['next_cursor'])
+    assert len(second['requests']) == 5 and second['next_cursor'] is None
     assert not ({r['id'] for r in first['requests']} & {r['id'] for r in second['requests']})
     assert 'email' not in str(first)
     assert len(deletion_queue.page(db_session, include_unverified=True)['requests']) == 100
+
+
+def test_queue_cursor_does_not_skip_requests_after_first_page_is_completed(db_session):
+    from datetime import datetime
+    from app.models.account_deletion import AccountDeletionRequest
+    from app.services import deletion_queue
+    # Identical timestamps exercise the ID tie-breaker as well as removed rows.
+    created = datetime.utcnow()
+    db_session.add_all([AccountDeletionRequest(email=f'cursor-{i}@example.com', created_at=created, status='pending_review', verified_at=created) for i in range(105)])
+    db_session.commit()
+    first = deletion_queue.page(db_session)
+    assert len(first['requests']) == 100 and first['next_cursor']
+    for item in first['requests']:
+        deletion_queue.complete(db_session, db_session.get(AccountDeletionRequest, item['id']), {key: 'reviewed-evidence-reference' for key in ('database', 'providers', 'backups', 'retained_data')})
+    second = deletion_queue.page(db_session, after=first['next_cursor'])
+    assert len(second['requests']) == 5
+    assert second['next_cursor'] is None
+    assert not ({row['id'] for row in first['requests']} & {row['id'] for row in second['requests']})
+    assert '@example.com' not in str(first) + str(second)
