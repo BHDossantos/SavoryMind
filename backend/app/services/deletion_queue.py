@@ -14,17 +14,33 @@ from ..models.account_deletion import AccountDeletionRequest
 
 
 def inventory(db: Session, row: AccountDeletionRequest) -> dict:
+    from .account_erasure import load_models
+    load_models()
     counts = {}
     if row.user_id is not None:
         for table in Base.metadata.sorted_tables:
             for column in table.columns:
-                if any(fk.target_fullname == 'users.id' for fk in column.foreign_keys):
-                    count = db.scalar(select(func.count()).select_from(table).where(column == row.user_id))
+                direct = any(fk.target_fullname == 'users.id' for fk in column.foreign_keys)
+                legacy = not column.foreign_keys and column.name in ('user_id', 'staff_user_id', 'employee_user_id', 'actor_user_id', 'tenant_user_id')
+                if direct or legacy:
+                    query = select(func.count()).select_from(table).where(column == row.user_id)
+                    if table.name == 'account_deletion_requests':
+                        query = query.where(table.c.id != row.id)
+                    count = db.scalar(query)
                     if count:
                         counts[f'{table.name}.{column.name}'] = count
         counts['users.id'] = int(db.get(User, row.user_id) is not None)
         # Legacy links without declared foreign keys also contain identities.
         counts['users.employer_id'] = db.query(User).filter_by(employer_id=row.user_id).count()
+    if row.email:
+        for table in Base.metadata.sorted_tables:
+            if table.name in ('users', 'account_deletion_requests'):
+                continue
+            for column in table.c:
+                if column.name == 'email' or column.name.endswith('_email'):
+                    count = db.scalar(select(func.count()).select_from(table).where(func.lower(column) == row.email.lower()))
+                    if count:
+                        counts[table.name + '.' + column.name] = count
     return counts
 
 

@@ -120,7 +120,7 @@ async function _saveTokensFrom(result) {
 }
 
 export const api = {
-  getStoreContext: () => request('/api/billing/store/context'),
+  getStoreContext: (expectedAccessToken) => request('/api/billing/store/context', { expectedAccessToken }),
   syncStorePurchases: (expectedAccessToken) => request('/api/billing/store/sync', { method: 'POST', expectedAccessToken }),
   cancelSubscription: () => request('/api/billing/cancel', { method: 'POST' }),
   requestAccountDeletion: (body) => request('/api/account/deletion', { method: 'POST', body: JSON.stringify(body) }),

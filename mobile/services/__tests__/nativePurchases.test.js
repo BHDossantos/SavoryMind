@@ -1,12 +1,14 @@
 const mockSdk = { configure: jest.fn(), logIn: jest.fn(), getProducts: jest.fn(), purchaseProduct: jest.fn(), restorePurchases: jest.fn() };
 let mockToken = 'token-a';
+const mockContext = jest.fn();
 const mockSync = jest.fn();
 jest.mock('react-native-purchases', () => ({ __esModule: true, default: mockSdk }));
-jest.mock('../api', () => ({ api: { syncStorePurchases: mockSync }, tokenStore: { getAccess: async () => mockToken } }));
+jest.mock('../api', () => ({ api: { syncStorePurchases: mockSync, getStoreContext: mockContext }, tokenStore: { getAccess: async () => mockToken } }));
 const purchases = require('../nativePurchases');
 beforeEach(() => {
   mockToken = 'token-a';
   jest.clearAllMocks();
+  mockContext.mockResolvedValue({ app_user_id: 'member-a', can_purchase: true, products: ['sku'] });
   process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY = 'public-test-key';
   process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY = 'public-test-key';
   mockSdk.logIn.mockResolvedValue({});
@@ -58,4 +60,16 @@ test.each(['purchase', 'restore'])('switching accounts during %s never syncs to 
   mockSdk.restorePurchases.mockResolvedValue({});
   mockSync.mockResolvedValue({ granted: true, plan: 'premium' });
   expect(await purchases.restore('member-a')).toEqual({ granted: true, plan: 'premium' });
+});
+
+
+test.each([
+  { app_user_id: 'member-a', can_purchase: false, products: ['sku'] },
+  { app_user_id: 'member-b', can_purchase: true, products: ['sku'] },
+  { app_user_id: 'member-a', can_purchase: true, products: ['other'] },
+])('rechecks provider-specific eligibility before charging: %j', async context => {
+  mockContext.mockResolvedValue(context);
+  await expect(purchases.purchase('sku', 'member-a')).rejects.toThrow('not eligible');
+  expect(mockSdk.purchaseProduct).not.toHaveBeenCalled();
+  expect(mockSync).not.toHaveBeenCalled();
 });
