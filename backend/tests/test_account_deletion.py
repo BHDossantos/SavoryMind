@@ -125,3 +125,21 @@ def test_completion_redacts_queue_identity_only_after_evidence(client, db_sessio
     deletion_queue.complete(db_session, row, dict(database='review/no-account', providers='review/no-record', backups='review/no-record', retained_data='none'))
     assert row.status == 'completed'
     assert row.email is None and row.reason is None and row.user_id is None
+
+
+def test_actionable_queue_cannot_be_hidden_by_unverified_intake(db_session):
+    from datetime import datetime, timedelta
+    from app.models.account_deletion import AccountDeletionRequest
+    from app.services import deletion_queue
+    old = datetime.utcnow() - timedelta(days=2)
+    db_session.add_all([AccountDeletionRequest(email=f'unverified-{i}@example.com', created_at=old) for i in range(120)])
+    db_session.add_all([AccountDeletionRequest(email=f'verified-{i}@example.com', status='pending_review', verified_at=datetime.utcnow()) for i in range(105)])
+    db_session.commit()
+    first = deletion_queue.page(db_session)
+    assert len(first['requests']) == 100
+    assert {r['status'] for r in first['requests']} == {'pending_review'}
+    second = deletion_queue.page(db_session, offset=first['next_offset'])
+    assert len(second['requests']) == 5 and second['next_offset'] is None
+    assert not ({r['id'] for r in first['requests']} & {r['id'] for r in second['requests']})
+    assert 'email' not in str(first)
+    assert len(deletion_queue.page(db_session, include_unverified=True)['requests']) == 100

@@ -103,3 +103,48 @@ def test_unconfigured_store_is_not_offered(client):
     token, _ = register_user(client)
     assert not client.get('/api/billing/store/context', headers=auth_headers(token)).json()['enabled']
     assert client.post('/api/billing/store/sync', headers=auth_headers(token)).status_code == 503
+
+@pytest.mark.parametrize('field', ['aliases', 'original_app_user_id'])
+@pytest.mark.parametrize('change', ['refund', 'renewal'])
+def test_anonymous_webhook_resolves_only_known_identity(client, provider, monkeypatch, field, change):
+    token, _ = register_user(client)
+    result = client.post('/api/billing/store/sync', headers=auth_headers(token)).json()
+    identity = result['app_user_id']
+    monkeypatch.setattr(settings, 'revenuecat_webhook_authorization', 'test-alias-auth')
+    if change == 'refund':
+        provider[0]['test_premium']['refunded_at'] = '2026-01-01T00:00:00Z'
+    else:
+        provider[0]['test_premium']['expires_date'] = (datetime.now(timezone.utc) + timedelta(days=90)).isoformat()
+    event = {'app_user_id': '$RCAnonymousID:unknown', field: [identity, identity, 'unknown'] if field == 'aliases' else identity, 'plan': 'pro'}
+    before = len(provider[1])
+    response = client.post('/api/billing/store/webhook', json={'event': event}, headers={'Authorization': 'test-alias-auth'})
+    assert response.status_code == 200, response.text
+    assert len(provider[1]) == before + 1
+    assert provider[1][-1].url.path.endswith('/' + identity)
+    status = client.get('/api/billing/status', headers=auth_headers(token)).json()
+    assert status['plan'] == ('free' if change == 'refund' else 'premium')
+
+
+def test_unknown_or_malformed_aliases_do_not_create_memberships(client, provider, monkeypatch):
+    monkeypatch.setattr(settings, 'revenuecat_webhook_authorization', 'test-alias-auth')
+    for aliases, expected in [(['unknown'], 200), ('invalid-array', 400)]:
+        response = client.post('/api/billing/store/webhook', json={'event': {'aliases': aliases}}, headers={'Authorization': 'test-alias-auth'})
+        assert response.status_code == expected
+    assert not provider[1]
+
+
+def test_refund_refreshes_membership_loaded_before_a_concurrent_grant(client, db_session, provider):
+    from sqlalchemy.orm import Session
+    from app.models.user import User
+    from app.models.store_membership import StoreMembership
+    token, user = register_user(client)
+    # Session A has a stale unlinked identity; session B commits the first grant.
+    identity = store_billing.identity(db_session, db_session.get(User, user['id']))
+    assert identity.status == 'unlinked'
+    with Session(db_session.get_bind(), expire_on_commit=False) as other:
+        assert store_billing.sync(other, other.get(User, user['id']))['granted']
+    assert identity.status == 'unlinked'
+    provider[0]['test_premium']['refunded_at'] = '2026-01-01T00:00:00Z'
+    result = store_billing.sync(db_session, db_session.get(User, user['id']))
+    assert not result['granted'] and result['plan'] == 'free'
+    assert db_session.get(StoreMembership, user['id']).status == 'expired'

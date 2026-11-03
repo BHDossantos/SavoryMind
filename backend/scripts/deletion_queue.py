@@ -18,6 +18,9 @@ from app.services import deletion_queue
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--request-id')
+    parser.add_argument('--offset', type=int, default=0)
+    parser.add_argument('--limit', type=int, default=100)
+    parser.add_argument('--include-unverified', action='store_true', help='Include non-actionable intake for separate triage')
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--hold', help='Retention basis, scope and review date')
     action.add_argument('--complete', type=Path, help='File containing completion evidence references')
@@ -34,7 +37,7 @@ def main():
                 deletion_queue.complete(db, row, json.loads(args.complete.read_text()))
             print(json.dumps({'id': row.id, 'status': row.status, 'direct_record_counts': deletion_queue.inventory(db, row)}))
         else:
-            print(json.dumps([{'id': row.id, 'status': row.status, 'created_at': row.created_at.isoformat(), 'notification_sent': bool(row.notification_sent_at)} for row in query.filter(AccountDeletionRequest.status != 'completed').order_by(AccountDeletionRequest.created_at).limit(100)]))
+            print(json.dumps(deletion_queue.page(db, offset=args.offset, limit=args.limit, include_unverified=args.include_unverified)))
 
 
 if __name__ == '__main__':

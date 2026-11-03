@@ -3,12 +3,14 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import NativeMembership from '../components/NativeMembership';
 import { api } from '../services/api';
 import * as purchases from '../services/nativePurchases';
+let mockUserId = 1;
 const mockUpdate = jest.fn();
 jest.mock('expo-router', () => ({ useFocusEffect: callback => require('react').useEffect(callback, [callback]) }));
-jest.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 1 }, updateUser: mockUpdate }) }));
+jest.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: mockUserId }, updateUser: mockUpdate }) }));
 jest.mock('../services/api', () => ({ api: { getStoreContext: jest.fn() } }));
 jest.mock('../services/nativePurchases', () => ({ available: jest.fn(() => true), configure: jest.fn(), products: jest.fn(), purchase: jest.fn(), restore: jest.fn() }));
 beforeEach(() => {
+  mockUserId = 1;
   jest.clearAllMocks();
   api.getStoreContext.mockResolvedValue({ enabled: true, can_purchase: true, app_user_id: 'server-identity', products: ['sku'] });
   purchases.configure.mockResolvedValue(true);
@@ -37,4 +39,19 @@ test('does not display a purchase without a known billing period', async () => {
   await screen.findByText('Restore purchases');
   await waitFor(() => expect(purchases.products).toHaveBeenCalled());
   expect(screen.queryByText(/Subscribe:/)).toBeNull();
+});
+
+
+test('completion from a previous account never updates the new account UI', async () => {
+  let finish;
+  purchases.purchase.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  const screen = render(<NativeMembership />);
+  fireEvent.press(await screen.findByText('Subscribe: Premium — $4.99 every 1 month'));
+  await waitFor(() => expect(purchases.purchase).toHaveBeenCalled());
+  mockUserId = 2;
+  screen.rerender(<NativeMembership />);
+  finish({ granted: true, plan: 'premium', enabled: true });
+  await waitFor(() => expect(purchases.configure).toHaveBeenCalledTimes(2));
+  expect(mockUpdate).not.toHaveBeenCalled();
+  expect(screen.queryByText('Your store membership is verified.')).toBeNull();
 });

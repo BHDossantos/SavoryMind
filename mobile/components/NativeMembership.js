@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { api } from '../services/api';
@@ -7,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function NativeMembership() {
   const { user, updateUser } = useAuth();
+  const generation = useRef(0);
+  useEffect(() => { generation.current += 1; return () => { generation.current += 1; }; }, [user?.id]);
   const [context, setContext] = useState(null);
   const [products, setProducts] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -14,6 +16,7 @@ export default function NativeMembership() {
   useFocusEffect(useCallback(() => {
     let alive = true;
     setMessage('');
+    setBusy(false);
     setProducts([]);
     setContext(null);
     void api.getStoreContext().then(async value => {
@@ -28,16 +31,17 @@ export default function NativeMembership() {
   }, [user?.id]));
   const run = async (productId) => {
     if (!context || busy) return;
+    const started = generation.current;
     setBusy(true);
     setMessage('');
     try {
       const result = productId ? await purchases.purchase(productId, context.app_user_id) : await purchases.restore(context.app_user_id);
-      if (result.cancelled) return;
+      if (started !== generation.current || result.cancelled) return;
       setContext(result);
       updateUser({ plan: result.plan });
       setMessage(result.granted ? 'Your store membership is verified.' : 'No active store membership was found. If you just paid, try restoring again shortly.');
-    } catch (error) { setMessage(error?.message || 'Verification failed. Please try restoring again.'); }
-    finally { setBusy(false); }
+    } catch (error) { if (started === generation.current) setMessage(error?.message || 'Verification failed. Please try restoring again.'); }
+    finally { if (started === generation.current) setBusy(false); }
   };
   const enabled = context?.enabled && purchases.available();
   return <View style={{ marginVertical: 16 }}>

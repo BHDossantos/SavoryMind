@@ -75,9 +75,14 @@ def _date(value):
 def sync(db, user):
     if not configured(user):
         raise HTTPException(status_code=503, detail='Native store verification is not configured.')
-    row = identity(db, user)
     # Serialize updates for one identity before retrieving its authoritative state.
-    db.query(User).filter_by(id=user.id).with_for_update().one()
+    db.query(User).filter_by(id=user.id).populate_existing().with_for_update().one()
+    row = db.query(StoreMembership).filter_by(user_id=user.id).populate_existing().with_for_update().first()
+    if row is None:
+        row = identity(db, user)
+        # identity creation commits; reacquire before fetching provider state.
+        db.query(User).filter_by(id=user.id).populate_existing().with_for_update().one()
+        db.refresh(row)
     try:
         with _client() as client:
             response = client.get('https://api.revenuecat.com/v1/subscribers/' + quote(row.app_user_id, safe=''),

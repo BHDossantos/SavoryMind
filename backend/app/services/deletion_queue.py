@@ -55,3 +55,15 @@ def complete(db: Session, row: AccountDeletionRequest, evidence: dict) -> None:
     row.user_id = None
     row.verification_expires_at = None
     db.commit()
+
+
+def page(db: Session, *, offset: int = 0, limit: int = 100, include_unverified: bool = False) -> dict:
+    """Actionable requests first; stable pagination never exposes identities."""
+    if offset < 0 or not 1 <= limit <= 100:
+        raise ValueError('offset must be nonnegative and limit between 1 and 100')
+    query = db.query(AccountDeletionRequest).filter(AccountDeletionRequest.status != 'completed')
+    if not include_unverified:
+        query = query.filter(AccountDeletionRequest.verified_at.isnot(None), AccountDeletionRequest.status.in_(('pending_review', 'on_hold')))
+    rows = query.order_by(AccountDeletionRequest.created_at, AccountDeletionRequest.id).offset(offset).limit(limit + 1).all()
+    return {'requests': [{'id': row.id, 'status': row.status, 'created_at': row.created_at.isoformat(), 'notification_sent': bool(row.notification_sent_at)} for row in rows[:limit]],
+            'next_offset': offset + limit if len(rows) > limit else None}

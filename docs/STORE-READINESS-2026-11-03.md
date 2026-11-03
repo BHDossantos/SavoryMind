@@ -28,3 +28,14 @@ Draft PR #151 only. No production settings, credentials, migrations, builds, rel
 - `git diff --check` passed.
 
 Tests use isolated local databases and mocked provider responses, not live charges or production records. Native Metro export checks JS bundling only, not signing or store readiness.
+
+## Independent review follow-up
+
+- Webhook identity lookup now considers `original_app_user_id` and `aliases`, in addition to current/transfer IDs, following RevenueCat's [identity fields](https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields#subscriber-identity-fields). Only existing opaque membership identities are fetched; no alias mapping or new account is created from the event.
+- Native SDK identity changes are serialized with the entire purchase/restore operation. Verification uses the original access token, refuses changed sessions and does not refresh into another account. The screen discards completion after an account switch/unmount. A purchase interrupted by a switch is recoverable by signing back into the original account and restoring; never buy again to recover it.
+- Reconciliation refreshes/locks membership state after acquiring the user lock, so a stale unlinked snapshot cannot hide a concurrently committed first grant from a refund. The regression uses two interleaved database sessions.
+- The deletion operator list defaults to verified actionable requests. `--offset` and `--limit` expose subsequent pages; `--include-unverified` is an explicit separate triage view. A regression with 120 older unverified and 105 verified requests confirms actionable work is not hidden. The output contains request IDs/status, not email/reason/token data.
+
+Provider account-transfer policy, real device purchase/restore acceptance and external erasure/retention operations remain release gates. No production operation was performed.
+
+Review validation: full backend **616 passed**; full mobile **122 tests / 24 suites passed**; final API transport subset **18 passed**. The targeted backend review suite passed 29 tests before the final full run. Existing deprecation warnings remain.

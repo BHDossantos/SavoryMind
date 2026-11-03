@@ -69,14 +69,16 @@ async function tryRefresh() {
 }
 
 async function request(path, options = {}, _didRefresh = false) {
+  const { expectedAccessToken, ...fetchOptions } = options;
   const token = await tokenStore.getAccess();
+  if (expectedAccessToken !== undefined && token !== expectedAccessToken) throw new Error('Account changed. Sign into the purchasing account and restore; do not buy again.');
   const headers = {
     'Content-Type': 'application/json',
     'X-Client-Type': 'mobile',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE_URL}${path}`, { ...fetchOptions, headers });
 
   // 30-min access tokens expire mid-session — transparently refresh once.
   // Auth endpoints excluded so a real "wrong password" doesn't get masked
@@ -94,7 +96,7 @@ async function request(path, options = {}, _didRefresh = false) {
     path.startsWith('/api/auth/google') ||
     path.startsWith('/api/auth/social');
 
-  if (res.status === 401 && !isAuthEndpoint && !_didRefresh) {
+  if (res.status === 401 && !isAuthEndpoint && !_didRefresh && expectedAccessToken === undefined) {
     const refreshed = await tryRefresh();
     if (refreshed) {
       return request(path, options, true);
@@ -119,7 +121,7 @@ async function _saveTokensFrom(result) {
 
 export const api = {
   getStoreContext: () => request('/api/billing/store/context'),
-  syncStorePurchases: () => request('/api/billing/store/sync', { method: 'POST' }),
+  syncStorePurchases: (expectedAccessToken) => request('/api/billing/store/sync', { method: 'POST', expectedAccessToken }),
   cancelSubscription: () => request('/api/billing/cancel', { method: 'POST' }),
   requestAccountDeletion: (body) => request('/api/account/deletion', { method: 'POST', body: JSON.stringify(body) }),
   // Auth
