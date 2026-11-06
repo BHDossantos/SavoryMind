@@ -37,7 +37,7 @@ from app.models.diner import DinerBooking, DinerVisit  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.flavor import FlavorMemory, AssistantConversation  # noqa: F401
 from app.models.employee_survey import EmployeeSurveyResponse  # noqa: F401
-from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth, inventory, internal_jobs, account, employee_survey, billing, public_booking, loss, coaching, admin_pilots, orders
+from app.api.routes import menu, reviews, reports, auth, consumer, restaurant_ext, owner_extras, diner, staff_portal, discover, notifications, oauth, inventory, internal_jobs, account, employee_survey, billing, public_booking, loss, coaching, admin_pilots, orders, store_billing
 
 
 def _run_alembic_migrations():
@@ -213,6 +213,7 @@ app.include_router(inventory.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(employee_survey.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
+app.include_router(store_billing.router, prefix="/api")
 app.include_router(public_booking.router, prefix="/api")
 app.include_router(loss.router, prefix="/api")
 app.include_router(coaching.router, prefix="/api")

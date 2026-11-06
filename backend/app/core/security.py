@@ -126,6 +126,9 @@ def get_current_user(
     if not user:
         raise exc
 
+    from ..services.store_billing import apply_plan
+    apply_plan(db, user)
+
     # Tag every authenticated request for Sentry — when something blows up
     # mid-request, the event lands in Sentry with the user already attached
     # so triage doesn't need to cross-reference logs against a JTI. No-op

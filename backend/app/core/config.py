@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     cookie_domain: str = ""        # empty = host-only; prod sets ".savorymind.net"
     cookie_path: str = "/"
 
+    # Native billing: map real App Store/Play product IDs to premium or pro.
+    # Empty configuration fails closed; never ship server keys to mobile.
+    revenuecat_secret_api_key: str = ""
+    revenuecat_webhook_authorization: str = ""
+    revenuecat_products: dict[str, str] = {}
+    revenuecat_allow_sandbox: bool = False
+
     # Email (Resend). Empty string disables sends — useful in dev.
     resend_api_key: str = ""
     resend_from_email: str = "noreply@savorymind.net"

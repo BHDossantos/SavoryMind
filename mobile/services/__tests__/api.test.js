@@ -270,3 +270,22 @@ describe('logout flow', () => {
     expect(await tokenStore.getRefresh()).toBeNull();
   });
 });
+
+test('submits a serialized account deletion request', async () => {
+  global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+  await api.requestAccountDeletion({ email: 'person@example.com' });
+  expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/account/deletion'), expect.objectContaining({
+    method: 'POST', body: JSON.stringify({ email: 'person@example.com' }),
+  }));
+});
+
+test('purchase verification never adopts a new session or refreshes under it', async () => {
+  await tokenStore.setAccess('account-b');
+  await expect(api.syncStorePurchases('account-a')).rejects.toThrow('Account changed');
+  expect(global.fetch).not.toHaveBeenCalled();
+  await tokenStore.setAccess('account-a');
+  global.fetch.mockResolvedValue({ status: 401, ok: false, json: async () => ({ detail: 'expired' }) });
+  await expect(api.syncStorePurchases('account-a')).rejects.toThrow('expired');
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+  expect(global.fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer account-a');
+});
