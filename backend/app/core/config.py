@@ -26,6 +26,7 @@ def _default_cors_origins() -> list[str]:
 
 class Settings(BaseSettings):
     app_name: str = "SavoryMind API"
+    app_env: str = "development"  # APP_ENV=production for unmanaged production hosts
     database_url: str = "sqlite:///./savorymind.db"
     cors_origins: list[str] = _default_cors_origins()
     # Cloud Run revision URLs for *this project's* frontend services only.

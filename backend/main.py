@@ -109,30 +109,12 @@ def _seed_demo_restaurants():
         logger.exception("Demo restaurant seeding skipped — Discover unchanged.")
 
 
-_DEFAULT_SECRET = "savorymind-super-secret-change-in-production-32chars"
-_DEFAULT_SOCIAL_SECRET = "dev-social-secret"
-_DEFAULT_TOKEN_ENCRYPTION_KEY = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
+from app.core.runtime_safety import DEFAULT_TOKEN_ENCRYPTION_KEY, validate_runtime
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    is_prod = "sqlite" not in settings.database_url
-    if settings.secret_key == _DEFAULT_SECRET and is_prod:
-        raise RuntimeError(
-            "SECRET_KEY is the insecure default value. "
-            "Set the SECRET_KEY environment variable before deploying to production."
-        )
-    if settings.social_login_secret == _DEFAULT_SOCIAL_SECRET and is_prod:
-        raise RuntimeError(
-            "SOCIAL_LOGIN_SECRET is the insecure default value. "
-            "Set the SOCIAL_LOGIN_SECRET environment variable before deploying to production."
-        )
-    if settings.token_encryption_key == _DEFAULT_TOKEN_ENCRYPTION_KEY and is_prod:
-        raise RuntimeError(
-            "TOKEN_ENCRYPTION_KEY is the insecure default value. "
-            "Generate a fresh key with `python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"` "
-            "and set it as an env var before deploying to production."
-        )
+    is_prod = validate_runtime(settings)
     # DB-dependent startup (migrations + seed) must NEVER crash or hang app
     # startup. Previously `_run_alembic_migrations()` ran here unguarded: a
     # failing migration or an unreachable database made uvicorn abort startup,
@@ -369,7 +351,7 @@ def health_deep(current_user=Depends(get_current_user_dep)):
     # Token encryption key — flag if it matches the dev default. This
     # would have failed lifespan in prod, so seeing "misconfigured" here
     # means we're on a SQLite/dev deploy. Useful info, not blocking.
-    enc_key_dev = _settings.token_encryption_key == _DEFAULT_TOKEN_ENCRYPTION_KEY
+    enc_key_dev = _settings.token_encryption_key == DEFAULT_TOKEN_ENCRYPTION_KEY
     encryption_state = "dev_key" if enc_key_dev else "enabled"
 
     return {
