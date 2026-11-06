@@ -1,10 +1,12 @@
 """Webhook failure regressions; signatures local, no provider requests."""
 import pytest
 
+pytestmark = pytest.mark.usefixtures("block_stripe_subscription_network")
+
 from app.models.user import User
 from app.services import stripe_service
 from .conftest import register_user, auth_headers
-from .test_billing import _configure_billing, _sign
+from .test_billing import _configure_billing, _sign, subscription_snapshot
 
 
 def deliver(client, event):
@@ -28,8 +30,7 @@ def test_checkout_verification_failure_preserves_state_and_allows_retry(client, 
     assert user.plan == "free"
     assert user.stripe_subscription_id is None
     assert user.subscription_status is None
-    monkeypatch.setattr(stripe_service, "retrieve_subscription", lambda _: {
-        "status": "active", "current_period_end": 1900000000})
+    monkeypatch.setattr(stripe_service, "retrieve_subscription", lambda _: subscription_snapshot(sid="sub_new", customer="cus_prior"))
     assert deliver(client, event).status_code == 200
     assert client.get("/api/billing/status", headers=auth_headers(token)).json()["is_premium"]
 

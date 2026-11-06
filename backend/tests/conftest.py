@@ -119,3 +119,11 @@ def register_user(client, email="alice@example.com", account_type="consumer"):
 
 def auth_headers(access_token):
     return {"Authorization": f"Bearer {access_token}"}
+
+@pytest.fixture
+def block_stripe_subscription_network(monkeypatch):
+    """Billing regressions must explicitly supply a provider snapshot."""
+    from app.services import stripe_service
+    def blocked(*args, **kwargs):
+        raise AssertionError("Stripe subscription network access is forbidden in tests")
+    monkeypatch.setattr(stripe_service._stripe.Subscription, "retrieve", blocked)
