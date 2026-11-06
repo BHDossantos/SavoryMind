@@ -38,8 +38,8 @@ def _is_premium(user: User) -> bool:
 
 def _has_active_subscription(user: User) -> bool:
     """True if the user already holds (or is trialing) a paid plan of EITHER
-    tier. Guards both checkout endpoints so a user can never start a second,
-    double-billed subscription on the same Stripe customer."""
+    tier. This snapshot guard does not serialize concurrent checkout requests;
+    durable checkout reservations remain necessary for that guarantee."""
     return (user.plan or "free") in ("premium", "pro") or (
         user.subscription_status in _PREMIUM_STATUSES
     )
@@ -271,25 +271,23 @@ def _apply_event(db: Session, event) -> None:
         if not user:
             logger.warning("checkout.session.completed for unknown user")
             return
-        user.stripe_customer_id = obj.get("customer") or user.stripe_customer_id
         sub_id = obj.get("subscription")
-        user.stripe_subscription_id = sub_id or user.stripe_subscription_id
         # Retrieve the subscription so trial vs. active status is accurate
         # immediately, rather than depending on the customer.subscription.*
         # event arriving first.
         sub = stripe_service.retrieve_subscription(sub_id)
-        if sub is not None:
-            status = sub.get("status")
-            user.subscription_status = status
-            user.subscription_period_end = stripe_service.period_end_to_datetime(
-                sub.get("current_period_end")
-            )
-            user.plan = _entitled_plan(user) if status in _PREMIUM_STATUSES else "free"
-        else:
-            # Couldn't fetch — checkout succeeded, so grant access; the
-            # follow-up subscription event will correct status/period.
-            user.plan = _entitled_plan(user)
-            user.subscription_status = user.subscription_status or "active"
+        if not sub_id or sub is None or not sub.get("status"):
+            # A completed Checkout session is not proof of a current paid
+            # subscription. Leave existing state intact and request redelivery.
+            raise RuntimeError("Subscription verification unavailable")
+        user.stripe_customer_id = obj.get("customer") or user.stripe_customer_id
+        user.stripe_subscription_id = sub_id
+        status = sub.get("status")
+        user.subscription_status = status
+        user.subscription_period_end = stripe_service.period_end_to_datetime(
+            sub.get("current_period_end")
+        )
+        user.plan = _entitled_plan(user) if status in _PREMIUM_STATUSES else "free"
         db.commit()
 
     elif etype in ("customer.subscription.created", "customer.subscription.updated"):
@@ -308,6 +306,10 @@ def _apply_event(db: Session, event) -> None:
     elif etype == "customer.subscription.deleted":
         user = _find_user(db, obj.get("customer"), None)
         if not user:
+            return
+        if not obj.get("id") or obj.get("id") != user.stripe_subscription_id:
+            # A late deletion of an older subscription must not revoke the
+            # separately recorded replacement subscription.
             return
         user.subscription_status = "canceled"
         user.plan = "free"
@@ -336,6 +338,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         _apply_event(db, event)
     except Exception:
-        # Don't 500 — Stripe would retry indefinitely. Log for triage.
-        logger.exception("Failed to apply Stripe webhook event")
+        db.rollback()
+        # No durable queue accepted this event. A 2xx would lose it on provider
+        # or database failure; return a retryable response without private data.
+        logger.warning("Stripe webhook processing failed; redelivery required")
+        raise HTTPException(status_code=503, detail="Billing update could not be confirmed. Retry delivery.") from None
     return {"received": True}
