@@ -123,7 +123,11 @@ def auth_headers(access_token):
 @pytest.fixture
 def block_stripe_subscription_network(monkeypatch):
     """Billing regressions must explicitly supply a provider snapshot."""
+    from unittest.mock import Mock
     from app.services import stripe_service
-    def blocked(*args, **kwargs):
-        raise AssertionError("Stripe subscription network access is forbidden in tests")
+    blocked = Mock(side_effect=AssertionError("Stripe subscription network access is forbidden in tests"))
     monkeypatch.setattr(stripe_service._stripe.Subscription, "retrieve", blocked)
+    yield
+    # The service catches retrieval exceptions, so the exception alone cannot
+    # prove this boundary was never reached. Assert outside application code.
+    blocked.assert_not_called()

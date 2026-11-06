@@ -1,5 +1,6 @@
 """Configured-price/customer identity checks; provider access is blocked."""
 import pytest
+from unittest.mock import Mock
 from app.core.config import settings
 from app.models.user import User
 from app.services import stripe_service
@@ -51,9 +52,10 @@ def test_metadata_never_claims_or_rebinds_customer(client, db_session, monkeypat
         owner.stripe_customer_id = None
         db_session.commit()
     if kind == "conflicting_metadata": payload["data"]["object"]["metadata"] = {"user_id": str(owner.id + 1)}
-    def no_retrieve(_): raise AssertionError("Identity rejection must happen before provider access")
+    no_retrieve = Mock(side_effect=AssertionError("Identity rejection must happen before provider access"))
     monkeypatch.setattr(stripe_service, "retrieve_subscription", no_retrieve)
     assert deliver(client, payload).status_code == 503
+    no_retrieve.assert_not_called()
     db_session.refresh(owner)
     assert owner.plan == "free" and owner.stripe_subscription_id is None
     assert owner.stripe_customer_id == (None if kind == "unbound" else "cus_abc")
