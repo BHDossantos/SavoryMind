@@ -132,6 +132,8 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: Use
     _require_restaurant(current_user)
     try:
         order = order_service.cancel_order(db, current_user.id, order_id)
+    except order_service.OrderConflict as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return order_service.order_dict(db, order)

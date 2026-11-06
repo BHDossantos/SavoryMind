@@ -179,6 +179,11 @@ def close_order(db: Session, user_id: int, order_id: int, *, force: bool = False
 
 def cancel_order(db: Session, user_id: int, order_id: int) -> Order:
     order = _get_owned_order(db, user_id, order_id)
+    # A settled (closed) or already-cancelled tab must not be voided — that
+    # would corrupt revenue/history (e.g. a second KDS screen cancelling a tab
+    # the first already closed). Only a live tab can be cancelled.
+    if order.status in ("closed", "cancelled"):
+        raise OrderConflict(f"Cannot cancel a {order.status} order.")
     order.status = "cancelled"
     order.updated_at = datetime.datetime.utcnow()
     db.commit()
