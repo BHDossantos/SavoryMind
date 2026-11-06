@@ -36,6 +36,15 @@ def _is_premium(user: User) -> bool:
     return (user.plan or "free") == "premium"
 
 
+def _has_active_subscription(user: User) -> bool:
+    """True if the user already holds (or is trialing) a paid plan of EITHER
+    tier. Guards both checkout endpoints so a user can never start a second,
+    double-billed subscription on the same Stripe customer."""
+    return (user.plan or "free") in ("premium", "pro") or (
+        user.subscription_status in _PREMIUM_STATUSES
+    )
+
+
 def _entitled_plan(user: User) -> str:
     """The plan value an active subscription grants this user. Restaurants
     get "pro" (the €99/mo plan); everyone else gets "premium". Keyed on
@@ -87,10 +96,18 @@ def create_checkout(
             status_code=503,
             detail="Billing isn't available yet. Please check back soon.",
         )
-    if _is_premium(current_user):
+    # Account-type gate: a restaurant must subscribe via /restaurant/checkout
+    # (its own Price). Without this a restaurant could buy the €9.99 consumer
+    # Price yet be granted the full "pro" entitlement (account_type-keyed).
+    if current_user.account_type == "restaurant":
+        raise HTTPException(
+            status_code=403,
+            detail="Restaurants subscribe via the restaurant plan.",
+        )
+    if _has_active_subscription(current_user):
         raise HTTPException(
             status_code=409,
-            detail="You already have an active Premium subscription.",
+            detail="You already have an active subscription.",
         )
     try:
         customer_id = stripe_service.get_or_create_customer(current_user)
@@ -181,7 +198,7 @@ def create_restaurant_checkout(
             status_code=503,
             detail="Billing isn't available yet. Please check back soon.",
         )
-    if _is_pro(current_user):
+    if _has_active_subscription(current_user):
         raise HTTPException(
             status_code=409,
             detail="You already have an active subscription.",

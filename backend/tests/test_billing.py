@@ -229,3 +229,24 @@ def test_webhook_subscription_deleted_downgrades_user(client, monkeypatch):
     status = client.get("/api/billing/status", headers=auth_headers(token)).json()
     assert status["is_premium"] is False
     assert status["subscription_status"] == "canceled"
+
+
+def test_consumer_checkout_blocked_for_restaurant(client, monkeypatch):
+    """A restaurant must not be able to buy the €9.99 consumer Price (it would
+    be granted the full 'pro' entitlement). It's routed to /restaurant/checkout."""
+    from app.services import stripe_service
+    monkeypatch.setattr(stripe_service, "is_configured", lambda: True)
+    token, _ = register_user(client, email="resto-consumer-checkout@example.com",
+                             account_type="restaurant")
+    r = client.post("/api/billing/checkout", headers=auth_headers(token))
+    assert r.status_code == 403
+
+
+def test_consumer_checkout_blocked_when_already_on_a_paid_plan(client, db_session, monkeypatch):
+    """A user already on any paid plan can't start a second subscription."""
+    from app.services import stripe_service
+    monkeypatch.setattr(stripe_service, "is_configured", lambda: True)
+    token, user = register_user(client, email="already-paid@example.com")
+    _set_plan(db_session, user["id"], "pro")  # already holds a paid plan
+    r = client.post("/api/billing/checkout", headers=auth_headers(token))
+    assert r.status_code == 409
