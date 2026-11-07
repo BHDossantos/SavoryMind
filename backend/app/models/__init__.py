@@ -13,3 +13,6 @@ from .messaging import MessageLog
 from .marketing import MarketingTrigger, MarketingLead
 from .feature_override import FeatureOverride
 from .orders import Order, OrderItem
+from .account_deletion import AccountDeletionRequest
+from .store_membership import StoreMembership, StoreReceipt
+from .account_erasure import AccountErasureRun

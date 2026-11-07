@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
 // Public page (no auth, no login wall). Submits to the deletion-request
-// endpoint that emails the admin + a confirmation back to the requester.
+// endpoint that saves an unverified request and emails a one-time confirmation.
 // Google Play + App Store require this URL to be reachable by people
 // who have already uninstalled the app and therefore can't log in.
 
@@ -20,6 +20,35 @@ export default function AccountDeletion() {
   const [reason, setReason] = useState("");
   const [status, setStatus] = useState("idle"); // idle | submitting | success | error
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [verificationToken, setVerificationToken] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState("idle");
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.hash.slice(1)).get("token");
+    if (token) {
+      setVerificationToken(token);
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
+
+  async function confirmVerification(e) {
+    e.preventDefault();
+    if (verificationStatus === "submitting") return;
+    setVerificationStatus("submitting");
+    setErrorMsg("");
+    try {
+      const res = await fetch(`${apiBaseUrl()}/api/account/delete-request/verify`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: verificationToken }),
+      });
+      if (!res.ok) throw new Error("Verification failed");
+      setVerificationToken("");
+      setVerificationStatus("success");
+    } catch {
+      setVerificationStatus("error");
+      setErrorMsg("This link could not be verified. It may be expired or already used. You can request a new link from the deletion page.");
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -40,17 +69,31 @@ export default function AccountDeletion() {
         if (res.status === 429) {
           setErrorMsg("Too many requests from this network. Try again in an hour, or email privacy@savorymind.net directly.");
         } else {
-          setErrorMsg("Something went wrong. Please email privacy@savorymind.net and we'll handle it manually.");
+          setErrorMsg("The verification email could not be sent. Please retry later or use the signed-in deletion option.");
         }
         setStatus("error");
         return;
       }
       setStatus("success");
     } catch {
-      setErrorMsg("Network error. Please email privacy@savorymind.net and we'll handle it manually.");
+      setErrorMsg("Network error. Please retry later or use the signed-in deletion option.");
       setStatus("error");
     }
   }
+
+  if (verificationToken || verificationStatus === "success") return (
+    <main className="max-w-xl mx-auto p-8">
+      <Head><title>Confirm deletion request — SavoryMind</title></Head>
+      <h1 className="text-2xl font-semibold">Confirm your deletion request</h1>
+      {verificationStatus === "success" ? <p>Your verified request is saved for review. This does not confirm completed deletion or cancel a subscription.</p> :
+        <form onSubmit={confirmVerification}>
+          <p>Confirm that you requested permanent account deletion. This verifies your email address and places the request in the review queue. Opening this page alone does not submit confirmation.</p>
+          <button type="submit" disabled={verificationStatus === "submitting"}>{verificationStatus === "submitting" ? "Confirming…" : "Confirm deletion request"}</button>
+          {!!errorMsg && <p role="alert">{errorMsg}</p>}
+        </form>}
+      <Link href="/legal/account-deletion">Back to deletion requests</Link>
+    </main>
+  );
 
   return (
     <>
@@ -63,7 +106,7 @@ export default function AccountDeletion() {
           <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">← Home</Link>
 
           <h1 className="text-3xl font-bold mt-6 mb-2">Delete your account</h1>
-          <p className="text-sm text-gray-500 mb-8">Last updated: 11 May 2026</p>
+          <p className="text-sm text-gray-500 mb-8">Last updated: 3 November 2026</p>
 
           <div className="prose prose-sm max-w-none text-gray-700 space-y-6">
             <section>
@@ -76,7 +119,7 @@ export default function AccountDeletion() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-gray-900">What gets deleted</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Data covered by your request</h2>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Your account record (email, password hash, social-login IDs)</li>
                 <li>Your profile data (display name, bio, preferences, location)</li>
@@ -88,29 +131,20 @@ export default function AccountDeletion() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-gray-900">What we keep, and why</h2>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>
-                  <strong>Anonymised aggregate analytics</strong> — once your account is deleted,
-                  any product-usage events tied to your ID are stripped of the link to you and
-                  retained only as anonymous counts. This data cannot be re-associated with you.
-                </li>
-                <li>
-                  <strong>Records we're legally required to keep</strong> — if any of your
-                  activity is subject to a regulatory hold (e.g. financial transaction logs in
-                  jurisdictions that require multi-year retention), we keep the minimum required
-                  for the legally mandated period and delete it the moment we're allowed to.
-                </li>
-              </ul>
+              <h2 className="text-xl font-semibold text-gray-900">Retention review</h2>
+              <p>Your request requires a review of linked records, connected services,
+                backups and any applicable retention obligations. The request acknowledgment
+                does not confirm that data has been erased or anonymised. Ask about the scope
+                and status of your request using its reference number.</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-gray-900">How long it takes</h2>
+              <h2 className="text-xl font-semibold text-gray-900">After you submit</h2>
               <p>
-                We process deletion requests within <strong>30 days</strong>. You'll receive an
-                email confirmation when the request is received and another when deletion is
-                complete. If you change your mind, reply to either email within 30 days and we'll
-                cancel the request.
+                Submitting this form sends a request for review. An acknowledgment does not
+                confirm completed deletion or a processing deadline. To ask about the request
+                or withdraw it before deletion, contact privacy@savorymind.net. Withdrawal is
+                not confirmed until you receive a response.
               </p>
             </section>
 
@@ -121,8 +155,7 @@ export default function AccountDeletion() {
                 <div className="bg-green-50 border border-green-200 rounded p-4 text-green-800">
                   <p className="font-semibold">Request received.</p>
                   <p className="text-sm mt-2">
-                    We've sent a confirmation to <strong>{email}</strong>. We'll process the
-                    deletion within 30 days and email you when it's complete.
+                    Check <strong>{email}</strong> for the verification step. Your request is saved, but it is not actionable until verified. Your account has not been deleted.
                   </p>
                 </div>
               ) : (

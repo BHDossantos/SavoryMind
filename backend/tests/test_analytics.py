@@ -15,6 +15,17 @@ from .conftest import register_user, auth_headers
 # ── posthog_client wrapper ───────────────────────────────────────────────
 
 
+def test_configured_wrapper_uses_offline_sdk(monkeypatch, offline_analytics_sdk):
+    from app.services import posthog_client
+    constructor, sdk = offline_analytics_sdk
+    monkeypatch.setenv("POSTHOG_API_KEY", "dummy-not-a-live-project")
+    posthog_client.capture(123, "offline_fixture", {"safe": True})
+    constructor.assert_called_once()
+    sdk.capture.assert_called_once_with(
+        distinct_id="123", event="offline_fixture", properties={"safe": True}
+    )
+
+
 def test_capture_silent_noop_when_unconfigured(monkeypatch):
     """No POSTHOG_API_KEY → capture() is a silent no-op. _get_client
     returns None and capture short-circuits before the SDK is touched."""

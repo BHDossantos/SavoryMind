@@ -35,11 +35,11 @@ class Settings(BaseSettings):
     # Run service could hit our API with credentials. This pattern requires
     # the savorymind- prefix on the service name.
     cors_origin_regex: str = r"https://savorymind-[a-z0-9-]+\.a\.run\.app$"
-    secret_key: str = "savorymind-super-secret-change-in-production-32chars"
+    secret_key: str = ""
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
-    social_login_secret: str = "dev-social-secret"
+    social_login_secret: str = ""
 
     # Refresh-token cookie. Defaults are safe for production; overridden by
     # env vars for local dev (no HTTPS, no shared parent domain).
@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     cookie_samesite: str = "lax"  # "strict" would block the OAuth round-trip from /api/auth/...
     cookie_domain: str = ""        # empty = host-only; prod sets ".savorymind.net"
     cookie_path: str = "/"
+
+    # Native billing: map real App Store/Play product IDs to premium or pro.
+    # Empty configuration fails closed; never ship server keys to mobile.
+    revenuecat_secret_api_key: str = ""
+    revenuecat_webhook_authorization: str = ""
+    revenuecat_products: dict[str, str] = {}
+    revenuecat_allow_sandbox: bool = False
 
     # Email (Resend). Empty string disables sends — useful in dev.
     resend_api_key: str = ""
@@ -87,11 +94,10 @@ class Settings(BaseSettings):
     square_api_version: str = "2024-06-04"
 
     # Fernet key (32-byte url-safe base64) used to encrypt OAuth tokens at
-    # rest in the social_connections table. The default below is for local
-    # dev only — main.py refuses to start in production unless this is
-    # overridden by the TOKEN_ENCRYPTION_KEY env var. Generate a new prod
-    # key with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
-    token_encryption_key: str = "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI="
+    # rest in the social_connections table. Set explicitly in every environment;
+    # keep existing keys stable to retain access to encrypted data. Generate a
+    # new key for a new environment with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+    token_encryption_key: str = ""
 
     # Google OAuth — Client ID of the Google OAuth app that mobile/web uses.
     # Required as the `aud` claim on Google-issued ID tokens; without it the
@@ -142,6 +148,13 @@ class Settings(BaseSettings):
     # Where restaurant Checkout returns the owner. Appended to frontend_url.
     stripe_restaurant_success_path: str = "/restaurant/billing?status=success"
     stripe_restaurant_cancel_path: str = "/restaurant/billing?status=cancel"
+
+    @field_validator("secret_key", "social_login_secret", "token_encryption_key")
+    @classmethod
+    def _require_explicit_keys(cls, value):
+        if not value or not value.strip():
+            raise ValueError("Set an explicit private key in the environment; shared defaults are disabled")
+        return value
 
     @field_validator("stripe_trial_days", "stripe_restaurant_trial_days", mode="before")
     @classmethod

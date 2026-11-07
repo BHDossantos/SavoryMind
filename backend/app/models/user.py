@@ -5,6 +5,7 @@ from ..core.database import Base
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {"sqlite_autoincrement": True}
 
     id               = Column(Integer, primary_key=True, index=True)
     email            = Column(String, unique=True, nullable=False, index=True)
@@ -136,6 +137,9 @@ class User(Base):
     stripe_customer_id      = Column(String(255), nullable=True, index=True)
     stripe_subscription_id  = Column(String(255), nullable=True)
     subscription_status     = Column(String(50),  nullable=True)  # active | trialing | past_due | canceled
+    subscription_cancel_at_period_end = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Provider status alone does not prove a configured price was purchased.
+    stripe_verified_plan = Column(String(20), nullable=False, default="free", server_default="free")
     subscription_period_end = Column(DateTime,    nullable=True)  # current period end (naive UTC)
     # Restaurant pricing tier — starter | growth | pro. Webhook sets from the
     # Stripe Price ID. Null = use legacy fallback in entitlements.py.

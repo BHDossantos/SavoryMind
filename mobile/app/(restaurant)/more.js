@@ -1,3 +1,4 @@
+import AccountDeletion from '../../components/AccountDeletion';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -103,6 +104,7 @@ export default function MoreScreen() {
             );
           })}
         </View>
+      <AccountDeletion />
       </ScrollView>
     </View>
   );
