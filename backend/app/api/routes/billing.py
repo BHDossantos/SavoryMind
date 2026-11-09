@@ -260,10 +260,23 @@ def _find_user(db: Session, customer_id, user_id) -> User | None:
     return user
 
 
+def _event_is_stale(user: User, evt_ts) -> bool:
+    """True when this event is older than the last one we applied for this user
+    — Stripe can deliver (and replay) events out of order, so ignoring older
+    ones stops a stale `subscription.updated(active)` from resurrecting a plan
+    that a later `subscription.deleted` already cancelled."""
+    return (
+        evt_ts is not None
+        and user.stripe_event_ts is not None
+        and evt_ts < user.stripe_event_ts
+    )
+
+
 def _apply_event(db: Session, event) -> None:
     """Mutate the affected user's entitlement from a verified Stripe event."""
     etype = event["type"]
     obj = event["data"]["object"]
+    evt_ts = event.get("created")  # Stripe unix seconds (always set in prod)
 
     if etype == "checkout.session.completed":
         user_id = obj.get("client_reference_id") or (obj.get("metadata") or {}).get("user_id")
@@ -271,6 +284,10 @@ def _apply_event(db: Session, event) -> None:
         if not user:
             logger.warning("checkout.session.completed for unknown user")
             return
+        if _event_is_stale(user, evt_ts):
+            return
+        if evt_ts is not None:
+            user.stripe_event_ts = evt_ts
         user.stripe_customer_id = obj.get("customer") or user.stripe_customer_id
         sub_id = obj.get("subscription")
         user.stripe_subscription_id = sub_id or user.stripe_subscription_id
@@ -296,6 +313,11 @@ def _apply_event(db: Session, event) -> None:
         user = _find_user(db, obj.get("customer"), None)
         if not user:
             return
+        if _event_is_stale(user, evt_ts):
+            logger.info("Ignoring stale/out-of-order %s event", etype)
+            return
+        if evt_ts is not None:
+            user.stripe_event_ts = evt_ts
         status = obj.get("status")
         user.stripe_subscription_id = obj.get("id") or user.stripe_subscription_id
         user.subscription_status = status
@@ -309,6 +331,11 @@ def _apply_event(db: Session, event) -> None:
         user = _find_user(db, obj.get("customer"), None)
         if not user:
             return
+        if _event_is_stale(user, evt_ts):
+            logger.info("Ignoring stale/out-of-order subscription.deleted event")
+            return
+        if evt_ts is not None:
+            user.stripe_event_ts = evt_ts
         user.subscription_status = "canceled"
         user.plan = "free"
         db.commit()
