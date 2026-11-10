@@ -20,6 +20,12 @@ permissions:
   contents: read
   issues: write
 
+# Serialize outage/recovery mutations so simultaneous checks cannot create
+# duplicate issues or race the initial label creation.
+concurrency:
+  group: uptime-monitor
+  cancel-in-progress: false
+
 env:
   # This workflow does not check out a repository; gh needs an explicit target.
   GH_REPO: ${{ github.repository }}
@@ -78,6 +84,11 @@ jobs:
           DETAIL: ${{ steps.probe.outputs.detail }}
         run: |
           set -e
+          labels="$(gh label list --search "$ISSUE_LABEL" --limit 100 --json name --jq '.[].name')"
+          if ! printf '%s\n' "$labels" | grep -Fxq "$ISSUE_LABEL"; then
+            gh label create "$ISSUE_LABEL" --color D73A4A \
+              --description "Uptime monitoring detected an unavailable endpoint"
+          fi
           existing="$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number')"
           ts="$(date -u '+%Y-%m-%d %H:%M UTC')"
           body="$(printf '🔴 **SavoryMind is DOWN** — detected %s\n\n%b\nThe monitor re-checks every ~10 min and will close this automatically when the site recovers.' "$ts" "$DETAIL")"

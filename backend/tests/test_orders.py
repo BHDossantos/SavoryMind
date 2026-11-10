@@ -188,3 +188,20 @@ def test_orders_require_restaurant_account(client):
     assert client.get("/api/orders", headers=auth_headers(token)).status_code == 403
     assert client.get("/api/orders/kitchen", headers=auth_headers(token)).status_code == 403
     assert client.post("/api/orders", headers=auth_headers(token), json={"table_number": 1}).status_code == 403
+
+
+def test_cannot_cancel_a_closed_order(client, db_session):
+    """A settled (closed) tab must not be voidable — guards against a second
+    screen cancelling an order the first already closed."""
+    token, owner = _restaurant(client, db_session, "ord-cancel@example.com")
+    mi = _menu_item(db_session, owner.id, "Espresso", "Caffetteria", 2.0)
+    o = client.post("/api/orders", headers=auth_headers(token), json={
+        "table_number": 20, "items": [{"menu_item_id": mi.id}]}).json()
+    assert client.post(f"/api/orders/{o['id']}/close", headers=auth_headers(token)).status_code == 200
+    # Now cancelling the closed tab is rejected.
+    assert client.post(f"/api/orders/{o['id']}/cancel", headers=auth_headers(token)).status_code == 409
+    # Re-cancelling an already-cancelled live order is likewise rejected.
+    o2 = client.post("/api/orders", headers=auth_headers(token), json={
+        "table_number": 21, "items": [{"menu_item_id": mi.id}]}).json()
+    assert client.post(f"/api/orders/{o2['id']}/cancel", headers=auth_headers(token)).status_code == 200
+    assert client.post(f"/api/orders/{o2['id']}/cancel", headers=auth_headers(token)).status_code == 409
