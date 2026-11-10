@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Float, Date
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Text, Boolean, Float, Date
 from datetime import datetime
 from ..core.database import Base
 
@@ -141,6 +141,10 @@ class User(Base):
     # Provider status alone does not prove a configured price was purchased.
     stripe_verified_plan = Column(String(20), nullable=False, default="free", server_default="free")
     subscription_period_end = Column(DateTime,    nullable=True)  # current period end (naive UTC)
+    # Unix timestamp of the last-applied Stripe subscription event. The webhook
+    # ignores any event older than this, so an out-of-order or replayed event
+    # can't re-grant a cancelled plan.
+    stripe_event_ts         = Column(BigInteger,  nullable=True)
     # Restaurant pricing tier — starter | growth | pro. Webhook sets from the
     # Stripe Price ID. Null = use legacy fallback in entitlements.py.
     restaurant_tier         = Column(String(20),  nullable=True)

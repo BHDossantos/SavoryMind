@@ -72,11 +72,13 @@ def _verified_plan(user: User, sub, subscription_id: str) -> str:
     return "free"
 
 
-def _store_subscription(db, user, sub, sub_id):
+def _store_subscription(db, user, sub, sub_id, evt_ts=None):
     plan = _verified_plan(user, sub, sub_id)
     if plan == "free" and user.stripe_subscription_id and user.stripe_subscription_id != sub_id:
         # An unrelated subscription must not revoke a separately tracked plan.
         return
+    if evt_ts is not None:
+        user.stripe_event_ts = evt_ts
     user.stripe_subscription_id = sub_id
     user.subscription_status = sub.get("status")
     user.subscription_cancel_at_period_end = bool(sub.get("cancel_at_period_end", False))
@@ -328,10 +330,23 @@ def _find_user(db: Session, customer_id, user_id) -> User | None:
     return user
 
 
+def _event_is_stale(user: User, evt_ts) -> bool:
+    """True when this event is older than the last one we applied for this user
+    — Stripe can deliver (and replay) events out of order, so ignoring older
+    ones stops a stale `subscription.updated(active)` from resurrecting a plan
+    that a later `subscription.deleted` already cancelled."""
+    return (
+        evt_ts is not None
+        and user.stripe_event_ts is not None
+        and evt_ts < user.stripe_event_ts
+    )
+
+
 def _apply_event(db: Session, event) -> None:
     """Mutate the affected user's entitlement from a verified Stripe event."""
     etype = event["type"]
     obj = event["data"]["object"]
+    evt_ts = event.get("created")  # Stripe unix seconds (always set in prod)
 
     if etype == "checkout.session.completed":
         user_id = obj.get("client_reference_id") or (obj.get("metadata") or {}).get("user_id")
@@ -344,8 +359,10 @@ def _apply_event(db: Session, event) -> None:
         if metadata_id is not None and str(metadata_id) != str(user.id):
             raise RuntimeError("Checkout metadata identity disagrees")
         sub_id = _stripe_id(obj.get("subscription"))
+        if _event_is_stale(user, evt_ts):
+            return
         sub = stripe_service.retrieve_subscription(sub_id)
-        _store_subscription(db, user, sub, sub_id)
+        _store_subscription(db, user, sub, sub_id, evt_ts)
 
     elif etype in ("customer.subscription.created", "customer.subscription.updated"):
         user = _find_user(db, obj.get("customer"), None)
@@ -354,8 +371,10 @@ def _apply_event(db: Session, event) -> None:
         sub_id = _stripe_id(obj.get("id"))
         # Signed events can arrive out of order; validate a current provider
         # snapshot rather than granting from the event's historical status.
+        if _event_is_stale(user, evt_ts):
+            return
         sub = stripe_service.retrieve_subscription(sub_id)
-        _store_subscription(db, user, sub, sub_id)
+        _store_subscription(db, user, sub, sub_id, evt_ts)
 
     elif etype == "customer.subscription.deleted":
         user = _find_user(db, obj.get("customer"), None)
@@ -365,6 +384,10 @@ def _apply_event(db: Session, event) -> None:
             # A late deletion of an older subscription must not revoke the
             # separately recorded replacement subscription.
             return
+        if _event_is_stale(user, evt_ts):
+            return
+        if evt_ts is not None:
+            user.stripe_event_ts = evt_ts
         user.subscription_status = "canceled"
         user.subscription_cancel_at_period_end = False
         user.stripe_verified_plan = "free"

@@ -22,7 +22,7 @@ def test_checkout_verification_failure_preserves_state_and_allows_retry(client, 
     user = db_session.get(User, registered["id"])
     user.stripe_customer_id = "cus_prior"
     db_session.commit()
-    event = {"type": "checkout.session.completed", "data": {"object": {
+    event = {"created": 2000, "type": "checkout.session.completed", "data": {"object": {
         "customer": "cus_prior", "subscription": "sub_new", "client_reference_id": str(user.id)}}}
     monkeypatch.setattr(stripe_service, "retrieve_subscription", lambda _: snapshot)
     assert deliver(client, event).status_code == 503
@@ -30,8 +30,11 @@ def test_checkout_verification_failure_preserves_state_and_allows_retry(client, 
     assert user.plan == "free"
     assert user.stripe_subscription_id is None
     assert user.subscription_status is None
+    assert user.stripe_event_ts is None
     monkeypatch.setattr(stripe_service, "retrieve_subscription", lambda _: subscription_snapshot(sid="sub_new", customer="cus_prior"))
     assert deliver(client, event).status_code == 200
+    db_session.refresh(user)
+    assert user.stripe_event_ts == 2000
     assert client.get("/api/billing/status", headers=auth_headers(token)).json()["is_premium"]
 
 
@@ -61,12 +64,13 @@ def test_late_old_subscription_deletion_does_not_revoke_replacement(client, db_s
     row.subscription_status = "active"
     row.plan = "premium"
     db_session.commit()
-    event = {"type": "customer.subscription.deleted", "data": {"object": {
+    event = {"created": 2000, "type": "customer.subscription.deleted", "data": {"object": {
         "customer": "cus_owner", "id": "sub_old"}}}
     assert deliver(client, event).status_code == 200
     db_session.refresh(row)
     assert row.plan == "premium"
     assert row.stripe_subscription_id == "sub_replacement"
+    assert row.stripe_event_ts is None
     event["data"]["object"]["id"] = "sub_replacement"
     assert deliver(client, event).status_code == 200
     db_session.refresh(row)
