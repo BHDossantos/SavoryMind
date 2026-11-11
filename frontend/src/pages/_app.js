@@ -38,6 +38,10 @@ const PUBLIC_ROUTES = [
   "/case-studies",
   "/contatti",
   "/per-chi-ama-il-cibo",
+  // SEO landing pages (waste calculator + waste-reduction guide). Public so
+  // crawlers and logged-out visitors get the real content, not a login wall.
+  "/calcolatore-spreco",
+  "/ridurre-lo-spreco",
   "/sitemap.xml",
   // Public anonymous-feedback flow — a diner scans an employee's printed
   // QR code and lands here. No account required.
@@ -143,13 +147,23 @@ function AppContent({ Component, pageProps }) {
       router.replace("/onboarding");
       return;
     }
-    // Logged-in users get bounced away from /login + /signup (no point
-    // re-authenticating). But /legal/* and /support stay accessible —
-    // logged-in users should still be able to read the privacy policy
-    // or contact support without being booted to their dashboard.
-    if (user && isPublic && router.pathname !== "/"
-        && !router.pathname.startsWith("/legal")
-        && router.pathname !== "/support") {
+    // Logged-in users get bounced away from marketing/auth pages (no point
+    // re-authenticating). But some public routes must stay reachable while
+    // logged in: /legal/* + /support (readable by anyone), and — importantly —
+    // the interactive wedges (personalised for signed-in users) and the
+    // guest/shared surfaces that real logged-in users open from links
+    // (share cards, guest booking, QR feedback). Bouncing those broke the
+    // viral/guest flows.
+    const stayWhenLoggedIn =
+      router.pathname === "/" ||
+      router.pathname === "/support" ||
+      router.pathname.startsWith("/legal") ||
+      router.pathname === "/discover/mood" ||
+      router.pathname === "/discover/menu" ||
+      router.pathname === "/s" ||
+      router.pathname === "/r/[slug]" ||
+      router.pathname === "/scan/[token]";
+    if (user && isPublic && !stayWhenLoggedIn) {
       router.replace(homePath(user));
       return;
     }
