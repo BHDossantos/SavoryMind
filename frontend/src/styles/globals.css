@@ -3,17 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-paper text-stone-900 antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  /* Warm, optical display serif for headings by default */
+  h1, h2, h3 {
+    @apply font-serif;
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background-color: #fed7aa;
+    color: #7c2d12;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    @apply bg-white rounded-3xl shadow-soft border border-stone-100/70 p-6;
   }
   .btn-primary {
-    @apply bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-soft transition-all hover:-translate-y-0.5;
   }
   .badge-positive {
     @apply bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full;

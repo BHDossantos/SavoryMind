@@ -105,11 +105,11 @@ export default function Predictions() {
       </div>
 
       {/* Full item list */}
-      <div className="mt-6 card overflow-hidden p-0">
+      <div className="mt-6 card overflow-x-auto p-0">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-800">{t("predictionsPage.fullPredictions")}</h2>
         </div>
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">{t("predictionsPage.colItem")}</th>
