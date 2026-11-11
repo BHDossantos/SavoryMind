@@ -7,9 +7,9 @@ export const revalidate = 3600;
 
 const SIZE = { width: 1200, height: 630 };
 
-export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   let v: any = null;
-  try { v = await apiServer<any>(`/api/venues/${params.slug}`); }
+  try { v = await apiServer<any>(`/api/venues/${(await params).slug}`); }
   catch { /* fall through */ }
 
   const name = v?.name || 'Nocturna venue';

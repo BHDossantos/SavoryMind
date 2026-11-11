@@ -8,8 +8,8 @@ async function loadPlan(token: string): Promise<Plan | null> {
   catch { return null; }
 }
 
-export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
-  const p = await loadPlan(params.token);
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const p = await loadPlan((await params).token);
   if (!p) return { title: `Shared plan · ${SITE_NAME}`, robots: { index: false, follow: false } };
 
   const stops = p.stops?.length || 0;
@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: { params: { token: string } }
   const description = stops
     ? `${stopNames}. ${stops} stops, ~€${p.estimated_cost_eur}/pp, ${p.total_travel_min} min total travel. Plan curated by Nocturna.`
     : `A curated night plan in ${cityTitle}. Open it in Nocturna.`;
-  const url = `${SITE_URL}/plan/share/${params.token}`;
-  const ogImage = `${SITE_URL}/og/plan/${params.token}`;
+  const url = `${SITE_URL}/plan/share/${(await params).token}`;
+  const ogImage = `${SITE_URL}/og/plan/${(await params).token}`;
   return {
     title,
     description,
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: { token: string } }
   };
 }
 
-export default async function SharePage({ params }: { params: { token: string } }) {
-  const initial = await loadPlan(params.token);
-  return <SharedPlanClient token={params.token} initial={initial} />;
+export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+  const initial = await loadPlan((await params).token);
+  return <SharedPlanClient token={(await params).token} initial={initial} />;
 }

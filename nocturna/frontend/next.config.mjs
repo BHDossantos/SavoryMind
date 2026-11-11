@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: { typedRoutes: false },
+  typedRoutes: false,
   // We use plain <img> for venue photos (admins paste arbitrary URLs).
   // If you switch to next/image, add patterns here.
   images: {

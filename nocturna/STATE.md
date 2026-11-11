@@ -88,3 +88,13 @@ After every atomic commit, update:
 
 GSD's `/gsd-resume-work` (when the plugin is installed) reads this file
 to restore session context, so keep it accurate.
+
+## 2026-11-11 audit update (draft, not shipped)
+
+Reliability/payment guards are proposed on `audit/nocturna-reliability-20261111`.
+Backend: 81 tests pass. Web: clean install/typecheck/production build pass.
+Mobile: clean install/typecheck, Expo dependency check and all-platform exports
+pass. Browser E2E is blocked by the executor's Chromium socket restriction.
+Native/store verification and untested live integrations remain release blockers.
+See `AUDIT-2026-11-11.md` for precise scope and limitations; earlier shipped
+status above describes the historical baseline, not this unmerged proposal.

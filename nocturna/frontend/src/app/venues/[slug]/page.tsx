@@ -38,8 +38,8 @@ async function loadVenue(slug: string): Promise<VenueFull | null> {
   catch { return null; }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const v = await loadVenue(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const v = await loadVenue((await params).slug);
   if (!v) return { title: `Venue not found · ${SITE_NAME}` };
   const cityTitle = v.city.charAt(0).toUpperCase() + v.city.slice(1).replace('_', ' ');
   const title = `${v.name} · ${v.neighborhood}, ${cityTitle} | ${SITE_NAME}`;
@@ -63,8 +63,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function VenuePage({ params }: { params: { slug: string } }) {
-  const v = await loadVenue(params.slug);
+export default async function VenuePage({ params }: { params: Promise<{ slug: string }> }) {
+  const v = await loadVenue((await params).slug);
 
   const jsonLd = v ? {
     '@context': 'https://schema.org',
@@ -93,7 +93,7 @@ export default async function VenuePage({ params }: { params: { slug: string } }
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <VenueDetailClient slug={params.slug} initial={v} />
+      <VenueDetailClient slug={(await params).slug} initial={v} />
     </>
   );
 }

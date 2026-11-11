@@ -1,4 +1,5 @@
 'use client';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -11,7 +12,8 @@ const DIMENSIONS = [
 
 const CROWD_LEVELS = ['empty', 'moderate', 'busy', 'packed'] as const;
 
-export default function Feedback({ params }: { params: { planId: string } }) {
+export default function Feedback() {
+  const params = useParams<{ planId: string }>();
   const router = useRouter();
   const { t } = useT();
   const [f, setF] = useState({

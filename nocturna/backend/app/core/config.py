@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import List
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 
 
 class Settings(BaseSettings):
@@ -18,6 +19,15 @@ class Settings(BaseSettings):
     SEED_ON_STARTUP: bool = True
     ADMIN_BOOTSTRAP_EMAIL: str = "admin@nocturna.app"
     ADMIN_BOOTSTRAP_PASSWORD: str = "ChangeMe123!"
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self):
+        if self.APP_ENV.lower() not in {"dev", "development", "test"}:
+            if self.SECRET_KEY == "change-me-in-production" or len(self.SECRET_KEY) < 32:
+                raise ValueError("Production requires a unique SECRET_KEY of at least 32 characters")
+            if self.SEED_ON_STARTUP and self.ADMIN_BOOTSTRAP_PASSWORD == "ChangeMe123!":
+                raise ValueError("Production seeding requires a unique ADMIN_BOOTSTRAP_PASSWORD")
+        return self
 
     class Config:
         env_file = ".env"

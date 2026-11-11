@@ -1,4 +1,5 @@
 'use client';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -19,7 +20,8 @@ const STATUS_TONE: Record<string, string> = {
   no_show: 'bg-red-900/30 text-red-300 border-red-700/40',
 };
 
-export default function PlanBookingsBoard({ params }: { params: { id: string } }) {
+export default function PlanBookingsBoard() {
+  const params = useParams<{ id: string }>();
   const [data, setData] = useState<PlanBookings | null>(null);
   const [err, setErr] = useState<string | null>(null);
 

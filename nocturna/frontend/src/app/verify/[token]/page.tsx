@@ -1,11 +1,13 @@
 'use client';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 
 type Status = 'pending' | 'ok' | 'error';
 
-export default function VerifyPage({ params }: { params: { token: string } }) {
+export default function VerifyPage() {
+  const params = useParams<{ token: string }>();
   const [status, setStatus] = useState<Status>('pending');
   const [message, setMessage] = useState<string>('');
 

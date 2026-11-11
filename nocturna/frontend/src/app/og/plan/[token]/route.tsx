@@ -7,9 +7,9 @@ export const revalidate = 600;
 
 const SIZE = { width: 1200, height: 630 };
 
-export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   let plan: any = null;
-  try { plan = await apiServer<any>(`/api/plans/share/${params.token}`); }
+  try { plan = await apiServer<any>(`/api/plans/share/${(await params).token}`); }
   catch { /* fall through to a generic card */ }
 
   const label = plan?.label || 'Tonight in Nocturna';

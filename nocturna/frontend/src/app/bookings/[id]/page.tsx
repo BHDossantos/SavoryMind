@@ -1,11 +1,13 @@
 'use client';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import type { Booking } from '../../../../../shared/types';
 
-export default function BookingPage({ params }: { params: { id: string } }) {
+export default function BookingPage() {
+  const params = useParams<{ id: string }>();
   const { t } = useT();
   const [b, setB] = useState<Booking | null>(null);
   useEffect(() => { api.get<Booking>(`/api/bookings/${params.id}`).then(setB).catch(() => {}); }, [params.id]);

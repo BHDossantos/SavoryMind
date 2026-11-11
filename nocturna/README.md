@@ -37,11 +37,11 @@ on first boot. To re-seed, drop the `nocturna` database volume.
 
 ```bash
 cd mobile
-npm install
+npm ci
 npx expo start
 ```
 
-Set `extra.apiUrl` in `mobile/app.json` to your machine's LAN IP if testing on a device.
+Set `NOCTURNA_API_URL` to your machine's LAN API URL when testing on a device; `mobile/app.config.js` reads it at bundle time. Use `npm run typecheck` and `npm run export` to validate all three platforms.
 
 ## Run tests
 

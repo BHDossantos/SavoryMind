@@ -1,10 +1,11 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const BASE = (Constants?.expoConfig?.extra as any)?.apiUrl || 'http://localhost:8001';
 
 async function token() {
-  try { return await SecureStore.getItemAsync('nocturna.token'); } catch { return null; }
+  try { return Platform.OS === 'web' ? sessionStorage.getItem('nocturna.token') : await SecureStore.getItemAsync('nocturna.token'); } catch { return null; }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -29,6 +30,11 @@ export const api = {
 };
 
 export async function setToken(t: string | null) {
+  if (Platform.OS === 'web') {
+    if (t) sessionStorage.setItem('nocturna.token', t);
+    else sessionStorage.removeItem('nocturna.token');
+    return;
+  }
   if (t) await SecureStore.setItemAsync('nocturna.token', t);
   else await SecureStore.deleteItemAsync('nocturna.token');
 }

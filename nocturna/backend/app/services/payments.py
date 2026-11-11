@@ -232,6 +232,9 @@ def _on_checkout_completed(db: Session, event: dict, obj: dict, payment: Optiona
     if not payment:
         log.warning("checkout.completed for unknown payment: %s", obj.get("id"))
         return
+    # Delayed payment methods can complete checkout before funds settle.
+    if obj.get("payment_status") not in {"paid", "no_payment_required"}:
+        return
     payment.stripe_payment_intent_id = obj.get("payment_intent") or payment.stripe_payment_intent_id
     payment.status = "succeeded"
     db.commit()

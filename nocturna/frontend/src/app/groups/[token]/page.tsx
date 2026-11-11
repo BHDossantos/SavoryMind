@@ -1,9 +1,11 @@
 'use client';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
-export default function GroupPage({ params }: { params: { token: string } }) {
+export default function GroupPage() {
+  const params = useParams<{ token: string }>();
   const { t } = useT();
   const [g, setG] = useState<any>(null);
   const [voter, setVoter] = useState('');

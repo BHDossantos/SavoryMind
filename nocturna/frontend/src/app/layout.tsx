@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import '../styles/globals.css';
 import { I18nProvider } from '@/lib/i18n';
 import HeaderNav from '@/components/layout/HeaderNav';
@@ -39,7 +39,6 @@ export const metadata: Metadata = {
     description,
   },
   manifest: '/manifest.webmanifest',
-  themeColor: '#08070d',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -55,6 +54,8 @@ export const metadata: Metadata = {
     ],
   },
 };
+
+export const viewport: Viewport = { themeColor: '#08070d' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const orgJsonLd = {

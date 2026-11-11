@@ -5,8 +5,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.core.security import get_current_user_optional
-from app.models import Payment, User
+from app.core.config import get_settings
+from app.core.security import get_current_user
+from app.models import Booking, Payment, Plan, User
 from app.services import payments as pay
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
@@ -32,10 +33,21 @@ def prices():
 def checkout(
     payload: CheckoutIn,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(get_current_user_optional),
+    user: User = Depends(get_current_user),
 ):
-    if payload.purpose not in pay.PRICE_TABLE and payload.amount_eur is None:
-        raise HTTPException(400, "Unknown purpose. Provide amount_eur or use a known purpose.")
+    if payload.purpose not in pay.PRICE_TABLE:
+        raise HTTPException(400, "Unknown payment purpose")
+    if payload.amount_eur is not None:
+        raise HTTPException(400, "Prices are set by the server")
+    if not pay.is_stripe_configured() and get_settings().APP_ENV.lower() not in {"dev", "development", "test"}:
+        raise HTTPException(503, "Payments are not configured")
+    for model, item_id in ((Plan, payload.plan_id), (Booking, payload.booking_id)):
+        if item_id is not None:
+            item = db.get(model, item_id)
+            if item is None or item.user_id != user.id:
+                raise HTTPException(404, "Resource not found")
+    if payload.purpose.startswith("subscription_venue_") and user.role not in {"partner", "admin"}:
+        raise HTTPException(403, "Partner account required")
     return pay.create_checkout_session(
         db,
         purpose=payload.purpose,
@@ -48,9 +60,14 @@ def checkout(
 
 
 @router.post("/{payment_id}/mock-confirm")
-def mock_confirm(payment_id: int, db: Session = Depends(get_db)):
+def mock_confirm(payment_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if get_settings().APP_ENV.lower() not in {"dev", "development", "test"}:
+        raise HTTPException(404, "Not found")
     if pay.is_stripe_configured():
         raise HTTPException(400, "Stripe is configured — use the real flow")
+    payment = db.get(Payment, payment_id)
+    if payment is None or payment.user_id != user.id:
+        raise HTTPException(404, "Payment not found")
     p = pay.mark_payment_succeeded(db, payment_id)
     return {"status": p.status, "id": p.id}
 
@@ -79,7 +96,7 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
 @router.get("/me")
 def my_payments(
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_optional),
+    user: User = Depends(get_current_user),
 ):
     if not user:
         return []

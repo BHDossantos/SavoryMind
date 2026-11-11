@@ -28,6 +28,7 @@ def test_checkout_completed_marks_payment_and_records_event(db):
     u = _make_user(db)
     p = _make_payment(db, u)
     event = _evt("evt_1", "checkout.session.completed", {
+        "payment_status": "paid",
         "id": "cs_test_123", "payment_intent": "pi_42",
         "metadata": {"payment_id": str(p.id)},
     })
@@ -44,6 +45,7 @@ def test_duplicate_event_is_idempotent(db):
     u = _make_user(db)
     p = _make_payment(db, u)
     event = _evt("evt_dup", "checkout.session.completed", {
+        "payment_status": "paid",
         "id": "cs_test_123", "metadata": {"payment_id": str(p.id)}, "payment_intent": "pi_a",
     })
     out1 = pay.handle_webhook_event(db, event)
@@ -114,3 +116,23 @@ def test_subscription_purpose_grants_premium_user_tier(db):
     sub = db.query(Subscription).filter_by(user_id=u.id).first()
     assert sub.tier == "premium_user"
     assert sub.status == "active"
+
+def test_unpaid_checkout_does_not_activate_subscription(db):
+    u = _make_user(db, "delayed@example.com")
+    p = _make_payment(db, u, purpose="subscription_user", amount=9.99)
+    event = _evt("evt_unpaid", "checkout.session.completed", {
+        "id": "cs_test_123", "payment_status": "unpaid",
+        "metadata": {"payment_id": str(p.id)},
+    })
+    pay.handle_webhook_event(db, event)
+    db.refresh(p)
+    assert p.status == "pending"
+    assert db.query(Subscription).filter_by(user_id=u.id).first() is None
+    event = _evt("evt_settled", "checkout.session.async_payment_succeeded", {
+        "id": "cs_test_123", "payment_status": "paid",
+        "metadata": {"payment_id": str(p.id)},
+    })
+    pay.handle_webhook_event(db, event)
+    db.refresh(p)
+    assert p.status == "succeeded"
+    assert db.query(Subscription).filter_by(user_id=u.id).first().status == "active"
