@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { api, formatPrice, getStoredUser, type Service, type Slot } from "@/lib/api";
 
-export default function BookPage({ params }: { params: { serviceId: string } }) {
+export default function BookPage() {
+  const params = useParams<{ serviceId: string }>();
   const serviceId = Number(params.serviceId);
   const router = useRouter();
 
@@ -16,29 +17,19 @@ export default function BookPage({ params }: { params: { serviceId: string } }) 
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // We need the providerId to fetch slots. Find via service from any provider listing.
-    // Simpler: read service via /providers/{provider_id}/services — but we don't know provider yet.
-    // Backend exposes slots only by providerId+serviceId, so we need a tiny bootstrap.
-    // Workaround: fetch the service indirectly by calling all providers... too heavy.
-    // Instead: hit /providers/{provider_id}/slots?service_id= via the service's provider_id once we have it.
-    // We'll fetch the service directly through a minimal endpoint — already exposed in providers/{id}/services
-    // For v0 we attempt a lookup by walking the search results from sessionStorage if present.
-    // Cleanest: read the service via a dedicated endpoint. We'll add a lightweight client trick:
-    //   1) Call all categories search (cheap in v0 because seed is small)
-    //   2) Find the service by id
-    api.searchProviders({}).then(async (providers) => {
-      for (const p of providers) {
-        const services = await api.getProviderServices(p.id);
-        const s = services.find((x) => x.id === serviceId);
-        if (s) {
-          setService(s);
-          const slotResp = await api.getProviderSlots(p.id, s.id, 7);
-          setSlots(slotResp);
-          return;
-        }
+    let active = true;
+    setService(null);
+    setSlots([]);
+    setSelected(null);
+    setError(null);
+    api.getService(serviceId).then(async (service) => {
+      const slots = await api.getProviderSlots(service.provider_id, service.id, 7);
+      if (active) {
+        setService(service);
+        setSlots(slots);
       }
-      setError("Service not found");
-    }).catch((e) => setError(String(e.message || e)));
+    }).catch((e) => { if (active) setError(String(e.message || e)); });
+    return () => { active = false; };
   }, [serviceId]);
 
   const groupedSlots = useMemo(() => {

@@ -19,12 +19,12 @@ function SuccessInner() {
   const stub = params.get("stub") === "1";
   const paymentId = params.get("payment_id");
 
-  const [state, setState] = useState<"working" | "ok" | "error">("working");
+  const [state, setState] = useState<"working" | "ok" | "pending" | "error">("working");
   const [message, setMessage] = useState<string>("Finalising your deposit…");
 
   useEffect(() => {
     if (!getStoredUser()) {
-      router.push("/login?next=/booking/success");
+      router.push(`/login?next=${encodeURIComponent(`/booking/success?${params.toString()}`)}`);
       return;
     }
     async function run() {
@@ -41,7 +41,7 @@ function SuccessInner() {
       }
       // Real Stripe path: Stripe webhook flips the appointment to paid.
       // We just confirm the redirect arrived.
-      setState("ok");
+      setState("pending");
       setMessage(
         "Payment processing. Your booking will appear under My appointments once confirmed."
       );
@@ -52,7 +52,7 @@ function SuccessInner() {
   return (
     <div className="mx-auto max-w-md space-y-4 text-center">
       <h1 className="text-2xl font-bold">
-        {state === "ok" ? "Booking confirmed" : state === "error" ? "Something went wrong" : "Working…"}
+        {state === "ok" ? "Booking confirmed" : state === "pending" ? "Payment processing" : state === "error" ? "Something went wrong" : "Working…"}
       </h1>
       <p className={state === "error" ? "text-red-600" : "text-slate-600"}>{message}</p>
       <div className="flex justify-center gap-2">

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from ..availability_engine import _overlaps_any, _payment_active
 from ..db import get_session
 from ..models import (
+    ApprovalStatus,
     Appointment,
     AppointmentStatus,
     Availability,
@@ -100,7 +101,12 @@ def create_appointment(
     service = session.get(Service, payload.service_id)
     if not service or not service.active:
         raise HTTPException(status_code=404, detail="Service not found")
-    start_at = payload.start_at.replace(tzinfo=None)
+    provider = session.get(Provider, service.provider_id)
+    if not provider or provider.approval_status != ApprovalStatus.approved:
+        raise HTTPException(status_code=404, detail="Provider is not available for booking")
+    start_at = payload.start_at
+    if start_at.tzinfo is not None:
+        start_at = start_at.astimezone(timezone.utc).replace(tzinfo=None)
     end_at = start_at + timedelta(minutes=service.duration_minutes)
     if start_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Cannot book in the past")

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Stars from "@/components/Stars";
 import { api, formatPrice, type Provider, type Review, type Service } from "@/lib/api";
 
-export default function ProviderProfilePage({ params }: { params: { id: string } }) {
+export default function ProviderProfilePage() {
+  const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const [provider, setProvider] = useState<Provider | null>(null);
   const [services, setServices] = useState<Service[]>([]);

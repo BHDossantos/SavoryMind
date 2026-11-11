@@ -1,7 +1,7 @@
 from datetime import datetime, time
-from typing import Optional
+from typing import Optional, Literal
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from .models import ApprovalStatus, AppointmentStatus, PaymentStatus, Role
 
@@ -12,7 +12,7 @@ class SignupIn(BaseModel):
     first_name: str
     last_name: str = ""
     phone: str = ""
-    role: Role = Role.customer
+    role: Literal[Role.customer, Role.provider] = Role.customer
 
 
 class LoginIn(BaseModel):
@@ -65,12 +65,19 @@ class ProviderOut(BaseModel):
 class ServiceIn(BaseModel):
     name: str
     description: str = ""
-    duration_minutes: int
-    price_cents: int
+    duration_minutes: int = Field(gt=0, le=1440)
+    price_cents: int = Field(ge=0)
     currency: str = "EUR"
     active: bool = True
     deposit_required: bool = False
-    deposit_amount_cents: int = 0
+    deposit_amount_cents: int = Field(default=0, ge=0)
+
+
+    @model_validator(mode="after")
+    def validate_deposit(self):
+        if self.deposit_amount_cents > self.price_cents:
+            raise ValueError("Deposit cannot exceed service price")
+        return self
 
 
 class ServiceOut(ServiceIn):

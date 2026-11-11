@@ -25,11 +25,11 @@ export default function Nav() {
 
   return (
     <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-5xl flex-wrap gap-3 items-center justify-between px-4 py-3">
         <Link href="/" className="text-xl font-bold tracking-tight">
           Slotly
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex flex-wrap items-center gap-3 text-sm">
           <Link href="/search" className="hover:underline">
             Find a slot
           </Link>

@@ -16,7 +16,7 @@ from .config import settings
 
 
 def is_stub_mode() -> bool:
-    return not settings.stripe_secret_key
+    return settings.integrations_mode == "stub"
 
 
 @dataclass
@@ -88,9 +88,7 @@ def refund_payment_intent(payment_intent_id: str, amount_cents: int) -> RefundRe
 def verify_webhook(payload: bytes, signature: str) -> dict:
     """Verify a Stripe webhook signature. Returns the event dict."""
     if is_stub_mode():
-        # In stub mode, accept the JSON body as-is for local testing.
-        import json
-        return json.loads(payload)
+        raise ValueError("Webhooks are disabled in stub mode")
     _ensure_stripe_configured()
     event = stripe.Webhook.construct_event(payload, signature, settings.stripe_webhook_secret)
     return event

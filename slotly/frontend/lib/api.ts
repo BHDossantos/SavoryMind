@@ -205,6 +205,7 @@ export const api = {
     return request<ProviderSearchResult[]>(`/search/providers?${qs.toString()}`);
   },
   getProvider: (id: number) => request<Provider>(`/providers/${id}`),
+  getService: (id: number) => request<Service>(`/services/${id}`),
   getProviderServices: (id: number) => request<Service[]>(`/providers/${id}/services`),
   getProviderSlots: (providerId: number, serviceId: number, days = 7) =>
     request<Slot[]>(`/providers/${providerId}/slots?service_id=${serviceId}&days=${days}`),

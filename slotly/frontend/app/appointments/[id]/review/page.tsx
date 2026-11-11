@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Stars from "@/components/Stars";
 import { api, getStoredUser, type Appointment } from "@/lib/api";
 
-export default function ReviewPage({ params }: { params: { id: string } }) {
+export default function ReviewPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = Number(params.id);
 

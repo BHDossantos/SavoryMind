@@ -49,3 +49,9 @@ None.
 ## Migration to BHDossantos/Slotly
 
 The new repo is at `https://github.com/BHDossantos/Slotly`. Migration kit lives at `slotly/MIGRATION.md`. The Claude Code session does **not** have GitHub MCP access to push to that repo (scope is locked to `bhdossantos/savorymind`); the repo owner runs the migration script themselves.
+
+## Quick Tasks Completed
+
+| ID | Date | Description | Result |
+| --- | --- | --- | --- |
+| 261111-id7 | 2026-11-11 | Audit demo safety and repair booking security | 56 backend tests, frontend build/types, zero npm advisories; production release blockers in AUDIT.md |

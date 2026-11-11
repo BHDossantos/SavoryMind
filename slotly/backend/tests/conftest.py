@@ -8,9 +8,15 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
+from app.config import settings
 from app.db import get_session
 from app.main import app
 from app import models  # noqa: F401  (register tables)
+
+
+@pytest.fixture(autouse=True)
+def stub_integrations(monkeypatch):
+    monkeypatch.setattr(settings, "integrations_mode", "stub")
 
 
 @pytest.fixture()

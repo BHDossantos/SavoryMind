@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from ..db import get_session
-from ..models import Provider, Role, Service, User
+from ..models import ApprovalStatus, Provider, Role, Service, User
 from ..schemas import ServiceIn, ServiceOut
 from ..security import require_role
 
@@ -72,3 +72,12 @@ def delete_service(
     s.active = False
     session.add(s)
     session.commit()
+
+
+@router.get("/{service_id}", response_model=ServiceOut)
+def get_public_service(service_id: int, session: Session = Depends(get_session)) -> ServiceOut:
+    service = session.get(Service, service_id)
+    provider = session.get(Provider, service.provider_id) if service else None
+    if not service or not service.active or not provider or provider.approval_status != ApprovalStatus.approved:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return ServiceOut.model_validate(service, from_attributes=True)

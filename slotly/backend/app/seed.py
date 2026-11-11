@@ -205,6 +205,9 @@ DEFAULT_HOURS = [(d, time(9, 0), time(19, 0)) for d in range(0, 6)]
 
 
 def run() -> None:
+    from .config import settings
+    if settings.environment == "production" or settings.integrations_mode != "stub":
+        raise RuntimeError("Demo seed is only available with non-production stub integrations")
     init_db()
     with Session(engine) as session:
         existing = session.exec(select(User).where(User.email == BARBERS[0]["email"])).first()

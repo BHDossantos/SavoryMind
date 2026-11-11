@@ -15,7 +15,7 @@ logger = logging.getLogger("slotly.email")
 
 
 def is_stub_mode() -> bool:
-    return not settings.resend_api_key
+    return settings.integrations_mode == "stub"
 
 
 def send_email(*, to: str, subject: str, body_text: str) -> str:

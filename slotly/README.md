@@ -11,7 +11,7 @@ This v0 covers the end-to-end booking loop: signup → provider profile + servic
 ## Stack
 
 - Backend: FastAPI + SQLModel + SQLite (Postgres-compatible via `DATABASE_URL`)
-- Frontend: Next.js 14 (App Router) + Tailwind
+- Frontend: Next.js 15 (App Router) + Tailwind
 - Auth: JWT in `Authorization: Bearer` header
 
 ## Run
@@ -39,7 +39,7 @@ The frontend reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8001`).
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-python -m pytest          # 33 tests: booking, slot engine, notifications, auto-fill
+python -m pytest          # booking, security regressions, slot engine, notifications, auto-fill
 ```
 
 Tests run against a fresh in-memory SQLite per test with Stripe + Resend in
@@ -54,9 +54,11 @@ touching `slotly/`.
 
 ## Stripe deposits
 
-Deposits use Stripe Checkout. Set `STRIPE_SECRET_KEY` and
+Demo mode is the default (`INTEGRATIONS_MODE=stub`) and never sends email or calls Stripe, even when keys are present. Production refuses to start in stub mode, with a weak JWT secret, or without HTTPS. Demo seeding is disabled in production/live mode. This is not production release certification; see [AUDIT.md](AUDIT.md).
+
+Deposits use Stripe Checkout. For a separately reviewed live environment, explicitly set `INTEGRATIONS_MODE=live`, `STRIPE_SECRET_KEY` and
 `STRIPE_WEBHOOK_SECRET` in the backend `.env` to use real Stripe;
-leave them empty for **stub mode**, which simulates the deposit flow
+keep `INTEGRATIONS_MODE=stub` for **stub mode**, which simulates the deposit flow
 end-to-end without real money so the booking → pay → refund path is
 testable locally.
 
@@ -72,7 +74,7 @@ enqueued automatically as bookings move through their lifecycle. An
 in-process APScheduler tick (default every 60s) sends due notifications
 via Resend.
 
-Set `RESEND_API_KEY` for real sends; leave empty for stub mode (the
+Live mode also requires `RESEND_API_KEY`; use `INTEGRATIONS_MODE=stub` for stub mode (the
 `Notification` row is the only record). Admin can audit + manually run
 the queue at `/admin/notifications`.
 
