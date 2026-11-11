@@ -1,0 +1,33 @@
+name: FitNow demo validation
+on:
+  pull_request:
+    paths: ['fitnow-transfer/demo/**', '.github/workflows/fitnow-demo.yml']
+  push:
+    branches: ['codex/fitnow-demo-foundation-20261111']
+    paths: ['fitnow-transfer/demo/**', '.github/workflows/fitnow-demo.yml']
+permissions:
+  contents: read
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: fitnow-transfer/demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+      - run: node --check app.mjs && node --check server.mjs
+      - run: npm audit --audit-level=high
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fitnow-browser-results
+          path: fitnow-transfer/demo/test-results/
+          retention-days: 7
