@@ -1094,5 +1094,47 @@
     "crFastEasyDesc": "Pronto in 25 min o meno",
     "crSweet": "Qualcosa di dolce",
     "crSweetDesc": "Dolci, pasticceria, waffle"
+  },
+  "orders": {
+    "takeTitle": "Prendi ordine",
+    "tableNumber": "Numero tavolo",
+    "tablePlaceholder": "es. 5",
+    "tapToAdd": "Tocca per aggiungere",
+    "noMenu": "Nessun piatto nel menù.",
+    "total": "Totale",
+    "sending": "Invio…",
+    "sendToKitchen": "Invia in cucina ({{count}})",
+    "openTabs": "Tavoli aperti",
+    "noOpen": "Nessun ordine aperto.",
+    "table": "Tavolo",
+    "dishes": "piatti",
+    "close": "Chiudi",
+    "openKitchen": "Apri la cucina",
+    "sentTitle": "Ordine inviato",
+    "sentBody": "Tavolo {{table}} inviato in cucina.",
+    "errTitle": "Errore",
+    "cantCloseTitle": "Impossibile chiudere il tavolo",
+    "errBody": "Riprova.",
+    "kitchenTitle": "Cucina",
+    "active": "attivi",
+    "allStations": "Tutte",
+    "kitchenClear": "Nessun ordine in sospeso 🎉",
+    "minShort": "min",
+    "status": {
+      "open": "aperto",
+      "submitted": "in cucina",
+      "served": "servito",
+      "closed": "chiuso",
+      "cancelled": "annullato"
+    },
+    "itemStatus": {
+      "new": "Nuovo",
+      "preparing": "In preparazione",
+      "ready": "Pronto",
+      "served": "Servito",
+      "cancelled": "Annullato"
+    },
+    "takeSub": "Prendi ordini al tavolo",
+    "kitchenSub": "Display cucina in tempo reale"
   }
 }

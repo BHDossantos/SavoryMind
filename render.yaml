@@ -1,0 +1,136 @@
+# Render Blueprint — SavoryMind (migrated off Google Cloud).
+#
+# One provider, one bill: the FastAPI backend, the Next.js frontend, and a
+# managed Postgres with automatic daily backups. Render auto-deploys on every
+# push to the connected branch, so the dead GitHub Actions → Cloud Run
+# workflows are retired (see .github/workflows/*.disabled + docs/RENDER_MIGRATION.md).
+#
+# How to use: in the Render dashboard → New → Blueprint → connect this repo.
+# Render reads this file, provisions the services, and prompts for every
+# `sync: false` secret. Domains (savorymind.net / api.savorymind.net) are
+# pointed at the two web services after they're live (runbook step 5).
+#
+# NOTE: plan names + regions are starting points — confirm/adjust in the
+# Blueprint UI. The database MUST be on a paid plan so daily backups are on
+# (the whole reason we're here). region: frankfurt ≈ the old europe-west1.
+
+databases:
+  - name: savorymind-db
+    databaseName: savorymind
+    user: savorymind
+    region: frankfurt
+    plan: basic-256mb          # paid → automatic daily backups (never go dark again)
+
+services:
+  # ── Backend API (FastAPI, Docker) ──────────────────────────────────────
+  - type: web
+    name: savorymind-api
+    runtime: docker
+    repo: https://github.com/BHDossantos/SavoryMind
+    branch: main
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /            # DB-free 200 — stays healthy even if the DB blips
+    autoDeployTrigger: commit
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: savorymind-db
+          property: connectionString   # standard postgres:// URL (app rewrites to +psycopg2)
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "30"
+      - key: COOKIE_DOMAIN
+        value: ".savorymind.net"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "lax"
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: RESEND_FROM_EMAIL
+        value: noreply@savorymind.net
+      - key: FRONTEND_URL
+        value: https://savorymind.net
+      - key: SPOTIFY_REDIRECT_URI
+        value: https://api.savorymind.net/api/oauth/spotify/callback
+      # ── Secrets: set once in the dashboard (Render prompts on first apply) ──
+      - key: SECRET_KEY
+        sync: false
+      - key: SOCIAL_LOGIN_SECRET
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: APPLE_BUNDLE_ID
+        sync: false
+      - key: POSTHOG_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_RESTAURANT_PRICE_ID
+        sync: false
+      - key: STRIPE_RESTAURANT_TRIAL_DAYS
+        sync: false
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_PHONE
+        sync: false
+
+  # ── Frontend (Next.js, Docker, standalone) ─────────────────────────────
+  - type: web
+    name: savorymind-web
+    runtime: docker
+    repo: https://github.com/BHDossantos/SavoryMind
+    branch: main
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    healthCheckPath: /
+    autoDeployTrigger: commit
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.savorymind.net
+      - key: BACKEND_URL                 # server-side target for the social-login bridge (defaults to localhost otherwise)
+        value: https://api.savorymind.net
+      - key: NEXTAUTH_URL                # NextAuth canonical site URL (OAuth callback base)
+        value: https://savorymind.net
+      # ── Frontend auth secrets (set once in the dashboard) ──
+      - key: NEXTAUTH_SECRET             # required by NextAuth v4 in production
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET        # Google provider (authorization-code flow)
+        sync: false
+      - key: NEXT_PUBLIC_POSTHOG_KEY     # analytics; no-op if left blank
+        sync: false
+      # ── Shared from the backend so the values are always identical ──
+      - key: GOOGLE_CLIENT_ID            # same OAuth app as the backend
+        fromService:
+          type: web
+          name: savorymind-api
+          envVarKey: GOOGLE_CLIENT_ID
+      - key: SOCIAL_LOGIN_SECRET         # MUST equal the backend's — /api/auth/social rejects a mismatch (403)
+        fromService:
+          type: web
+          name: savorymind-api
+          envVarKey: SOCIAL_LOGIN_SECRET

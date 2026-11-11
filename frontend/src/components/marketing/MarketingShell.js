@@ -45,6 +45,8 @@ const STRINGS = {
       { label: "Calcolatore spreco", href: "/calcolatore-spreco" },
       { label: "Case study", href: "/case-studies" },
       { label: "Contatti", href: "/contatti" },
+      // The "other audience" door — diners/home cooks reach their side here.
+      { label: "Per chi ama il cibo", href: "/per-chi-ama-il-cibo" },
     ],
     signIn: "Accedi",
     cta: "Inizia la prova gratuita",
@@ -80,6 +82,8 @@ const STRINGS = {
       { label: "Waste calculator", href: "/calcolatore-spreco" },
       { label: "Case studies", href: "/case-studies" },
       { label: "Contact", href: "/contatti" },
+      // The "other audience" door — diners/home cooks reach their side here.
+      { label: "For food lovers", href: "/per-chi-ama-il-cibo" },
     ],
     signIn: "Sign in",
     cta: "Start your free trial",
