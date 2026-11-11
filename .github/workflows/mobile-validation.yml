@@ -1,0 +1,65 @@
+name: Mobile Bundle Validation
+
+# Secret-free PR preflight, separate from EAS production builds/submissions.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  # Bundling is not an integration test. Never contact production from CI.
+  EXPO_PUBLIC_API_URL: https://api.example.invalid
+
+jobs:
+  bundle:
+    name: Validate ${{ matrix.platform }} bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [android, ios]
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Install locked mobile dependencies
+        run: npm ci --ignore-scripts
+      - name: Resolve Expo application config
+        run: npx --no-install expo config --type public --json > resolved-config.json
+      - name: Generate native project without signing or installing native dependencies
+        run: npx --no-install expo prebuild --platform ${{ matrix.platform }} --no-install
+      - name: Export production JavaScript and assets
+        run: npx --no-install expo export --platform ${{ matrix.platform }} --output-dir dist-${{ matrix.platform }} --max-workers 2
+      - name: Upload validation bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: savorymind-${{ matrix.platform }}-bundle-${{ github.sha }}
+          path: |
+            mobile/dist-${{ matrix.platform }}/
+            mobile/resolved-config.json
+          if-no-files-found: error
+          retention-days: 14
