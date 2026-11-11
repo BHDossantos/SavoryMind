@@ -27,7 +27,7 @@ test.describe('Nocturna golden path', () => {
     // 2. Planner — click "Next" through every step accepting defaults
     await expect(page.getByText(/Where are you tonight/)).toBeVisible();
     for (let i = 0; i < 8; i++) {
-      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
     }
     // 9th screen is the review; submit
     await page.getByRole('button', { name: /Curate my night/ }).click();
@@ -78,7 +78,7 @@ test.describe('Nocturna golden path', () => {
     await expect(page.getByRole('heading', { name: v.name })).toBeVisible();
     await expect(page.getByRole('link', { name: /Request reservation/ })).toBeVisible();
     // Map (Mapbox or SVG fallback) is rendered
-    await expect(page.locator('[role="img"][aria-label*="route"], div').first()).toBeVisible();
+    await expect(page.locator('[role="img"][aria-label*="route"], .mapboxgl-map').first()).toBeVisible();
   });
 
   test('admin login redirects to dashboard', async ({ page }) => {
