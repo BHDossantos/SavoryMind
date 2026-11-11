@@ -27,8 +27,17 @@ jobs:
   deploy:
     name: Trigger Render deploys
     runs-on: ubuntu-latest
-    # Only deploy when CI itself passed — never ship a red build.
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Honor Render's documented skip phrases here too: deploy hooks otherwise
+    # bypass the native auto-deploy check. This lets monitoring/docs fixes land
+    # without restarting the application while a production rollout is held.
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          !contains(github.event.workflow_run.head_commit.message, '[skip render]') &&
+          !contains(github.event.workflow_run.head_commit.message, '[render skip]') &&
+          !contains(github.event.workflow_run.head_commit.message, '[skip deploy]') &&
+          !contains(github.event.workflow_run.head_commit.message, '[deploy skip]') &&
+          !contains(github.event.workflow_run.head_commit.message, '[skip cd]') &&
+          !contains(github.event.workflow_run.head_commit.message, '[cd skip]') }}
     steps:
       - name: Trigger Render (API + Web)
         env:
