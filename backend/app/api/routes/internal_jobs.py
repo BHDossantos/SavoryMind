@@ -1,14 +1,20 @@
-"""Internal job triggers — invoked by Cloud Scheduler, not user clients.
+"""Internal job triggers — invoked by a scheduler, not user clients.
 
-Auth model: every endpoint here verifies an OIDC token issued by Google
-to the configured scheduler service account, with audience matching the
-endpoint URL. Public clients are 401'd immediately.
+Auth model (either one authorizes a call):
+  1. Shared secret — the `X-Internal-Job-Secret` header must match the
+     INTERNAL_JOB_SECRET env var (constant-time compared). This is what the
+     Render / GitHub Actions cron uses now that Google Cloud Scheduler is gone.
+  2. Legacy OIDC — a Google-issued bearer token for the configured scheduler
+     service account (SCHEDULER_SERVICE_ACCOUNT / SCHEDULER_AUDIENCE).
+Public clients are 401'd immediately; if neither mechanism is configured,
+every endpoint 401s.
 
 Mounted under /internal (NOT /api) so it never appears in client API
 docs and isn't accidentally exposed via mobile/web routing.
 """
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 
@@ -84,8 +90,27 @@ def _verify_scheduler_oidc(authorization: str) -> str:
 
 def require_scheduler(
     authorization: str = Header(default=""),
+    x_internal_job_secret: str = Header(default=""),
 ) -> str:
-    return _verify_scheduler_oidc(authorization)
+    """Authorize a scheduled-job caller via shared secret (preferred) or the
+    legacy Google OIDC token. Raises HTTPException(401) otherwise."""
+    expected_secret = os.getenv("INTERNAL_JOB_SECRET", "").strip()
+    if expected_secret and x_internal_job_secret:
+        if hmac.compare_digest(x_internal_job_secret.strip(), expected_secret):
+            return "cron:shared-secret"
+        raise HTTPException(status_code=401, detail="Invalid job secret.")
+
+    oidc_configured = bool(
+        os.getenv("SCHEDULER_SERVICE_ACCOUNT", "").strip()
+        and os.getenv("SCHEDULER_AUDIENCE", "").strip()
+    )
+    if oidc_configured:
+        return _verify_scheduler_oidc(authorization)
+
+    if expected_secret:
+        # Secret is the configured method but the caller didn't supply it.
+        raise HTTPException(status_code=401, detail="Missing job secret.")
+    raise HTTPException(status_code=401, detail="Endpoint not configured.")
 
 
 @router.post("/inventory-digest")

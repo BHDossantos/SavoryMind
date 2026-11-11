@@ -229,3 +229,66 @@ def test_webhook_subscription_deleted_downgrades_user(client, monkeypatch):
     status = client.get("/api/billing/status", headers=auth_headers(token)).json()
     assert status["is_premium"] is False
     assert status["subscription_status"] == "canceled"
+
+
+def test_consumer_checkout_blocked_for_restaurant(client, monkeypatch):
+    """A restaurant must not be able to buy the €9.99 consumer Price (it would
+    be granted the full 'pro' entitlement). It's routed to /restaurant/checkout."""
+    from app.services import stripe_service
+    monkeypatch.setattr(stripe_service, "is_configured", lambda: True)
+    token, _ = register_user(client, email="resto-consumer-checkout@example.com",
+                             account_type="restaurant")
+    r = client.post("/api/billing/checkout", headers=auth_headers(token))
+    assert r.status_code == 403
+
+
+def test_consumer_checkout_blocked_when_already_on_a_paid_plan(client, db_session, monkeypatch):
+    """A user already on any paid plan can't start a second subscription."""
+    from app.services import stripe_service
+    monkeypatch.setattr(stripe_service, "is_configured", lambda: True)
+    token, user = register_user(client, email="already-paid@example.com")
+    _set_plan(db_session, user["id"], "pro")  # already holds a paid plan
+    r = client.post("/api/billing/checkout", headers=auth_headers(token))
+    assert r.status_code == 409
+
+
+def test_webhook_ignores_stale_out_of_order_event(client, db_session, monkeypatch):
+    """A delayed subscription.updated(active) arriving AFTER a later
+    subscription.deleted must NOT resurrect the cancelled plan; a genuinely
+    newer event still applies."""
+    from app.models.user import User
+    _configure_billing(monkeypatch)
+    from app.services import stripe_service
+    monkeypatch.setattr(stripe_service, "retrieve_subscription",
+                        lambda sid: {"status": "active", "current_period_end": 1900000000})
+    token, user = register_user(client)
+    uid = user["id"]
+
+    def post(ev):
+        payload, sig = _sign(ev)
+        return client.post("/api/billing/webhook", content=payload,
+                           headers={"stripe-signature": sig})
+
+    def plan():
+        db_session.expire_all()
+        return db_session.query(User).filter(User.id == uid).first().plan
+
+    # 1) grant (ts=1000)
+    assert post({"id": "e1", "created": 1000, "type": "checkout.session.completed",
+                 "data": {"object": {"customer": "cus_x", "subscription": "sub_x",
+                                     "client_reference_id": str(uid)}}}).status_code == 200
+    assert plan() == "premium"
+    # 2) later cancel (ts=2000)
+    assert post({"id": "e2", "created": 2000, "type": "customer.subscription.deleted",
+                 "data": {"object": {"customer": "cus_x", "id": "sub_x"}}}).status_code == 200
+    assert plan() == "free"
+    # 3) STALE active (ts=1500 < 2000) — ignored
+    assert post({"id": "e3", "created": 1500, "type": "customer.subscription.updated",
+                 "data": {"object": {"customer": "cus_x", "id": "sub_x", "status": "active",
+                                     "current_period_end": 1900000000}}}).status_code == 200
+    assert plan() == "free", "stale out-of-order event must not resurrect the plan"
+    # 4) genuine later reactivation (ts=3000) — applies
+    assert post({"id": "e4", "created": 3000, "type": "customer.subscription.updated",
+                 "data": {"object": {"customer": "cus_x", "id": "sub_x", "status": "active",
+                                     "current_period_end": 1900000000}}}).status_code == 200
+    assert plan() == "premium", "a genuinely newer event must still apply"

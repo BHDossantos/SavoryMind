@@ -17,6 +17,11 @@ def _make_engine(url: str):
         kwargs["pool_pre_ping"] = True
         kwargs["pool_size"] = 5
         kwargs["max_overflow"] = 10
+        # Fail a connection attempt fast instead of hanging when the database
+        # is unreachable (e.g. Cloud SQL down). Combined with the swallowed
+        # startup migrations in main.py, this keeps the container starting +
+        # listening on $PORT so Cloud Run deploys don't fail on a DB blip.
+        kwargs["connect_args"] = {"connect_timeout": 10}
 
     return create_engine(url, **kwargs)
 
