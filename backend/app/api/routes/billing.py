@@ -59,6 +59,8 @@ def billing_status(current_user: User = Depends(get_current_user)):
         "plan": current_user.plan or "free",
         "is_premium": _is_premium(current_user),
         "subscription_status": current_user.subscription_status,
+        "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
+        "can_cancel": bool(current_user.stripe_subscription_id and current_user.stripe_customer_id and stripe_service.cancellation_configured()),
         "current_period_end": (
             current_user.subscription_period_end.isoformat()
             if current_user.subscription_period_end else None
@@ -128,6 +130,29 @@ def create_checkout(
     return {"url": url}
 
 
+@router.post("/cancel")
+@limiter.limit("10/minute")
+def cancel_subscription(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.stripe_subscription_id or not current_user.stripe_customer_id:
+        raise HTTPException(status_code=409, detail="No existing billing subscription was found.")
+    if not stripe_service.cancellation_configured():
+        raise HTTPException(status_code=503, detail="Subscription management is temporarily unavailable. No cancellation has been confirmed.")
+    try:
+        result = stripe_service.cancel_at_period_end(current_user)
+    except ValueError:
+        raise HTTPException(status_code=409, detail="We could not verify this subscription's ownership. No cancellation has been confirmed.") from None
+    except Exception:
+        # Provider exceptions may contain credentials/customer data; do not echo.
+        raise HTTPException(status_code=502, detail="The billing provider did not confirm cancellation. Please retry; no new purchase is needed.") from None
+    current_user.subscription_cancel_at_period_end = result.get('cancel_at_period_end') is True
+    if result.get('status') == 'canceled':
+        current_user.subscription_status = 'canceled'
+        current_user.plan = 'free'
+    db.commit()
+    return {"confirmed": True, "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
+            "message": "Cancellation is scheduled for the end of the current billing period." if current_user.subscription_cancel_at_period_end else "Your subscription is cancelled."}
+
+
 @router.post("/portal")
 @limiter.limit("10/minute")
 def create_portal(
@@ -175,6 +200,8 @@ def restaurant_billing_status(current_user: User = Depends(get_current_user)):
         "plan": current_user.plan or "free",
         "is_pro": _is_pro(current_user),
         "subscription_status": current_user.subscription_status,
+        "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
+        "can_cancel": bool(current_user.stripe_subscription_id and current_user.stripe_customer_id and stripe_service.cancellation_configured()),
         "current_period_end": (
             current_user.subscription_period_end.isoformat()
             if current_user.subscription_period_end else None
@@ -298,6 +325,7 @@ def _apply_event(db: Session, event) -> None:
         if sub is not None:
             status = sub.get("status")
             user.subscription_status = status
+            user.subscription_cancel_at_period_end = bool(sub.get("cancel_at_period_end", False))
             user.subscription_period_end = stripe_service.period_end_to_datetime(
                 sub.get("current_period_end")
             )
@@ -321,6 +349,7 @@ def _apply_event(db: Session, event) -> None:
         status = obj.get("status")
         user.stripe_subscription_id = obj.get("id") or user.stripe_subscription_id
         user.subscription_status = status
+        user.subscription_cancel_at_period_end = bool(obj.get("cancel_at_period_end", False))
         user.subscription_period_end = stripe_service.period_end_to_datetime(
             obj.get("current_period_end")
         )
@@ -337,6 +366,7 @@ def _apply_event(db: Session, event) -> None:
         if evt_ts is not None:
             user.stripe_event_ts = evt_ts
         user.subscription_status = "canceled"
+        user.subscription_cancel_at_period_end = False
         user.plan = "free"
         db.commit()
 

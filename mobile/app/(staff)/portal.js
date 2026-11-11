@@ -1,3 +1,4 @@
+import AccountDeletion from '../../components/AccountDeletion';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, Alert } from 'react-native';
@@ -197,6 +198,7 @@ export default function StaffPortal() {
             )}
           </View>
         ))}
+      <AccountDeletion />
       </ScrollView>
     </View>
   );

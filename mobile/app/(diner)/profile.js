@@ -1,3 +1,4 @@
+import AccountDeletion from '../../components/AccountDeletion';
 import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -163,6 +164,7 @@ export default function DinerProfile() {
           <Text style={styles.tipIcon}>💡</Text>
           <Text style={styles.tipText}>{t('dinerProfile.tip')}</Text>
         </View>
+      <AccountDeletion />
       </ScrollView>
     </View>
   );
