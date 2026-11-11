@@ -95,6 +95,8 @@ def billing_status(current_user: User = Depends(get_current_user)):
         "plan": current_user.plan or "free",
         "is_premium": _is_premium(current_user),
         "subscription_status": current_user.subscription_status,
+        "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
+        "can_cancel": bool(current_user.stripe_subscription_id and current_user.stripe_customer_id and stripe_service.cancellation_configured()),
         "current_period_end": (
             current_user.subscription_period_end.isoformat()
             if current_user.subscription_period_end else None
@@ -164,6 +166,29 @@ def create_checkout(
     return {"url": url}
 
 
+@router.post("/cancel")
+@limiter.limit("10/minute")
+def cancel_subscription(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.stripe_subscription_id or not current_user.stripe_customer_id:
+        raise HTTPException(status_code=409, detail="No existing billing subscription was found.")
+    if not stripe_service.cancellation_configured():
+        raise HTTPException(status_code=503, detail="Subscription management is temporarily unavailable. No cancellation has been confirmed.")
+    try:
+        result = stripe_service.cancel_at_period_end(current_user)
+    except ValueError:
+        raise HTTPException(status_code=409, detail="We could not verify this subscription's ownership. No cancellation has been confirmed.") from None
+    except Exception:
+        # Provider exceptions may contain credentials/customer data; do not echo.
+        raise HTTPException(status_code=502, detail="The billing provider did not confirm cancellation. Please retry; no new purchase is needed.") from None
+    current_user.subscription_cancel_at_period_end = result.get('cancel_at_period_end') is True
+    if result.get('status') == 'canceled':
+        current_user.subscription_status = 'canceled'
+        current_user.plan = 'free'
+    db.commit()
+    return {"confirmed": True, "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
+            "message": "Cancellation is scheduled for the end of the current billing period." if current_user.subscription_cancel_at_period_end else "Your subscription is cancelled."}
+
+
 @router.post("/portal")
 @limiter.limit("10/minute")
 def create_portal(
@@ -211,6 +236,8 @@ def restaurant_billing_status(current_user: User = Depends(get_current_user)):
         "plan": current_user.plan or "free",
         "is_pro": _is_pro(current_user),
         "subscription_status": current_user.subscription_status,
+        "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
+        "can_cancel": bool(current_user.stripe_subscription_id and current_user.stripe_customer_id and stripe_service.cancellation_configured()),
         "current_period_end": (
             current_user.subscription_period_end.isoformat()
             if current_user.subscription_period_end else None
@@ -294,10 +321,23 @@ def _find_user(db: Session, customer_id, user_id) -> User | None:
     return user
 
 
+def _event_is_stale(user: User, evt_ts) -> bool:
+    """True when this event is older than the last one we applied for this user
+    — Stripe can deliver (and replay) events out of order, so ignoring older
+    ones stops a stale `subscription.updated(active)` from resurrecting a plan
+    that a later `subscription.deleted` already cancelled."""
+    return (
+        evt_ts is not None
+        and user.stripe_event_ts is not None
+        and evt_ts < user.stripe_event_ts
+    )
+
+
 def _apply_event(db: Session, event) -> None:
     """Mutate the affected user's entitlement from a verified Stripe event."""
     etype = event["type"]
     obj = event["data"]["object"]
+    evt_ts = event.get("created")  # Stripe unix seconds (always set in prod)
 
     if etype == "checkout.session.completed":
         user_id = obj.get("client_reference_id") or (obj.get("metadata") or {}).get("user_id")
@@ -332,6 +372,7 @@ def _apply_event(db: Session, event) -> None:
             # separately recorded replacement subscription.
             return
         user.subscription_status = "canceled"
+        user.subscription_cancel_at_period_end = False
         user.plan = "free"
         db.commit()
 

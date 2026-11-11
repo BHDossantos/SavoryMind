@@ -182,3 +182,27 @@ def period_end_to_datetime(ts: Optional[int]) -> Optional[datetime]:
         return datetime.fromtimestamp(int(ts), tz=timezone.utc).replace(tzinfo=None)
     except (TypeError, ValueError, OSError, OverflowError):
         return None
+
+
+def cancellation_configured() -> bool:
+    """Existing subscriptions do not require a new-sale Price to be configured."""
+    return bool(_stripe and settings.stripe_secret_key)
+
+
+def cancel_at_period_end(user):
+    """Cancel only the authenticated user's existing subscription; never upsell."""
+    if not cancellation_configured():
+        raise RuntimeError('Subscription management is not configured')
+    _stripe.api_key = settings.stripe_secret_key
+    subscription = _stripe.Subscription.retrieve(user.stripe_subscription_id)
+    customer = subscription.get('customer')
+    if isinstance(customer, dict):
+        customer = customer.get('id')
+    if customer != user.stripe_customer_id:
+        raise ValueError('Subscription ownership could not be verified')
+    if subscription.get('status') == 'canceled' or subscription.get('cancel_at_period_end') is True:
+        return subscription
+    result = _stripe.Subscription.modify(user.stripe_subscription_id, cancel_at_period_end=True)
+    if result.get('cancel_at_period_end') is not True and result.get('status') != 'canceled':
+        raise RuntimeError('Provider did not confirm cancellation')
+    return result

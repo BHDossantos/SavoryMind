@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.0",
-    "expo": "~55.0.18",
+    "expo": "~55.0.28",
     "expo-apple-authentication": "~55.0.7",
     "expo-asset": "~55.0.16",
     "expo-auth-session": "~55.0.15",
@@ -39,6 +39,7 @@
     "react-i18next": "^15.7.4",
     "react-native": "0.83.6",
     "react-native-gesture-handler": "~2.30.0",
+    "react-native-purchases": "10.12.2",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
