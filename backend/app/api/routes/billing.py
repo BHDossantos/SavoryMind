@@ -38,18 +38,54 @@ def _is_premium(user: User) -> bool:
 
 def _has_active_subscription(user: User) -> bool:
     """True if the user already holds (or is trialing) a paid plan of EITHER
-    tier. Guards both checkout endpoints so a user can never start a second,
-    double-billed subscription on the same Stripe customer."""
+    tier. This snapshot guard does not serialize concurrent checkout requests;
+    durable checkout reservations remain necessary for that guarantee."""
     return (user.plan or "free") in ("premium", "pro") or (
         user.subscription_status in _PREMIUM_STATUSES
     )
 
 
-def _entitled_plan(user: User) -> str:
-    """The plan value an active subscription grants this user. Restaurants
-    get "pro" (the €99/mo plan); everyone else gets "premium". Keyed on
-    account_type so one webhook handles both products."""
-    return "pro" if user.account_type == "restaurant" else "premium"
+def _stripe_id(value):
+    """Stripe references can be IDs or expanded objects."""
+    return value if isinstance(value, str) else value.get("id") if hasattr(value, "get") else None
+
+
+def _verified_plan(user: User, sub, subscription_id: str) -> str:
+    if (not sub or not subscription_id or _stripe_id(sub) != subscription_id
+            or _stripe_id(sub.get("customer")) != user.stripe_customer_id
+            or not sub.get("status")):
+        raise RuntimeError("Subscription identity could not be confirmed")
+    consumer = settings.stripe_price_id
+    restaurant = settings.stripe_restaurant_price_id
+    expected = restaurant if user.account_type == "restaurant" else consumer
+    if not expected or (consumer and consumer == restaurant):
+        raise RuntimeError("Subscription product configuration is ambiguous")
+    items = sub.get("items") or {}
+    data = items.get("data")
+    if not isinstance(data, list) or not data or items.get("has_more"):
+        raise RuntimeError("Complete subscription items unavailable")
+    # This application sells exactly one recurring price per subscription.
+    # Unknown/add-on/multi-product shapes do not imply an entitlement.
+    eligible = len(data) == 1 and data[0].get("quantity") == 1 and _stripe_id(data[0].get("price")) == expected
+    if eligible and sub.get("status") in _PREMIUM_STATUSES:
+        return "pro" if user.account_type == "restaurant" else "premium"
+    return "free"
+
+
+def _store_subscription(db, user, sub, sub_id):
+    plan = _verified_plan(user, sub, sub_id)
+    if plan == "free" and user.stripe_subscription_id and user.stripe_subscription_id != sub_id:
+        # An unrelated subscription must not revoke a separately tracked plan.
+        return
+    user.stripe_subscription_id = sub_id
+    user.subscription_status = sub.get("status")
+    items = sub["items"]["data"]
+    period_end = sub.get("current_period_end")
+    if period_end is None and len(items) == 1:
+        period_end = items[0].get("current_period_end")
+    user.subscription_period_end = stripe_service.period_end_to_datetime(period_end)
+    user.plan = plan
+    db.commit()
 
 
 @router.get("/status")
@@ -274,16 +310,14 @@ def create_restaurant_portal(
 
 
 def _find_user(db: Session, customer_id, user_id) -> User | None:
-    """Resolve the webhook event's user — by Stripe customer id first
-    (set at checkout time), falling back to our own user_id metadata."""
-    user = None
-    if customer_id:
-        user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
-    if not user and user_id:
-        try:
-            user = db.query(User).filter(User.id == int(user_id)).first()
-        except (TypeError, ValueError):
-            user = None
+    # Checkout persists this binding before creating a hosted session. Metadata
+    # is only a cross-check; it must never claim or rebind another customer.
+    customer_id = _stripe_id(customer_id)
+    if not customer_id:
+        raise RuntimeError("Missing customer binding")
+    user = db.query(User).filter(User.stripe_customer_id == customer_id).one_or_none()
+    if user_id is not None and (not user or str(user.id) != str(user_id)):
+        raise RuntimeError("Customer and user reference disagree")
     return user
 
 
@@ -311,60 +345,32 @@ def _apply_event(db: Session, event) -> None:
         if not user:
             logger.warning("checkout.session.completed for unknown user")
             return
-        if _event_is_stale(user, evt_ts):
-            return
-        if evt_ts is not None:
-            user.stripe_event_ts = evt_ts
-        user.stripe_customer_id = obj.get("customer") or user.stripe_customer_id
-        sub_id = obj.get("subscription")
-        user.stripe_subscription_id = sub_id or user.stripe_subscription_id
-        # Retrieve the subscription so trial vs. active status is accurate
-        # immediately, rather than depending on the customer.subscription.*
-        # event arriving first.
+        # Both checkout identity references must agree if supplied.
+        metadata_id = (obj.get("metadata") or {}).get("user_id")
+        if metadata_id is not None and str(metadata_id) != str(user.id):
+            raise RuntimeError("Checkout metadata identity disagrees")
+        sub_id = _stripe_id(obj.get("subscription"))
         sub = stripe_service.retrieve_subscription(sub_id)
-        if sub is not None:
-            status = sub.get("status")
-            user.subscription_status = status
-            user.subscription_cancel_at_period_end = bool(sub.get("cancel_at_period_end", False))
-            user.subscription_period_end = stripe_service.period_end_to_datetime(
-                sub.get("current_period_end")
-            )
-            user.plan = _entitled_plan(user) if status in _PREMIUM_STATUSES else "free"
-        else:
-            # Couldn't fetch — checkout succeeded, so grant access; the
-            # follow-up subscription event will correct status/period.
-            user.plan = _entitled_plan(user)
-            user.subscription_status = user.subscription_status or "active"
-        db.commit()
+        _store_subscription(db, user, sub, sub_id)
 
     elif etype in ("customer.subscription.created", "customer.subscription.updated"):
         user = _find_user(db, obj.get("customer"), None)
         if not user:
             return
-        if _event_is_stale(user, evt_ts):
-            logger.info("Ignoring stale/out-of-order %s event", etype)
-            return
-        if evt_ts is not None:
-            user.stripe_event_ts = evt_ts
-        status = obj.get("status")
-        user.stripe_subscription_id = obj.get("id") or user.stripe_subscription_id
-        user.subscription_status = status
-        user.subscription_cancel_at_period_end = bool(obj.get("cancel_at_period_end", False))
-        user.subscription_period_end = stripe_service.period_end_to_datetime(
-            obj.get("current_period_end")
-        )
-        user.plan = _entitled_plan(user) if status in _PREMIUM_STATUSES else "free"
-        db.commit()
+        sub_id = _stripe_id(obj.get("id"))
+        # Signed events can arrive out of order; validate a current provider
+        # snapshot rather than granting from the event's historical status.
+        sub = stripe_service.retrieve_subscription(sub_id)
+        _store_subscription(db, user, sub, sub_id)
 
     elif etype == "customer.subscription.deleted":
         user = _find_user(db, obj.get("customer"), None)
         if not user:
             return
-        if _event_is_stale(user, evt_ts):
-            logger.info("Ignoring stale/out-of-order subscription.deleted event")
+        if not obj.get("id") or obj.get("id") != user.stripe_subscription_id:
+            # A late deletion of an older subscription must not revoke the
+            # separately recorded replacement subscription.
             return
-        if evt_ts is not None:
-            user.stripe_event_ts = evt_ts
         user.subscription_status = "canceled"
         user.subscription_cancel_at_period_end = False
         user.plan = "free"
@@ -380,7 +386,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     Accepts events when *either* product (consumer Premium or restaurant)
     is configured — one webhook serves both; the per-user entitlement is
-    chosen by account_type in _apply_event.
+    checked against the bound customer and configured account-specific price.
     """
     if not (stripe_service.is_configured() or stripe_service.is_restaurant_configured()):
         raise HTTPException(status_code=503, detail="Billing is not configured.")
@@ -393,6 +399,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         _apply_event(db, event)
     except Exception:
-        # Don't 500 — Stripe would retry indefinitely. Log for triage.
-        logger.exception("Failed to apply Stripe webhook event")
+        db.rollback()
+        # No durable queue accepted this event. A 2xx would lose it on provider
+        # or database failure; return a retryable response without private data.
+        logger.warning("Stripe webhook processing failed; redelivery required")
+        raise HTTPException(status_code=503, detail="Billing update could not be confirmed. Retry delivery.") from None
     return {"received": True}

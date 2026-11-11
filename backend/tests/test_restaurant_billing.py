@@ -14,6 +14,8 @@ import time
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures("block_stripe_subscription_network")
+
 from .conftest import register_user, auth_headers
 
 WEBHOOK_SECRET = "whsec_test_secret_for_restaurant_billing"
@@ -125,6 +127,10 @@ def test_webhook_sets_restaurant_to_pro_not_premium(client, monkeypatch):
             "current_period_end": int(time.time()) + 30 * 86400,
         }},
     }
+    from app.services import stripe_service
+    from .test_billing import subscription_snapshot
+    monkeypatch.setattr(stripe_service, "retrieve_subscription", lambda _: subscription_snapshot(
+        sid="sub_rest_1", customer="cus_rest_123", price="price_restaurant_dummy"))
     payload, sig = _sign(event)
     r = client.post(
         "/api/billing/webhook",
@@ -149,7 +155,7 @@ def test_webhook_canceled_reverts_restaurant_to_free(client, monkeypatch):
     from app.core.database import SessionLocal
     db = SessionLocal()
     db.query(User).filter(User.id == user["id"]).update(
-        {"stripe_customer_id": "cus_rest_9", "plan": "pro"}
+        {"stripe_customer_id": "cus_rest_9", "stripe_subscription_id": "sub_rest_9", "plan": "pro"}
     )
     db.commit(); db.close()
 

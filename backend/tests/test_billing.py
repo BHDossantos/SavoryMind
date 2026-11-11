@@ -17,6 +17,8 @@ import time
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures("block_stripe_subscription_network")
+
 from .conftest import register_user, auth_headers
 
 WEBHOOK_SECRET = "whsec_test_secret_for_billing_tests"
@@ -163,13 +165,16 @@ def test_webhook_rejects_invalid_signature(client, monkeypatch):
     assert r.status_code == 400
 
 
-def test_webhook_checkout_completed_grants_premium(client, monkeypatch):
+def test_webhook_checkout_completed_grants_premium(client, monkeypatch, db_session):
     _configure_billing(monkeypatch)
     # retrieve_subscription would hit the network — return a fake instead.
     from app.services import stripe_service
     monkeypatch.setattr(stripe_service, "retrieve_subscription",
-                        lambda sid: {"status": "trialing", "current_period_end": 1900000000})
+                        lambda sid: subscription_snapshot(status="trialing"))
     token, user = register_user(client)
+    from app.models.user import User
+    db_session.get(User, user["id"]).stripe_customer_id = "cus_abc"
+    db_session.commit()
 
     event = {
         "id": "evt_checkout",
@@ -191,12 +196,15 @@ def test_webhook_checkout_completed_grants_premium(client, monkeypatch):
     assert status["subscription_status"] == "trialing"
 
 
-def test_webhook_subscription_deleted_downgrades_user(client, monkeypatch):
+def test_webhook_subscription_deleted_downgrades_user(client, monkeypatch, db_session):
     _configure_billing(monkeypatch)
     from app.services import stripe_service
     monkeypatch.setattr(stripe_service, "retrieve_subscription",
-                        lambda sid: {"status": "active", "current_period_end": 1900000000})
+                        lambda sid: subscription_snapshot())
     token, user = register_user(client)
+    from app.models.user import User
+    db_session.get(User, user["id"]).stripe_customer_id = "cus_abc"
+    db_session.commit()
 
     # Grant Premium first (also sets stripe_customer_id for the lookup).
     grant = {
@@ -252,43 +260,8 @@ def test_consumer_checkout_blocked_when_already_on_a_paid_plan(client, db_sessio
     assert r.status_code == 409
 
 
-def test_webhook_ignores_stale_out_of_order_event(client, db_session, monkeypatch):
-    """A delayed subscription.updated(active) arriving AFTER a later
-    subscription.deleted must NOT resurrect the cancelled plan; a genuinely
-    newer event still applies."""
-    from app.models.user import User
-    _configure_billing(monkeypatch)
-    from app.services import stripe_service
-    monkeypatch.setattr(stripe_service, "retrieve_subscription",
-                        lambda sid: {"status": "active", "current_period_end": 1900000000})
-    token, user = register_user(client)
-    uid = user["id"]
-
-    def post(ev):
-        payload, sig = _sign(ev)
-        return client.post("/api/billing/webhook", content=payload,
-                           headers={"stripe-signature": sig})
-
-    def plan():
-        db_session.expire_all()
-        return db_session.query(User).filter(User.id == uid).first().plan
-
-    # 1) grant (ts=1000)
-    assert post({"id": "e1", "created": 1000, "type": "checkout.session.completed",
-                 "data": {"object": {"customer": "cus_x", "subscription": "sub_x",
-                                     "client_reference_id": str(uid)}}}).status_code == 200
-    assert plan() == "premium"
-    # 2) later cancel (ts=2000)
-    assert post({"id": "e2", "created": 2000, "type": "customer.subscription.deleted",
-                 "data": {"object": {"customer": "cus_x", "id": "sub_x"}}}).status_code == 200
-    assert plan() == "free"
-    # 3) STALE active (ts=1500 < 2000) — ignored
-    assert post({"id": "e3", "created": 1500, "type": "customer.subscription.updated",
-                 "data": {"object": {"customer": "cus_x", "id": "sub_x", "status": "active",
-                                     "current_period_end": 1900000000}}}).status_code == 200
-    assert plan() == "free", "stale out-of-order event must not resurrect the plan"
-    # 4) genuine later reactivation (ts=3000) — applies
-    assert post({"id": "e4", "created": 3000, "type": "customer.subscription.updated",
-                 "data": {"object": {"customer": "cus_x", "id": "sub_x", "status": "active",
-                                     "current_period_end": 1900000000}}}).status_code == 200
-    assert plan() == "premium", "a genuinely newer event must still apply"
+def subscription_snapshot(sid="sub_abc", customer="cus_abc", price="price_dummy", status="active"):
+    return {"id": sid, "object": "subscription", "customer": customer, "status": status,
+            "current_period_end": 1900000000,
+            "items": {"object": "list", "has_more": False, "data": [
+                {"id": "si_test", "quantity": 1, "price": {"id": price, "object": "price", "recurring": {"interval": "month"}}}]}}

@@ -107,6 +107,45 @@ describe('request wrapper', () => {
 
 // ---- 401 → refresh → retry ---------------------------------------------
 
+describe('network failure retries', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  test.each([
+    ['POST', () => api.createCheckout()],
+    ['PATCH', () => api.updateProfile({ name: 'Updated' })],
+    ['DELETE', () => api.deleteLoyaltyReward(1)],
+  ])('does not replay an ambiguous %s write', async (method, perform) => {
+    let applied = 0;
+    global.fetch.mockImplementation(() => {
+      applied += 1; // The server committed, but its response was lost.
+      return Promise.reject(new TypeError('Failed to fetch'));
+    });
+    const assertion = expect(perform()).rejects.toThrow("couldn't confirm the result");
+    await jest.runAllTimersAsync();
+    await assertion;
+    expect(applied).toBe(1);
+    expect(global.fetch.mock.calls[0][1].method).toBe(method);
+  });
+
+  test('retries a read after a transient network failure', async () => {
+    global.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockReturnValueOnce(jsonResp({ id: 1 }));
+    const result = api.getMe();
+    await jest.runAllTimersAsync();
+    expect(await result).toEqual({ id: 1 });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('bounds read retries to four total attempts', async () => {
+    global.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+    const assertion = expect(api.getMe()).rejects.toThrow('Server is unreachable');
+    await jest.runAllTimersAsync();
+    await assertion;
+    expect(global.fetch).toHaveBeenCalledTimes(4);
+  });
+});
+
 
 describe('401 auto-refresh', () => {
   test('401 on a non-auth call triggers /auth/refresh and retries with the new token', async () => {

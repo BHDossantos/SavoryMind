@@ -74,10 +74,16 @@ async function request(path, options = {}, _attempt = 0, _didRefresh = false) {
       credentials: "include",
     });
   } catch (networkErr) {
-    // Auto-retry on network failure (Render cold-start wake-up), up to 3 times
-    if (_attempt < 3) {
+    // A network failure can occur after the server commits a write. Replaying
+    // it may create another booking, checkout, or message. Only retry reads;
+    // writes need server-backed idempotency before they can be retried safely.
+    const isRead = ["GET", "HEAD"].includes((options.method || "GET").toUpperCase());
+    if (isRead && _attempt < 3) {
       await new Promise((r) => setTimeout(r, [3000, 6000, 12000][_attempt]));
       return request(path, options, _attempt + 1, _didRefresh);
+    }
+    if (!isRead) {
+      throw new Error("We couldn't confirm the result. Check whether your change completed before trying again.");
     }
     throw new Error("Server is unreachable. It may still be starting up — please wait a moment and try again.");
   }
