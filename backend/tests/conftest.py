@@ -37,9 +37,14 @@ def pytest_configure(config):
     os.environ.setdefault("SPOTIFY_CLIENT_SECRET", "test_client_secret")
     os.environ.setdefault("SPOTIFY_REDIRECT_URI", "http://testserver/api/oauth/spotify/callback")
     os.environ.setdefault("FRONTEND_URL", "http://testserver")
-    # Use the dev-default Fernet key for tests — same key the dev DB uses,
-    # so encryption tests are deterministic.
-    os.environ.setdefault("TOKEN_ENCRYPTION_KEY", "6oyaUCTF-qMyyC0mzvOkaXwmrt5RhYV_ZfIeiuRcXcI=")
+    # Ephemeral, process-local test keys; never reuse a committed encryption key
+    # or load a real developer/provider credential into the test database.
+    import secrets
+    from cryptography.fernet import Fernet
+    os.environ["SECRET_KEY"] = secrets.token_urlsafe(32)
+    os.environ["SOCIAL_LOGIN_SECRET"] = secrets.token_urlsafe(32)
+    os.environ["TOKEN_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
+
 
     # Stash the path so the per-test fixture can wipe it cleanly.
     config._sm_db_path = db_path
@@ -131,3 +136,22 @@ def block_stripe_subscription_network(monkeypatch):
     # The service catches retrieval exceptions, so the exception alone cannot
     # prove this boundary was never reached. Assert outside application code.
     blocked.assert_not_called()
+
+
+@pytest.fixture(autouse=True)
+def offline_analytics_sdk(monkeypatch):
+    """Analytics-enabled tests must never start a real SDK sender thread.
+
+    Some tests register fixture users before their capture/identify patch,
+    while setting a dummy API key. Patch the SDK constructor for the entire
+    test, retaining wrapper behavior and call inspection without transmission.
+    """
+    from unittest.mock import Mock
+    import posthog
+    from app.services import posthog_client
+
+    client = Mock(spec=["capture", "identify", "shutdown"])
+    constructor = Mock(return_value=client)
+    monkeypatch.setattr(posthog, "Posthog", constructor)
+    monkeypatch.setattr(posthog_client, "_client", None)
+    yield constructor, client

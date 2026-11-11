@@ -52,8 +52,8 @@ def test_health_deep_returns_integration_states(client, monkeypatch):
     assert integ["google_signin"] == "dormant"
     assert integ["anthropic"] == "dormant"
     assert integ["sentry"]    == "dormant"
-    # Token encryption key on test env is the dev default
-    assert integ["token_encryption"] == "dev_key"
+    # Tests now use an explicit ephemeral key rather than a shared default.
+    assert integ["token_encryption"] == "enabled"
     # Policy snapshot — verifies env plumbing without leaking values
     assert "access_token_expire_minutes" in body["policy"]
     assert isinstance(body["policy"]["cookie_secure"], bool)

@@ -43,8 +43,13 @@ def apply_plan(db, user):
         return
     if row.status == 'active' and row.expires_at and row.expires_at > datetime.utcnow():
         user.plan = target_plan(user)
-    elif user.subscription_status in ('active', 'trialing'):
-        user.plan = target_plan(user)  # preserve a separately paid Stripe subscription
+    elif (user.subscription_status in ('active', 'trialing')
+          and user.stripe_verified_plan == target_plan(user)
+          and user.subscription_period_end
+          and user.subscription_period_end > datetime.utcnow()):
+        # Preserve only a separately verified, unexpired Stripe entitlement.
+        # `active` can also describe an unrelated/unrecognized Stripe price.
+        user.plan = user.stripe_verified_plan
     else:
         user.plan = 'free'
 

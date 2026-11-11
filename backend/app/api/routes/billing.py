@@ -72,19 +72,25 @@ def _verified_plan(user: User, sub, subscription_id: str) -> str:
     return "free"
 
 
-def _store_subscription(db, user, sub, sub_id):
+def _store_subscription(db, user, sub, sub_id, evt_ts=None):
     plan = _verified_plan(user, sub, sub_id)
     if plan == "free" and user.stripe_subscription_id and user.stripe_subscription_id != sub_id:
         # An unrelated subscription must not revoke a separately tracked plan.
         return
+    if evt_ts is not None:
+        user.stripe_event_ts = evt_ts
     user.stripe_subscription_id = sub_id
     user.subscription_status = sub.get("status")
+    user.subscription_cancel_at_period_end = bool(sub.get("cancel_at_period_end", False))
     items = sub["items"]["data"]
     period_end = sub.get("current_period_end")
     if period_end is None and len(items) == 1:
         period_end = items[0].get("current_period_end")
     user.subscription_period_end = stripe_service.period_end_to_datetime(period_end)
+    user.stripe_verified_plan = plan
     user.plan = plan
+    from ...services.store_billing import apply_plan
+    apply_plan(db, user)
     db.commit()
 
 
@@ -183,7 +189,10 @@ def cancel_subscription(request: Request, db: Session = Depends(get_db), current
     current_user.subscription_cancel_at_period_end = result.get('cancel_at_period_end') is True
     if result.get('status') == 'canceled':
         current_user.subscription_status = 'canceled'
+        current_user.stripe_verified_plan = 'free'
         current_user.plan = 'free'
+        from ...services.store_billing import apply_plan
+        apply_plan(db, current_user)
     db.commit()
     return {"confirmed": True, "cancel_at_period_end": current_user.subscription_cancel_at_period_end,
             "message": "Cancellation is scheduled for the end of the current billing period." if current_user.subscription_cancel_at_period_end else "Your subscription is cancelled."}
@@ -350,8 +359,10 @@ def _apply_event(db: Session, event) -> None:
         if metadata_id is not None and str(metadata_id) != str(user.id):
             raise RuntimeError("Checkout metadata identity disagrees")
         sub_id = _stripe_id(obj.get("subscription"))
+        if _event_is_stale(user, evt_ts):
+            return
         sub = stripe_service.retrieve_subscription(sub_id)
-        _store_subscription(db, user, sub, sub_id)
+        _store_subscription(db, user, sub, sub_id, evt_ts)
 
     elif etype in ("customer.subscription.created", "customer.subscription.updated"):
         user = _find_user(db, obj.get("customer"), None)
@@ -360,8 +371,10 @@ def _apply_event(db: Session, event) -> None:
         sub_id = _stripe_id(obj.get("id"))
         # Signed events can arrive out of order; validate a current provider
         # snapshot rather than granting from the event's historical status.
+        if _event_is_stale(user, evt_ts):
+            return
         sub = stripe_service.retrieve_subscription(sub_id)
-        _store_subscription(db, user, sub, sub_id)
+        _store_subscription(db, user, sub, sub_id, evt_ts)
 
     elif etype == "customer.subscription.deleted":
         user = _find_user(db, obj.get("customer"), None)
@@ -371,9 +384,16 @@ def _apply_event(db: Session, event) -> None:
             # A late deletion of an older subscription must not revoke the
             # separately recorded replacement subscription.
             return
+        if _event_is_stale(user, evt_ts):
+            return
+        if evt_ts is not None:
+            user.stripe_event_ts = evt_ts
         user.subscription_status = "canceled"
         user.subscription_cancel_at_period_end = False
+        user.stripe_verified_plan = "free"
         user.plan = "free"
+        from ...services.store_billing import apply_plan
+        apply_plan(db, user)
         db.commit()
 
 

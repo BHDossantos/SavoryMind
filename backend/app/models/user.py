@@ -138,6 +138,8 @@ class User(Base):
     stripe_subscription_id  = Column(String(255), nullable=True)
     subscription_status     = Column(String(50),  nullable=True)  # active | trialing | past_due | canceled
     subscription_cancel_at_period_end = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Provider status alone does not prove a configured price was purchased.
+    stripe_verified_plan = Column(String(20), nullable=False, default="free", server_default="free")
     subscription_period_end = Column(DateTime,    nullable=True)  # current period end (naive UTC)
     # Unix timestamp of the last-applied Stripe subscription event. The webhook
     # ignores any event older than this, so an out-of-order or replayed event
