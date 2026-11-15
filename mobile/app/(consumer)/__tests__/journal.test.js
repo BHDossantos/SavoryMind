@@ -6,7 +6,7 @@ import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 
 const mockUseFocusEffect = jest.fn((cb) => { cb(); });
 jest.mock('expo-router', () => ({
-  useFocusEffect: (cb) => mockUseFocusEffect(cb),
+  useFocusEffect: (cb) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('../../../services/api', () => ({
@@ -35,7 +35,7 @@ beforeEach(() => {
 
 describe('Journal screen', () => {
   test('shows the empty state when no memories yet', async () => {
-    const { findByText } = render(<JournalScreen />);
+    const { findByText } = await render(<JournalScreen />);
     expect(await findByText('No memories yet')).toBeDefined();
   });
 
@@ -43,7 +43,7 @@ describe('Journal screen', () => {
     api.getMemories.mockResolvedValue([
       { id: 1, dish_name: 'Risotto', notes: 'Creamy, perfect texture.', mood: '🤤', created_at: new Date().toISOString() },
     ]);
-    const { findByText } = render(<JournalScreen />);
+    const { findByText } = await render(<JournalScreen />);
     expect(await findByText('Risotto')).toBeDefined();
     expect(await findByText('Creamy, perfect texture.')).toBeDefined();
   });
@@ -52,17 +52,17 @@ describe('Journal screen', () => {
     api.createMemory.mockResolvedValue({
       id: 2, dish_name: 'Tagine', notes: 'Bit too salty', mood: '😋',
     });
-    const { findByText, getByPlaceholderText } = render(<JournalScreen />);
+    const { findByText, getByPlaceholderText } = await render(<JournalScreen />);
 
     // Wait for initial mount so the toggle button is in the tree
     const openBtn = await findByText('+ Log meal');
-    fireEvent.press(openBtn);
+    await fireEvent.press(openBtn);
 
-    fireEvent.changeText(getByPlaceholderText('What did you make / eat?'), 'Tagine');
-    fireEvent.changeText(getByPlaceholderText(/Notes/), 'Bit too salty');
+    await fireEvent.changeText(getByPlaceholderText('What did you make / eat?'), 'Tagine');
+    await fireEvent.changeText(getByPlaceholderText(/Notes/), 'Bit too salty');
 
     const saveBtn = await findByText('Save memory');
-    fireEvent.press(saveBtn);
+    await fireEvent.press(saveBtn);
 
     await waitFor(() => {
       expect(api.createMemory).toHaveBeenCalledWith({

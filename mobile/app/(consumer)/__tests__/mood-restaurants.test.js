@@ -10,6 +10,8 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
+
 jest.mock('../../../services/api', () => ({
   api: { moodToMeal: jest.fn() },
 }));
@@ -39,11 +41,11 @@ beforeEach(() => {
 
 async function arriveAtResult({ restaurants = [] } = {}) {
   api.moodToMeal.mockResolvedValue({ source: 'ai', recommendation: REC, restaurants });
-  const view = render(<MoodScreen />);
-  fireEvent.press(await view.findByText('Cozy'));
-  fireEvent.press(view.getByText('Indulgent'));
-  fireEvent.press(view.getByText(/€€ Comfortable/));
-  fireEvent.press(view.getByText(/Tell me what to eat/));
+  const view = await render(<MoodScreen />);
+  await fireEvent.press(await view.findByText('Cozy'));
+  await fireEvent.press(view.getByText('Indulgent'));
+  await fireEvent.press(view.getByText(/€€ Comfortable/));
+  await fireEvent.press(view.getByText(/Tell me what to eat/));
   await waitFor(() => expect(api.moodToMeal).toHaveBeenCalled());
   return view;
 }
@@ -63,7 +65,7 @@ describe('Restaurant matches under Mood-to-Meal', () => {
   test('tapping a restaurant opens the savorymind.net/r/{slug} booking page', async () => {
     const openSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue();
     const view = await arriveAtResult({ restaurants: REST });
-    fireEvent.press(await view.findByText('Trattoria Roma'));
+    await fireEvent.press(await view.findByText('Trattoria Roma'));
     await waitFor(() => expect(openSpy).toHaveBeenCalledWith('https://savorymind.net/r/trattoria-roma'));
     expect(track).toHaveBeenCalledWith(
       'wedge_mood_restaurant_click',

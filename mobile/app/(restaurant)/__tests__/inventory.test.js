@@ -13,7 +13,7 @@ import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 
 const mockUseFocusEffect = jest.fn((cb) => { cb(); });
 jest.mock('expo-router', () => ({
-  useFocusEffect: (cb) => mockUseFocusEffect(cb),
+  useFocusEffect: (cb) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('expo-haptics', () => ({
@@ -60,7 +60,7 @@ beforeEach(() => {
 
 describe('Inventory screen', () => {
   test('shows empty state when no items', async () => {
-    const { findByTestId, findByText } = render(<InventoryScreen />);
+    const { findByTestId, findByText } = await render(<InventoryScreen />);
     expect(await findByTestId('inventory-empty')).toBeDefined();
     expect(await findByText(/Tap \+ Add to start tracking/i)).toBeDefined();
   });
@@ -71,7 +71,7 @@ describe('Inventory screen', () => {
       { id: 2, name: 'Bourbon',  category: 'alcohol', unit: 'bottles', par_level: 6, current_quantity: 2,  is_low: true },
     ]);
 
-    const { findByText, findAllByText } = render(<InventoryScreen />);
+    const { findByText, findAllByText } = await render(<InventoryScreen />);
     expect(await findByText('Bourbon')).toBeDefined();
     expect(await findByText('Apples')).toBeDefined();
     const lowBadges = await findAllByText(/Low/);
@@ -84,22 +84,22 @@ describe('Inventory screen', () => {
     ]);
     api.adjustInventoryItem.mockResolvedValue({ id: 1 });
 
-    const { findByText, getByTestId } = render(<InventoryScreen />);
-    fireEvent.press(await findByText('Cabernet'));
+    const { findByText, getByTestId } = await render(<InventoryScreen />);
+    await fireEvent.press(await findByText('Cabernet'));
 
     // Sheet visible — bump +1 twice, then -1 once → delta = +1
-    fireEvent.press(await getByTestId('bump-plus-1'));
-    fireEvent.press(getByTestId('bump-plus-1'));
-    fireEvent.press(getByTestId('bump-minus-1'));
-    fireEvent.press(getByTestId('type-delivery'));
-    fireEvent.press(getByTestId('bump-plus-1'));
+    await fireEvent.press(await getByTestId('bump-plus-1'));
+    await fireEvent.press(getByTestId('bump-plus-1'));
+    await fireEvent.press(getByTestId('bump-minus-1'));
+    await fireEvent.press(getByTestId('type-delivery'));
+    await fireEvent.press(getByTestId('bump-plus-1'));
 
     // Save
-    fireEvent.press(getByTestId('bump-plus-1')); // delta = 3 now
+    await fireEvent.press(getByTestId('bump-plus-1')); // delta = 3 now
     // Press save — delta should be sum of all bumps
     // Bumps so far: +1,+1,-1,+1,+1 = +3
     const saveButton = await findByText('Save');
-    fireEvent.press(saveButton);
+    await fireEvent.press(saveButton);
 
     await waitFor(() => expect(api.adjustInventoryItem).toHaveBeenCalledWith(7, {
       adjustment_type: 'delivery',
@@ -114,12 +114,12 @@ describe('Inventory screen', () => {
     ]);
     api.adjustInventoryItem.mockResolvedValue({ id: 1 });
 
-    const { findByText, getByTestId } = render(<InventoryScreen />);
-    fireEvent.press(await findByText("Tito's Vodka"));
+    const { findByText, getByTestId } = await render(<InventoryScreen />);
+    await fireEvent.press(await findByText("Tito's Vodka"));
 
     // bottles → case pack of 12. Press +Case once → delta = 12.
-    fireEvent.press(await getByTestId('bump-plus-case'));
-    fireEvent.press(await findByText('Save'));
+    await fireEvent.press(await getByTestId('bump-plus-case'));
+    await fireEvent.press(await findByText('Save'));
 
     await waitFor(() => expect(api.adjustInventoryItem).toHaveBeenCalledWith(5, {
       adjustment_type: 'delivery',
@@ -131,12 +131,12 @@ describe('Inventory screen', () => {
   test('add-item categorize-on-blur populates category', async () => {
     api.categorizeInventoryItem.mockResolvedValue({ category: 'alcohol', confidence: 0.95 });
 
-    const { findByText, getByTestId } = render(<InventoryScreen />);
-    fireEvent.press(await findByText('+ Add'));
+    const { findByText, getByTestId } = await render(<InventoryScreen />);
+    await fireEvent.press(await findByText('+ Add'));
 
     const nameInput = await getByTestId('add-name-input');
-    fireEvent.changeText(nameInput, "Tito's Vodka 1.75L");
-    fireEvent(nameInput, 'blur');
+    await fireEvent.changeText(nameInput, "Tito's Vodka 1.75L");
+    await fireEvent(nameInput, 'blur');
 
     await waitFor(() => expect(api.categorizeInventoryItem).toHaveBeenCalledWith("Tito's Vodka 1.75L"));
   });

@@ -34,7 +34,7 @@ beforeEach(() => {
 
 describe('Notifications screen', () => {
   test('empty state when no notifications', async () => {
-    const { findByText } = render(<NotificationsScreen />);
+    const { findByText } = await render(<NotificationsScreen />);
     expect(await findByText("You're all caught up.")).toBeDefined();
   });
 
@@ -43,13 +43,13 @@ describe('Notifications screen', () => {
       { id: 1, title: 'Booking confirmed', body: '7pm Friday', read: false, created_at: new Date().toISOString() },
       { id: 2, title: 'New review',        body: 'Anna left 5★',  read: true,  created_at: new Date().toISOString() },
     ]);
-    const { findByText } = render(<NotificationsScreen />);
+    const { findByText } = await render(<NotificationsScreen />);
     expect(await findByText('Booking confirmed')).toBeDefined();
     expect(await findByText('New review')).toBeDefined();
   });
 
   test('calls markNotificationsRead on mount (best-effort)', async () => {
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
     // The mark-read fire-and-forget runs on mount; nothing async to await
     // beyond the next microtask.
     await Promise.resolve();
@@ -63,7 +63,7 @@ describe('Notifications screen', () => {
     api.getNotifications.mockResolvedValue({
       notifications: [{ id: 5, title: 'Wrapper format', body: '…', read: false }],
     });
-    const { findByText } = render(<NotificationsScreen />);
+    const { findByText } = await render(<NotificationsScreen />);
     expect(await findByText('Wrapper format')).toBeDefined();
   });
 });

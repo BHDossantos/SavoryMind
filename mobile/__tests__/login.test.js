@@ -61,20 +61,20 @@ describe('Login screen', () => {
   test('Sign In disabled until email + password are filled, then calls login()', async () => {
     mockLogin.mockResolvedValue({ id: 1, email: 'a@b.com' });
 
-    const { getByText, getByPlaceholderText } = render(<LoginScreen />);
+    const { getByText, getByPlaceholderText } = await render(<LoginScreen />);
 
-    fireEvent.changeText(getByPlaceholderText('you@example.com'), 'a@b.com');
-    fireEvent.changeText(getByPlaceholderText('Your password'), 'password123');
+    await fireEvent.changeText(getByPlaceholderText('you@example.com'), 'a@b.com');
+    await fireEvent.changeText(getByPlaceholderText('Your password'), 'password123');
 
-    await act(async () => { fireEvent.press(getByText('Sign In')); });
+    await act(async () => { await fireEvent.press(getByText('Sign In')); });
 
     expect(mockLogin).toHaveBeenCalledWith('a@b.com', 'password123');
   });
 
   test('blank email shows the inline error and does not call login()', async () => {
-    const { getByText } = render(<LoginScreen />);
+    const { getByText } = await render(<LoginScreen />);
 
-    await act(async () => { fireEvent.press(getByText('Sign In')); });
+    await act(async () => { await fireEvent.press(getByText('Sign In')); });
 
     expect(getByText('Email and password are required.')).toBeTruthy();
     expect(mockLogin).not.toHaveBeenCalled();
@@ -83,11 +83,11 @@ describe('Login screen', () => {
   test('login() rejection surfaces the message inline', async () => {
     mockLogin.mockRejectedValue(new Error('Incorrect email or password.'));
 
-    const { getByText, getByPlaceholderText } = render(<LoginScreen />);
-    fireEvent.changeText(getByPlaceholderText('you@example.com'), 'a@b.com');
-    fireEvent.changeText(getByPlaceholderText('Your password'), 'wrong');
+    const { getByText, getByPlaceholderText } = await render(<LoginScreen />);
+    await fireEvent.changeText(getByPlaceholderText('you@example.com'), 'a@b.com');
+    await fireEvent.changeText(getByPlaceholderText('Your password'), 'wrong');
 
-    await act(async () => { fireEvent.press(getByText('Sign In')); });
+    await act(async () => { await fireEvent.press(getByText('Sign In')); });
 
     await waitFor(() => expect(getByText('Incorrect email or password.')).toBeTruthy());
   });
@@ -105,27 +105,9 @@ describe('Login screen', () => {
     mockLoginApple.mockResolvedValue({ id: 1, email: 'alice@privaterelay.appleid.com' });
 
     try {
-      const { UNSAFE_getAllByType } = render(<LoginScreen />);
-      const { TouchableOpacity } = require('react-native');
-      const tiles = UNSAFE_getAllByType(TouchableOpacity);
-
-      // Press tiles in order; the Apple one will trigger mockAppleSignIn.
-      // SOCIAL_PROVIDERS order: google, github, azure-ad, apple, facebook, ...
-      // Apple is index 3 inside the social row, but the row also includes
-      // back-button and other UI buttons before it. Iterate until apple fires.
-      let appleHit = false;
-      for (const tile of tiles) {
-        mockAppleSignIn.mockClear();
-        await act(async () => {
-          try { fireEvent.press(tile); } catch {}
-        });
-        if (mockAppleSignIn.mock.calls.length > 0) {
-          appleHit = true;
-          break;
-        }
-      }
-
-      expect(appleHit).toBe(true);
+      const { getByRole } = await render(<LoginScreen />);
+      await fireEvent.press(getByRole('button', { name: 'Apple' }));
+      expect(mockAppleSignIn).toHaveBeenCalledTimes(1);
       await waitFor(() => expect(mockLoginApple).toHaveBeenCalledWith({
         idToken: 'apple-id-token-xyz',
         name:    'Alice Example',
@@ -146,17 +128,9 @@ describe('Login screen', () => {
     mockAppleSignIn.mockRejectedValue(cancelErr);
 
     try {
-      const { UNSAFE_getAllByType, queryByText } = render(<LoginScreen />);
-      const { TouchableOpacity } = require('react-native');
-      const tiles = UNSAFE_getAllByType(TouchableOpacity);
-
-      for (const tile of tiles) {
-        mockAppleSignIn.mockClear();
-        await act(async () => {
-          try { fireEvent.press(tile); } catch {}
-        });
-        if (mockAppleSignIn.mock.calls.length > 0) break;
-      }
+      const { getByRole, queryByText } = await render(<LoginScreen />);
+      await fireEvent.press(getByRole('button', { name: 'Apple' }));
+      expect(mockAppleSignIn).toHaveBeenCalledTimes(1);
 
       // Cancel = no error banner, no loginApple call
       expect(mockLoginApple).not.toHaveBeenCalled();
@@ -167,28 +141,8 @@ describe('Login screen', () => {
   });
 
   test('social provider tap opens the web app via WebBrowser', async () => {
-    // Each social-provider tile is a TouchableOpacity with no accessible
-    // label; we drive them by their position in the row. The first one
-    // is Google (per SOCIAL_PROVIDERS in app/login.js).
-    const { UNSAFE_getAllByType } = render(<LoginScreen />);
-    const { TouchableOpacity } = require('react-native');
-    const all = UNSAFE_getAllByType(TouchableOpacity);
-    // The first 6 buttons in the tree before Sign In: back, then 7
-    // social tiles. Filter to ones inside the social row by clicking
-    // them and checking the WebBrowser mock fires for any of them.
-    let opened = false;
-    for (const tile of all) {
-      WebBrowser.openBrowserAsync.mockClear();
-      await act(async () => {
-        try { fireEvent.press(tile); } catch {}
-      });
-      if (WebBrowser.openBrowserAsync.mock.calls.length > 0) {
-        opened = true;
-        const [url] = WebBrowser.openBrowserAsync.mock.calls[0];
-        expect(url).toMatch(/\/login$/);
-        break;
-      }
-    }
-    expect(opened).toBe(true);
+    const { getByRole } = await render(<LoginScreen />);
+    await fireEvent.press(getByRole('button', { name: 'GitHub' }));
+    expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(expect.stringMatching(/\/login$/));
   });
 });

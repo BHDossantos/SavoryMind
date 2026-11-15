@@ -18,8 +18,8 @@ beforeEach(() => {
 });
 test('shows localized store price and period and purchases with server identity', async () => {
   purchases.purchase.mockResolvedValue({ granted: true, plan: 'premium', enabled: true, can_purchase: false });
-  const screen = render(<NativeMembership />);
-  fireEvent.press(await screen.findByText('Subscribe: Premium — $4.99 every 1 month'));
+  const screen = await render(<NativeMembership />);
+  await fireEvent.press(await screen.findByText('Subscribe: Premium — $4.99 every 1 month'));
   await waitFor(() => expect(purchases.purchase).toHaveBeenCalledWith('sku', 'server-identity'));
   expect(await screen.findByText('Your store membership is verified.')).toBeTruthy();
   expect(mockUpdate).toHaveBeenCalledWith({ plan: 'premium' });
@@ -27,15 +27,15 @@ test('shows localized store price and period and purchases with server identity'
 test('existing subscriber can restore without another purchase offer', async () => {
   api.getStoreContext.mockResolvedValue({ enabled: true, can_purchase: false, app_user_id: 'existing', products: ['sku'] });
   purchases.restore.mockResolvedValue({ granted: false, plan: 'free', enabled: true });
-  const screen = render(<NativeMembership />);
-  fireEvent.press(await screen.findByText('Restore purchases'));
+  const screen = await render(<NativeMembership />);
+  await fireEvent.press(await screen.findByText('Restore purchases'));
   expect(screen.queryByText(/Subscribe:/)).toBeNull();
   await waitFor(() => expect(purchases.restore).toHaveBeenCalledWith('existing'));
   expect(await screen.findByText(/No active store membership/)).toBeTruthy();
 });
 test('does not display a purchase without a known billing period', async () => {
   purchases.products.mockResolvedValue([{ identifier: 'sku', priceString: '$4.99' }]);
-  const screen = render(<NativeMembership />);
+  const screen = await render(<NativeMembership />);
   await screen.findByText('Restore purchases');
   await waitFor(() => expect(purchases.products).toHaveBeenCalled());
   expect(screen.queryByText(/Subscribe:/)).toBeNull();
@@ -45,11 +45,13 @@ test('does not display a purchase without a known billing period', async () => {
 test('completion from a previous account never updates the new account UI', async () => {
   let finish;
   purchases.purchase.mockReturnValue(new Promise(resolve => { finish = resolve; }));
-  const screen = render(<NativeMembership />);
-  fireEvent.press(await screen.findByText('Subscribe: Premium — $4.99 every 1 month'));
+  const screen = await render(<NativeMembership />);
+  const button = await screen.findByText('Subscribe: Premium — $4.99 every 1 month');
+  // Leave the deliberately pending purchase unresolved while the account changes.
+  await fireEvent.press(button);
   await waitFor(() => expect(purchases.purchase).toHaveBeenCalled());
   mockUserId = 2;
-  screen.rerender(<NativeMembership />);
+  await screen.rerender(<NativeMembership />);
   finish({ granted: true, plan: 'premium', enabled: true });
   await waitFor(() => expect(purchases.configure).toHaveBeenCalledTimes(2));
   expect(mockUpdate).not.toHaveBeenCalled();

@@ -9,8 +9,8 @@ beforeEach(() => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplemen
 afterEach(() => jest.restoreAllMocks());
 test('asks for confirmation before submitting a deletion request', async () => {
   api.requestAccountDeletion.mockResolvedValue({ ok: true, request_id: 'request-123' });
-  const screen = render(<AccountDeletion />);
-  fireEvent.press(screen.getByText('Delete account'));
+  const screen = await render(<AccountDeletion />);
+  await fireEvent.press(screen.getByText('Delete account'));
   expect(api.requestAccountDeletion).not.toHaveBeenCalled();
   const actions = Alert.alert.mock.calls[0][2];
   expect(actions[0].style).toBe('cancel');
@@ -21,8 +21,8 @@ test('asks for confirmation before submitting a deletion request', async () => {
 });
 test('shows a retryable failure when delivery fails', async () => {
   api.requestAccountDeletion.mockRejectedValue(new Error('Unavailable'));
-  const screen = render(<AccountDeletion />);
-  fireEvent.press(screen.getByText('Delete account'));
+  const screen = await render(<AccountDeletion />);
+  await fireEvent.press(screen.getByText('Delete account'));
   await act(async () => Alert.alert.mock.calls[0][2][1].onPress());
   await waitFor(() => expect(screen.getByText(/could not be sent/)).toBeTruthy());
   expect(screen.queryByText(/request received/)).toBeNull();

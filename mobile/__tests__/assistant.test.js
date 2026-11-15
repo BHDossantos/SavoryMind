@@ -41,8 +41,8 @@ beforeEach(() => {
 
 
 describe('Assistant screen', () => {
-  test('renders the welcome message and suggestion chips on mount', () => {
-    const { getByText } = render(<AssistantScreen />);
+  test('renders the welcome message and suggestion chips on mount', async () => {
+    const { getByText } = await render(<AssistantScreen />);
     expect(getByText("Hey, I'm Flavor 👋")).toBeTruthy();
     expect(getByText('Substitute for buttermilk?')).toBeTruthy();
   });
@@ -50,13 +50,13 @@ describe('Assistant screen', () => {
   test('typing + Send calls askAssistant with the question', async () => {
     api.askAssistant.mockResolvedValue({ title: 'Resting times', answer: 'Rest 5 minutes.' });
 
-    const { getByText, getByPlaceholderText } = render(<AssistantScreen />);
-    fireEvent.changeText(
+    const { getByText, getByPlaceholderText } = await render(<AssistantScreen />);
+    await fireEvent.changeText(
       getByPlaceholderText('Ask anything — recipes, techniques, pairings, fixes…'),
       'How long to rest a steak?',
     );
 
-    await act(async () => { fireEvent.press(getByText('Send')); });
+    await act(async () => { await fireEvent.press(getByText('Send')); });
 
     expect(api.askAssistant).toHaveBeenCalledWith('How long to rest a steak?', null);
     await waitFor(() => expect(getByText('Rest 5 minutes.')).toBeTruthy());
@@ -66,8 +66,8 @@ describe('Assistant screen', () => {
   test('tapping a suggestion chip sends that suggestion', async () => {
     api.askAssistant.mockResolvedValue({ title: 'Buttermilk swap', answer: 'Use 1 cup milk + 1 tbsp lemon juice.' });
 
-    const { getByText } = render(<AssistantScreen />);
-    await act(async () => { fireEvent.press(getByText('Substitute for buttermilk?')); });
+    const { getByText } = await render(<AssistantScreen />);
+    await act(async () => { await fireEvent.press(getByText('Substitute for buttermilk?')); });
 
     expect(api.askAssistant).toHaveBeenCalledWith('Substitute for buttermilk?', null);
     await waitFor(() => expect(getByText('Use 1 cup milk + 1 tbsp lemon juice.')).toBeTruthy());
@@ -76,21 +76,21 @@ describe('Assistant screen', () => {
   test('rejection surfaces an in-thread "Oops" message instead of crashing', async () => {
     api.askAssistant.mockRejectedValue(new Error('Network down'));
 
-    const { getByText, getByPlaceholderText } = render(<AssistantScreen />);
-    fireEvent.changeText(
+    const { getByText, getByPlaceholderText } = await render(<AssistantScreen />);
+    await fireEvent.changeText(
       getByPlaceholderText('Ask anything — recipes, techniques, pairings, fixes…'),
       'something',
     );
 
-    await act(async () => { fireEvent.press(getByText('Send')); });
+    await act(async () => { await fireEvent.press(getByText('Send')); });
 
     await waitFor(() => expect(getByText('Oops')).toBeTruthy());
     expect(getByText('Network down')).toBeTruthy();
   });
 
-  test('back arrow calls router.back()', () => {
-    const { getByText } = render(<AssistantScreen />);
-    fireEvent.press(getByText('← Back'));
+  test('back arrow calls router.back()', async () => {
+    const { getByText } = await render(<AssistantScreen />);
+    await fireEvent.press(getByText('← Back'));
     expect(mockBack).toHaveBeenCalled();
   });
 });

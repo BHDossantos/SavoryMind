@@ -10,6 +10,8 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Share } from 'react-native';
 
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
+
 jest.mock('../../../services/api', () => ({
   api: { moodToMeal: jest.fn() },
 }));
@@ -39,18 +41,18 @@ beforeEach(() => {
 
 describe('Mood-to-Meal screen', () => {
   test('renders the North Star tagline', async () => {
-    const { findByText } = render(<MoodScreen />);
+    const { findByText } = await render(<MoodScreen />);
     expect(await findByText(/Tell us how you feel/)).toBeDefined();
   });
 
   test('submit calls the API with the chosen mood/experience/budget', async () => {
     api.moodToMeal.mockResolvedValue({ source: 'ai', recommendation: REC });
-    const { findByText, getByText } = render(<MoodScreen />);
+    const { findByText, getByText } = await render(<MoodScreen />);
 
-    fireEvent.press(await findByText('Cozy'));
-    fireEvent.press(getByText('Indulgent'));
-    fireEvent.press(getByText(/€€ Comfortable/));
-    fireEvent.press(getByText(/Tell me what to eat/));
+    await fireEvent.press(await findByText('Cozy'));
+    await fireEvent.press(getByText('Indulgent'));
+    await fireEvent.press(getByText(/€€ Comfortable/));
+    await fireEvent.press(getByText(/Tell me what to eat/));
 
     await waitFor(() => expect(api.moodToMeal).toHaveBeenCalled());
     const payload = api.moodToMeal.mock.calls[0][0];
@@ -61,12 +63,12 @@ describe('Mood-to-Meal screen', () => {
 
   test('result card renders the dish, drink, and share title', async () => {
     api.moodToMeal.mockResolvedValue({ source: 'ai', recommendation: REC });
-    const { findByText, getByText } = render(<MoodScreen />);
+    const { findByText, getByText } = await render(<MoodScreen />);
 
-    fireEvent.press(await findByText('Cozy'));
-    fireEvent.press(getByText('Indulgent'));
-    fireEvent.press(getByText(/€€ Comfortable/));
-    fireEvent.press(getByText(/Tell me what to eat/));
+    await fireEvent.press(await findByText('Cozy'));
+    await fireEvent.press(getByText('Indulgent'));
+    await fireEvent.press(getByText(/€€ Comfortable/));
+    await fireEvent.press(getByText(/Tell me what to eat/));
 
     expect(await findByText('Cacio e pepe')).toBeDefined();
     expect(getByText('Frascati')).toBeDefined();
@@ -81,13 +83,13 @@ describe('Mood-to-Meal screen', () => {
     api.moodToMeal.mockResolvedValue({ source: 'ai', recommendation: REC });
     const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
 
-    const { findByText, getByText } = render(<MoodScreen />);
-    fireEvent.press(await findByText('Cozy'));
-    fireEvent.press(getByText('Indulgent'));
-    fireEvent.press(getByText(/€€ Comfortable/));
-    fireEvent.press(getByText(/Tell me what to eat/));
+    const { findByText, getByText } = await render(<MoodScreen />);
+    await fireEvent.press(await findByText('Cozy'));
+    await fireEvent.press(getByText('Indulgent'));
+    await fireEvent.press(getByText(/€€ Comfortable/));
+    await fireEvent.press(getByText(/Tell me what to eat/));
 
-    fireEvent.press(await findByText(/Share this vibe/));
+    await fireEvent.press(await findByText(/Share this vibe/));
     await waitFor(() => expect(shareSpy).toHaveBeenCalled());
     expect(shareSpy.mock.calls[0][0].message).toContain('Tonight you are: cacio e pepe');
     shareSpy.mockRestore();
@@ -95,12 +97,12 @@ describe('Mood-to-Meal screen', () => {
 
   test('API failure surfaces the error and keeps the form', async () => {
     api.moodToMeal.mockRejectedValue(new Error('network down'));
-    const { findByText, getByText } = render(<MoodScreen />);
+    const { findByText, getByText } = await render(<MoodScreen />);
 
-    fireEvent.press(await findByText('Cozy'));
-    fireEvent.press(getByText('Indulgent'));
-    fireEvent.press(getByText(/€€ Comfortable/));
-    fireEvent.press(getByText(/Tell me what to eat/));
+    await fireEvent.press(await findByText('Cozy'));
+    await fireEvent.press(getByText('Indulgent'));
+    await fireEvent.press(getByText(/€€ Comfortable/));
+    await fireEvent.press(getByText(/Tell me what to eat/));
 
     expect(await findByText('network down')).toBeDefined();
     // Form is still there for a retry.

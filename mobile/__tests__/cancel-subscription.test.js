@@ -8,8 +8,8 @@ beforeEach(() => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplemen
 afterEach(() => jest.restoreAllMocks());
 test('requires confirmation and displays only provider-confirmed cancellation', async () => {
   api.cancelSubscription.mockResolvedValue({ confirmed: true, message: 'Cancellation scheduled.' });
-  const screen = render(<CancelSubscription status={{ can_cancel: true }} />);
-  fireEvent.press(screen.getByText('Cancel subscription renewal'));
+  const screen = await render(<CancelSubscription status={{ can_cancel: true }} />);
+  await fireEvent.press(screen.getByText('Cancel subscription renewal'));
   expect(api.cancelSubscription).not.toHaveBeenCalled();
   await act(async () => Alert.alert.mock.calls[0][2][1].onPress());
   expect(screen.getByText('Cancellation scheduled.')).toBeTruthy();
@@ -17,14 +17,14 @@ test('requires confirmation and displays only provider-confirmed cancellation', 
 });
 test('failed cancellation stays retryable and never reports success', async () => {
   api.cancelSubscription.mockRejectedValue(new Error('Provider outage'));
-  const screen = render(<CancelSubscription status={{ can_cancel: true }} />);
-  fireEvent.press(screen.getByText('Cancel subscription renewal'));
+  const screen = await render(<CancelSubscription status={{ can_cancel: true }} />);
+  await fireEvent.press(screen.getByText('Cancel subscription renewal'));
   await act(async () => Alert.alert.mock.calls[0][2][1].onPress());
   expect(screen.getByText(/Cancellation could not be confirmed/)).toBeTruthy();
   expect(screen.getByText('Cancel subscription renewal')).toBeTruthy();
 });
-test('does not offer cancelling a renewal already cancelled', () => {
-  const screen = render(<CancelSubscription status={{ can_cancel: true, cancel_at_period_end: true }} />);
+test('does not offer cancelling a renewal already cancelled', async () => {
+  const screen = await render(<CancelSubscription status={{ can_cancel: true, cancel_at_period_end: true }} />);
   expect(screen.queryByText('Cancel subscription renewal')).toBeNull();
   expect(screen.getByText(/scheduled to end/)).toBeTruthy();
 });

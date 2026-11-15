@@ -6,7 +6,7 @@ import { render, fireEvent, act } from '@testing-library/react-native';
 
 const mockUseFocusEffect = jest.fn((cb) => { cb(); });
 jest.mock('expo-router', () => ({
-  useFocusEffect: (cb) => mockUseFocusEffect(cb),
+  useFocusEffect: (cb) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('../../../services/api', () => ({
@@ -34,7 +34,7 @@ beforeEach(() => {
 
 describe('Employees screen', () => {
   test('empty state when no employees', async () => {
-    const { findByText } = render(<EmployeesScreen />);
+    const { findByText } = await render(<EmployeesScreen />);
     expect(await findByText('No employees yet')).toBeDefined();
   });
 
@@ -43,7 +43,7 @@ describe('Employees screen', () => {
       { id: 1, display_name: 'Anna', email: 'anna@x.com', role: 'chef' },
       { id: 2, display_name: 'Bob',  email: 'bob@x.com',  role: 'waiter' },
     ]);
-    const { findByText } = render(<EmployeesScreen />);
+    const { findByText } = await render(<EmployeesScreen />);
     expect(await findByText('Anna')).toBeDefined();
     expect(await findByText('Bob')).toBeDefined();
   });
@@ -52,17 +52,17 @@ describe('Employees screen', () => {
     api.createEmployee.mockResolvedValue({
       id: 99, display_name: 'Carla', email: 'carla@x.com', role: 'sommelier',
     });
-    const { findByText, getByPlaceholderText } = render(<EmployeesScreen />);
+    const { findByText, getByPlaceholderText } = await render(<EmployeesScreen />);
 
     const addBtn = await findByText('+ Add');
-    fireEvent.press(addBtn);
+    await fireEvent.press(addBtn);
 
-    fireEvent.changeText(getByPlaceholderText('Full name'), 'Carla');
-    fireEvent.changeText(getByPlaceholderText('email@example.com'), 'carla@x.com');
-    fireEvent.changeText(getByPlaceholderText(/Initial password/), 'password123');
+    await fireEvent.changeText(getByPlaceholderText('Full name'), 'Carla');
+    await fireEvent.changeText(getByPlaceholderText('email@example.com'), 'carla@x.com');
+    await fireEvent.changeText(getByPlaceholderText(/Initial password/), 'password123');
 
     const createBtn = await findByText('Create employee');
-    fireEvent.press(createBtn);
+    await fireEvent.press(createBtn);
 
     const { waitFor } = require('@testing-library/react-native');
     await waitFor(() => {

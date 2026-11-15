@@ -9,7 +9,7 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
-  useFocusEffect: (cb) => cb(),
+  useFocusEffect: (cb) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('../../../contexts/AuthContext', () => ({
@@ -44,41 +44,41 @@ beforeEach(() => {
 
 describe('Order screen', () => {
   test('renders craving grid on first paint', async () => {
-    const { findByText } = render(<OrderScreen />);
+    const { findByText } = await render(<OrderScreen />);
     expect(await findByText('What are you hungry for tonight?')).toBeDefined();
     expect(await findByText('Spicy & Bold')).toBeDefined();
     expect(api.getDeliveryDishes).not.toHaveBeenCalled();
   });
 
   test('selecting a craving fetches dishes for that craving id', async () => {
-    const { findByTestId } = render(<OrderScreen />);
-    fireEvent.press(await findByTestId('craving-spicy_bold'));
+    const { findByTestId } = await render(<OrderScreen />);
+    await fireEvent.press(await findByTestId('craving-spicy_bold'));
     await waitFor(() => expect(api.getDeliveryDishes).toHaveBeenCalledWith('spicy_bold', ''));
   });
 
   test('budget chip selection threads through to dish fetch', async () => {
-    const { findByTestId } = render(<OrderScreen />);
-    fireEvent.press(await findByTestId('budget-budget'));
-    fireEvent.press(await findByTestId('craving-comfort'));
+    const { findByTestId } = await render(<OrderScreen />);
+    await fireEvent.press(await findByTestId('budget-budget'));
+    await fireEvent.press(await findByTestId('craving-comfort'));
     await waitFor(() => expect(api.getDeliveryDishes).toHaveBeenCalledWith('comfort', 'budget'));
   });
 
   test('selecting a dish fetches restaurants for that dish cuisine', async () => {
-    const { findByTestId } = render(<OrderScreen />);
-    fireEvent.press(await findByTestId('craving-spicy_bold'));
-    fireEvent.press(await findByTestId('dish-1'));
+    const { findByTestId } = await render(<OrderScreen />);
+    await fireEvent.press(await findByTestId('craving-spicy_bold'));
+    await fireEvent.press(await findByTestId('dish-1'));
     await waitFor(() => expect(api.getDeliveryRestaurants).toHaveBeenCalledWith('Thai'));
   });
 
   test('full happy-path: craving → dish → restaurant → place order shows success', async () => {
-    const { findByTestId, findByText } = render(<OrderScreen />);
-    fireEvent.press(await findByTestId('craving-spicy_bold'));
-    fireEvent.press(await findByTestId('dish-1'));
-    fireEvent.press(await findByTestId('restaurant-11'));
+    const { findByTestId, findByText } = await render(<OrderScreen />);
+    await fireEvent.press(await findByTestId('craving-spicy_bold'));
+    await fireEvent.press(await findByTestId('dish-1'));
+    await fireEvent.press(await findByTestId('restaurant-11'));
     const addressInput = await findByTestId('address-input');
-    fireEvent.changeText(addressInput, '123 Main St');
+    await fireEvent.changeText(addressInput, '123 Main St');
     await act(async () => {
-      fireEvent.press(await findByTestId('place-order-btn'));
+      await fireEvent.press(await findByTestId('place-order-btn'));
       // Mock fulfillment delay is 1.4s; let it run.
       await new Promise((r) => setTimeout(r, 1500));
     });

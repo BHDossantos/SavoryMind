@@ -9,7 +9,7 @@ jest.mock('../services/api', () => ({ api: {
   getRestaurantBillingStatus: jest.fn().mockResolvedValue({ is_pro: true }),
 } }));
 test.each([Upgrade, Billing])('shows existing status without a digital checkout button', async Screen => {
-  const screen = render(<Screen />);
+  const screen = await render(<Screen />);
   expect(await screen.findByText('Your membership is active.')).toBeTruthy();
   expect(screen.getAllByRole('button')).toHaveLength(1);
   expect(screen.getByRole('button', { name: 'Email cancellation help' })).toBeTruthy();

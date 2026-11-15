@@ -78,7 +78,7 @@ beforeEach(() => {
 
 describe('AuthProvider', () => {
   test('starts in loading=true then settles to ready when no token is stored', async () => {
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>
@@ -93,7 +93,7 @@ describe('AuthProvider', () => {
     tokenStore.getAccess.mockResolvedValue('an-existing-token');
     api.getMe.mockResolvedValue({ id: 7, email: 'restored@example.com' });
 
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>
@@ -109,14 +109,14 @@ describe('AuthProvider', () => {
       user: { id: 1, email: 'a@b.com' },
     });
 
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>
     );
     await waitFor(() => expect(getByTestId('loading').props.children).toBe('ready'));
 
-    await act(async () => { fireEvent.press(getByTestId('login-btn')); });
+    await act(async () => { await fireEvent.press(getByTestId('login-btn')); });
 
     expect(api.login).toHaveBeenCalledWith({ email: 'a@b.com', password: 'pw' });
     await waitFor(() => expect(getByTestId('user').props.children).toBe('a@b.com'));
@@ -129,14 +129,14 @@ describe('AuthProvider', () => {
       user: { id: 9, email: 'r@b.com' },
     });
 
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>
     );
     await waitFor(() => expect(getByTestId('loading').props.children).toBe('ready'));
 
-    await act(async () => { fireEvent.press(getByTestId('register-btn')); });
+    await act(async () => { await fireEvent.press(getByTestId('register-btn')); });
 
     expect(api.register).toHaveBeenCalledWith({
       email: 'r@b.com', password: 'pw', display_name: 'R', account_type: 'consumer',
@@ -155,14 +155,14 @@ describe('AuthProvider', () => {
       user: { id: 12, email: 'g@example.com' },
     });
 
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>
     );
     await waitFor(() => expect(getByTestId('loading').props.children).toBe('ready'));
 
-    await act(async () => { fireEvent.press(getByTestId('google-btn')); });
+    await act(async () => { await fireEvent.press(getByTestId('google-btn')); });
 
     expect(api.googleLogin).toHaveBeenCalledWith('eyJhbGc.fake-id-token');
     await waitFor(() => expect(getByTestId('user').props.children).toBe('g@example.com'));
@@ -175,14 +175,14 @@ describe('AuthProvider', () => {
     api.getMe.mockResolvedValue({ id: 1, email: 'who@b.com' });
     api.logout.mockResolvedValue(undefined);
 
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>
     );
     await waitFor(() => expect(getByTestId('user').props.children).toBe('who@b.com'));
 
-    await act(async () => { fireEvent.press(getByTestId('logout-btn')); });
+    await act(async () => { await fireEvent.press(getByTestId('logout-btn')); });
 
     expect(api.logout).toHaveBeenCalled();
     await waitFor(() => expect(getByTestId('user').props.children).toBe('no-user'));
@@ -192,7 +192,7 @@ describe('AuthProvider', () => {
     tokenStore.getAccess.mockResolvedValue('expired-token');
     api.getMe.mockRejectedValue(new Error('Session expired'));
 
-    const { getByTestId } = render(
+    const { getByTestId } = await render(
       <AuthProvider>
         <AuthHarness />
       </AuthProvider>

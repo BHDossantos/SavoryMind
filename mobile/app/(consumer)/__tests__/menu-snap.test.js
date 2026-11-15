@@ -42,7 +42,7 @@ beforeEach(() => {
 
 describe('Snap-a-Menu screen', () => {
   test('renders the tagline and both pick buttons', async () => {
-    const { findByText, getByTestId } = render(<MenuSnapScreen />);
+    const { findByText, getByTestId } = await render(<MenuSnapScreen />);
     expect(await findByText(/Order like a local/)).toBeDefined();
     expect(getByTestId('snap-camera')).toBeDefined();
     expect(getByTestId('snap-library')).toBeDefined();
@@ -56,11 +56,11 @@ describe('Snap-a-Menu screen', () => {
     });
     api.snapMenu.mockResolvedValue({ source: 'ai', recommendation: REC });
 
-    const { getByTestId, findByText } = render(<MenuSnapScreen />);
-    fireEvent.press(getByTestId('snap-camera'));
+    const { getByTestId, findByText } = await render(<MenuSnapScreen />);
+    await fireEvent.press(getByTestId('snap-camera'));
 
     // Preview appeared; submit button now visible.
-    fireEvent.press(await findByText(/Tell me what to order/));
+    await fireEvent.press(await findByText(/Tell me what to order/));
 
     await waitFor(() => expect(api.snapMenu).toHaveBeenCalled());
     expect(api.snapMenu.mock.calls[0][0]).toBe('file:///tmp/menu.jpg');
@@ -78,9 +78,9 @@ describe('Snap-a-Menu screen', () => {
     });
     api.snapMenu.mockResolvedValue({ source: 'stub', recommendation: REC });
 
-    const { getByTestId, findByText } = render(<MenuSnapScreen />);
-    fireEvent.press(getByTestId('snap-library'));
-    fireEvent.press(await findByText(/Tell me what to order/));
+    const { getByTestId, findByText } = await render(<MenuSnapScreen />);
+    await fireEvent.press(getByTestId('snap-library'));
+    await fireEvent.press(await findByText(/Tell me what to order/));
 
     await waitFor(() => expect(api.snapMenu).toHaveBeenCalled());
     expect(api.snapMenu.mock.calls[0][0]).toBe('file:///tmp/lib.jpg');
@@ -90,8 +90,8 @@ describe('Snap-a-Menu screen', () => {
     ImagePicker.requestCameraPermissionsAsync.mockResolvedValue({ granted: false });
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
-    const { getByTestId } = render(<MenuSnapScreen />);
-    fireEvent.press(getByTestId('snap-camera'));
+    const { getByTestId } = await render(<MenuSnapScreen />);
+    await fireEvent.press(getByTestId('snap-camera'));
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalled());
     expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
@@ -102,8 +102,8 @@ describe('Snap-a-Menu screen', () => {
     ImagePicker.requestCameraPermissionsAsync.mockResolvedValue({ granted: true });
     ImagePicker.launchCameraAsync.mockResolvedValue({ canceled: true });
 
-    const { getByTestId, queryByText } = render(<MenuSnapScreen />);
-    fireEvent.press(getByTestId('snap-camera'));
+    const { getByTestId, queryByText } = await render(<MenuSnapScreen />);
+    await fireEvent.press(getByTestId('snap-camera'));
 
     await waitFor(() => expect(ImagePicker.launchCameraAsync).toHaveBeenCalled());
     expect(queryByText(/Tell me what to order/)).toBeNull();

@@ -12,7 +12,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
-  useFocusEffect: (cb) => cb(),
+  useFocusEffect: (cb) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('../../../services/api', () => ({
@@ -70,7 +70,7 @@ describe('Sentiment screen — themes panel', () => {
       tone_breakdown: { frustrated: 3, positive: 4 },
     });
 
-    const { findByText } = render(<SentimentScreen />);
+    const { findByText } = await render(<SentimentScreen />);
     expect(await findByText('What guests are talking about')).toBeDefined();
     expect(await findByText('wait time')).toBeDefined();
     expect(await findByText('fresh ingredients')).toBeDefined();
@@ -84,7 +84,7 @@ describe('Sentiment screen — themes panel', () => {
       top_complaints: [], top_praise: [], top_themes: [], tone_breakdown: {},
     });
 
-    const { findByTestId, findByText } = render(<SentimentScreen />);
+    const { findByTestId, findByText } = await render(<SentimentScreen />);
     expect(await findByTestId('themes-empty')).toBeDefined();
     expect(await findByText(/None of your 10 reviews have been analysed yet/i)).toBeDefined();
   });
@@ -97,7 +97,7 @@ describe('Sentiment screen — themes panel', () => {
     });
     api.getSentimentSummary.mockResolvedValue(summary({ total_reviews: 0 }));
 
-    const { queryByText, queryByTestId, findByText } = render(<SentimentScreen />);
+    const { queryByText, queryByTestId, findByText } = await render(<SentimentScreen />);
     // Wait for an unrelated piece of the page to render before asserting on
     // negatives, otherwise the assertion races the initial fetch.
     await findByText('Sentiment');

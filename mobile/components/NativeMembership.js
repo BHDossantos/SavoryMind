@@ -46,14 +46,14 @@ export default function NativeMembership() {
   const enabled = context?.enabled && purchases.available();
   return <View style={{ marginVertical: 16 }}>
     {!enabled && <Text>Native store purchases are not configured for this build yet.</Text>}
-    {enabled && context.can_purchase && products.map(product => <TouchableOpacity key={product.identifier} accessibilityRole="button" disabled={busy} onPress={() => run(product.identifier)} style={{ paddingVertical: 12 }}>
+    {enabled && context.can_purchase && products.map(product => <TouchableOpacity key={product.identifier} accessibilityRole="button" disabled={busy} onPress={() => { void run(product.identifier); }} style={{ paddingVertical: 12 }}>
       <Text>Subscribe: {product.title || product.identifier} — {product.priceString} every {periodLabel(product.subscriptionPeriod)}</Text>
     </TouchableOpacity>)}
     {enabled && <>
       <Text>Subscriptions renew until cancelled in the store where you subscribed. The store confirmation shows the billing period and full terms before you pay.</Text>
       <TouchableOpacity accessibilityRole="link" onPress={() => { void Linking.openURL('https://savorymind.net/legal/terms').catch(() => setMessage('Open savorymind.net/legal/terms to read the terms.')); }}><Text>Terms of use</Text></TouchableOpacity>
       <TouchableOpacity accessibilityRole="link" onPress={() => { void Linking.openURL('https://savorymind.net/legal/privacy').catch(() => setMessage('Open savorymind.net/legal/privacy to read the privacy policy.')); }}><Text>Privacy policy</Text></TouchableOpacity>
-      <TouchableOpacity accessibilityRole="button" disabled={busy} onPress={() => run(null)} style={{ paddingVertical: 12 }}><Text>Restore purchases</Text></TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" disabled={busy} onPress={() => { void run(null); }} style={{ paddingVertical: 12 }}><Text>Restore purchases</Text></TouchableOpacity>
     </>}
     {context?.management_url && <TouchableOpacity accessibilityRole="button" onPress={() => { void Linking.openURL(context.management_url).catch(() => setMessage('Open subscriptions in your store account to manage cancellation.')); }}><Text>Manage store subscription</Text></TouchableOpacity>}
     {!!message && <Text accessibilityRole="alert">{message}</Text>}

@@ -188,6 +188,8 @@ export default function LoginScreen() {
             {SOCIAL_PROVIDERS.map((p) => (
               <TouchableOpacity
                 key={p.id}
+                accessibilityRole="button"
+                accessibilityLabel={p.label}
                 style={[styles.socialIcon, { backgroundColor: p.bg, borderWidth: p.id === 'google' ? 1 : 0, borderColor: '#d1d5db' }]}
                 onPress={() => handleSocialProvider(p)}
                 disabled={busy}

@@ -11,7 +11,7 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
-  useFocusEffect: (cb) => cb(),
+  useFocusEffect: (cb) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('../../../services/api', () => ({
@@ -33,7 +33,7 @@ beforeEach(() => {
 
 describe('Pairings screen', () => {
   test('renders inspiration chips when no result yet', async () => {
-    const { findByText } = render(<PairingsScreen />);
+    const { findByText } = await render(<PairingsScreen />);
     expect(await findByText(/Try these:/)).toBeDefined();
     expect(await findByText('Beef Steak')).toBeDefined();
   });
@@ -46,9 +46,9 @@ describe('Pairings screen', () => {
       ],
     });
 
-    const { findByTestId, findByText } = render(<PairingsScreen />);
-    fireEvent.changeText(await findByTestId('dish-input'), 'Beef Steak');
-    fireEvent.press(await findByTestId('search-btn'));
+    const { findByTestId, findByText } = await render(<PairingsScreen />);
+    await fireEvent.changeText(await findByTestId('dish-input'), 'Beef Steak');
+    await fireEvent.press(await findByTestId('search-btn'));
 
     await waitFor(() => expect(api.createWinePairing).toHaveBeenCalledWith({ dish_name: 'Beef Steak' }));
     expect(await findByText('Cabernet Sauvignon')).toBeDefined();
@@ -64,10 +64,10 @@ describe('Pairings screen', () => {
       ],
     });
 
-    const { findByTestId, findByText } = render(<PairingsScreen />);
-    fireEvent.press(await findByTestId('tab-beer'));
-    fireEvent.changeText(await findByTestId('dish-input'), 'Pad Thai');
-    fireEvent.press(await findByTestId('search-btn'));
+    const { findByTestId, findByText } = await render(<PairingsScreen />);
+    await fireEvent.press(await findByTestId('tab-beer'));
+    await fireEvent.changeText(await findByTestId('dish-input'), 'Pad Thai');
+    await fireEvent.press(await findByTestId('search-btn'));
 
     await waitFor(() => expect(api.getBeerPairing).toHaveBeenCalledWith('Pad Thai'));
     expect(await findByText('Singha Lager')).toBeDefined();
@@ -83,10 +83,10 @@ describe('Pairings screen', () => {
       ],
     });
 
-    const { findByTestId, findByText } = render(<PairingsScreen />);
-    fireEvent.press(await findByTestId('tab-spirits'));
-    fireEvent.changeText(await findByTestId('dish-input'), 'Chocolate Cake');
-    fireEvent.press(await findByTestId('search-btn'));
+    const { findByTestId, findByText } = await render(<PairingsScreen />);
+    await fireEvent.press(await findByTestId('tab-spirits'));
+    await fireEvent.changeText(await findByTestId('dish-input'), 'Chocolate Cake');
+    await fireEvent.press(await findByTestId('search-btn'));
 
     await waitFor(() => expect(api.getSpiritsPairing).toHaveBeenCalledWith('Chocolate Cake'));
     expect(await findByText('Aged Bourbon')).toBeDefined();
@@ -102,26 +102,26 @@ describe('Pairings screen', () => {
       ],
     });
 
-    const { findByTestId, findByText } = render(<PairingsScreen />);
-    fireEvent.changeText(await findByTestId('dish-input'), 'Salmon');
-    fireEvent.press(await findByTestId('search-btn'));
+    const { findByTestId, findByText } = await render(<PairingsScreen />);
+    await fireEvent.changeText(await findByTestId('dish-input'), 'Salmon');
+    await fireEvent.press(await findByTestId('search-btn'));
 
     expect(await findByText(/Top Match/i)).toBeDefined();
     expect(await findByText('Chablis')).toBeDefined();
   });
 
   test('empty dish input shows inline error and does not call API', async () => {
-    const { findByTestId, findByText } = render(<PairingsScreen />);
-    fireEvent.press(await findByTestId('search-btn'));
+    const { findByTestId, findByText } = await render(<PairingsScreen />);
+    await fireEvent.press(await findByTestId('search-btn'));
     // Empty input → button is disabled, no API call
     expect(api.createWinePairing).not.toHaveBeenCalled();
     // Try with whitespace via direct change — search-btn ignores it because
     // the dish input is empty, but we test the explicit error path by
     // typing then clearing.
     const input = await findByTestId('dish-input');
-    fireEvent.changeText(input, 'x');
-    fireEvent.changeText(input, '');
-    fireEvent.press(await findByTestId('search-btn'));
+    await fireEvent.changeText(input, 'x');
+    await fireEvent.changeText(input, '');
+    await fireEvent.press(await findByTestId('search-btn'));
     expect(api.createWinePairing).not.toHaveBeenCalled();
   });
 });

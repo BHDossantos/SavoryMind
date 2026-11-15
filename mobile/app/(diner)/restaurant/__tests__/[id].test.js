@@ -49,7 +49,7 @@ describe('Diner restaurant detail screen', () => {
       bio: 'Family-run since 1998.',
     });
     api.getAvailability.mockResolvedValue({ slots: [] });
-    const { findByText } = render(<RestaurantDetail />);
+    const { findByText } = await render(<RestaurantDetail />);
     expect(await findByText('Osteria')).toBeDefined();
     expect(await findByText(/London/)).toBeDefined();
     expect(await findByText('Italian')).toBeDefined();
@@ -64,7 +64,7 @@ describe('Diner restaurant detail screen', () => {
         { time: '20:00', remaining_covers: 4 },
       ],
     });
-    const { findByText } = render(<RestaurantDetail />);
+    const { findByText } = await render(<RestaurantDetail />);
     expect(await findByText('18:30')).toBeDefined();
     expect(await findByText('19:00')).toBeDefined();
     expect(await findByText('20:00')).toBeDefined();
@@ -75,10 +75,10 @@ describe('Diner restaurant detail screen', () => {
     api.getAvailability.mockResolvedValue({ slots: [{ time: '19:30', remaining_covers: 6 }] });
     api.requestBooking.mockResolvedValue({ id: 5, status: 'pending' });
 
-    const { findByText } = render(<RestaurantDetail />);
+    const { findByText } = await render(<RestaurantDetail />);
 
     const slot = await findByText('19:30');
-    fireEvent.press(slot);
+    await fireEvent.press(slot);
 
     const { waitFor } = require('@testing-library/react-native');
     await waitFor(() => {
@@ -95,7 +95,7 @@ describe('Diner restaurant detail screen', () => {
   test('"No slots available" empty state when availability is empty', async () => {
     api.getRestaurant.mockResolvedValue({ id: 42, name: 'Osteria' });
     api.getAvailability.mockResolvedValue({ slots: [] });
-    const { findByText } = render(<RestaurantDetail />);
+    const { findByText } = await render(<RestaurantDetail />);
     expect(await findByText(/No slots available/i)).toBeDefined();
   });
 });

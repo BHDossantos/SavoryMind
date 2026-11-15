@@ -53,7 +53,7 @@ beforeEach(() => {
 describe('Guided Cooking screen', () => {
   test('loads recipe by id and renders ingredients on first step', async () => {
     api.getRecipe.mockResolvedValue(FAKE_RECIPE);
-    const { findByTestId, findByText } = render(<GuidedCookingScreen />);
+    const { findByTestId, findByText } = await render(<GuidedCookingScreen />);
     await waitFor(() => expect(api.getRecipe).toHaveBeenCalledWith(42));
     expect(await findByTestId('ingredients-list')).toBeDefined();
     expect(await findByText('Step 1 of 3')).toBeDefined();
@@ -62,14 +62,14 @@ describe('Guided Cooking screen', () => {
 
   test('advancing through all steps reveals the finish state with memory CTA', async () => {
     api.getRecipe.mockResolvedValue(FAKE_RECIPE);
-    const { findByTestId, findByText } = render(<GuidedCookingScreen />);
+    const { findByTestId, findByText } = await render(<GuidedCookingScreen />);
     await waitFor(() => expect(api.getRecipe).toHaveBeenCalled());
 
     // Step 1 → 2 → 3
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
     // Step 3 button label is "🎉 Finish"
-    fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
 
     expect(await findByText(/You did it!/)).toBeDefined();
     expect(await findByTestId('open-memory-modal')).toBeDefined();
@@ -79,14 +79,14 @@ describe('Guided Cooking screen', () => {
     api.getRecipe.mockResolvedValue(FAKE_RECIPE);
     api.createMemory.mockResolvedValue({ ok: true });
 
-    const { findByTestId } = render(<GuidedCookingScreen />);
+    const { findByTestId } = await render(<GuidedCookingScreen />);
     await waitFor(() => expect(api.getRecipe).toHaveBeenCalled());
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('open-memory-modal'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('open-memory-modal'));
 
-    fireEvent.press(await findByTestId('save-memory'));
+    await fireEvent.press(await findByTestId('save-memory'));
     await waitFor(() => expect(api.createMemory).toHaveBeenCalledWith(expect.objectContaining({
       dish_name: 'Pad Thai',
       emoji: '🍜',
@@ -102,13 +102,13 @@ describe('Guided Cooking screen', () => {
     api.getRecipe.mockResolvedValue(FAKE_RECIPE);
     api.createMemory.mockRejectedValue(new Error('Network is offline.'));
 
-    const { findByTestId } = render(<GuidedCookingScreen />);
+    const { findByTestId } = await render(<GuidedCookingScreen />);
     await waitFor(() => expect(api.getRecipe).toHaveBeenCalled());
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('step-next'));
-    fireEvent.press(await findByTestId('open-memory-modal'));
-    fireEvent.press(await findByTestId('save-memory'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('step-next'));
+    await fireEvent.press(await findByTestId('open-memory-modal'));
+    await fireEvent.press(await findByTestId('save-memory'));
 
     // Inline error appears; modal stays mounted (no navigation away)
     expect(await findByTestId('memory-save-error')).toBeDefined();
@@ -119,11 +119,11 @@ describe('Guided Cooking screen', () => {
     api.getRecipe.mockResolvedValue(FAKE_RECIPE);
     api.askAssistant.mockResolvedValue({ title: 'Try this', answer: 'Lower the heat.' });
 
-    const { findByTestId, findByPlaceholderText, findByText } = render(<GuidedCookingScreen />);
+    const { findByTestId, findByPlaceholderText, findByText } = await render(<GuidedCookingScreen />);
     await waitFor(() => expect(api.getRecipe).toHaveBeenCalled());
-    fireEvent.press(await findByTestId('open-assistant'));
-    fireEvent.changeText(await findByPlaceholderText(/sauce is breaking/i), 'sauce broke');
-    fireEvent.press(await findByText('Ask'));
+    await fireEvent.press(await findByTestId('open-assistant'));
+    await fireEvent.changeText(await findByPlaceholderText(/sauce is breaking/i), 'sauce broke');
+    await fireEvent.press(await findByText('Ask'));
 
     await waitFor(() => expect(api.askAssistant).toHaveBeenCalledWith('sauce broke'));
     expect(await findByText('Lower the heat.')).toBeDefined();
@@ -131,7 +131,7 @@ describe('Guided Cooking screen', () => {
 
   test('recipe-not-found shows the friendly empty state', async () => {
     api.getRecipe.mockRejectedValue(new Error('not found'));
-    const { findByText } = render(<GuidedCookingScreen />);
+    const { findByText } = await render(<GuidedCookingScreen />);
     await waitFor(() => expect(api.getRecipe).toHaveBeenCalled());
     expect(await findByText(/Recipe not found/i)).toBeDefined();
   });
