@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import { setLanguage, SUPPORTED_LANGUAGES } from "../services/i18n";
 import LanguageSelector from "../components/LanguageSelector";
 
 // Two account-type options after the Food Lover + Food Explorer
@@ -120,6 +121,13 @@ export default function Signup() {
   const router = useRouter();
   const { t } = useTranslation();
   const [accountType, setAccountType] = useState(null);
+
+  useEffect(() => {
+    // Marketing pages use static translated copy; carry that explicit choice
+    // into the app on both client navigation and directly opened signup links.
+    const language = router.query.lng;
+    if (SUPPORTED_LANGUAGES.includes(language)) setLanguage(language);
+  }, [router.query.lng]);
   const [form, setForm] = useState({ email: "", password: "", display_name: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);

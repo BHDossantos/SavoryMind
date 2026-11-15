@@ -136,7 +136,7 @@ const FAQ_JSONLD = {
 
 export default function HomeEN() {
   const router = useRouter();
-  const trialHref = signupHref(router?.query, { type: "restaurant" });
+  const trialHref = signupHref(router?.query, { type: "restaurant", lng: "en" });
 
   return (
     <MarketingShell lang="en" altHref="/">

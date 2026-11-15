@@ -57,7 +57,7 @@ export default function PerChiAmaIlCibo() {
               Accedi
             </Link>
             <Link
-              href="/signup?type=consumer"
+              href="/signup?type=consumer&lng=it"
               className="bg-consumer-600 hover:bg-consumer-700 text-white text-[15px] font-bold px-5 py-2.5 rounded-xl transition-colors"
             >
               Crea il tuo profilo
@@ -142,7 +142,7 @@ export default function PerChiAmaIlCibo() {
           Gratis, in un minuto. Più lo usi, più ti conosce.
         </p>
         <Link
-          href="/signup?type=consumer"
+          href="/signup?type=consumer&lng=it"
           onClick={() => track("marketing_cta_click", { page: "per-chi-ama-il-cibo", cta: "consumer_signup" })}
           className="inline-block mt-8 bg-consumer-600 hover:bg-consumer-700 text-white text-lg font-bold px-10 py-4 rounded-2xl shadow-lg shadow-consumer-200 transition-colors"
         >

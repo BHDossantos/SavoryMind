@@ -217,7 +217,7 @@ export default function PricingTiers({ lang = "it", showFeatures = true }) {
               )}
 
               <Link
-                href={signupHref(router?.query, { type: "restaurant", plan: tier.id })}
+                href={signupHref(router?.query, { type: "restaurant", plan: tier.id, lng: lang })}
                 className={`mt-7 block text-center font-bold text-base px-5 py-3.5 rounded-2xl transition-colors ${
                   tier.featured
                     ? "bg-brand-500 hover:bg-brand-400 text-white"

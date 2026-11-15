@@ -22,7 +22,7 @@ import { useRouter } from "next/router";
  * marketing CTA so `?plan=` + utm passthrough survives to the backend.
  */
 export function signupHref(query = {}, extra = {}) {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ lng: "it" });
   const PASS = /^(utm_|gclid$|fbclid$|ref$)/;
   Object.entries(query || {}).forEach(([k, v]) => {
     if (!PASS.test(k)) return;
@@ -133,7 +133,7 @@ export default function MarketingShell({ lang = "it", altHref, children }) {
   const s = STRINGS[lang] || STRINGS.it;
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const trialHref = signupHref(router?.query, { type: "restaurant" });
+  const trialHref = signupHref(router?.query, { type: "restaurant", lng: lang });
   const homeHref = lang === "it" ? "/" : "/en";
 
   return (
@@ -273,7 +273,7 @@ export default function MarketingShell({ lang = "it", altHref, children }) {
 
           <div className="border-t border-stone-800 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
             {/* TODO(Bruno): replace with the real P.IVA once registered */}
-            <p>© {new Date().getFullYear()} SavoryMind · P.IVA 00000000000</p>
+            <p>© {new Date().getFullYear()} SavoryMind</p>
             <p className="font-semibold text-stone-400">Made in Rome 🇮🇹</p>
           </div>
         </div>
