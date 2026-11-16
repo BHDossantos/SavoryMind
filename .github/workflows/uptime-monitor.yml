@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # This workflow does not check out a repository; gh needs an explicit target.
+  # Keep gh operations explicitly scoped to this repository.
   GH_REPO: ${{ github.repository }}
   WEB_URL: "https://savorymind.net/"
   API_URL: "https://api.savorymind.net/"
@@ -39,42 +39,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
       - name: Probe endpoints (with retries to avoid false alarms)
         id: probe
-        run: |
-          set +e
-          fails=""
-
-          # Check one URL: pass if any of 3 tries returns 200 (generous
-          # timeout absorbs a free-tier cold start). Optionally require a
-          # substring in the body.
-          check() {
-            local name="$1" url="$2" needle="${3:-}"
-            for i in 1 2 3; do
-              body="$(curl -sS -m 40 -w $'\n%{http_code}' "$url" 2>/dev/null)"
-              code="$(printf '%s' "$body" | tail -n1)"
-              if [ "$code" = "200" ]; then
-                if [ -z "$needle" ] || printf '%s' "$body" | grep -q "$needle"; then
-                  echo "✓ $name ($url) → 200"
-                  return 0
-                fi
-              fi
-              sleep 15
-            done
-            echo "✗ $name ($url) → last code: ${code:-none}"
-            return 1
-          }
-
-          check "Web"        "$WEB_URL"                      || fails="${fails}• Web (savorymind.net) is unreachable\n"
-          check "API"        "$API_URL"                      || fails="${fails}• API (api.savorymind.net) is unreachable\n"
-          check "API+DB health" "$API_HEALTH_URL" '"ok"'     || fails="${fails}• API /health failed (app or database)\n"
-
-          if [ -n "$fails" ]; then
-            echo "status=down" >> "$GITHUB_OUTPUT"
-            { echo "detail<<EOF"; printf '%b' "$fails"; echo "EOF"; } >> "$GITHUB_OUTPUT"
-          else
-            echo "status=up" >> "$GITHUB_OUTPUT"
-          fi
+        run: bash scripts/probe-uptime.sh
 
       - name: Open / update alert issue
         if: ${{ steps.probe.outputs.status == 'down' }}
@@ -127,3 +95,9 @@ jobs:
           else
             echo "All up. No open downtime issue."
           fi
+
+      - name: Report unsuccessful endpoint check
+        if: ${{ always() && steps.probe.outputs.status != 'up' }}
+        run: |
+          echo '::error::Endpoint checks failed or did not complete. See probe diagnostics and the outage issue. Alert delivery is not service recovery.'
+          exit 1
