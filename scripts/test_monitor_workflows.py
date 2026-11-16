@@ -28,6 +28,10 @@ def shell_steps(source: str) -> dict[str, str]:
     for i, line in enumerate(lines):
         if line.startswith("      - name: "):
             name = line.split("name: ", 1)[1]
+        if line.startswith("        run: ") and line != "        run: |":
+            if not name:
+                raise AssertionError("Unnamed run command")
+            result[name] = line.split("run: ", 1)[1] + "\n"
         if line == "        run: |":
             block = []
             for following in lines[i + 1:]:
@@ -94,7 +98,12 @@ class MonitorTests(unittest.TestCase):
             if url == os.environ.get("BAD_URL"):
                 print("connection failed\\n000")
                 sys.exit(7)
-            print('{"status":"ok","db":"ok"}\\n200')
+            if "-o" in sys.argv:
+                from pathlib import Path
+                Path(sys.argv[sys.argv.index("-o") + 1]).write_text('{"status":"ok","db":"ok"}')
+                print("200", end="")
+            else:
+                print('{"status":"ok","db":"ok"}\\n200')
         ''')
         self.stub("sleep", "pass")
 
@@ -107,7 +116,7 @@ class MonitorTests(unittest.TestCase):
         env = {**self.env, **values}
         return subprocess.run(
             ["bash", "-e"], input=shell_steps(MONITOR)[name], text=True,
-            env=env, cwd=self.work, capture_output=True, timeout=10,
+            env=env, cwd=ROOT, capture_output=True, timeout=10,
         )
 
     def calls(self):
@@ -117,7 +126,7 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("  GH_REPO: ${{ github.repository }}", MONITOR)
         self.assertIn("concurrency:\n  group: uptime-monitor\n  cancel-in-progress: false", MONITOR)
         steps = shell_steps(MONITOR)
-        self.assertEqual(len(steps), 3)
+        self.assertEqual(len(steps), 4)
         for script in steps.values():
             result = subprocess.run(["bash", "-n"], input=script, text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -173,7 +182,7 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         output = Path(self.env["GITHUB_OUTPUT"]).read_text()
         self.assertIn("status=down", output)
-        self.assertIn("API (api.savorymind.net) is unreachable", output)
+        self.assertIn("API: curl_exit=7", output)
         self.assertFalse(self.log.exists())
 
     def test_deploy_hook_respects_native_skip_phrases(self):
