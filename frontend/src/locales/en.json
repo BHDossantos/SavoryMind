@@ -2724,5 +2724,16 @@
     "actionValue": "Potential ~{{value}}",
     "noActions": "No urgent actions today.",
     "backToDashboard": "Back to dashboard"
+  },
+  "marginPreview": {
+    "title": "Margin preview",
+    "scope": "Based on your entered per-serving cost. Contribution is before labor, overhead and taxes; it is not net profit.",
+    "missing": "Enter a selling price and per-serving cost to see your first insight.",
+    "contribution": "Contribution per serving: {{value}} (menu currency)",
+    "foodCost": "Food cost: {{value}}% of selling price",
+    "loss": "This price does not cover the entered cost.",
+    "target": "Your target food cost % (optional)",
+    "targetPrice": "Price for your target: {{value}} (rounded up to the nearest cent)",
+    "usePrice": "Use this price"
   }
 }

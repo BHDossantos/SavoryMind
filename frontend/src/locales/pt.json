@@ -2724,5 +2724,16 @@
     "actionValue": "Potential ~{{value}}",
     "noActions": "No urgent actions today.",
     "backToDashboard": "Back to dashboard"
+  },
+  "marginPreview": {
+    "title": "Prévia da margem",
+    "scope": "Com base no custo por porção informado. A contribuição exclui mão de obra, despesas gerais e impostos; não é lucro líquido.",
+    "missing": "Informe o preço de venda e o custo por porção para ver a primeira análise.",
+    "contribution": "Contribuição por porção: {{value}} (moeda do cardápio)",
+    "foodCost": "Custo dos alimentos: {{value}}% do preço de venda",
+    "loss": "Este preço não cobre o custo informado.",
+    "target": "Sua meta de custo dos alimentos % (opcional)",
+    "targetPrice": "Preço para sua meta: {{value}} (arredondado para o centavo superior)",
+    "usePrice": "Usar este preço"
   }
 }
