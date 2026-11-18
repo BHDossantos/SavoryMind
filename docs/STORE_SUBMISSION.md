@@ -21,13 +21,17 @@ Bundle ID (iOS): `net.savorymind.app` · Package (Android): `net.savorymind.app`
 - Privacy policy + terms are live on the web: `https://savorymind.net/legal/privacy`,
   `https://savorymind.net/legal/terms` (required by both stores).
 
-## ⚠️ One asset to improve before (or right after) first submit
-`mobile/assets/{icon,splash,adaptive-icon,favicon}.png` are currently the **same
-1254×1254 image**. It will build, but:
-- iOS icon should be a **1024×1024** square, no transparency, no rounded corners (Apple rounds it).
-- Android **adaptive-icon** foreground should keep the logo inside the center ~66% "safe zone" or the circular mask crops it.
-- Splash ideally is a smaller centered logo on the brand background, not the full icon.
-Not a hard blocker for TestFlight/internal testing; fix before public release.
+## ✅ Icons/splash — fixed
+The app icons were reworked:
+- **iOS `icon.png`** is now full-bleed white (RGB, no transparency), so Apple's
+  rounded mask yields a clean white icon — no more black corners.
+- **Android `adaptive-icon.png`** foreground is the logo scaled into the central
+  ~64% safe zone on white, so the circular/squircle mask never clips the wordmark.
+- **`splash.png`** is the full-bleed logo on white (blends into the `#ffffff`
+  splash background instead of showing a black-bordered square).
+
+Optional future polish: a dedicated 1024×1024 master and a mark-only (no-wordmark)
+adaptive foreground, but the current assets are store-ready.
 
 ---
 
