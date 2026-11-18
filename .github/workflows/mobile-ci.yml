@@ -33,6 +33,10 @@ jobs:
         # native iOS/Android tooling we don't need for the Jest run.
         run: npm ci --ignore-scripts
 
+      - name: Check SDK dependency families
+        working-directory: mobile
+        run: npm run check:sdk && npm run test:sdk
+
       - name: Run Jest
         working-directory: mobile
         run: npx jest --no-coverage --ci
