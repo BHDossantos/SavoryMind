@@ -48,6 +48,8 @@ jobs:
       - uses: android-actions/setup-android@v4
       - name: Install locked mobile dependencies
         run: npm ci --ignore-scripts
+      - name: Check SDK dependency families
+        run: npm run check:sdk && npm run test:sdk
       - name: Generate Android project
         run: npx --no-install expo prebuild --platform android --no-install
       - name: Compile debug APK for device and emulator
@@ -97,6 +99,8 @@ jobs:
           xcodebuild -version
       - name: Install locked mobile dependencies
         run: npm ci --ignore-scripts
+      - name: Check SDK dependency families
+        run: npm run check:sdk && npm run test:sdk
       - name: Generate iOS project
         run: npx --no-install expo prebuild --platform ios --no-install
       - name: Install native pods
