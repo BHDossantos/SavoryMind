@@ -5,6 +5,7 @@ import ErrorMessage from "../components/ErrorMessage";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { api } from "../services/api";
 import clsx from "clsx";
+import MenuMarginPreview from "../components/MenuMarginPreview";
 
 // Internal category IDs stay English — they're what the backend
 // stores and filter logic compares against. The display label
@@ -186,8 +187,9 @@ export default function MenuPage() {
               { label: t("menuPage.description"), key: "description", type: "text" },
             ].map(({ label, key, type, required }) => (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                <label htmlFor={`menu-${key}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
                 <input
+                  id={`menu-${key}`}
                   type={type}
                   step="0.01"
                   required={required}
@@ -209,6 +211,7 @@ export default function MenuPage() {
                 ))}
               </select>
             </div>
+            <MenuMarginPreview key={editingItem?.id ?? "new"} price={form.price} cost={form.cost} onUsePrice={(value) => handleFieldChange("price", value)} />
             {renderedFormError && (
               <div className="col-span-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">
                 {renderedFormError}

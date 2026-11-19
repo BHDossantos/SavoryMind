@@ -2724,5 +2724,16 @@
     "actionValue": "Potential ~{{value}}",
     "noActions": "No urgent actions today.",
     "backToDashboard": "Back to dashboard"
+  },
+  "marginPreview": {
+    "title": "Aperçu de la marge",
+    "scope": "Selon le coût par portion saisi. La contribution exclut main-d’œuvre, frais généraux et taxes ; ce n’est pas un bénéfice net.",
+    "missing": "Saisissez le prix de vente et le coût par portion pour voir votre première analyse.",
+    "contribution": "Contribution par portion : {{value}} (devise du menu)",
+    "foodCost": "Coût des aliments : {{value}}% du prix de vente",
+    "loss": "Ce prix ne couvre pas le coût saisi.",
+    "target": "Votre objectif de coût des aliments % (facultatif)",
+    "targetPrice": "Prix pour votre objectif : {{value}} (arrondi au centime supérieur)",
+    "usePrice": "Utiliser ce prix"
   }
 }

@@ -2724,5 +2724,16 @@
     "actionValue": "Potential ~{{value}}",
     "noActions": "No urgent actions today.",
     "backToDashboard": "Volver al panel"
+  },
+  "marginPreview": {
+    "title": "Vista previa del margen",
+    "scope": "Según el coste por porción introducido. La contribución excluye trabajo, gastos generales e impuestos; no es beneficio neto.",
+    "missing": "Introduce el precio de venta y el coste por porción para ver tu primer análisis.",
+    "contribution": "Contribución por porción: {{value}} (moneda del menú)",
+    "foodCost": "Coste de alimentos: {{value}}% del precio de venta",
+    "loss": "Este precio no cubre el coste introducido.",
+    "target": "Tu objetivo de coste de alimentos % (opcional)",
+    "targetPrice": "Precio para tu objetivo: {{value}} (redondeado al céntimo superior)",
+    "usePrice": "Usar este precio"
   }
 }
