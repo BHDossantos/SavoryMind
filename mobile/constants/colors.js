@@ -7,13 +7,15 @@ export const C = {
     text:      '#9a3412',
     muted:     '#c2410c',
   },
+  // Food Lover (consumer) — warm coral/raspberry, matching the web app
+  // (appetizing, replaces the old cold violet).
   consumer: {
-    primary:   '#7c3aed',
-    dark:      '#6d28d9',
-    light:     '#f5f3ff',
-    border:    '#ddd6fe',
-    text:      '#4c1d95',
-    muted:     '#6d28d9',
+    primary:   '#e11d57',
+    dark:      '#be1247',
+    light:     '#fff1f2',
+    border:    '#fecdd4',
+    text:      '#881337',
+    muted:     '#9f123e',
   },
   diner: {
     primary:   '#0d9488',
@@ -23,21 +25,24 @@ export const C = {
     text:      '#134e4a',
     muted:     '#0f766e',
   },
+  // Warm neutral scale (stone) instead of cold gray — matches the web's
+  // editorial/appetizing feel.
   gray: {
-    50:  '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827',
+    50:  '#fafaf9',
+    100: '#f5f5f4',
+    200: '#e7e5e4',
+    300: '#d6d3d1',
+    400: '#a8a29e',
+    500: '#78716c',
+    600: '#57534e',
+    700: '#44403c',
+    800: '#292524',
+    900: '#1c1917',
   },
   white: '#ffffff',
   green: '#22c55e',
   red:   '#ef4444',
   amber: '#f59e0b',
-  bg:    '#f8fafc',
+  // Warm paper/cream app background (web `paper`), not cold slate.
+  bg:    '#fbf8f3',
 };

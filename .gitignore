@@ -29,3 +29,6 @@ Thumbs.db
 # the contents come from the ASC_API_KEY_P8 GitHub secret at runtime.
 mobile/asc-api-key.p8
 *.p8
+
+# Google Play release credential written by CI from a secret — never commit it
+mobile/play-service-account.json

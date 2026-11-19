@@ -2724,5 +2724,16 @@
     "actionValue": "Potenziale ~{{value}}",
     "noActions": "Nessuna azione urgente oggi.",
     "backToDashboard": "Torna alla dashboard"
+  },
+  "marginPreview": {
+    "title": "Anteprima margine",
+    "scope": "Basata sul costo per porzione inserito. Il contributo esclude lavoro, spese generali e imposte; non è utile netto.",
+    "missing": "Inserisci prezzo di vendita e costo per porzione per vedere la prima analisi.",
+    "contribution": "Contributo per porzione: {{value}} (valuta del menu)",
+    "foodCost": "Costo alimentare: {{value}}% del prezzo di vendita",
+    "loss": "Questo prezzo non copre il costo inserito.",
+    "target": "Il tuo costo alimentare obiettivo % (facoltativo)",
+    "targetPrice": "Prezzo per il tuo obiettivo: {{value}} (arrotondato al centesimo superiore)",
+    "usePrice": "Usa questo prezzo"
   }
 }
