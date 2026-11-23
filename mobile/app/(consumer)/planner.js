@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import SafeScreen from '../../components/SafeScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import { api } from '../../services/api';
+import { formatShoppingShare } from '../../services/shoppingShare.cjs';
 import { C } from '../../constants/colors';
 import { useFocusEffect } from 'expo-router';
 
@@ -23,26 +24,61 @@ export default function Planner() {
   const [error, setError]     = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
+  const requestId = useRef(0);
+  const shareBusy = useRef(false);
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState(false);
+
+  const load = useCallback(async () => {
+    const id = ++requestId.current;
     try {
       const [p, s, d] = await Promise.all([
         api.getMealPlan(dietary),
         api.getShoppingList(dietary),
         api.getDailySuggestion(),
       ]);
+      if (id !== requestId.current) return;
       setPlan(p);
       setShopping(s);
       setSuggestion(d);
       setError(null);
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); setRefreshing(false); }
-  };
+    } catch (e) {
+      if (id === requestId.current) setError(e.message);
+    } finally {
+      if (id === requestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  }, [dietary]);
 
-  useFocusEffect(useCallback(() => { load(); }, [dietary]));
+  useFocusEffect(useCallback(() => {
+    load();
+    return () => { ++requestId.current; };
+  }, [load]));
 
   const onDietaryChange = (d) => {
+    if (d === dietary) return;
+    ++requestId.current;
+    setShareError(false);
     setDietary(d);
     setLoading(true);
+  };
+
+  const shoppingShareText = formatShoppingShare(shopping?.categories, t('screens.planner.shoppingList', { defaultValue: 'Shopping List' }));
+  const shareShopping = async () => {
+    if (!shoppingShareText || shareBusy.current) return;
+    shareBusy.current = true;
+    setSharing(true);
+    setShareError(false);
+    try {
+      await Share.share({ message: shoppingShareText });
+    } catch {
+      setShareError(true);
+    } finally {
+      shareBusy.current = false;
+      setSharing(false);
+    }
   };
 
   if (loading) return <LoadingSpinner message="Building your plan..." color={C.consumer.primary} />;
@@ -107,6 +143,14 @@ export default function Planner() {
       {tab === 'Shopping List' && shopping && (
         <View>
           <Text style={s.shoppingMeta}>{shopping.total_items} items · {DIETARY_LABELS[dietary]} diet</Text>
+          {shoppingShareText && (
+            <TouchableOpacity accessibilityRole="button" disabled={sharing} onPress={shareShopping} style={s.shareButton}>
+              <Text style={s.shareText}>{t('screens.planner.shareShopping', { defaultValue: 'Share shopping list' })}</Text>
+            </TouchableOpacity>
+          )}
+          {shareError && (
+            <Text accessibilityRole="alert" style={s.shoppingMeta}>{t('screens.planner.shareShoppingError', { defaultValue: 'Could not open sharing. Please try again.' })}</Text>
+          )}
           {Object.entries(shopping.categories).map(([cat, items]) => (
             <View key={cat} style={s.catBlock}>
               <Text style={s.catTitle}>{cat}</Text>
@@ -174,6 +218,8 @@ const s = StyleSheet.create({
   mealName:          { fontSize: 14, fontWeight: '600', color: C.gray[900] },
   mealMeta:          { fontSize: 12, color: C.gray[500] },
 
+  shareButton:       { alignSelf: 'flex-start', paddingVertical: 12, paddingHorizontal: 14, backgroundColor: ACC, borderRadius: 8, marginBottom: 12 },
+  shareText:         { color: '#fff', fontWeight: '700' },
   shoppingMeta:      { fontSize: 12, color: C.gray[500], marginBottom: 12 },
   catBlock:          { marginBottom: 16 },
   catTitle:          { fontSize: 14, fontWeight: '700', color: C.gray[900], marginBottom: 8 },
