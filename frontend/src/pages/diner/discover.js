@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
@@ -86,22 +86,28 @@ export default function DiscoverPage() {
   const [coords, setCoords] = useState(null);   // {lat, lng} once "Near me" granted
   const [locating, setLocating] = useState(false);
 
+  const request = useRef(0);
+  const [locationError, setLocationError] = useState(null);
+
   const search = async (m = mood, c = cuisine, ct = city, geo = coords) => {
-    setLoading(true); setError(null);
+    const current = ++request.current;
+    setLoading(true); setError(null); setResults([]);
     try {
       const params = {};
       if (m) params.mood = m;
       if (c.trim()) params.cuisine = c.trim();
       if (ct.trim()) params.city = ct.trim();
       if (geo) { params.lat = geo.lat; params.lng = geo.lng; }
-      setResults(await api.discoverRestaurants(params));
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
+      const next = await api.discoverRestaurants(params);
+      if (current === request.current) setResults(next);
+    } catch (e) { if (current === request.current) setError(e.message); }
+    finally { if (current === request.current) setLoading(false); }
   };
 
   const nearMe = () => {
+    setLocationError(null);
     if (coords) { setCoords(null); search(mood, cuisine, city, null); return; }
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) { setLocationError(t("discoverPage.locationUnavailable", { defaultValue: "Location is unavailable. Enter a city to search instead." })); return; }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -109,16 +115,16 @@ export default function DiscoverPage() {
         setCoords(geo); setLocating(false);
         search(mood, cuisine, city, geo);
       },
-      () => setLocating(false),
+      () => { setLocating(false); setLocationError(t("discoverPage.locationUnavailable", { defaultValue: "Location is unavailable. Enter a city to search instead." })); },
       { timeout: 8000 },
     );
   };
 
-  useEffect(() => { search(); }, []);
+  useEffect(() => { search(); return () => { request.current++; }; }, []);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return results;
-    const q = query.toLowerCase();
+    const q = query.trim().toLowerCase();
     return results.filter((r) =>
       r.name.toLowerCase().includes(q) ||
       (r.cuisine || []).some((c) => c.toLowerCase().includes(q)) ||
@@ -137,6 +143,7 @@ export default function DiscoverPage() {
         <p className="text-gray-400 mt-1">{t("discoverPage.subtitle")}</p>
       </div>
 
+      {locationError && <p role="alert" className="mb-3 text-sm text-amber-700">{locationError}</p>}
       <div className="bg-diner-50 rounded-2xl p-5 mb-5 space-y-4">
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-semibold text-gray-500 mr-1">{t("discoverPage.occasionLabel")}</span>
