@@ -194,9 +194,10 @@ export default function Login() {
             </div>
           )}
 
-          {/* Social login buttons */}
+          {/* Social login buttons: only providers that are configured on the server. */}
+          {configuredProviders.length > 0 && (
           <div className="space-y-2.5 mb-6">
-            {SOCIAL_PROVIDERS.map((p) => (
+            {SOCIAL_PROVIDERS.filter((p) => configuredProviders.includes(p.id)).map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleSocial(p.id)}
@@ -221,6 +222,7 @@ export default function Login() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Email login form */}
           <form onSubmit={handleSubmit} className="space-y-4">

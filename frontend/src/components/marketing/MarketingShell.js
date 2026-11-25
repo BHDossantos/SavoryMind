@@ -272,8 +272,11 @@ export default function MarketingShell({ lang = "it", altHref, children }) {
           </div>
 
           <div className="border-t border-stone-800 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
-            {/* TODO(Bruno): replace with the real P.IVA once registered */}
-            <p>© {new Date().getFullYear()} SavoryMind · P.IVA 00000000000</p>
+            {/* The P.IVA shows only once NEXT_PUBLIC_PIVA is set; a placeholder number misleads visitors. */}
+            <p>
+              © {new Date().getFullYear()} SavoryMind
+              {process.env.NEXT_PUBLIC_PIVA ? ` · P.IVA ${process.env.NEXT_PUBLIC_PIVA}` : ""}
+            </p>
             <p className="font-semibold text-stone-400">Made in Rome 🇮🇹</p>
           </div>
         </div>
