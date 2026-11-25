@@ -72,10 +72,13 @@ Toolchain references: [SDK 55 support table](https://docs.expo.dev/versions/v55.
 
 ## Release evidence is separate
 
-The existing `EAS Mobile Build` workflow dispatches production builds with
-`--no-wait` and can auto-submit iOS. Its green status means the dispatch was
-accepted, **not** that builds completed or that a store approved the app.
-Do not manually trigger it merely to validate this PR.
+The `EAS Mobile Build` workflow dispatches builds with `--no-wait`. Main
+pushes and manual dispatches are build-only by default. TestFlight requires
+an explicit manual dispatch with `submit_ios_to_testflight` enabled, profile
+`production`, platform `ios` or `all`, and the configured Apple credential.
+A green workflow means the dispatch was accepted, **not** that builds completed
+or that a store approved the app. A main push can still consume EAS build
+quota. Do not trigger the EAS workflow merely to validate a PR.
 
 The [2026-10-09 workflow](https://github.com/BHDossantos/SavoryMind/actions/runs/37955884844)
 logged these build/submission records:

@@ -27,6 +27,11 @@ on:
         default: "all"
         type: choice
         options: [all, android, ios]
+      submit_ios_to_testflight:
+        description: "Explicitly submit a production iOS build to TestFlight"
+        required: false
+        type: boolean
+        default: false
       profile:
         description: "eas.json build profile"
         required: true
@@ -125,7 +130,7 @@ jobs:
         # development builds don't submit, so they don't need it. Skipping
         # also avoids surfacing a "missing secret" error for repos that
         # haven't set up the Apple credentials yet.
-        if: github.event.inputs.profile == 'production' || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' && inputs.submit_ios_to_testflight == true && inputs.profile == 'production' && inputs.platform != 'android'
         working-directory: mobile
         env:
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
@@ -175,24 +180,31 @@ jobs:
           # by name, so they must be on the env at this step.
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          EVENT_NAME: ${{ github.event_name }}
+          SUBMIT_IOS_TO_TESTFLIGHT: ${{ inputs.submit_ios_to_testflight }}
         run: |
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
-          # Auto-submit only on production iOS builds with credentials.
-          IOS_AUTO_SUBMIT=""
-          if [ "$PROFILE" = "production" ] && [ -f asc-api-key.p8 ]; then
-            IOS_AUTO_SUBMIT="--auto-submit"
-            echo "Production + ASC key present → iOS build will auto-submit to TestFlight."
+          # Main pushes and routine manual builds are build-only. Never infer
+          # permission to submit from the presence of credentials.
+          IOS_AUTO_SUBMIT=()
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$SUBMIT_IOS_TO_TESTFLIGHT" == "true" && "$PROFILE" == "production" ]]; then
+            if [[ ! -s asc-api-key.p8 ]]; then
+              echo "::error::TestFlight submission was requested but the ASC key is unavailable."
+              exit 1
+            fi
+            IOS_AUTO_SUBMIT+=(--auto-submit)
+            echo "Explicit TestFlight submission requested."
           fi
           echo "▶ Building iOS — profile=$PROFILE"
-          eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait $IOS_AUTO_SUBMIT
+          eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait "${IOS_AUTO_SUBMIT[@]}"
 
-      - name: Fail if both platforms failed
-        # Without this guard the job would always succeed even when neither
-        # platform dispatched. We tolerate one failing (e.g. Android quota
-        # exhausted) but flag the run red when both went down.
-        if: steps.build_android.outcome == 'failure' && steps.build_ios.outcome == 'failure'
+      - name: Fail if no requested build dispatched or explicit submission failed
+        if: >-
+          (steps.build_android.outcome != 'success' && steps.build_ios.outcome != 'success') ||
+          (github.event_name == 'workflow_dispatch' && inputs.submit_ios_to_testflight == true &&
+          (inputs.platform == 'android' || inputs.profile != 'production' || steps.build_ios.outcome != 'success'))
         run: |
-          echo "::error::Both Android AND iOS builds failed to dispatch — see the steps above."
+          echo "::error::No requested build was dispatched, or the requested TestFlight path could not dispatch."
           exit 1
 
       - name: Build summary
