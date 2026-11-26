@@ -50,9 +50,16 @@ def detect_injection(text: str) -> List[str]:
 
 def sanitize_for_model(text: str) -> str:
     """Remove markup that could hide instructions; keep visible text as evidence."""
-    out = re.sub(r"<script[\s\S]*?</script>", "", text, flags=re.I)
-    out = re.sub(r"<style[\s\S]*?</style>", "", out, flags=re.I)
-    out = re.sub(r"<[^>]+>", " ", out)
+    # Strip until nothing changes, so removing one tag cannot join the text
+    # around it into a new tag (for example "<scr<b></b>ipt>").
+    out = text
+    while True:
+        prev = out
+        out = re.sub(r"<script\b[^>]*>[\s\S]*?</script[^>]*>", "", out, flags=re.I)
+        out = re.sub(r"<style\b[^>]*>[\s\S]*?</style[^>]*>", "", out, flags=re.I)
+        out = re.sub(r"<[^>]+>", " ", out)
+        if out == prev:
+            break
     out = re.sub("[\u200B-\u200F\u2060\uFEFF]", "", out)
     out = re.sub(r"\s+\n", "\n", out)
     return out.strip()
