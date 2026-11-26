@@ -172,6 +172,7 @@ export default function Signup() {
   };
 
   const selected = TYPES.find((t) => t.id === accountType);
+  const visibleSocial = SOCIAL.filter((p) => configuredProviders.includes(p.id));
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
@@ -212,11 +213,12 @@ export default function Signup() {
             ))}
           </div>
 
-          {/* Social sign-up */}
+          {/* Social sign-up: only providers that are configured on the server. */}
+          {visibleSocial.length > 0 && (
           <div className="mb-5">
             <p className="text-xs text-gray-400 text-center mb-3">{t("auth.signUpWith")}</p>
             <div className="grid grid-cols-4 gap-2">
-              {SOCIAL.map((p) => (
+              {visibleSocial.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleSocial(p.id)}
@@ -242,6 +244,7 @@ export default function Signup() {
               </div>
             </div>
           </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">

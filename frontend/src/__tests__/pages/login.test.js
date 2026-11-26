@@ -92,19 +92,29 @@ describe('Login page', () => {
     );
     render(<LoginPage />);
     // Wait for the providers-list fetch to land before clicking.
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-    fireEvent.click(screen.getByText(/Continue with Google/i));
+    fireEvent.click(await screen.findByText(/Continue with Google/i));
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith('google', { callbackUrl: '/' });
     });
   });
 
-  test('clicking an unconfigured provider surfaces the inline "not connected" hint', async () => {
-    // Default fetch stub returns [] — google is unconfigured.
+  test('unconfigured providers are not shown at all', async () => {
+    // Default fetch stub returns [] — no social provider is configured,
+    // so no social button should render (users can't hit a dead end).
     render(<LoginPage />);
-    fireEvent.click(screen.getByText(/Continue with Google/i));
-    expect(await screen.findByText(/Continue with Google sign-in isn't connected yet/i)).toBeInTheDocument();
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    expect(screen.queryByText(/Continue with Google/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Continue with GitHub/i)).not.toBeInTheDocument();
     expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  test('only the configured providers are shown', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(['google']) })
+    );
+    render(<LoginPage />);
+    expect(await screen.findByText(/Continue with Google/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Continue with GitHub/i)).not.toBeInTheDocument();
   });
 
   test('renders the email and password inputs and a Sign In button', () => {
