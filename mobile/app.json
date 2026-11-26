@@ -36,6 +36,7 @@
       "expo-router",
       "expo-secure-store",
       "expo-apple-authentication",
+      "./plugins/with-expo-modules-core-swift",
       [
         "expo-image-picker",
         {

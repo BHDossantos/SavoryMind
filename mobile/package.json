@@ -11,7 +11,7 @@
     "build:all": "eas build --platform all",
     "test": "jest",
     "check:sdk": "node scripts/check-sdk.cjs",
-    "test:sdk": "node --test scripts/check-sdk.test.cjs"
+    "test:sdk": "node --test scripts/*.test.cjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
