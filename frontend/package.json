@@ -11,30 +11,30 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "i18next": "^26.7.2",
+    "i18next": "^27.2.4",
     "i18next-browser-languagedetector": "^8.2.1",
     "next": "15.5.29",
     "next-auth": "^4.24.14",
-    "posthog-js": "^1.200.0",
+    "posthog-js": "^1.453.2",
     "qrcode": "^1.5.4",
-    "react": "^18.3.1",
+    "react": "^19.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.8",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.5.2",
     "autoprefixer": "^10.4.19",
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
+    "jest-environment-jsdom": "^30.5.2",
     "postcss": "8.5.32",
     "tailwindcss": "^3.4.4"
   },
   "overrides": {
     "uuid": "^14.0.0",
-    "postcss": "8.5.32",
+    "postcss": "8.5.33",
     "dompurify": "3.4.17",
     "source-map-js": "1.2.2",
     "fflate": "0.4.9"
