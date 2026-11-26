@@ -6,6 +6,14 @@ This folder is Jennifer's agent core, ported to Python so this app can run the s
 - `charter.py`: this business's agent, with its tasks, guardrails, measures and the daily Claude routine it works alongside.
 - `untrusted.py`, `redaction.py`, `claims.py`: Jennifer's guards. Outside text is wrapped as untrusted data. Secrets are redacted from errors. Claims that something was paid, sent or signed are flagged.
 
-The agent can only propose. Nothing here sends, posts, pays or writes. Every proposal comes back with `"needsApproval": True`, and nothing is wired to a page or an API route yet.
+The agent can only propose. Nothing here sends, posts, pays or writes. Every proposal comes back with `"needsApproval": True`.
 
-To turn it on, the app needs a server-side AI key and a model provider that calls the model (for example through `app/services/claude_client.py`). Until then `run_business_task` returns `blocked` with "Add an AI key on the server to turn this agent on".
+## Turning it on
+
+`provider.py` wires the agent to Claude and `app/api/routes/admin_business_agent.py` exposes it to the `ADMIN_EMAILS` allowlist only (everyone else gets a 403, as with the pilots view).
+
+1. Set `ANTHROPIC_API_KEY` and `ADMIN_EMAILS` on the server.
+2. Set `BUSINESS_AGENT_ENABLED=true`. Without it the run route answers 503 with the reason, and nothing calls the model.
+3. `GET /api/admin/business-agent` shows the charter. `POST /api/admin/business-agent/run` with `{"taskId": "prospects", "notes": "..."}` runs one task on the restaurant account counts plus any notes, and returns the proposals. The model sees counts only, never names or contact details. Nothing is stored or sent.
+
+`BUSINESS_AGENT_MODEL` overrides the model.
