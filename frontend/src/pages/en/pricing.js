@@ -14,11 +14,11 @@ const FAQS = [
   },
   {
     q: "What counts as a \"location\"?",
-    a: "A venue with its own kitchen and its own staff. If you run several brands or several venues of the same brand, the Gruppo plan brings them together in a single dashboard with venue-by-venue comparison.",
+    a: "A venue with its own kitchen and its own staff. Each venue has its own subscription; if you run several, write to us and we bring them together in one dashboard with venue-by-venue comparison.",
   },
   {
-    q: "Can I change plans later?",
-    a: "Yes, at any time. Upgrades take effect immediately; downgrades take effect from the next billing period.",
+    q: "When do I pay the €2 per table?",
+    a: "Only when a diner who came through SavoryMind is seated. Never on diners who book from your website, Google or Instagram, never on no-shows and never on cancellations.",
   },
   {
     q: "Can I cancel whenever I want?",
@@ -63,10 +63,10 @@ export default function PricingEN() {
   return (
     <MarketingShell lang="en" altHref="/pricing">
       <Head>
-        <title>Pricing — SavoryMind for restaurants | From €149/month</title>
+        <title>Pricing — SavoryMind for restaurants | €69/month, no commission</title>
         <meta
           name="description"
-          content="Trattoria €149/month, Ristorante €299/month, Gruppo €599/month. 30-day free trial: if we don't find €500/month in losses, you don't pay."
+          content="€69/month or €690/year, no commission on your own diners, €2 per seated party only for diners SavoryMind brings. Founding offer until 31 December: January to March for €149."
         />
         <link rel="canonical" href="https://savorymind.net/en/pricing" />
         <link rel="alternate" hrefLang="it-IT" href="https://savorymind.net/pricing" />
