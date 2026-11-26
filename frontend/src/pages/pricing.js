@@ -15,11 +15,11 @@ const FAQS = [
   },
   {
     q: "Cosa conta come «sede»?",
-    a: "Un punto vendita con la propria cucina e il proprio staff. Se gestisci più insegne o più locali della stessa insegna, il piano Gruppo li riunisce in un'unica dashboard con confronto tra sedi.",
+    a: "Un punto vendita con la propria cucina e il proprio staff. Ogni sede ha il suo abbonamento; se gestisci più locali scrivici e li riuniamo in un'unica dashboard con confronto tra sedi.",
   },
   {
-    q: "Posso cambiare piano in seguito?",
-    a: "Sì, in qualsiasi momento. Il passaggio a un piano superiore è immediato; il passaggio a un piano inferiore ha effetto dal periodo di fatturazione successivo.",
+    q: "Quando pago i €2 a tavolo?",
+    a: "Solo quando un cliente arrivato tramite SavoryMind si siede al tavolo. Mai sui clienti che prenotano dal tuo sito, da Google o da Instagram, mai sui no-show e mai sulle cancellazioni.",
   },
   {
     q: "Posso disdire quando voglio?",
@@ -64,10 +64,10 @@ export default function PricingIT() {
   return (
     <MarketingShell lang="it" altHref="/en/pricing">
       <Head>
-        <title>Prezzi — SavoryMind per ristoranti | Da €149/mese</title>
+        <title>Prezzi — SavoryMind per ristoranti | €69/mese, zero commissioni</title>
         <meta
           name="description"
-          content="Trattoria €149/mese, Ristorante €299/mese, Gruppo €599/mese. 30 giorni di prova gratuita: se non troviamo €500/mese di perdite, non paghi."
+          content="€69/mese o €690/anno, zero commissioni sui tuoi clienti, €2 a tavolo seduto solo per i clienti che ti porta SavoryMind. Offerta fondatori fino al 31 dicembre: gennaio-marzo a €149."
         />
         <link rel="canonical" href="https://savorymind.net/pricing" />
         <link rel="alternate" hrefLang="it-IT" href="https://savorymind.net/pricing" />

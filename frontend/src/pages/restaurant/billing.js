@@ -7,7 +7,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 
 // Indicative price shown on the card. The real charge comes from the Stripe
 // Price (STRIPE_RESTAURANT_PRICE_ID) — keep this label in sync with it.
-const PRICE_LABEL = "€99";
+const PRICE_LABEL = "€69";
 const PRICE_PERIOD = "/mo";
 
 export default function RestaurantBillingPage() {

@@ -1,14 +1,20 @@
 /**
- * PricingTiers — the three B2B tiers + annual toggle + guarantee box.
+ * PricingTiers — the SavoryMind plan, the founding offer and the guarantee box.
  * Shared by the homepage pricing section and /pricing (both locales) so
  * the numbers can never drift apart.
  *
  * Copy is hardcoded (IT/EN dict below) — no i18n lib, full text in the
  * server-rendered HTML. The annual toggle is the only client state.
  *
- * Tiers (DEVELOPER_NOTES §1/§8.1): Trattoria €149/mo, Ristorante €299/mo,
- * Gruppo €599/mo. Annual = 10× monthly (2 months free) → shown per month
- * as €124 / €249 / €499, billed yearly.
+ * Price approved by Bruno on 26 Nov 2026 (Launch-to-cash playbook):
+ *   - €69/month or €690/year for the booking tool, no commission on the
+ *     restaurant's own diners;
+ *   - €2 per seated party, only for diners SavoryMind brings;
+ *   - founding offer for the first 10 Rome restaurants until 31 Dec:
+ *     January to March for €149 upfront, or a full year for €590 upfront,
+ *     price locked, money back if bookings aren't live on 1 January.
+ * TIERS keeps its old shape so the JSON-LD offers on /pricing and
+ * /ristoranti keep working.
  */
 import { useState } from "react";
 import Link from "next/link";
@@ -17,28 +23,21 @@ import { signupHref } from "./MarketingShell";
 
 export const TIERS = [
   {
-    id: "trattoria",
-    name: "Trattoria",
-    monthly: 149,
-    annualMonthly: 124,
-    annualTotal: 1490,
-  },
-  {
-    id: "ristorante",
-    name: "Ristorante",
-    monthly: 299,
-    annualMonthly: 249,
-    annualTotal: 2990,
-    featured: true,
-  },
-  {
-    id: "gruppo",
-    name: "Gruppo",
-    monthly: 599,
-    annualMonthly: 499,
-    annualTotal: 5990,
+    id: "savorymind",
+    name: "SavoryMind",
+    monthly: 69,
+    annualMonthly: 57.5,
+    annualTotal: 690,
   },
 ];
+
+export const PER_PARTY_FEE = 2;
+
+export const FOUNDING = {
+  spots: 10,
+  quarterPrice: 149,
+  yearPrice: 590,
+};
 
 const STRINGS = {
   it: {
@@ -49,39 +48,30 @@ const STRINGS = {
     billedAnnually: (total) => `fatturati €${total.toLocaleString("it-IT")} l'anno`,
     billedMonthly: "nessun vincolo, disdici quando vuoi",
     cta: "Inizia la prova gratuita",
-    featured: "Il più scelto",
-    taglines: {
-      trattoria: "Per la singola cucina che vuole vedere subito dove finiscono i soldi.",
-      ristorante: "Per chi fa sul serio: coaching senza limiti e consegna su WhatsApp.",
-      gruppo: "Per chi gestisce più insegne e vuole i numeri di tutte in un posto solo.",
-    },
-    features: {
-      trattoria: [
-        "1 sede",
-        "Moduli core: Dashboard, Perdite & Sprechi, Menu & Margini",
-        "Coaching per 10 dipendenti",
-        "Stima delle perdite in 15 minuti",
-        "Import vendite CSV/Excel da qualsiasi gestionale",
-      ],
-      ristorante: [
-        "Tutto di Trattoria",
-        "Moduli avanzati sbloccati (prenotazioni, CRM, sentiment, marketing)",
-        "Coaching illimitato per tutto lo staff",
-        "Piani di coaching consegnati su WhatsApp",
-        "Report settimanale del titolare",
-      ],
-      gruppo: [
-        "Tutto di Ristorante",
-        "Multi-sede con confronto tra locali",
-        "Onboarding dedicato con un esperto",
-        "Supporto prioritario",
-        "Report consolidato di gruppo",
-      ],
-    },
+    tagline: "Prenotazioni, clienti e numeri del tuo locale in un posto solo, senza commissioni sui tuoi clienti.",
+    perParty: (fee) =>
+      `Zero commissioni sui clienti che prenotano dal tuo sito, da Google o da Instagram. Paghi €${fee} a tavolo seduto solo per i clienti che ti porta SavoryMind. Mai sui no-show o sulle cancellazioni.`,
+    features: [
+      "Prenotazioni online con pagina e link del tuo locale",
+      "Zero commissioni sui tuoi clienti",
+      "Promemoria agli ospiti e stato del tavolo condiviso con la sala",
+      "Perdite & sprechi, menu e margini",
+      "Sentiment delle recensioni e report settimanale del titolare",
+      "Import vendite CSV/Excel da qualsiasi gestionale",
+    ],
+    compare:
+      "Per confronto: le grandi piattaforme di prenotazione fanno pagare una commissione per ogni persona che ti portano. Con SavoryMind i €2 valgono per l'intero tavolo, e solo quando il cliente te lo portiamo noi.",
+    foundingBadge: (n) => `Ristoranti fondatori · solo i primi ${n}`,
+    foundingTitle: "Offerta fondatori, fino al 31 dicembre",
+    foundingQuarter: (p) => `€${p} per gennaio, febbraio e marzo, pagati in anticipo`,
+    foundingYear: (p) => `oppure €${p} per un anno intero`,
+    foundingBody:
+      "Prezzo bloccato. Se le prenotazioni non sono attive nel tuo locale il 1° gennaio, ti restituiamo tutto.",
+    foundingCta: "Prenota una demo",
     guaranteeTitle: "La garanzia SavoryMind",
     guaranteeBody:
       "Provi tutto gratis per 30 giorni. Se non troviamo almeno €500/mese di perdite recuperabili, non paghi. E se la tua cucina è già efficiente, te lo diciamo onestamente — nessun numero gonfiato, mai.",
-    trialNote: "30 giorni di prova gratuita su tutti i piani · carta non richiesta all'inizio",
+    trialNote: "30 giorni di prova gratuita sul piano mensile · carta non richiesta all'inizio",
   },
   en: {
     monthly: "Monthly",
@@ -91,46 +81,46 @@ const STRINGS = {
     billedAnnually: (total) => `billed €${total.toLocaleString("en-US")} per year`,
     billedMonthly: "no lock-in, cancel anytime",
     cta: "Start your free trial",
-    featured: "Most popular",
-    taglines: {
-      trattoria: "For the single kitchen that wants to see where the money goes — now.",
-      ristorante: "For owners who mean it: unlimited coaching, delivered on WhatsApp.",
-      gruppo: "For groups running multiple venues that want every number in one place.",
-    },
-    features: {
-      trattoria: [
-        "1 location",
-        "Core modules: Dashboard, Losses & Waste, Menu & Margins",
-        "Coaching for 10 employees",
-        "Loss estimate in 15 minutes",
-        "CSV/Excel sales import from any POS",
-      ],
-      ristorante: [
-        "Everything in Trattoria",
-        "Advanced modules unlocked (bookings, CRM, sentiment, marketing)",
-        "Unlimited coaching for your whole staff",
-        "Coaching plans delivered on WhatsApp",
-        "Weekly owner report",
-      ],
-      gruppo: [
-        "Everything in Ristorante",
-        "Multi-location with venue comparison",
-        "Dedicated onboarding with an expert",
-        "Priority support",
-        "Consolidated group report",
-      ],
-    },
+    tagline: "Bookings, guests and your venue's numbers in one place, with no commission on your own diners.",
+    perParty: (fee) =>
+      `No commission on diners who book from your website, Google or Instagram. You pay €${fee} per seated party only for diners SavoryMind brings you. Never on no-shows or cancellations.`,
+    features: [
+      "Online bookings with your venue's own page and link",
+      "No commission on your own diners",
+      "Guest reminders and table status shared with your floor team",
+      "Losses & waste, menu and margins",
+      "Review sentiment and a weekly owner report",
+      "CSV/Excel sales import from any POS",
+    ],
+    compare:
+      "For comparison: the big booking platforms charge a fee for every person they bring you. With SavoryMind the €2 covers the whole table, and only when we brought you the diner.",
+    foundingBadge: (n) => `Founding restaurants · first ${n} only`,
+    foundingTitle: "Founding offer, until 31 December",
+    foundingQuarter: (p) => `€${p} for January, February and March, paid upfront`,
+    foundingYear: (p) => `or €${p} for a full year`,
+    foundingBody:
+      "Price locked. If bookings aren't live at your venue on 1 January, you get all of it back.",
+    foundingCta: "Book a demo",
     guaranteeTitle: "The SavoryMind guarantee",
     guaranteeBody:
       "Try everything free for 30 days. If we don't identify at least €500/month in recoverable losses, you don't pay. And if your kitchen is already efficient, we'll tell you honestly — no inflated numbers, ever.",
-    trialNote: "30-day free trial on every plan · no card required to start",
+    trialNote: "30-day free trial on the monthly plan · no card required to start",
   },
 };
+
+function formatPrice(n, lang) {
+  return Number.isInteger(n)
+    ? String(n)
+    : n.toLocaleString(lang === "en" ? "en-US" : "it-IT", { minimumFractionDigits: 2 });
+}
 
 export default function PricingTiers({ lang = "it", showFeatures = true }) {
   const s = STRINGS[lang] || STRINGS.it;
   const router = useRouter();
   const [annual, setAnnual] = useState(false);
+  const tier = TIERS[0];
+  const price = annual ? tier.annualMonthly : tier.monthly;
+  const demoHref = "/contatti";
 
   return (
     <div>
@@ -161,75 +151,65 @@ export default function PricingTiers({ lang = "it", showFeatures = true }) {
         </button>
       </div>
 
-      {/* Tier cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        {TIERS.map((tier) => {
-          const price = annual ? tier.annualMonthly : tier.monthly;
-          return (
-            <div
-              key={tier.id}
-              className={`relative flex flex-col rounded-3xl p-7 ${
-                tier.featured
-                  ? "bg-stone-950 text-white shadow-2xl shadow-brand-200 border border-stone-900 md:-my-3 md:py-10"
-                  : "bg-white border border-stone-200 shadow-sm"
-              }`}
-            >
-              {tier.featured && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-extrabold uppercase tracking-wide rounded-full px-4 py-1.5">
-                  {s.featured}
-                </span>
-              )}
-              <h3 className={`text-xl font-extrabold ${tier.featured ? "text-white" : "text-stone-900"}`}>
-                {tier.name}
-              </h3>
-              <p className={`text-sm mt-1.5 leading-relaxed ${tier.featured ? "text-stone-300" : "text-stone-500"}`}>
-                {s.taglines[tier.id]}
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        {/* The plan */}
+        <div className="relative flex flex-col rounded-3xl p-7 bg-white border border-stone-200 shadow-sm">
+          <h3 className="text-xl font-extrabold text-stone-900">{tier.name}</h3>
+          <p className="text-sm mt-1.5 leading-relaxed text-stone-500">{s.tagline}</p>
 
-              <p className="mt-6 flex items-baseline gap-1.5">
-                <span className={`text-4xl font-extrabold tracking-tight tabular-nums ${tier.featured ? "text-white" : "text-stone-900"}`}>
-                  €{price}
-                </span>
-                <span className={`text-base font-semibold ${tier.featured ? "text-stone-400" : "text-stone-500"}`}>
-                  {s.perMonth}
-                </span>
-              </p>
-              <p className={`text-xs mt-1 ${tier.featured ? "text-stone-400" : "text-stone-400"}`}>
-                {annual ? s.billedAnnually(tier.annualTotal) : s.billedMonthly}
-              </p>
+          <p className="mt-6 flex items-baseline gap-1.5">
+            <span className="text-4xl font-extrabold tracking-tight tabular-nums text-stone-900">
+              €{formatPrice(price, lang)}
+            </span>
+            <span className="text-base font-semibold text-stone-500">{s.perMonth}</span>
+          </p>
+          <p className="text-xs mt-1 text-stone-400">
+            {annual ? s.billedAnnually(tier.annualTotal) : s.billedMonthly}
+          </p>
+          <p className="text-sm mt-4 leading-relaxed text-stone-700">{s.perParty(PER_PARTY_FEE)}</p>
 
-              {showFeatures && (
-                <ul className="mt-6 space-y-2.5 flex-1">
-                  {s.features[tier.id].map((f) => (
-                    <li key={f} className="flex items-start gap-2.5">
-                      <span
-                        aria-hidden="true"
-                        className={`mt-1 text-sm font-black ${tier.featured ? "text-brand-400" : "text-brand-600"}`}
-                      >
-                        ✓
-                      </span>
-                      <span className={`text-[15px] leading-snug ${tier.featured ? "text-stone-200" : "text-stone-700"}`}>
-                        {f}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+          {showFeatures && (
+            <ul className="mt-6 space-y-2.5 flex-1">
+              {s.features.map((f) => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <span aria-hidden="true" className="mt-1 text-sm font-black text-brand-600">
+                    ✓
+                  </span>
+                  <span className="text-[15px] leading-snug text-stone-700">{f}</span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-              <Link
-                href={signupHref(router?.query, { type: "restaurant", plan: tier.id })}
-                className={`mt-7 block text-center font-bold text-base px-5 py-3.5 rounded-2xl transition-colors ${
-                  tier.featured
-                    ? "bg-brand-500 hover:bg-brand-400 text-white"
-                    : "bg-brand-600 hover:bg-brand-700 text-white"
-                }`}
-              >
-                {s.cta}
-              </Link>
-            </div>
-          );
-        })}
+          <Link
+            href={signupHref(router?.query, { type: "restaurant", plan: tier.id })}
+            className="mt-7 block text-center font-bold text-base px-5 py-3.5 rounded-2xl transition-colors bg-brand-600 hover:bg-brand-700 text-white"
+          >
+            {s.cta}
+          </Link>
+        </div>
+
+        {/* Founding offer */}
+        <div className="relative flex flex-col rounded-3xl p-7 bg-stone-950 text-white shadow-2xl shadow-brand-200 border border-stone-900">
+          <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-brand-500 text-white text-xs font-extrabold uppercase tracking-wide rounded-full px-4 py-1.5">
+            {s.foundingBadge(FOUNDING.spots)}
+          </span>
+          <h3 className="text-xl font-extrabold text-white">{s.foundingTitle}</h3>
+          <p className="mt-6 text-2xl font-extrabold tracking-tight text-white">
+            {s.foundingQuarter(FOUNDING.quarterPrice)}
+          </p>
+          <p className="mt-1 text-base font-semibold text-stone-300">{s.foundingYear(FOUNDING.yearPrice)}</p>
+          <p className="mt-4 text-[15px] leading-relaxed text-stone-200 flex-1">{s.foundingBody}</p>
+          <Link
+            href={demoHref}
+            className="mt-7 block text-center font-bold text-base px-5 py-3.5 rounded-2xl transition-colors bg-brand-500 hover:bg-brand-400 text-white"
+          >
+            {s.foundingCta}
+          </Link>
+        </div>
       </div>
+
+      <p className="mt-6 text-sm text-stone-500 leading-relaxed text-center max-w-3xl mx-auto">{s.compare}</p>
 
       {/* Guarantee box */}
       <div className="mt-10 rounded-3xl border-2 border-brand-200 bg-brand-50 px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row items-start gap-4">
