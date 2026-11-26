@@ -11,7 +11,7 @@
  *     restaurant's own diners;
  *   - €2 per seated party, only for diners SavoryMind brings;
  *   - founding offer for the first 10 Rome restaurants until 31 Dec:
- *     January to March for €149 upfront, or a full year for €590 upfront,
+ *     January to March for €149 upfront,
  *     price locked, money back if bookings aren't live on 1 January.
  * TIERS keeps its old shape so the JSON-LD offers on /pricing and
  * /ristoranti keep working.
@@ -36,7 +36,6 @@ export const PER_PARTY_FEE = 2;
 export const FOUNDING = {
   spots: 10,
   quarterPrice: 149,
-  yearPrice: 590,
 };
 
 const STRINGS = {
@@ -64,7 +63,6 @@ const STRINGS = {
     foundingBadge: (n) => `Ristoranti fondatori · solo i primi ${n}`,
     foundingTitle: "Offerta fondatori, fino al 31 dicembre",
     foundingQuarter: (p) => `€${p} per gennaio, febbraio e marzo, pagati in anticipo`,
-    foundingYear: (p) => `oppure €${p} per un anno intero`,
     foundingBody:
       "Prezzo bloccato. Se le prenotazioni non sono attive nel tuo locale il 1° gennaio, ti restituiamo tutto.",
     foundingCta: "Prenota una demo",
@@ -97,7 +95,6 @@ const STRINGS = {
     foundingBadge: (n) => `Founding restaurants · first ${n} only`,
     foundingTitle: "Founding offer, until 31 December",
     foundingQuarter: (p) => `€${p} for January, February and March, paid upfront`,
-    foundingYear: (p) => `or €${p} for a full year`,
     foundingBody:
       "Price locked. If bookings aren't live at your venue on 1 January, you get all of it back.",
     foundingCta: "Book a demo",
@@ -198,7 +195,6 @@ export default function PricingTiers({ lang = "it", showFeatures = true }) {
           <p className="mt-6 text-2xl font-extrabold tracking-tight text-white">
             {s.foundingQuarter(FOUNDING.quarterPrice)}
           </p>
-          <p className="mt-1 text-base font-semibold text-stone-300">{s.foundingYear(FOUNDING.yearPrice)}</p>
           <p className="mt-4 text-[15px] leading-relaxed text-stone-200 flex-1">{s.foundingBody}</p>
           <Link
             href={demoHref}
