@@ -8,6 +8,17 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # react and react-dom must move together, and jest-dom 8 and
+      # jest-environment-jsdom 30 need Jest 30. Upgrade these on purpose.
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@testing-library/jest-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: jest-environment-jsdom
+        update-types: ["version-update:semver-major"]
     groups:
       npm-frontend-minor-patch:
         update-types: ["minor", "patch"]
@@ -17,6 +28,12 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Expo packages are pinned to one SDK (55). A major bump to a single
+      # package moves it to another SDK and breaks npm ci; upgrade the SDK
+      # as one deliberate change instead.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-mobile-minor-patch:
         update-types: ["minor", "patch"]
