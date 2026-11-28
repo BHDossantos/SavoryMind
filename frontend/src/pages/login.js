@@ -111,6 +111,17 @@ const SOCIAL_PROVIDERS = [
   },
 ];
 
+export async function loadLoginProviders(fetchProviders = fetch) {
+  try {
+    const response = await fetchProviders("/api/auth/providers-list");
+    if (!response.ok) return [];
+    const providers = await response.json();
+    return Array.isArray(providers) ? providers.filter((id) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
@@ -123,7 +134,14 @@ export default function Login() {
   const [configuredProviders, setConfiguredProviders] = useState([]);
 
   useEffect(() => {
-    fetch("/api/auth/providers-list").then(r => r.json()).then(setConfiguredProviders).catch(() => {});
+    let active = true;
+    loadLoginProviders().then((providers) => {
+      if (active) setConfiguredProviders(providers);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     const { error: qError } = router.query;
     if (qError) setError(t("auth.socialFailedOrEmail"));
   }, [router.query, t]);
@@ -166,6 +184,8 @@ export default function Login() {
     }
   };
 
+  const visibleSocial = SOCIAL_PROVIDERS.filter((p) => configuredProviders.includes(p.id));
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -195,9 +215,9 @@ export default function Login() {
           )}
 
           {/* Social login buttons: only providers that are configured on the server. */}
-          {configuredProviders.length > 0 && (
+          {visibleSocial.length > 0 && (
           <div className="space-y-2.5 mb-6">
-            {SOCIAL_PROVIDERS.filter((p) => configuredProviders.includes(p.id)).map((p) => (
+            {visibleSocial.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleSocial(p.id)}

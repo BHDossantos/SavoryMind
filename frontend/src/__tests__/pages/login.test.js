@@ -4,7 +4,7 @@
  * error banner. Social provider buttons call NextAuth's signIn().
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const mockPush = jest.fn();
 jest.mock('next/router', () => ({
@@ -105,6 +105,22 @@ describe('Login page', () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     expect(screen.queryByText(/Continue with Google/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Continue with GitHub/i)).not.toBeInTheDocument();
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['non-OK response', () => Promise.resolve({ ok: false, json: async () => ['google'] })],
+    ['network failure', () => Promise.reject(new Error('offline'))],
+    ['malformed JSON', () => Promise.resolve({ ok: true, json: async () => { throw new Error('invalid JSON'); } })],
+    ['non-array response', () => Promise.resolve({ ok: true, json: async () => ({ providers: ['google'] }) })],
+    ['unknown provider', () => Promise.resolve({ ok: true, json: async () => ['unknown'] })],
+  ])('falls back to email on %s', async (_case, response) => {
+    global.fetch = jest.fn(response);
+    await act(async () => { render(<LoginPage />); });
+    expect(global.fetch).toHaveBeenCalledWith('/api/auth/providers-list');
+    expect(screen.queryByText(/Continue with Google/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/or continue with email/i)).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('you@email.com')).toBeInTheDocument();
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
